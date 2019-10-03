@@ -1,0 +1,68 @@
+import { BrowserModule } from '@angular/platform-browser';
+import { NgModule } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
+
+import { AppComponent } from './app.component';
+import { NavMenuComponent } from './nav-menu/nav-menu.component';
+import { HomeComponent } from './home/home.component';
+import { ScramblerComponent } from './scrambler/scrambler.component';
+import { FetchDataComponent } from './fetch-data/fetch-data.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {
+    MatCardModule, MatButtonModule, MatMenuModule, MatToolbarModule, MatInputModule, MatIconModule, MatTableModule, MatPaginatorModule, MatSortModule, MatSidenavModule,
+    MatTabsModule, MatTooltipModule, MatCheckboxModule, MatGridListModule, MatSelectModule, MatListModule, MatFormFieldModule, MatOptionModule, MatAutocompleteModule, MatExpansionModule, MatDialogModule,
+    MatStepperModule, MatDatepickerModule, MatNativeDateModule, MatTreeModule
+} from '@angular/material';
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    NavMenuComponent,
+    HomeComponent,
+    ScramblerComponent,
+        FetchDataComponent,
+
+  ],
+  imports: [
+    BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
+    HttpClientModule,
+      FormsModule,
+      MatInputModule,
+      MatCardModule,
+      MatButtonModule,
+      MatMenuModule,
+      MatToolbarModule,
+
+      MatIconModule,
+      MatTableModule,
+      MatPaginatorModule,
+      MatSortModule,
+      MatSidenavModule,
+      MatTabsModule,
+      MatTooltipModule,
+      MatCheckboxModule,
+      ReactiveFormsModule,
+      MatGridListModule,
+      MatSelectModule,
+      MatListModule,
+      MatOptionModule,
+      MatAutocompleteModule,
+      MatExpansionModule,
+      MatDialogModule,
+      MatStepperModule,
+      MatNativeDateModule,
+      MatDatepickerModule,
+      MatTreeModule,
+    RouterModule.forRoot([
+      { path: '', component: HomeComponent, pathMatch: 'full' },
+      { path: 'scrambler', component: ScramblerComponent },
+      { path: 'fetch-data', component: FetchDataComponent },
+    ]),
+    BrowserAnimationsModule
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }

@@ -1,0 +1,123 @@
+<h1>Scrambler</h1>
+
+<p>The Number of Brackets</p>
+{{brackets}}
+
+<div  *ngIf="malePlayerCount != 0">
+
+    <table class='table'>
+        <thead>
+            <tr>
+                <th>Male First Name</th>
+                <th>Male Last Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let player1 of malePlayers">
+                <td>{{ player1.firstName }}</td>
+                <td>{{ player1.lastName }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>The Number of Male Players - {{malePlayerCount}}</p>
+</div>
+<div  *ngIf="femalePlayerCount != 0">
+    <table class='table'>
+        <thead>
+            <tr>
+                <th>Female First Name</th>
+                <th>Female Last Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let player2 of femalePlayers">
+                <td>{{ player2.firstName }}</td>
+                <td>{{ player2.lastName }}</td>
+
+            </tr>
+        </tbody>
+    </table>
+    <p>The Number of Female Players - {{femalePlayerCount}}</p>
+</div>
+<button (click)="scramblePlayers()"  mat-raised-button color="primary">Scramble Players</button>
+<br />
+<div class="row">
+    <div class="col-5">
+        <table class='table' *ngIf="twoBracketsMaleCountTeam1 != 0 || twoBracketsFemaleCountTeam1 != 0">
+            <thead>
+                <h2 style="text-align:center; margin-left:65%">Team 1</h2>
+                <tr>
+                    <th>Player First Name</th>
+                    <th>Player Last Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let player3 of twoBracketsTeam1">
+                    <td>{{ player3.firstName }}</td>
+                    <td>{{ player3.lastName }}</td>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <h2 style="margin-top:8%" *ngIf="twoBracketsMaleCountTeam2 !=0 || twoBracketsFemaleCountTeam2 !=0" >vs</h2>
+    <div class="col-5">
+        <table class='table' *ngIf="twoBracketsMaleCountTeam2 != 0 || twoBracketsFemaleCountTeam2 != 0">
+            <thead>
+                <h2 style="text-align:center; margin-left:60%">Team 2</h2>
+                <tr>
+                    <th>Player First Name</th>
+                    <th>Player Last Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let player4 of twoBracketsTeam2">
+                    <td>{{ player4.firstName }}</td>
+                    <td>{{ player4.lastName }}</td>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-5">
+        <table class='table' *ngIf="twoBracketsMaleCountTeam3 != 0 || twoBracketsFemaleCountTeam3 != 0">
+            <thead>
+                <h2 style="text-align:center; margin-left:60%">Team 3</h2>
+                <tr>
+                    <th>Player First Name</th>
+                    <th>Player Last Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let player5 of twoBracketsTeam3">
+                    <td>{{ player5.firstName }}</td>
+                    <td>{{ player5.lastName }}</td>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <h2 style="margin-top:8%" *ngIf="twoBracketsMaleCountTeam3 !=0 || twoBracketsFemaleCountTeam3 !=0" >vs</h2>
+    <div class="col-5">
+        <table class='table' *ngIf="twoBracketsMaleCountTeam4 != 0 || twoBracketsFemaleCountTeam4 != 0">
+            <thead>
+                <h2 style="text-align:center; margin-left:60%">Team 4</h2>
+                <tr>
+                    <th>Player First Name</th>
+                    <th>Player Last Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let player6 of twoBracketsTeam4">
+                    <td>{{ player6.firstName }}</td>
+                    <td>{{ player6.lastName }}</td>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

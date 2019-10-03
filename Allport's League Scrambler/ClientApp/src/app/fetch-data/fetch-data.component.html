@@ -1,0 +1,38 @@
+<h1>Player List</h1>
+
+<p>List of Current Players</p>
+<form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()">
+    <mat-form-field appearance="outline" style="border-width:2px;">
+        <mat-label>First Name:</mat-label>
+        <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" style="border-width:2px;">
+        <mat-label>Last Name:</mat-label>
+        <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" style="border-width:2px;">
+        <mat-label>Male or Female:</mat-label>
+        <input matInput placeholder="Is Player Male or Female" formControlName="isMale" value="{{addedPlayer?.isMale}}" type="text" required />
+    </mat-form-field>
+    <button mat-raised-button color="primary">Submit</button><br /><br />
+</form>
+
+
+<table class='table'>
+    <thead>
+        <tr>
+            <th>First Name</th>
+            <th>Last Name </th>
+            <th>Male or Female</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor="let player1 of players">
+            <td>{{ player1.firstName }}</td>
+            <td>{{ player1.lastName }}</td>
+            <td>{{ player1.gender }}</td>
+        </tr>
+    </tbody>
+</table>
