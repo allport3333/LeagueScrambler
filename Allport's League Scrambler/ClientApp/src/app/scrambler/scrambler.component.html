@@ -1,7 +1,7 @@
 <h1>Scrambler</h1>
 
 <p>The Number of Brackets - {{brackets}}</p>
- 
+
 <mat-selection-list #selected [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
     <div id="playerListHidden">
         <div class="row">
@@ -29,7 +29,7 @@
 <button (click)="hidePlayerList()" *ngIf="!hidePlayers" mat-raised-button color="primary" class="ml-3">Hide Player List</button>
 <button (click)="hidePlayerList()" *ngIf="hidePlayers" mat-raised-button color="primary" class="ml-3">Show Player List</button>
 <br />
-<div class="row">
+<!--<div class="row">
     <div class="col-5">
         <table class='table' *ngIf="twoBracketsTeam1.length > 0">
             <thead>
@@ -107,4 +107,33 @@
             </tbody>
         </table>
     </div>
+</div>-->
+<div class="row">
+<div  class="text-nowrap col-4" *ngFor="let team of listOfTeams; let i=index;" >
+    
+     
+            <table class="table ">
+                <thead>
+                    <h2 style="text-align:center; margin-left:60%"> {{"Team " + (i + 1)}}</h2>
+                    <tr>
+                        <th>Player First Name</th>
+                        <th>Player Last Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let player of team.players">
+                        <td>{{ player.firstName }}</td>
+                        <td>{{ player.lastName }}</td>
+
+                    </tr>
+                </tbody>
+
+            </table>
+            
+
+    
+        <h2 *ngIf="i%2==0" class="col-1">VS</h2>
+
+        </div>
+   
 </div>

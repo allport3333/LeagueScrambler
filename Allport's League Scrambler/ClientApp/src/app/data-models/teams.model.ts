@@ -1,8 +1,10 @@
 import { Component } from '@angular/core';
+import { Player } from '../data-models/player.model';
 
-export interface Player {
-    firstName: string;
-    lastName: string;
-    isMale: boolean;
-    gender: string;
+
+export interface Team {
+    players: Player[];
+    maleCount: number;
+    femaleCount: number;
+
 }

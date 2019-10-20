@@ -5,6 +5,7 @@ import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 import { FormGroup, FormControl } from '@angular/forms';
 import { forEach } from '@angular/router/src/utils/collection';
+import { Team } from '../data-models/teams.model';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html'
@@ -20,14 +21,15 @@ export class ScramblerComponent implements OnInit {
     selectedMalePlayers: Player[];
     brackets: number;
     hidePlayers: boolean = false;
-    twoBracketsTeam1: Player[] = new Array();
-    twoBracketsTeam2: Player[] = new Array();
-    twoBracketsTeam3: Player[] = new Array();
-    twoBracketsTeam4: Player[] = new Array();
+    listOfTeams: Team[] = new Array();
+    twoBracketsTeam1: Player[] = [];
+    twoBracketsTeam2: Player[] = [];
+    twoBracketsTeam3: Player[] = [];
+    twoBracketsTeam4: Player[] = [];
     twoBracketsMaleCountTeam1: number = 0;
     twoBracketsFemaleCountTeam1: number = 0;
     selectedList: Player[];
-    twoBracketsMaleCountTeam2: number= 0;
+    twoBracketsMaleCountTeam2: number = 0;
     twoBracketsFemaleCountTeam2: number = 0;
     twoBracketsMaleCountTeam3: number = 0;
     twoBracketsFemaleCountTeam3: number = 0;
@@ -85,7 +87,7 @@ export class ScramblerComponent implements OnInit {
         bracketTeam.push(this.randomMalePlayer);
         this.malePlayers = this.malePlayers.filter(x => x !== this.randomMalePlayer);
         this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomMalePlayer);
-        this.malePlayerCount = this.malePlayerCount - 1;
+
 
     }
 
@@ -94,14 +96,11 @@ export class ScramblerComponent implements OnInit {
         bracketTeam.push(this.randomFemalePlayer);
         this.femalePlayers = this.femalePlayers.filter(x => x !== this.randomFemalePlayer);
         this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomFemalePlayer);
-        this.femalePlayerCount = this.femalePlayerCount - 1;
+
     }
 
     reset() {
-        this.twoBracketsTeam1 = [];
-        this.twoBracketsTeam2 = [];
-        this.twoBracketsTeam3 = [];
-        this.twoBracketsTeam4 = [];
+        this.listOfTeams = [];
     }
 
     scramblePlayers() {
@@ -109,7 +108,7 @@ export class ScramblerComponent implements OnInit {
         for (let player of this.selectedList) {
             if (player.isMale) {
                 this.malePlayers.push(player);
-            
+
             }
             else {
                 this.femalePlayers.push(player);
@@ -117,78 +116,88 @@ export class ScramblerComponent implements OnInit {
         }
         this.malePlayerCount = this.malePlayers.length;
         this.femalePlayerCount = this.femalePlayers.length;
+
         if (this.selectedList.length <= 8) {
             this.brackets = 1;
-            for (let player of this.selectedList) {
-                if (this.twoBracketsTeam1.length <= this.twoBracketsTeam2.length) {
-
-
-                    if (this.twoBracketsMaleCountTeam1 <= this.twoBracketsFemaleCountTeam1 && this.malePlayers.length != 0) {
-                        this.maleScramble(this.twoBracketsTeam1);
- 
-                    }
-                    else if (this.femalePlayers.length != 0) {
-                        this.femaleScramble(this.twoBracketsTeam1);
-
-                    }
+            for (var i = 0; i < 2; i++) {
+                let team = {
+                    players: [],
+                    femaleCount: 0,
+                    maleCount: 0
                 }
-                else if (this.twoBracketsTeam1.length > this.twoBracketsTeam2.length) {
-                    if (this.twoBracketsMaleCountTeam2 <= this.twoBracketsFemaleCountTeam2 && this.malePlayers.length != 0) {
-                        this.maleScramble(this.twoBracketsTeam2);
-
-                    }
-                    else if (this.femalePlayers.length != 0) {
-                        this.femaleScramble(this.twoBracketsTeam2);
-
-                    }
-                }
+                this.listOfTeams.push(team)
             }
+
+
         }
         else if (this.selectedList.length > 8 && this.selectedList.length <= 16) {
-            this.brackets = 2;
-            for (let malePlayer of this.totalPlayers) {
-                if (this.twoBracketsTeam1.length <= this.twoBracketsTeam2.length && this.twoBracketsTeam1.length <= this.twoBracketsTeam3.length && this.twoBracketsTeam1.length <= this.twoBracketsTeam4.length) {
-
-                    if (this.twoBracketsMaleCountTeam1 <= this.twoBracketsFemaleCountTeam1 && this.malePlayers.length != 0) {
-                        this.maleScramble(this.twoBracketsTeam1);
-
-                    }
-                    else if (this.femalePlayers.length != 0) {
-                        this.femaleScramble(this.twoBracketsTeam1);
-
-                    }
+            for (var i = 0; i < 4; i++) {
+                let team = {
+                    players: [],
+                    femaleCount: 0,
+                    maleCount: 0
                 }
-                else if (this.twoBracketsTeam1.length > this.twoBracketsTeam2.length && this.twoBracketsTeam2.length <= this.twoBracketsTeam3.length && this.twoBracketsTeam2.length <= this.twoBracketsTeam4.length) {
-                    if (this.twoBracketsMaleCountTeam2 <= this.twoBracketsFemaleCountTeam2 && this.malePlayers.length != 0) {
-                        this.maleScramble(this.twoBracketsTeam2);
-
-                    }
-                    else if (this.femalePlayers.length != 0) {
-                        this.femaleScramble(this.twoBracketsTeam2);
-
-                    }
-                }
-                else if (this.twoBracketsTeam1.length > this.twoBracketsTeam3.length && this.twoBracketsTeam2.length > this.twoBracketsTeam3.length && this.twoBracketsTeam3.length <= this.twoBracketsTeam4.length) {
-                    if (this.twoBracketsMaleCountTeam3 <= this.twoBracketsFemaleCountTeam3 && this.malePlayers.length != 0) {
-                        this.maleScramble(this.twoBracketsTeam3);
-
-                    }
-                    else if (this.femalePlayers.length != 0) {
-                        this.femaleScramble(this.twoBracketsTeam3);
-
-                    }
-                }
-                else if (this.twoBracketsTeam1.length > this.twoBracketsTeam4.length && this.twoBracketsTeam2.length > this.twoBracketsTeam4.length && this.twoBracketsTeam3.length > this.twoBracketsTeam4.length) {
-                    if (this.twoBracketsMaleCountTeam4 <= this.twoBracketsFemaleCountTeam4 && this.malePlayers.length != 0) {
-                        this.maleScramble(this.twoBracketsTeam4);
-
-                    }
-                    else if (this.femalePlayers.length != 0) {
-                        this.femaleScramble(this.twoBracketsTeam4);
-
-                    }
-                }
+                this.listOfTeams.push(team)
             }
+        }
+        else if (this.selectedList.length > 16 && this.selectedList.length <= 24) {
+            for (var i = 0; i < 6; i++) {
+                let team = {
+                    players: [],
+                    femaleCount: 0,
+                    maleCount: 0
+                }
+                this.listOfTeams.push(team)
+            }
+        }
+        else if (this.selectedList.length > 24 && this.selectedList.length <= 36) {
+            for (var i = 0; i < 8; i++) {
+                let team = {
+                    players: [],
+                    femaleCount: 0,
+                    maleCount: 0
+                }
+                this.listOfTeams.push(team)
+            }
+        }
+        else if (this.selectedList.length > 36 && this.selectedList.length <= 42) {
+            for (var i = 0; i < 10; i++) {
+                let team = {
+                    players: [],
+                    femaleCount: 0,
+                    maleCount: 0
+                }
+                this.listOfTeams.push(team)
+            }
+        }
+        else if (this.selectedList.length > 50 && this.selectedList.length <= 58) {
+            for (var i = 0; i < 12; i++) {
+                let team = {
+                    players: [],
+                    femaleCount: 0,
+                    maleCount: 0
+                }
+                this.listOfTeams.push(team)
+            }
+        }
+
+        
+        for (var i = 0; i < this.malePlayerCount; i++) {
+
+
+            let bestTeam: Team = null;
+            bestTeam = this.listOfTeams.sort((x, y) => x.players.length > y.players.length ? 1 : -1)[0];
+            this.maleScramble(bestTeam.players);
+
+        }
+
+        for (var i = 0; i < this.femalePlayerCount; i++) {
+
+
+            let bestTeam: Team = null;
+            bestTeam = this.listOfTeams.sort((x, y) => x.players.length > y.players.length ? 1 : -1)[0];
+            this.femaleScramble(bestTeam.players);
+
         }
     }
 }
