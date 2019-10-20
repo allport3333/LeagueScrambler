@@ -19,7 +19,7 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             List<Player> players = new List<Player>();
             var context = new DataContext();
-            players = context.Players.ToList();
+            players = context.Players.OrderBy(x => x.LastName).ToList();
             foreach (var player in players)
             {
                 if(player.IsMale != false)
@@ -42,7 +42,7 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             List<Player> players = new List<Player>();
             var context = new DataContext();
-            players = context.Players.Where(x => x.IsMale == true  ).ToList();
+            players = context.Players.Where(x => x.IsMale == true).OrderBy(x => x.LastName).ToList();
 
             return players;
         }
@@ -52,7 +52,7 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             List<Player> players = new List<Player>();
             var context = new DataContext();
-            players = context.Players.Where(x => x.IsMale == false).ToList();
+            players = context.Players.Where(x => x.IsMale == false).OrderBy(x => x.LastName).ToList();
 
             return players;
         }
