@@ -28,8 +28,8 @@ export class PlayerService {
         return this.httpClient.get<number>(this.baseUrl + 'api/SampleData/GetNumberOfBrackets');
     }
 
-    public AddPlayer(player: Player) {
-        return this.httpClient.post<Player>(this.baseUrl + 'api/SampleData/AddPlayer', player);
+    public AddPlayer(player: Player, leagueName: string) {
+        return this.httpClient.post<Player>(this.baseUrl + 'api/SampleData/AddPlayer/' + leagueName, player);
     }
 
 }

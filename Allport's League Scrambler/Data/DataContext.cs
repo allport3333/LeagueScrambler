@@ -12,7 +12,8 @@ namespace Allport_s_League_Scrambler.Data
     {
 
         public virtual DbSet<Player> Players { get; set; }
-
+        public virtual DbSet<PlayersLeague> PlayersLeagues { get; set; }
+        public virtual DbSet<LeagueType> Leagues { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -25,7 +26,8 @@ namespace Allport_s_League_Scrambler.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Player>().ToTable("Player");
-
+            modelBuilder.Entity<PlayersLeague>().ToTable("PlayersLeague");
+            modelBuilder.Entity<LeagueType>().ToTable("LeagueType");
         }
 
         }

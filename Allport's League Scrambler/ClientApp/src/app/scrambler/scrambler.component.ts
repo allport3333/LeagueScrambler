@@ -19,6 +19,7 @@ export class ScramblerComponent implements OnInit {
     malePlayerCount: number;
     selectedMalePlayers: Player[];
     brackets: number;
+    hidePlayers: boolean = false;
     twoBracketsTeam1: Player[] = new Array();
     twoBracketsTeam2: Player[] = new Array();
     twoBracketsTeam3: Player[] = new Array();
@@ -69,6 +70,16 @@ export class ScramblerComponent implements OnInit {
         //}
     }
 
+    hidePlayerList() {
+        this.hidePlayers = !this.hidePlayers;
+        var x = document.getElementById("playerListHidden");
+        if (x.style.display === "none") {
+            x.style.display = "block";
+        } else {
+            x.style.display = "none";
+        }
+    }
+
     maleScramble(bracketTeam) {
         this.randomMalePlayer = this.malePlayers[Math.floor(Math.random() * this.malePlayers.length)];
         bracketTeam.push(this.randomMalePlayer);
@@ -94,15 +105,20 @@ export class ScramblerComponent implements OnInit {
     }
 
     scramblePlayers() {
+        this.reset();
         for (let player of this.selectedList) {
             if (player.isMale) {
                 this.malePlayers.push(player);
+            
             }
             else {
                 this.femalePlayers.push(player);
             }
         }
+        this.malePlayerCount = this.malePlayers.length;
+        this.femalePlayerCount = this.femalePlayers.length;
         if (this.selectedList.length <= 8) {
+            this.brackets = 1;
             for (let player of this.selectedList) {
                 if (this.twoBracketsTeam1.length <= this.twoBracketsTeam2.length) {
 
@@ -129,9 +145,9 @@ export class ScramblerComponent implements OnInit {
             }
         }
         else if (this.selectedList.length > 8 && this.selectedList.length <= 16) {
+            this.brackets = 2;
             for (let malePlayer of this.totalPlayers) {
                 if (this.twoBracketsTeam1.length <= this.twoBracketsTeam2.length && this.twoBracketsTeam1.length <= this.twoBracketsTeam3.length && this.twoBracketsTeam1.length <= this.twoBracketsTeam4.length) {
-
 
                     if (this.twoBracketsMaleCountTeam1 <= this.twoBracketsFemaleCountTeam1 && this.malePlayers.length != 0) {
                         this.maleScramble(this.twoBracketsTeam1);

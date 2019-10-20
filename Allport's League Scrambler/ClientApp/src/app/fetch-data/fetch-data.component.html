@@ -16,6 +16,10 @@
         <mat-label>Male or Female:</mat-label>
         <input matInput placeholder="Is Player Male or Female" formControlName="isMale" value="{{addedPlayer?.isMale}}" type="text" required />
     </mat-form-field>
+    <mat-form-field appearance="outline" style="border-width:2px;">
+        <mat-label>League Name</mat-label>
+        <input matInput placeholder="League name?" formControlName="leagueName" value="{{leagueName}}" type="text" required />
+    </mat-form-field>
     <button mat-raised-button color="primary">Submit</button><br /><br />
 </form>
 

@@ -1,33 +1,33 @@
 <h1>Scrambler</h1>
 
-<p>The Number of Brackets</p>
-{{brackets}}
+<p>The Number of Brackets - {{brackets}}</p>
+ 
 <mat-selection-list #selected [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
-    <div class="row">
-        <div *ngIf="malePlayerCount != 0">
-            <p>The Number of Male Players - {{malePlayerCount}}</p>
-            <mat-list-option *ngFor="let player1 of malePlayers1" [value]="player1">
-
-                {{player1.firstName}}  {{player1.lastName}}
-            </mat-list-option>
-
-
-        </div>
-
-        <div *ngIf="femalePlayerCount != 0" class="ml-3">
-            <p>The Number of Female Players - {{femalePlayerCount}}</p>
-
-            <mat-list-option *ngFor="let player1 of femalePlayers1" [value]="player1">
-
-                {{player1.firstName}}  {{player1.lastName}}
-            </mat-list-option>
+    <div id="playerListHidden">
+        <div class="row">
+            <div>
+                <p>The Number of Male Players - {{malePlayerCount}}</p>
+                <mat-list-option *ngFor="let player1 of malePlayers1" [value]="player1">
+                    {{player1.firstName}}  {{player1.lastName}}
+                </mat-list-option>
 
 
+            </div>
+
+            <div class="ml-3">
+                <p>The Number of Female Players - {{femalePlayerCount}}</p>
+                <mat-list-option *ngFor="let player1 of femalePlayers1" [value]="player1">
+                    {{player1.firstName}}  {{player1.lastName}}
+                </mat-list-option>
+
+            </div>
         </div>
     </div>
 </mat-selection-list>
 <button (click)="scramblePlayers()" mat-raised-button color="primary">Scramble Players</button>
 <button (click)="reset()" mat-raised-button color="primary" class="ml-3">Reset</button>
+<button (click)="hidePlayerList()" *ngIf="!hidePlayers" mat-raised-button color="primary" class="ml-3">Hide Player List</button>
+<button (click)="hidePlayerList()" *ngIf="hidePlayers" mat-raised-button color="primary" class="ml-3">Show Player List</button>
 <br />
 <div class="row">
     <div class="col-5">

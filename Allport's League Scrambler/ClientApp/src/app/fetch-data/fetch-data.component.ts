@@ -14,10 +14,12 @@ export class FetchDataComponent implements OnInit {
     player: Player;
     addedPlayer: Player;
     isMale1: boolean;
+    leagueName: string;
     PlayerForm = new FormGroup({
         firstName: new FormControl(),
         lastName: new FormControl(),
-        isMale: new FormControl()
+        isMale: new FormControl(),
+        leagueName: new FormControl()
 
     });
 
@@ -51,7 +53,7 @@ export class FetchDataComponent implements OnInit {
         };
         
 
-        this.playerService.AddPlayer(newplayer).subscribe(result => {
+        this.playerService.AddPlayer(newplayer, this.PlayerForm.controls["leagueName"].value).subscribe(result => {
             this.player = result;
             this.players.push(newplayer);
         }, error => console.error(error));

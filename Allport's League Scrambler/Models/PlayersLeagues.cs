@@ -1,0 +1,14 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Allport_s_League_Scrambler.Models
+{
+    public class PlayersLeague
+    {
+        public int Id { get; set; }
+        public int LeagueID { get; set; }
+        public int PlayerID { get; set; }
+    }
+}

@@ -104,15 +104,34 @@ namespace Allport_s_League_Scrambler.Controllers
             return brackets;
         }
 
-        [HttpPost("[action]")]
-        public Player AddPlayer([FromBody] Player player)
+        [HttpPost("[action]/{leagueName}")]
+        public Player AddPlayer([FromBody] Player player, string leagueName)
         {
             var context = new DataContext();
             var playerExists = context.Players.Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName).FirstOrDefault();
 
             if (playerExists != null)
             {
-                return playerExists;                
+                var existingLeague = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+                var linkExists = context.PlayersLeagues.Where(x => x.LeagueID == existingLeague.ID && x.PlayerID == playerExists.Id).FirstOrDefault();
+                if (linkExists != null)
+                {
+                    return playerExists;
+                }
+                else
+                {
+                    var addNewLink = new PlayersLeague()
+                    {
+                        PlayerID = playerExists.Id,
+                        LeagueID = existingLeague.ID
+                        
+                    };
+
+                    context.PlayersLeagues.Add(addNewLink);
+                    context.SaveChanges();
+
+                    return playerExists;
+                }
             }
 
             var newPlayer = new Player()
@@ -122,8 +141,19 @@ namespace Allport_s_League_Scrambler.Controllers
                 IsMale = player.IsMale,
                 Gender = player.Gender
             };
-
             context.Players.Add(newPlayer);
+            context.SaveChanges();
+
+            var addedPlayer = context.Players.Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName).FirstOrDefault();
+            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+            var addedPlayersLeagues = new PlayersLeague()
+            {
+                LeagueID = league.ID,
+                PlayerID = addedPlayer.Id
+            };
+
+            context.PlayersLeagues.Add(addedPlayersLeagues);
+ 
             context.SaveChanges();
 
             return player;
