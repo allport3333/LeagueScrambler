@@ -23,19 +23,20 @@ export class ScramblerComponent implements OnInit {
     teamCount: number;
     hidePlayers: boolean = false;
     listOfTeams: Team[] = new Array();
-    twoBracketsTeam1: Player[] = [];
-    twoBracketsTeam2: Player[] = [];
-    twoBracketsTeam3: Player[] = [];
-    twoBracketsTeam4: Player[] = [];
-    twoBracketsMaleCountTeam1: number = 0;
-    twoBracketsFemaleCountTeam1: number = 0;
     selectedList: Player[];
-    twoBracketsMaleCountTeam2: number = 0;
-    twoBracketsFemaleCountTeam2: number = 0;
-    twoBracketsMaleCountTeam3: number = 0;
-    twoBracketsFemaleCountTeam3: number = 0;
-    twoBracketsMaleCountTeam4: number = 0;
-    twoBracketsFemaleCountTeam4: number = 0;
+    // twoBracketsTeam1: Player[] = [];
+    // twoBracketsTeam2: Player[] = [];
+    // twoBracketsTeam3: Player[] = [];
+    // twoBracketsTeam4: Player[] = [];
+    // twoBracketsMaleCountTeam1: number = 0;
+    // twoBracketsFemaleCountTeam1: number = 0;
+
+    // twoBracketsMaleCountTeam2: number = 0;
+    // twoBracketsFemaleCountTeam2: number = 0;
+    // twoBracketsMaleCountTeam3: number = 0;
+    // twoBracketsFemaleCountTeam3: number = 0;
+    // twoBracketsMaleCountTeam4: number = 0;
+    // twoBracketsFemaleCountTeam4: number = 0;
     randomMalePlayer: Player;
     randomFemalePlayer: Player;
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService) {
