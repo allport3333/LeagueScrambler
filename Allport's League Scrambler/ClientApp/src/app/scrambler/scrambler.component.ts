@@ -20,6 +20,7 @@ export class ScramblerComponent implements OnInit {
     malePlayerCount: number;
     selectedMalePlayers: Player[];
     brackets: number;
+    teamCount: number;
     hidePlayers: boolean = false;
     listOfTeams: Team[] = new Array();
     twoBracketsTeam1: Player[] = [];
@@ -116,70 +117,80 @@ export class ScramblerComponent implements OnInit {
         }
         this.malePlayerCount = this.malePlayers.length;
         this.femalePlayerCount = this.femalePlayers.length;
+        this.teamCount = (Math.floor(this.selectedList.length / 8) * 2) + 2;
 
-        if (this.selectedList.length <= 8) {
-            this.brackets = 1;
-            for (var i = 0; i < 2; i++) {
-                let team = {
-                    players: [],
-                    femaleCount: 0,
-                    maleCount: 0
-                }
-                this.listOfTeams.push(team)
+        for (var i = 0; i < this.teamCount; i++){
+            let team = {
+                players: [],
+                femaleCount: 0,
+                maleCount: 0
             }
+            this.listOfTeams.push(team)
+        }
+
+        // if (this.selectedList.length <= 8) {
+        //     this.brackets = 1;
+        //     for (var i = 0; i < 2; i++) {
+        //         let team = {
+        //             players: [],
+        //             femaleCount: 0,
+        //             maleCount: 0
+        //         }
+        //         this.listOfTeams.push(team)
+        //     }
 
 
-        }
-        else if (this.selectedList.length > 8 && this.selectedList.length <= 16) {
-            for (var i = 0; i < 4; i++) {
-                let team = {
-                    players: [],
-                    femaleCount: 0,
-                    maleCount: 0
-                }
-                this.listOfTeams.push(team)
-            }
-        }
-        else if (this.selectedList.length > 16 && this.selectedList.length <= 24) {
-            for (var i = 0; i < 6; i++) {
-                let team = {
-                    players: [],
-                    femaleCount: 0,
-                    maleCount: 0
-                }
-                this.listOfTeams.push(team)
-            }
-        }
-        else if (this.selectedList.length > 24 && this.selectedList.length <= 36) {
-            for (var i = 0; i < 8; i++) {
-                let team = {
-                    players: [],
-                    femaleCount: 0,
-                    maleCount: 0
-                }
-                this.listOfTeams.push(team)
-            }
-        }
-        else if (this.selectedList.length > 36 && this.selectedList.length <= 42) {
-            for (var i = 0; i < 10; i++) {
-                let team = {
-                    players: [],
-                    femaleCount: 0,
-                    maleCount: 0
-                }
-                this.listOfTeams.push(team)
-            }
-        }
-        else if (this.selectedList.length > 50 && this.selectedList.length <= 58) {
-            for (var i = 0; i < 12; i++) {
-                let team = {
-                    players: [],
-                    femaleCount: 0,
-                    maleCount: 0
-                }
-                this.listOfTeams.push(team)
-            }
-        }
+        // }
+        // else if (this.selectedList.length > 8 && this.selectedList.length <= 16) {
+        //     for (var i = 0; i < 4; i++) {
+        //         let team = {
+        //             players: [],
+        //             femaleCount: 0,
+        //             maleCount: 0
+        //         }
+        //         this.listOfTeams.push(team)
+        //     }
+        // }
+        // else if (this.selectedList.length > 16 && this.selectedList.length <= 24) {
+        //     for (var i = 0; i < 6; i++) {
+        //         let team = {
+        //             players: [],
+        //             femaleCount: 0,
+        //             maleCount: 0
+        //         }
+        //         this.listOfTeams.push(team)
+        //     }
+        // }
+        // else if (this.selectedList.length > 24 && this.selectedList.length <= 36) {
+        //     for (var i = 0; i < 8; i++) {
+        //         let team = {
+        //             players: [],
+        //             femaleCount: 0,
+        //             maleCount: 0
+        //         }
+        //         this.listOfTeams.push(team)
+        //     }
+        // }
+        // else if (this.selectedList.length > 36 && this.selectedList.length <= 42) {
+        //     for (var i = 0; i < 10; i++) {
+        //         let team = {
+        //             players: [],
+        //             femaleCount: 0,
+        //             maleCount: 0
+        //         }
+        //         this.listOfTeams.push(team)
+        //     }
+        // }
+        // else if (this.selectedList.length > 50 && this.selectedList.length <= 58) {
+        //     for (var i = 0; i < 12; i++) {
+        //         let team = {
+        //             players: [],
+        //             femaleCount: 0,
+        //             maleCount: 0
+        //         }
+        //         this.listOfTeams.push(team)
+        //     }
+        // }
 
         
         for (var i = 0; i < this.malePlayerCount; i++) {
