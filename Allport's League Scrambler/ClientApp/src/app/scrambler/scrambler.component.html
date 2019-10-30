@@ -29,6 +29,7 @@
 <button (click)="hidePlayerList()" *ngIf="!hidePlayers" mat-raised-button color="primary" class="ml-3">Hide Player List</button>
 <button (click)="hidePlayerList()" *ngIf="hidePlayers" mat-raised-button color="primary" class="ml-3">Show Player List</button>
 <br />
+<br />
 <!--<div class="row">
     <div class="col-5">
         <table class='table' *ngIf="twoBracketsTeam1.length > 0">
@@ -109,9 +110,12 @@
     </div>
 </div>-->
 <div class="row">
-<div  class="text-nowrap col-4" *ngFor="let team of listOfTeams; let i=index;" >
-    
-     
+    <ng-container *ngFor="let team of listOfTeams; let i=index;">
+        <div *ngIf="(i+1)%2 == 0" class="col-1">
+
+            <h3 style="margin-top:125px; margin-left: 25px">vs</h3>
+        </div>
+        <div class="row col-5">
             <table class="table ">
                 <thead>
                     <h2 style="text-align:center; margin-left:60%"> {{"Team " + (i + 1)}}</h2>
@@ -129,11 +133,11 @@
                 </tbody>
 
             </table>
-            
-
-    
-        <h2 *ngIf="i%2==0" class="col-1">VS</h2>
 
         </div>
-   
+
+        <!--<h2 *ngIf="i%2==0" class="col-1">VS</h2>-->
+
+    </ng-container>
+
 </div>

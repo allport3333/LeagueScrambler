@@ -84,18 +84,18 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
-    maleScramble(bracketTeam) {
+    maleScramble(bracketTeamPlayers) {
         this.randomMalePlayer = this.malePlayers[Math.floor(Math.random() * this.malePlayers.length)];
-        bracketTeam.push(this.randomMalePlayer);
+        bracketTeamPlayers.push(this.randomMalePlayer);
         this.malePlayers = this.malePlayers.filter(x => x !== this.randomMalePlayer);
         this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomMalePlayer);
 
 
     }
 
-    femaleScramble(bracketTeam) {
+    femaleScramble(bracketTeamPlayers) {
         this.randomFemalePlayer = this.femalePlayers[Math.floor(Math.random() * this.femalePlayers.length)];
-        bracketTeam.push(this.randomFemalePlayer);
+        bracketTeamPlayers.push(this.randomFemalePlayer);
         this.femalePlayers = this.femalePlayers.filter(x => x !== this.randomFemalePlayer);
         this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomFemalePlayer);
 
@@ -118,9 +118,15 @@ export class ScramblerComponent implements OnInit {
         }
         this.malePlayerCount = this.malePlayers.length;
         this.femalePlayerCount = this.femalePlayers.length;
-        this.teamCount = (Math.floor(this.selectedList.length / 8) * 2) + 2;
+        if ((this.selectedList.length / 8) % 1 == 0) {
+            this.teamCount = (Math.floor(this.selectedList.length / 8) * 2);
+        }
+        else {
 
-        for (var i = 0; i < this.teamCount; i++){
+            this.teamCount = (Math.floor(this.selectedList.length / 8) * 2) + 2;
+
+        }
+        for (var i = 0; i < this.teamCount; i++) {
             let team = {
                 players: [],
                 femaleCount: 0,
@@ -128,6 +134,45 @@ export class ScramblerComponent implements OnInit {
             }
             this.listOfTeams.push(team)
         }
+
+
+        for (var i = 0; i < this.malePlayerCount; i++) {
+
+            let bestTeam: Team = null;
+            for (let i = 0; i < this.listOfTeams.length - 1; i++) {
+                if (this.listOfTeams[i].players.length > this.listOfTeams[i + 1].players.length) {
+                    bestTeam = this.listOfTeams[i + 1];
+                }
+                else if (this.listOfTeams[i].players.length < this.listOfTeams[i + 1].players.length) {
+                    bestTeam = this.listOfTeams[i];
+                }
+            }
+            if (bestTeam == null) {
+                bestTeam = this.listOfTeams[0];
+            }
+            this.maleScramble(bestTeam.players);
+
+        }
+
+        for (var i = 0; i < this.femalePlayerCount; i++) {
+
+            let bestTeam: Team = null;
+            for (let i = 0; i < this.listOfTeams.length - 1; i++) {
+                if (this.listOfTeams[i].players.length > this.listOfTeams[i + 1].players.length) {
+                    bestTeam = this.listOfTeams[i + 1];
+                }
+                else if (this.listOfTeams[i].players.length < this.listOfTeams[i + 1].players.length) {
+                    bestTeam = this.listOfTeams[i];
+                }
+            }
+            if (bestTeam == null) {
+                bestTeam = this.listOfTeams[0];
+            }
+            this.femaleScramble(bestTeam.players);
+
+        }
+    }
+}
 
         // if (this.selectedList.length <= 8) {
         //     this.brackets = 1;
@@ -192,24 +237,3 @@ export class ScramblerComponent implements OnInit {
         //         this.listOfTeams.push(team)
         //     }
         // }
-
-        
-        for (var i = 0; i < this.malePlayerCount; i++) {
-
-
-            let bestTeam: Team = null;
-            bestTeam = this.listOfTeams.sort((x, y) => x.players.length > y.players.length ? 1 : -1)[0];
-            this.maleScramble(bestTeam.players);
-
-        }
-
-        for (var i = 0; i < this.femalePlayerCount; i++) {
-
-
-            let bestTeam: Team = null;
-            bestTeam = this.listOfTeams.sort((x, y) => x.players.length > y.players.length ? 1 : -1)[0];
-            this.femaleScramble(bestTeam.players);
-
-        }
-    }
-}
