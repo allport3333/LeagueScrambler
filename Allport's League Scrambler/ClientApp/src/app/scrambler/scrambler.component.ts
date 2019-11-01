@@ -6,6 +6,7 @@ import { PlayerService } from '../services/player.service';
 import { FormGroup, FormControl } from '@angular/forms';
 import { forEach } from '@angular/router/src/utils/collection';
 import { Team } from '../data-models/teams.model';
+import { Leagues } from '../data-models/leagues.model';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html'
@@ -24,23 +25,44 @@ export class ScramblerComponent implements OnInit {
     hidePlayers: boolean = false;
     listOfTeams: Team[] = new Array();
     selectedList: Player[];
-    // twoBracketsTeam1: Player[] = [];
-    // twoBracketsTeam2: Player[] = [];
-    // twoBracketsTeam3: Player[] = [];
-    // twoBracketsTeam4: Player[] = [];
-    // twoBracketsMaleCountTeam1: number = 0;
-    // twoBracketsFemaleCountTeam1: number = 0;
-
-    // twoBracketsMaleCountTeam2: number = 0;
-    // twoBracketsFemaleCountTeam2: number = 0;
-    // twoBracketsMaleCountTeam3: number = 0;
-    // twoBracketsFemaleCountTeam3: number = 0;
-    // twoBracketsMaleCountTeam4: number = 0;
-    // twoBracketsFemaleCountTeam4: number = 0;
     randomMalePlayer: Player;
     randomFemalePlayer: Player;
+    PlayerForm = new FormGroup({
+        firstName: new FormControl(),
+        lastName: new FormControl(),
+        isMale: new FormControl(),
+        leagueName: new FormControl()
+
+    });
+    players: Player[];
+    player: Player;
+    addedPlayer: Player;
+    isMale1: boolean;
+    leagueName: string;
+    hideInputOptions: boolean;
+    queriedPlayers: Player[];
+    leaguesAvailable: Leagues[];
+    selectedLeague: string;
+
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService) {
 
+    }
+
+    selectLeague() {
+        this.playerService.SelectLeague(this.selectedLeague).subscribe(result => {
+            this.queriedPlayers = result;
+            this.malePlayers1 = [];
+            this.femalePlayers1 = []; 
+            for (let player of this.queriedPlayers) {
+
+                if (player.isMale) {
+                    this.malePlayers1.push(player);
+                }
+                else {
+                    this.femalePlayers1.push(player);
+                }
+            }
+        });
     }
 
     ngOnInit() {
@@ -60,23 +82,29 @@ export class ScramblerComponent implements OnInit {
         this.playerService.GetPlayers().subscribe(result => {
             this.totalPlayers = result;
         }, error => console.error(error));
+        this.playerService.GetLeagues().subscribe(result => {
+            this.leaguesAvailable = result;
+
+        }, error => console.error(error));
     }
 
     addPlayer(player) {
         console.log(this.selectedList);
-        //this.totalPlayers.push(player.option._value);
-        //this.selectedMalePlayers = player._value;
-        //if (player.option._value.isMale) {
-        //    this.malePlayers.push(player.option._value);
-        //}
-        //else {
-        //    this.femalePlayers.push(player.option._value);
-        //}
     }
 
     hidePlayerList() {
         this.hidePlayers = !this.hidePlayers;
         var x = document.getElementById("playerListHidden");
+        if (x.style.display === "none") {
+            x.style.display = "block";
+        } else {
+            x.style.display = "none";
+        }
+    }
+
+    hideOptions() {
+        this.hideInputOptions = !this.hideInputOptions;
+        var x = document.getElementById("hideInputOptions");
         if (x.style.display === "none") {
             x.style.display = "block";
         } else {
@@ -91,6 +119,29 @@ export class ScramblerComponent implements OnInit {
         this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomMalePlayer);
 
 
+    }
+
+    onSubmitClick() {
+
+        if (this.PlayerForm.controls["isMale"].value == "Female") {
+            this.isMale1 = false;
+        }
+        else if (this.PlayerForm.controls["isMale"].value == "Male") {
+            this.isMale1 = true;
+        }
+        let newplayer: Player = {
+
+            firstName: this.PlayerForm.controls["firstName"].value,
+            lastName: this.PlayerForm.controls["lastName"].value,
+            gender: this.PlayerForm.controls["isMale"].value,
+            isMale: this.isMale1
+        };
+
+
+        this.playerService.AddPlayer(newplayer, this.PlayerForm.controls["leagueName"].value).subscribe(result => {
+            this.player = result;
+            this.players.push(newplayer);
+        }, error => console.error(error));
     }
 
     femaleScramble(bracketTeamPlayers) {
@@ -174,66 +225,4 @@ export class ScramblerComponent implements OnInit {
     }
 }
 
-        // if (this.selectedList.length <= 8) {
-        //     this.brackets = 1;
-        //     for (var i = 0; i < 2; i++) {
-        //         let team = {
-        //             players: [],
-        //             femaleCount: 0,
-        //             maleCount: 0
-        //         }
-        //         this.listOfTeams.push(team)
-        //     }
-
-
-        // }
-        // else if (this.selectedList.length > 8 && this.selectedList.length <= 16) {
-        //     for (var i = 0; i < 4; i++) {
-        //         let team = {
-        //             players: [],
-        //             femaleCount: 0,
-        //             maleCount: 0
-        //         }
-        //         this.listOfTeams.push(team)
-        //     }
-        // }
-        // else if (this.selectedList.length > 16 && this.selectedList.length <= 24) {
-        //     for (var i = 0; i < 6; i++) {
-        //         let team = {
-        //             players: [],
-        //             femaleCount: 0,
-        //             maleCount: 0
-        //         }
-        //         this.listOfTeams.push(team)
-        //     }
-        // }
-        // else if (this.selectedList.length > 24 && this.selectedList.length <= 36) {
-        //     for (var i = 0; i < 8; i++) {
-        //         let team = {
-        //             players: [],
-        //             femaleCount: 0,
-        //             maleCount: 0
-        //         }
-        //         this.listOfTeams.push(team)
-        //     }
-        // }
-        // else if (this.selectedList.length > 36 && this.selectedList.length <= 42) {
-        //     for (var i = 0; i < 10; i++) {
-        //         let team = {
-        //             players: [],
-        //             femaleCount: 0,
-        //             maleCount: 0
-        //         }
-        //         this.listOfTeams.push(team)
-        //     }
-        // }
-        // else if (this.selectedList.length > 50 && this.selectedList.length <= 58) {
-        //     for (var i = 0; i < 12; i++) {
-        //         let team = {
-        //             players: [],
-        //             femaleCount: 0,
-        //             maleCount: 0
-        //         }
-        //         this.listOfTeams.push(team)
-        //     }
-        // }
+       

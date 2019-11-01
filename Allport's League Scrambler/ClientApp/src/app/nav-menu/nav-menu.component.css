@@ -19,10 +19,10 @@
   background-color: #4189C7;
   color: white;
 }
-@media (min-width: 768px) {
+@media (min-width: 368px) {
   .main-nav {
-    width: calc(25% - 30px);
-    min-width: 180px;
+    width: calc(15% - 30px);
+    min-width: 80px;
   }
   .main-nav .navbar {
     border-radius: 0 15px 15px 0;

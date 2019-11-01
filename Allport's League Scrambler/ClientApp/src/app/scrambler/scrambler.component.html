@@ -1,33 +1,101 @@
-<h1>Scrambler</h1>
+<div style="text-align:center;">
+    <h1>Scrambler</h1>
+    
+    <button (click)="hideOptions()" *ngIf="!hideInputOptions" mat-raised-button color="primary">Hide Options</button>
+    <button (click)="hideOptions()" *ngIf="hideInputOptions" mat-raised-button color="primary">Show Options</button>
 
-<p>The Number of Brackets - {{brackets}}</p>
-
-<mat-selection-list #selected [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
-    <div id="playerListHidden">
-        <div class="row">
-            <div>
-                <p>The Number of Male Players - {{malePlayerCount}}</p>
-                <mat-list-option *ngFor="let player1 of malePlayers1" [value]="player1">
-                    {{player1.firstName}}  {{player1.lastName}}
-                </mat-list-option>
-
-
-            </div>
-
-            <div class="ml-3">
-                <p>The Number of Female Players - {{femalePlayerCount}}</p>
-                <mat-list-option *ngFor="let player1 of femalePlayers1" [value]="player1">
-                    {{player1.firstName}}  {{player1.lastName}}
-                </mat-list-option>
-
-            </div>
+    <div class="row">
+        <div class="col-12 mt-2" *ngIf="!hideInputOptions">
+            <mat-form-field>
+                <mat-label>League</mat-label>
+                <mat-select [(ngModel)]="selectedLeague" [(value)]="league" (selectionChange)="selectLeague(selectedLeague)">
+                    <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
+                        {{league.leagueName}}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
         </div>
     </div>
-</mat-selection-list>
-<button (click)="scramblePlayers()" mat-raised-button color="primary">Scramble Players</button>
-<button (click)="reset()" mat-raised-button color="primary" class="ml-3">Reset</button>
-<button (click)="hidePlayerList()" *ngIf="!hidePlayers" mat-raised-button color="primary" class="ml-3">Hide Player List</button>
-<button (click)="hidePlayerList()" *ngIf="hidePlayers" mat-raised-button color="primary" class="ml-3">Show Player List</button>
+
+</div>
+<br />
+<div id="hideInputOptions">
+    <div class="row">
+
+        <div class="col-4">
+            <div class="float-right mr-4">
+                <h4>Enter New Player</h4>
+                <br />
+                <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()">
+                    <mat-form-field appearance="outline" style="border-width:2px;">
+                        <mat-label>First Name:</mat-label>
+                        <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" style="border-width:2px; margin-left:10px">
+                        <mat-label>Last Name:</mat-label>
+                        <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
+                    </mat-form-field>
+                    <br />
+                    <mat-form-field appearance="outline" style="border-width:2px;">
+                        <mat-label>Male or Female:</mat-label>
+                        <input matInput placeholder="Is Player Male or Female" formControlName="isMale" value="{{addedPlayer?.isMale}}" type="text" required />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" style="border-width:2px; margin-left:10px">
+                        <mat-label>League Name</mat-label>
+                        <input matInput placeholder="League name?" formControlName="leagueName" value="{{leagueName}}" type="text" required />
+                    </mat-form-field>
+                    <br />
+                    <button mat-raised-button color="primary">Submit</button><br /><br />
+                    <br />
+                    <br />
+                    <br />
+                </form>
+            </div>
+        </div>
+
+        <mat-selection-list class="col-4 float-right" dense #selected [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
+            <div id="playerListHidden">
+                <div class="row">
+                    <div>
+                        <p>The Number of Male Players - {{malePlayerCount}}</p>
+                        <div>
+                            <mat-list-option class="row" *ngFor="let player1 of malePlayers1" [value]="player1">
+                                <div>
+                                    {{player1.firstName}}  {{player1.lastName}}
+                                </div>
+                            </mat-list-option>
+                        </div>
+
+                    </div>
+                    <mat-divider></mat-divider>
+                    <div class="ml-3">
+                        <p>The Number of Female Players - {{femalePlayerCount}}</p>
+                        <mat-list-option *ngFor="let player1 of femalePlayers1" [value]="player1">
+                            {{player1.firstName}}  {{player1.lastName}}
+                        </mat-list-option>
+                    </div>
+
+
+                </div>
+            </div>
+        </mat-selection-list>
+        <div class="col-2">
+            <h4>Scramble Options</h4>
+            <br />
+            <button (click)="scramblePlayers()" mat-raised-button color="primary">Scramble Players</button>
+            <br />
+            <br />
+            <button (click)="reset()" mat-raised-button color="primary">Reset</button>
+            <br />
+            <br />
+            <button (click)="hidePlayerList()" *ngIf="!hidePlayers" mat-raised-button color="primary">Hide Player List</button>
+            <button (click)="hidePlayerList()" *ngIf="hidePlayers" mat-raised-button color="primary">Show Player List</button>
+
+        </div>
+    </div>
+</div>
 <br />
 <br />
 <!--<div class="row">
@@ -109,7 +177,7 @@
         </table>
     </div>
 </div>-->
-<div class="row">
+<div class="row mh-100">
     <ng-container *ngFor="let team of listOfTeams; let i=index;">
         <div *ngIf="(i+1)%2 == 0" class="col-1">
 

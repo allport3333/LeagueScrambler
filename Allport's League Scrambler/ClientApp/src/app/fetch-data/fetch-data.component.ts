@@ -22,7 +22,7 @@ export class FetchDataComponent implements OnInit {
         leagueName: new FormControl()
 
     });
-
+    
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService) {
 
     }

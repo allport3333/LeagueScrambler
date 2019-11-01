@@ -22,7 +22,7 @@ namespace Allport_s_League_Scrambler.Controllers
             players = context.Players.OrderBy(x => x.LastName).ToList();
             foreach (var player in players)
             {
-                if(player.IsMale != false)
+                if (player.IsMale != false)
                 {
                     player.Gender = "Male";
                 }
@@ -46,7 +46,15 @@ namespace Allport_s_League_Scrambler.Controllers
 
             return players;
         }
+        [HttpGet("[action]")]
+        public IEnumerable<LeagueType> GetLeagues()
+        {
+            List<LeagueType> leagues = new List<LeagueType>();
+            var context = new DataContext();
+            leagues = context.Leagues.ToList();
 
+            return leagues;
+        }
         [HttpGet("[action]")]
         public IEnumerable<Player> GetAllFemalePlayers()
         {
@@ -77,7 +85,7 @@ namespace Allport_s_League_Scrambler.Controllers
             {
                 brackets = 3;
             }
-            else if (players > 24  && players <= 32)
+            else if (players > 24 && players <= 32)
             {
                 brackets = 4;
             }
@@ -102,6 +110,24 @@ namespace Allport_s_League_Scrambler.Controllers
                 brackets = 0;
             }
             return brackets;
+        }
+
+        [HttpGet("[action]/{leagueName}")]
+        public IEnumerable<Player> SelectLeague(string leagueName)
+        {
+            List<Player> players = new List<Player>();
+            var context = new DataContext();
+            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+            var leagueLinks = context.PlayersLeagues.Where(x => x.LeagueID == league.ID).ToList();
+
+            foreach (var leagueLink in leagueLinks)
+            {
+                var singlePlayer = context.Players.Where(x => x.Id == leagueLink.PlayerID).FirstOrDefault();
+
+                players.Add(singlePlayer); 
+            }
+
+            return players;
         }
 
         [HttpPost("[action]/{leagueName}")]

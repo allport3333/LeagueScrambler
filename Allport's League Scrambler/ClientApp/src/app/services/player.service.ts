@@ -2,6 +2,7 @@ import { Component, Inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { Player } from '../data-models/player.model';
+import { Leagues } from '../data-models/leagues.model';
 
 @Injectable({
     providedIn: 'root'
@@ -16,8 +17,16 @@ export class PlayerService {
         return this.httpClient.get<Player[]>(this.baseUrl + 'api/SampleData/GetPlayers');
     }
 
+    public GetLeagues() {
+        return this.httpClient.get<Leagues[]>(this.baseUrl + 'api/SampleData/GetLeagues');
+    }
+
     public GetAllMalePlayers() {
         return this.httpClient.get<Player[]>(this.baseUrl + 'api/SampleData/GetAllMalePlayers');
+    }
+
+    public SelectLeague(leagueName: string) {
+        return this.httpClient.get<Player[]>(this.baseUrl + 'api/SampleData/SelectLeague/' + leagueName);
     }
 
     public GetAllFemalePlayers() {
