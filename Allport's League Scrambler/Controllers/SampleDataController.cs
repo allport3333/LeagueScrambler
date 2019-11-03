@@ -126,7 +126,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
                 players.Add(singlePlayer); 
             }
-
+           players = players.OrderBy(x => x.LastName).ToList();
             return players;
         }
 

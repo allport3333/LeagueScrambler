@@ -25,33 +25,34 @@
         <div class="col-4">
             <div class="float-right mr-4">
                 <h4>Enter New Player</h4>
+
+                <mat-form-field>
+                    <mat-label>Gender</mat-label>
+                    <mat-select [(ngModel)]="selectedGender" [(value)]="gender" (selectionChange)="selectGender(gender)">
+                        <mat-option *ngFor="let gender of gendersPossible" [value]="gender">
+                            {{gender.value}}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+
                 <br />
                 <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()">
                     <mat-form-field appearance="outline" style="border-width:2px;">
                         <mat-label>First Name:</mat-label>
                         <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
                     </mat-form-field>
-
-                    <mat-form-field appearance="outline" style="border-width:2px; margin-left:10px">
+                    <br />
+                    <mat-form-field appearance="outline" style="border-width:2px;">
                         <mat-label>Last Name:</mat-label>
                         <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
                     </mat-form-field>
                     <br />
-                    <mat-form-field appearance="outline" style="border-width:2px;">
-                        <mat-label>Male or Female:</mat-label>
-                        <input matInput placeholder="Is Player Male or Female" formControlName="isMale" value="{{addedPlayer?.isMale}}" type="text" required />
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline" style="border-width:2px; margin-left:10px">
-                        <mat-label>League Name</mat-label>
-                        <input matInput placeholder="League name?" formControlName="leagueName" value="{{leagueName}}" type="text" required />
-                    </mat-form-field>
                     <br />
                     <button mat-raised-button color="primary">Submit</button><br /><br />
-                    <br />
-                    <br />
-                    <br />
+
                 </form>
+
+
             </div>
         </div>
 

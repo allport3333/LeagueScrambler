@@ -7,6 +7,7 @@ import { FormGroup, FormControl } from '@angular/forms';
 import { forEach } from '@angular/router/src/utils/collection';
 import { Team } from '../data-models/teams.model';
 import { Leagues } from '../data-models/leagues.model';
+import { Gender } from '../data-models/gender.model';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html'
@@ -43,6 +44,8 @@ export class ScramblerComponent implements OnInit {
     queriedPlayers: Player[];
     leaguesAvailable: Leagues[];
     selectedLeague: string;
+    gendersPossible: Gender[] = [{ value: 'Female', isMale: false }, { value: 'Male', isMale: true }];
+    selectedGender: Gender;
 
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService) {
 
@@ -63,6 +66,10 @@ export class ScramblerComponent implements OnInit {
                 }
             }
         });
+    }
+
+    selectGender(gender) {
+        this.selectedGender = gender;
     }
 
     ngOnInit() {
@@ -122,26 +129,41 @@ export class ScramblerComponent implements OnInit {
     }
 
     onSubmitClick() {
-
-        if (this.PlayerForm.controls["isMale"].value == "Female") {
-            this.isMale1 = false;
+        if (this.PlayerForm.controls["firstName"].value == "" || this.PlayerForm.controls["lastName"].value == "" || this.selectedGender == null) {
+            alert("Please ensure that both first and last name fields are filled in as well as the gender field.")
         }
-        else if (this.PlayerForm.controls["isMale"].value == "Male") {
-            this.isMale1 = true;
+        else {
+            let newplayer: Player = {
+
+                firstName: this.PlayerForm.controls["firstName"].value,
+                lastName: this.PlayerForm.controls["lastName"].value,
+                gender: this.selectedGender.value,
+                isMale: this.selectedGender.isMale
+            };
+
+            if (this.selectedLeague != null) {
+                this.playerService.AddPlayer(newplayer, this.selectedLeague).subscribe(result => {
+                    this.player = result;
+                    this.playerService.SelectLeague(this.selectedLeague).subscribe(result => {
+                        this.queriedPlayers = result;
+                        this.malePlayers1 = [];
+                        this.femalePlayers1 = [];
+                        for (let player of this.queriedPlayers) {
+
+                            if (player.isMale) {
+                                this.malePlayers1.push(player);
+                            }
+                            else {
+                                this.femalePlayers1.push(player);
+                            }
+                        }
+                    });
+                }, error => console.error(error));
+            }
+            else {
+                alert("Please Select A League From The Dropdown");
+            }
         }
-        let newplayer: Player = {
-
-            firstName: this.PlayerForm.controls["firstName"].value,
-            lastName: this.PlayerForm.controls["lastName"].value,
-            gender: this.PlayerForm.controls["isMale"].value,
-            isMale: this.isMale1
-        };
-
-
-        this.playerService.AddPlayer(newplayer, this.PlayerForm.controls["leagueName"].value).subscribe(result => {
-            this.player = result;
-            this.players.push(newplayer);
-        }, error => console.error(error));
     }
 
     femaleScramble(bracketTeamPlayers) {
