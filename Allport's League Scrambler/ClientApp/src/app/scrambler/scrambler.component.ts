@@ -69,7 +69,7 @@ export class ScramblerComponent implements OnInit {
     }
 
     selectGender(gender) {
-        this.selectedGender = gender;
+
     }
 
     ngOnInit() {

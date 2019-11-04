@@ -15,8 +15,16 @@ namespace Allport_s_League_Scrambler.Data
         
         public static void CreateConnection()
         {
-    
-            string ConnStr = "Data Source = (localdb)\\LeagueDB; Initial Catalog = League; Integrated Security = True";
+            //SqlConnection conn = new SqlConnection();
+            //conn.ConnectionString =
+            //"Data Source==LeagueScrambler.mssql.somee.com;" +
+            //"Initial Catalog=LeagueScrambler;" +
+            //"User id=allport;" +
+            //"Password=Sephiroth3;";
+            //workstation id = LeagueScrambler.mssql.somee.com;
+            //conn.Open();
+
+            string ConnStr = "";// "workstation id=LeagueScrambler.mssql.somee.com;packet size=4096;user id=allport;pwd=Sephiroth3;data source=LeagueScrambler.mssql.somee.com;persist security info=False;initial catalog=LeagueScrambler";//"Data Source = (localdb)\\LeagueDB; Initial Catalog = League; Integrated Security = True";
 
 
             string provider = ConfigurationManager.AppSettings["provider"];
@@ -25,7 +33,7 @@ namespace Allport_s_League_Scrambler.Data
             DbProviderFactory factory = DbProviderFactories.GetFactory(provider);
             using (DbConnection connection = factory.CreateConnection())
             {
-                if(connection == null)
+                if (connection == null)
                 {
                     Console.WriteLine("connection error");
                     Console.ReadLine();
@@ -34,7 +42,7 @@ namespace Allport_s_League_Scrambler.Data
                 connection.ConnectionString = ConnStr;
                 connection.Open();
                 DbCommand command = factory.CreateCommand();
-                if(command == null)
+                if (command == null)
                 {
                     Console.WriteLine("connection error");
                     Console.ReadLine();

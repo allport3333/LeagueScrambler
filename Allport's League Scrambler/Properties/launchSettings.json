@@ -2,8 +2,12 @@
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
+    "iis": {
+      "applicationUrl": "http://localhost/Allport's League Scrambler",
+      "sslPort": 0
+    },
     "iisExpress": {
-      "applicationUrl": "http://localhost:9220/",
+      "applicationUrl": "http://localhost:58031/",
       "sslPort": 0
     }
   },
@@ -21,7 +25,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "http://localhost:9223/"
+      "applicationUrl": "http://leaguescrambler.somee.com/"
     }
   }
 }

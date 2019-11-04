@@ -19,7 +19,7 @@ namespace Allport_s_League_Scrambler.Data
             if (!optionsBuilder.IsConfigured)
             {
 
-                optionsBuilder.UseSqlServer(@"Server=(localdb)\LeagueDB; Initial Catalog = League; Integrated Security = True");
+                optionsBuilder.UseSqlServer(@"workstation id=LeagueScrambler.mssql.somee.com;packet size=4096;user id=allport;pwd=Sephiroth3;data source=LeagueScrambler.mssql.somee.com;persist security info=False;initial catalog=LeagueScrambler");
             }
         }
 

@@ -28,7 +28,7 @@
 
                 <mat-form-field>
                     <mat-label>Gender</mat-label>
-                    <mat-select [(ngModel)]="selectedGender" [(value)]="gender" (selectionChange)="selectGender(gender)">
+                    <mat-select [(ngModel)]="selectedGender" >
                         <mat-option *ngFor="let gender of gendersPossible" [value]="gender">
                             {{gender.value}}
                         </mat-option>
@@ -64,7 +64,7 @@
                         <div>
                             <mat-list-option class="row" *ngFor="let player1 of malePlayers1" [value]="player1">
                                 <div>
-                                    {{player1.firstName}}  {{player1.lastName}}
+                                    {{player1.lastName}}, {{player1.firstName}}
                                 </div>
                             </mat-list-option>
                         </div>
@@ -74,7 +74,7 @@
                     <div class="ml-3">
                         <p>The Number of Female Players - {{femalePlayerCount}}</p>
                         <mat-list-option *ngFor="let player1 of femalePlayers1" [value]="player1">
-                            {{player1.firstName}}  {{player1.lastName}}
+                            {{player1.lastName}}, {{player1.firstName}}
                         </mat-list-option>
                     </div>
 
