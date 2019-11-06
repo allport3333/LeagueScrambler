@@ -46,16 +46,18 @@ export class ScramblerComponent implements OnInit {
     selectedLeague: string;
     gendersPossible: Gender[] = [{ value: 'Female', isMale: false }, { value: 'Male', isMale: true }];
     selectedGender: Gender;
+    teamSizePossible: number[] = [2, 3, 4];
+    teamSize: number;
 
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService) {
-
+        this.teamSize = 4;
     }
 
     selectLeague() {
         this.playerService.SelectLeague(this.selectedLeague).subscribe(result => {
             this.queriedPlayers = result;
             this.malePlayers1 = [];
-            this.femalePlayers1 = []; 
+            this.femalePlayers1 = [];
             for (let player of this.queriedPlayers) {
 
                 if (player.isMale) {
@@ -191,13 +193,35 @@ export class ScramblerComponent implements OnInit {
         }
         this.malePlayerCount = this.malePlayers.length;
         this.femalePlayerCount = this.femalePlayers.length;
-        if ((this.selectedList.length / 8) % 1 == 0) {
-            this.teamCount = (Math.floor(this.selectedList.length / 8) * 2);
+        if (this.teamSize == 4) {
+            if ((this.selectedList.length / 8) % 1 == 0) {
+                this.teamCount = (Math.floor(this.selectedList.length / 8) * 2);
+            }
+            else {
+
+                this.teamCount = (Math.floor(this.selectedList.length / 8) * 2) + 2;
+
+            }
         }
-        else {
+        else if (this.teamSize == 3) {
+            if ((this.selectedList.length / 6) % 1 == 0) {
+                this.teamCount = (Math.floor(this.selectedList.length / 6) * 2);
+            }
+            else {
 
-            this.teamCount = (Math.floor(this.selectedList.length / 8) * 2) + 2;
+                this.teamCount = (Math.floor(this.selectedList.length / 6) * 2) + 2;
 
+            }
+        }
+        else if (this.teamSize == 2) {
+            if ((this.selectedList.length / 4) % 1 == 0) {
+                this.teamCount = (Math.floor(this.selectedList.length / 4) * 2);
+            }
+            else {
+
+                this.teamCount = (Math.floor(this.selectedList.length / 4) * 2) + 2;
+
+            }
         }
         for (var i = 0; i < this.teamCount; i++) {
             let team = {
@@ -247,4 +271,3 @@ export class ScramblerComponent implements OnInit {
     }
 }
 
-       

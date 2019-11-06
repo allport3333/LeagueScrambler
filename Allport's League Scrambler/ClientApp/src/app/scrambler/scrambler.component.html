@@ -85,6 +85,15 @@
         <div class="col-2">
             <h4>Scramble Options</h4>
             <br />
+            <mat-form-field>
+                <mat-label>Team Size</mat-label>
+                <mat-select [(ngModel)]="teamSize">
+                    <mat-option *ngFor="let team of teamSizePossible" [value]="team">
+                        {{team}}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+            <br />
             <button (click)="scramblePlayers()" mat-raised-button color="primary">Scramble Players</button>
             <br />
             <br />
