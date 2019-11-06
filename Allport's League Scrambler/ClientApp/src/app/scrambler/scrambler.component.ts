@@ -46,8 +46,8 @@ export class ScramblerComponent implements OnInit {
     selectedLeague: string;
     gendersPossible: Gender[] = [{ value: 'Female', isMale: false }, { value: 'Male', isMale: true }];
     selectedGender: Gender;
-    teamSizePossible: number[] = [2, 3, 4];
-    teamSize: number;
+    teamSizePossible: number[] = [0, 2, 3, 4];
+    teamSize: number;    
 
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService) {
         this.teamSize = 4;
@@ -193,6 +193,9 @@ export class ScramblerComponent implements OnInit {
         }
         this.malePlayerCount = this.malePlayers.length;
         this.femalePlayerCount = this.femalePlayers.length;
+        if (this.teamSize == 0) {
+
+        }
         if (this.teamSize == 4) {
             if ((this.selectedList.length / 8) % 1 == 0) {
                 this.teamCount = (Math.floor(this.selectedList.length / 8) * 2);

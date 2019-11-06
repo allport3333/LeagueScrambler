@@ -86,7 +86,7 @@
             <h4>Scramble Options</h4>
             <br />
             <mat-form-field>
-                <mat-label>Team Size</mat-label>
+                <mat-label>Max Team Size</mat-label>
                 <mat-select [(ngModel)]="teamSize">
                     <mat-option *ngFor="let team of teamSizePossible" [value]="team">
                         {{team}}
@@ -188,10 +188,12 @@
     </div>
 </div>-->
 <div class="row mh-100">
-    <ng-container *ngFor="let team of listOfTeams; let i=index;">
+    <ng-container *ngFor="let team of listOfTeams; let i=index; ">
         <div *ngIf="(i+1)%2 == 0" class="col-1">
 
-            <h3 style="margin-top:125px; margin-left: 25px">vs</h3>
+            <h3 style="margin-top:80px; margin-left: 0px; text-align:center">Court<br /><input style="max-width:20px;" type="text" /> <br />vs </h3>
+            
+
         </div>
         <div class="row col-5">
             <table class="table ">
@@ -213,8 +215,6 @@
             </table>
 
         </div>
-
-        <!--<h2 *ngIf="i%2==0" class="col-1">VS</h2>-->
 
     </ng-container>
 
