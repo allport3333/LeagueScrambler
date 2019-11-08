@@ -40,13 +40,14 @@ export class ScramblerComponent implements OnInit {
     addedPlayer: Player;
     isMale1: boolean;
     leagueName: string;
+    hideListOptions: boolean;
     hideInputOptions: boolean;
     queriedPlayers: Player[];
     leaguesAvailable: Leagues[];
     selectedLeague: string;
     gendersPossible: Gender[] = [{ value: 'Female', isMale: false }, { value: 'Male', isMale: true }];
     selectedGender: Gender;
-    teamSizePossible: number[] = [0, 2, 3, 4];
+    teamSizePossible: number[] = [2, 3, 4];
     teamSize: number;    
 
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService) {
@@ -75,6 +76,8 @@ export class ScramblerComponent implements OnInit {
     }
 
     ngOnInit() {
+        this.hideInputOptions = false;
+        this.hideListOptions = false;
         this.playerService.GetAllMalePlayers().subscribe(result => {
             this.malePlayers1 = result;
             this.malePlayerCount = result.length;
@@ -113,11 +116,18 @@ export class ScramblerComponent implements OnInit {
 
     hideOptions() {
         this.hideInputOptions = !this.hideInputOptions;
+        this.hideListOptions = !this.hideListOptions;
         var x = document.getElementById("hideInputOptions");
         if (x.style.display === "none") {
             x.style.display = "block";
         } else {
             x.style.display = "none";
+        }
+        var y = document.getElementById("hideListOptions");
+        if (y.style.display === "none") {
+            y.style.display = "block";
+        } else {
+            y.style.display = "none";
         }
     }
 
@@ -193,9 +203,7 @@ export class ScramblerComponent implements OnInit {
         }
         this.malePlayerCount = this.malePlayers.length;
         this.femalePlayerCount = this.femalePlayers.length;
-        if (this.teamSize == 0) {
 
-        }
         if (this.teamSize == 4) {
             if ((this.selectedList.length / 8) % 1 == 0) {
                 this.teamCount = (Math.floor(this.selectedList.length / 8) * 2);
@@ -270,6 +278,9 @@ export class ScramblerComponent implements OnInit {
             }
             this.femaleScramble(bestTeam.players);
 
+        }
+        if (this.hideInputOptions == false) {
+            this.hideOptions();
         }
     }
 }
