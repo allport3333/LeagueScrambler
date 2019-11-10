@@ -66,6 +66,8 @@
                         </mat-option>
                     </mat-select>
                 </mat-form-field>
+
+                <mat-checkbox [(ngModel)]="completeRandom" aria-label="check box 1"> Complete Random?</mat-checkbox>
                 <br />
                 <button (click)="scramblePlayers()" mat-raised-button color="primary">Scramble Players</button>
                 <br />
