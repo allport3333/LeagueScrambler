@@ -49,6 +49,7 @@ export class ScramblerComponent implements OnInit {
     selectedGender: Gender;
     teamSizePossible: number[] = [2, 3, 4];
     teamSize: number;    
+    deepcCopyPlayersSelected: Player[];
 
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService) {
         this.teamSize = 4;
@@ -145,7 +146,7 @@ export class ScramblerComponent implements OnInit {
             alert("Please ensure that both first and last name fields are filled in as well as the gender field.")
         }
         else {
-            let newplayer: Player = {
+            let newPlayer: Player = {
 
                 firstName: this.PlayerForm.controls["firstName"].value,
                 lastName: this.PlayerForm.controls["lastName"].value,
@@ -154,22 +155,19 @@ export class ScramblerComponent implements OnInit {
             };
 
             if (this.selectedLeague != null) {
-                this.playerService.AddPlayer(newplayer, this.selectedLeague).subscribe(result => {
+                this.playerService.AddPlayer(newPlayer, this.selectedLeague).subscribe(result => {
                     this.player = result;
-                    this.playerService.SelectLeague(this.selectedLeague).subscribe(result => {
-                        this.queriedPlayers = result;
-                        this.malePlayers1 = [];
-                        this.femalePlayers1 = [];
-                        for (let player of this.queriedPlayers) {
 
-                            if (player.isMale) {
-                                this.malePlayers1.push(player);
-                            }
-                            else {
-                                this.femalePlayers1.push(player);
-                            }
-                        }
-                    });
+
+                    if (newPlayer.isMale == true) {
+                        this.malePlayers1.push(newPlayer);
+                        this.malePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
+                    }
+                    else {
+                        this.femalePlayers1.push(newPlayer);
+                        this.femalePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
+                    }
+
                 }, error => console.error(error));
             }
             else {
