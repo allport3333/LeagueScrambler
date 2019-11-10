@@ -19,6 +19,9 @@
             <div *ngIf="hideInputOptions">
                 <button (click)="hideOptions()" mat-raised-button color="primary">Show Options</button>
                 <button (click)="scramblePlayers()" style="margin-top:10px" mat-raised-button color="primary">Scramble Players</button>
+                <div class="mt-2">
+                    <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
+                </div>
             </div>
 
         </mat-card>
@@ -67,7 +70,7 @@
                     </mat-select>
                 </mat-form-field>
 
-                <mat-checkbox [(ngModel)]="completeRandom" aria-label="check box 1"> Complete Random?</mat-checkbox>
+                <mat-checkbox [(ngModel)]="completeRandom" aria-label="check box 1"> Completely Random?</mat-checkbox>
                 <br />
                 <button (click)="scramblePlayers()" mat-raised-button color="primary">Scramble Players</button>
                 <br />
