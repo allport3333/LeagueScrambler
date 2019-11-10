@@ -124,27 +124,36 @@
         <ng-container *ngFor="let team of listOfTeams; let i=index; ">
 
             <div style="margin-left:-50px" *ngIf="(i+1)%2 == 0">
-
-                <h4 style=" margin-left: -75px; text-align:center">Court<br /><input style="max-width:30px; text-align:center; z-index:9999; position:relative; float:initial" type="text" /></h4> <h4 style="margin-top:30px; margin-left:-75px; text-align:center">vs </h4>
+                <div style="text-align:center; float:none; margin-left:-10px; margin-right:auto;" class="offset-4">
+                    <h4>
+                        Court
+                        <br />
+                    </h4>
+                </div>
+                
+                <input style="max-width:30px; text-align:center; z-index:9999; position:relative; float:none; margin-left:6px; margin-right:auto;" type="text" />
+                <h4 style="margin-top:40px; text-align:center; float:none; margin-left:-10px; margin-right:auto;">
+                    vs
+                </h4>
 
 
             </div>
             <div class="row col-3">
                 <table class="table ">
                     <thead>
-                        <h2 style="margin-left:60px"> {{"Team " + (i + 1)}}</h2>
+                        <h2 style="text-align:center; float:none; margin-left:-50px; margin-right:auto;" > {{"Team " + (i + 1)}}</h2>
                         <tr class="d-flex">
-                            <th class="col-4">Last Name</th>
-                            <th class="col-4">First Name</th>
+                            <th class="col-5">Last Name</th>
+                            <th class="col-5">First Name</th>
 
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let player of team.players" class="d-flex">
-                            <td *ngIf="player.isMale == true" style="background-color:lightblue" class="col-4">{{ player.lastName }}</td>
-                            <td *ngIf="player.isMale == true" style="background-color:lightblue" class="col-4">{{ player.firstName }}</td>
-                            <td *ngIf="player.isMale == false" style="background-color:pink" class="col-4">{{ player.lastName }}</td>
-                            <td *ngIf="player.isMale == false" style="background-color:pink" class="col-4">{{ player.firstName }}</td>
+                            <td *ngIf="player.isMale == true" style="background-color:lightblue" class="col-5">{{ player.lastName }}</td>
+                            <td *ngIf="player.isMale == true" style="background-color:lightblue" class="col-5">{{ player.firstName }}</td>
+                            <td *ngIf="player.isMale == false" style="background-color:pink" class="col-5">{{ player.lastName }}</td>
+                            <td *ngIf="player.isMale == false" style="background-color:pink" class="col-5">{{ player.firstName }}</td>
                         </tr>
                     </tbody>
 
