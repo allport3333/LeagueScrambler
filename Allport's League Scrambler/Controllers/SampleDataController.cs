@@ -12,7 +12,16 @@ namespace Allport_s_League_Scrambler.Controllers
     [Route("api/[controller]")]
     public class SampleDataController : Controller
     {
+        [HttpGet("[action]")]
+        public Password GetPassword()
+        {
+            Password password = new Password();
+            var context = new DataContext();
+            password = context.Passwords.FirstOrDefault();
 
+
+            return password;
+        }
 
         [HttpGet("[action]")]
         public IEnumerable<Player> GetPlayers()

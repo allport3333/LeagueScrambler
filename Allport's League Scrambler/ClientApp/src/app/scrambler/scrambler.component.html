@@ -18,7 +18,7 @@
             <button (click)="hideOptions()" *ngIf="!hideInputOptions" mat-raised-button color="primary">Hide Options</button>
             <div *ngIf="hideInputOptions">
                 <button (click)="hideOptions()" mat-raised-button color="primary">Show Options</button>
-                <button (click)="scramblePlayers()" style="margin-top:10px" mat-raised-button color="primary">Scramble Players</button>
+                <button (click)="scramblePlayers()" style="margin-top:10px" mat-raised-button color="primary" *ngIf="!lockedResults">Scramble Players</button>
                 <div class="mt-2">
                     <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
                 </div>
@@ -53,7 +53,10 @@
                         <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
                     </mat-form-field>
                     <br />
-
+                    <mat-form-field>
+                        <mat-label>Password</mat-label>
+                        <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
+                    </mat-form-field>
                     <button mat-raised-button color="primary">Submit</button><br /><br />
 
                 </form>
@@ -70,7 +73,8 @@
                     </mat-select>
                 </mat-form-field>
 
-                <mat-checkbox [(ngModel)]="completeRandom" aria-label="check box 1"> Completely Random?</mat-checkbox>
+                <mat-checkbox [(ngModel)]="completeRandom" aria-label="check box 1"> Completely Random</mat-checkbox>
+                <mat-checkbox [(ngModel)]="lockedResults" aria-label="check box 2"> Lock Results</mat-checkbox>
                 <br />
                 <button (click)="scramblePlayers()" mat-raised-button color="primary">Scramble Players</button>
                 <br />
