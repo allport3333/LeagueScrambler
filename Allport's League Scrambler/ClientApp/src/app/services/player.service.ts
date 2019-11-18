@@ -46,6 +46,10 @@ export class PlayerService {
         return this.httpClient.post<Player>(this.baseUrl + 'api/SampleData/AddPlayer/' + leagueName, player);
     }
 
+    public AddNewLeague(leagueName: string) {
+        return this.httpClient.post<Leagues>(this.baseUrl + 'api/SampleData/AddNewLeague/' + leagueName, []);
+    }
+
 }
 
 

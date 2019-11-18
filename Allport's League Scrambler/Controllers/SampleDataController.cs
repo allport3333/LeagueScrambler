@@ -194,6 +194,37 @@ namespace Allport_s_League_Scrambler.Controllers
             return player;
 
         }
-       
+
+        [HttpPost("[action]/{leagueName}")]
+        public LeagueType AddNewLeague(string leagueName)
+        {
+            var context = new DataContext();
+            var newLeague = new LeagueType();
+            var leagueExists = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+
+            if (leagueExists == null)
+            {
+                newLeague = new LeagueType()
+                {
+                    LeagueName = leagueName
+                };
+
+
+                    context.Leagues.Add(newLeague);
+                    context.SaveChanges();
+
+                    return newLeague;
+                
+            }
+            else
+            {
+                    return newLeague;
+            }
+            
+
+
+
+        }
+
     }
 }

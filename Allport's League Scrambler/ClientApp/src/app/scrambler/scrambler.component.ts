@@ -38,6 +38,9 @@ export class ScramblerComponent implements OnInit {
         leagueName: new FormControl(),
         password: new FormControl()
     });
+    LeagueForm = new FormGroup({
+        newLeagueName: new FormControl()
+    });
     players: Player[];
     player: Player;
     password: Password;
@@ -47,10 +50,13 @@ export class ScramblerComponent implements OnInit {
     locked: boolean = false;
     isMale1: boolean;
     leagueName: string;
+    containsMale: boolean = false;
+    containsFemale: boolean = false;
     hideListOptions: boolean;
     hideInputOptions: boolean;
     queriedPlayers: Player[];
     leaguesAvailable: Leagues[];
+    containsLeague: boolean = false;
     selectedLeague: string;
     gendersPossible: Gender[] = [{ value: 'Female', isMale: false }, { value: 'Male', isMale: true }];
     selectedGender: Gender;
@@ -65,6 +71,8 @@ export class ScramblerComponent implements OnInit {
     selectLeague() {
         this.playerService.SelectLeague(this.selectedLeague).subscribe(result => {
             this.queriedPlayers = result;
+            this.malePlayerCount = result.length;
+            this.femalePlayerCount = result.length;
             this.malePlayers1 = [];
             this.femalePlayers1 = [];
             for (let player of this.queriedPlayers) {
@@ -76,6 +84,8 @@ export class ScramblerComponent implements OnInit {
                     this.femalePlayers1.push(player);
                 }
             }
+            this.malePlayerCount = this.malePlayers1.length;
+            this.femalePlayerCount = this.femalePlayers1.length;
         });
     }
 
@@ -111,6 +121,31 @@ export class ScramblerComponent implements OnInit {
 
     addPlayer(player) {
         console.log(this.selectedList);
+    }
+
+    addLeague() {
+        this.containsLeague = false;
+        for (var i = 0; i < this.leaguesAvailable.length; i++) {
+            if (this.leaguesAvailable[i].leagueName == this.LeagueForm.controls["newLeagueName"].value) {
+                this.containsLeague = true;
+                break;
+            }
+        }
+        if (this.containsLeague) {
+            alert('League name already exists.')
+        }
+        else {
+            this.playerService.AddNewLeague(this.LeagueForm.controls["newLeagueName"].value).subscribe(result => {
+
+                if (result.leagueName == null) {
+                    alert('Error creating league.')
+                }
+                else {
+                    this.leaguesAvailable.push(result);
+                }
+
+            }, error => console.error(error));
+        }
     }
 
     hidePlayerList() {
@@ -175,18 +210,39 @@ export class ScramblerComponent implements OnInit {
                     if (this.selectedLeague != null) {
                         this.playerService.AddPlayer(newPlayer, this.selectedLeague).subscribe(result => {
                             this.player = result;
-
-
-                            if (newPlayer.isMale == true) {
-                                this.malePlayers1.push(newPlayer);
-                                this.malePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
+                            this.containsFemale = false;
+                            this.containsMale = false;
+                            for (var i = 0; i < this.malePlayers1.length; i++) {
+                                if (this.malePlayers1[i].firstName == result.firstName && this.malePlayers1[i].lastName == result.lastName) {
+                                    this.containsMale = true;
+                                    break;
+                                }
+                            }
+                            for (var i = 0; i < this.femalePlayers1.length; i++) {
+                                if (this.femalePlayers1[i].firstName == result.firstName && this.femalePlayers1[i].lastName == result.lastName) {
+                                    this.containsFemale = true;
+                                    break;
+                                }
+                            }
+                            if (this.containsMale || this.containsFemale) {
+                                alert('Player already in list.');
                             }
                             else {
-                                this.femalePlayers1.push(newPlayer);
-                                this.femalePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
+                                if (newPlayer.isMale == true) {
+                                    this.malePlayers1.push(newPlayer);
+                                    this.malePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
+                                }
+
+                                else {
+                                    this.femalePlayers1.push(newPlayer);
+                                    this.femalePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
+                                }
+                            }
                             }
 
-                        }, error => console.error(error));
+                        
+
+                        , error => console.error(error));
                     }
                     else {
                         alert("Please Select A League From The Dropdown");

@@ -14,21 +14,52 @@
                         </mat-select>
                     </mat-form-field>
                 </div>
-            </div>
-            <button (click)="hideOptions()" *ngIf="!hideInputOptions" mat-raised-button color="primary">Hide Options</button>
-            <div *ngIf="hideInputOptions">
-                <button (click)="hideOptions()" mat-raised-button color="primary">Show Options</button>
-                <button (click)="scramblePlayers()" style="margin-top:10px" mat-raised-button color="primary" *ngIf="!lockedResults">Scramble Players</button>
-                <div class="mt-2">
-                    <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
+            </div>            
+
+                <button (click)="hideOptions()" *ngIf="!hideInputOptions" mat-raised-button color="primary">Hide Options</button>
+                <div *ngIf="hideInputOptions">
+                    <button (click)="hideOptions()" mat-raised-button color="primary">Show Options</button>
+                    <button (click)="scramblePlayers()" style="margin-top:10px" mat-raised-button color="primary" *ngIf="!lockedResults">Scramble Players</button>
+                    <div class="mt-2">
+                        <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
+                    </div>
                 </div>
-            </div>
 
         </mat-card>
         <div id="hideListOptions">
-            <mat-card style="background-color:lightgray;" class="ml-3 mt-2 mr-auto">
 
-                <h4>Enter New Player</h4>
+            <mat-card style="background-color:lightgray" class="ml-3 mt-2 mr-auto">
+                <h4>Scramble Options</h4>
+
+                <mat-form-field>
+                    <mat-label>Max Team Size</mat-label>
+                    <mat-select [(ngModel)]="teamSize">
+                        <mat-option *ngFor="let team of teamSizePossible" [value]="team">
+                            {{team}}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-checkbox [(ngModel)]="completeRandom" aria-label="check box 1"> Completely Random</mat-checkbox>
+                <mat-checkbox [(ngModel)]="lockedResults" aria-label="check box 2"> Lock Results</mat-checkbox>
+                <br />
+                <button style="margin-top:10px" (click)="scramblePlayers()" mat-raised-button color="primary">Scramble Players</button>
+                <br />
+
+                <button style="margin-top:10px" (click)="reset()" mat-raised-button color="primary">Reset</button>
+                <br />
+
+                <button style="margin-top:10px" (click)="hidePlayerList()" *ngIf="!hidePlayers" mat-raised-button color="primary">Hide Player List</button>
+                <button style="margin-top:10px" (click)="hidePlayerList()" *ngIf="hidePlayers" mat-raised-button color="primary">Show Player List</button>
+
+            </mat-card>
+            <mat-expansion-panel style="background-color:lightgray;" class="ml-3 mt-2 mr-auto">
+                <mat-expansion-panel-header>
+                    <mat-panel-title><h4>Add Player</h4></mat-panel-title>
+
+
+                </mat-expansion-panel-header>
+                <h5>Enter New Player</h5>
 
                 <mat-form-field>
                     <mat-label>Gender</mat-label>
@@ -57,43 +88,31 @@
                     <button mat-raised-button color="primary">Submit</button><br /><br />
 
                 </form>
-            </mat-card>
-            <mat-card style="background-color:lightgray" class="ml-3 mt-2 mr-auto">
-                <h4>Scramble Options</h4>
 
-                <mat-form-field>
-                    <mat-label>Max Team Size</mat-label>
-                    <mat-select [(ngModel)]="teamSize">
-                        <mat-option *ngFor="let team of teamSizePossible" [value]="team">
-                            {{team}}
-                        </mat-option>
-                    </mat-select>
-                </mat-form-field>
-
-                <mat-checkbox [(ngModel)]="completeRandom" aria-label="check box 1"> Completely Random</mat-checkbox>
-                <mat-checkbox [(ngModel)]="lockedResults" aria-label="check box 2"> Lock Results</mat-checkbox>
-                <br />
-                <button style="margin-top:10px" (click)="scramblePlayers()" mat-raised-button color="primary">Scramble Players</button>
-                <br />
-
-                <button style="margin-top:10px" (click)="reset()" mat-raised-button color="primary">Reset</button>
-                <br />
-
-                <button style="margin-top:10px" (click)="hidePlayerList()" *ngIf="!hidePlayers" mat-raised-button color="primary">Hide Player List</button>
-                <button style="margin-top:10px" (click)="hidePlayerList()" *ngIf="hidePlayers" mat-raised-button color="primary">Show Player List</button>
+            </mat-expansion-panel>
+            <mat-expansion-panel style="background-color:lightgray;" class="ml-3 mt-2 mr-auto">
+                <mat-expansion-panel-header>
+                    <mat-panel-title>
+                        <h4>Add League</h4>
+                    </mat-panel-title>
 
 
-
-
-
-            </mat-card>
+                </mat-expansion-panel-header>
+                <form [formGroup]="LeagueForm">
+                    <mat-form-field style="max-width:180px" appearance="outline">
+                        <mat-label>New League Name</mat-label>
+                        <input matInput placeholder="League Name" type="text" formControlName="newLeagueName" value="{{newLeagueName}}" required />
+                    </mat-form-field>
+                    <button (click)="addLeague()" mat-raised-button color="primary">Add New League</button>
+                </form>
+            </mat-expansion-panel>
         </div>
     </div>
     <div class="col-8" id="hideInputOptions">
-        <mat-card style="margin-top:20px; margin-bottom:20px; max-width:550px">
+        <mat-card id="playerListHidden" style="margin-top:20px; margin-bottom:20px; max-width:550px">
             <mat-card-title style="color:gray; margin:-10px -10px -5px -10px">Players</mat-card-title>
             <mat-selection-list dense #selected [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
-                <div id="playerListHidden">
+                <div >
                     <div class="row">
                         <div>
                             <p style="margin-top:5px">The Number of Male Players - {{malePlayerCount}}</p>
@@ -119,6 +138,7 @@
                 </div>
             </mat-selection-list>
         </mat-card>
+
     </div>
 
 
