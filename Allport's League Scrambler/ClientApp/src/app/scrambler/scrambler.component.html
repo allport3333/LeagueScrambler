@@ -101,7 +101,7 @@
                 <form [formGroup]="LeagueForm">
                     <mat-form-field style="max-width:180px" appearance="outline">
                         <mat-label>New League Name</mat-label>
-                        <input matInput placeholder="League Name" type="text" formControlName="newLeagueName" value="{{newLeagueName}}" required />
+                        <input matInput placeholder="League Name" type="text" formControlName="newLeagueName"  required />
                     </mat-form-field>
                     <button (click)="addLeague()" mat-raised-button color="primary">Add New League</button>
                 </form>
