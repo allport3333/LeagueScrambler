@@ -43,14 +43,19 @@
                 <mat-checkbox [(ngModel)]="completeRandom" aria-label="check box 1"> Completely Random</mat-checkbox>
                 <mat-checkbox [(ngModel)]="lockedResults" aria-label="check box 2"> Lock Results</mat-checkbox>
                 <br />
+
                 <button style="margin-top:10px" (click)="scramblePlayers()" mat-raised-button color="primary">Scramble Players</button>
                 <br />
 
-                <button style="margin-top:10px" (click)="reset()" mat-raised-button color="primary">Reset</button>
-                <br />
+
 
                 <button style="margin-top:10px" (click)="hidePlayerList()" *ngIf="!hidePlayers" mat-raised-button color="primary">Hide Player List</button>
                 <button style="margin-top:10px" (click)="hidePlayerList()" *ngIf="hidePlayers" mat-raised-button color="primary">Show Player List</button>
+                <br />
+                <button style="margin-top:10px" (click)="addTopPlayers()" mat-raised-button color="primary">Set Top Players</button>
+                <br />
+                <button style="margin-top:10px" (click)="reset()" mat-raised-button color="primary">Reset</button>
+                
 
             </mat-card>
             <mat-expansion-panel style="background-color:lightgray;" class="ml-3 mt-2 mr-auto">
@@ -108,14 +113,14 @@
             </mat-expansion-panel>
         </div>
     </div>
-    <div class="col-8" id="hideInputOptions">
+    <div class="col-4" id="hideInputOptions">
         <mat-card id="playerListHidden" style="margin-top:20px; margin-bottom:20px; max-width:550px">
-            <mat-card-title style="color:gray; margin:-10px -10px -5px -10px">Players</mat-card-title>
+            <mat-card-title style="color:gray; margin:-10px -10px -5px -10px">Players Selected - {{selectedList.length}}</mat-card-title>
             <mat-selection-list dense #selected [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
                 <div >
                     <div class="row">
                         <div>
-                            <p style="margin-top:5px">The Number of Male Players - {{malePlayerCount}}</p>
+                            <p style="margin-top:5px">Total Male Players Selected - {{malePlayersDisplayCount.length}}</p>
 
                             <mat-list-option style="margin-top:-4px" *ngFor="let player1 of malePlayers1" [value]="player1">
 
@@ -127,7 +132,7 @@
                         </div>
                         <mat-divider></mat-divider>
                         <div style="margin-top:5px" class="ml-3">
-                            <p>The Number of Female Players - {{femalePlayerCount}}</p>
+                            <p>Total Female Players Selected - {{femalePlayersDisplayCount.length}}</p>
                             <mat-list-option style="margin-top:-4px" *ngFor="let player1 of femalePlayers1" [value]="player1">
                                 {{player1.lastName}}, {{player1.firstName}}
                             </mat-list-option>
@@ -140,8 +145,33 @@
         </mat-card>
 
     </div>
+    <div class="col-3" *ngIf="displayTopPlayers.length > 0" >
+        <h5 >Top Players </h5>
+        <table style="width:300px" >
 
+            <thead style="display:block">
+                <tr>
+                    <th style="width:143px;">Last Name </th>
+                    <th style="width:150px;">First Name</th>
+                </tr>
+            </thead>
+            <tbody style="display: block; overflow-y: scroll; max-height:150px;">
+                <tr *ngFor="let player of displayTopPlayers">
+                    <td *ngIf="player.isMale == true" style="background-color:lightblue; width:151px;border-bottom:solid 1px black;">{{ player.lastName }}</td>
+                    <td *ngIf="player.isMale == true" style="background-color:lightblue; width:150px; border-bottom:solid 1px black;">{{ player.firstName }}</td>
+                    <td *ngIf="player.isMale == false" style="background-color:pink; width:151px; border-bottom:solid 1px black;">{{ player.lastName }}</td>
+                    <td *ngIf="player.isMale == false" style="background-color:pink; width:150px; border-bottom:solid 1px black;">{{ player.firstName }}</td>
+                </tr>
+            </tbody>
+        </table>
 
+    </div>
+    <div class="col-2"  *ngIf="displayTopPlayers.length > 0">
+        <h5>Required Players</h5>
+        <p>2 player teams - {{numberOfPlayersNeededTwo}}</p>
+        <p>3 player teams - {{numberOfPlayersNeededThree}}</p>
+        <p>4 player teams - {{numberOfPlayersNeededFour}}</p>
+    </div>
     <br />
     <br />
 </div>
