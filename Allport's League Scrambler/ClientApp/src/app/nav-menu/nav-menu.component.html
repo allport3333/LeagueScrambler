@@ -23,6 +23,16 @@
                           <span class='fas fa-database'></span> Players
                       </a>
                   </li>
+                  <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                      <a [routerLink]='["/team-scores"]' class="nav-link" (click)='collapse()'>
+                          <span class='fas fa-database'></span> Team Scores
+                      </a>
+                  </li>
+                  <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                      <a [routerLink]='["/player-scores"]' class="nav-link" (click)='collapse()'>
+                          <span class='fas fa-database'></span> Player Scores
+                      </a>
+                  </li>
               </ul>
           </div>
       </div>

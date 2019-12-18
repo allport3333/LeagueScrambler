@@ -15,6 +15,9 @@ namespace Allport_s_League_Scrambler.Data
         public virtual DbSet<PlayersLeague> PlayersLeagues { get; set; }
         public virtual DbSet<LeagueType> Leagues { get; set; }
         public virtual DbSet<Password> Passwords { get; set; }
+        public virtual DbSet<PlayerScore> PlayerScore { get; set; }
+        public virtual DbSet<Team> Team { get; set; }
+        public virtual DbSet<TeamScore> TeamScore { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -30,6 +33,9 @@ namespace Allport_s_League_Scrambler.Data
             modelBuilder.Entity<PlayersLeague>().ToTable("PlayersLeague");
             modelBuilder.Entity<LeagueType>().ToTable("LeagueType");
             modelBuilder.Entity<Password>().ToTable("Password");
+            modelBuilder.Entity<PlayerScore>().ToTable("PlayerScore");
+            modelBuilder.Entity<Team>().ToTable("Team");
+            modelBuilder.Entity<TeamScore>().ToTable("TeamScore");
         }
 
         }

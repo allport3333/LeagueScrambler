@@ -15,6 +15,8 @@ import {
     MatTabsModule, MatTooltipModule, MatCheckboxModule, MatGridListModule, MatSelectModule, MatListModule, MatFormFieldModule, MatOptionModule, MatAutocompleteModule, MatExpansionModule, MatDialogModule,
     MatStepperModule, MatDatepickerModule, MatNativeDateModule, MatTreeModule
 } from '@angular/material';
+import { TeamScoresComponent } from './team-scores/team-scores.component';
+import { PlayerScoresComponent } from './player-scores/player-scores.component';
 
 @NgModule({
   declarations: [
@@ -23,6 +25,8 @@ import {
     HomeComponent,
     ScramblerComponent,
         FetchDataComponent,
+        TeamScoresComponent,
+        PlayerScoresComponent
 
   ],
   imports: [
@@ -58,7 +62,9 @@ import {
     RouterModule.forRoot([
       { path: '', component: HomeComponent, pathMatch: 'full' },
       { path: 'scrambler', component: ScramblerComponent },
-      { path: 'fetch-data', component: FetchDataComponent },
+        { path: 'fetch-data', component: FetchDataComponent },
+        { path: 'team-scores', component: TeamScoresComponent },
+        { path: 'player-scores', component: PlayerScoresComponent }
     ]),
     BrowserAnimationsModule
   ],

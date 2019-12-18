@@ -1,0 +1,18 @@
+<table class='table'>
+    <thead>
+        <tr>
+            <th>Team Name</th>
+            <th>Total Wins</th>
+            <th>Total Losses</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor="let singleTeam of teams">
+            <td>{{ singleTeam.teamName }}</td>
+            <td>{{ singleTeam.totalWins }}</td>
+            <td>{{ singleTeam.totalLosses }}</td>
+
+        </tr>
+    </tbody>
+</table>

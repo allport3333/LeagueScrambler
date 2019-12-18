@@ -1,0 +1,36 @@
+<div *ngIf="loading">
+    Loading...
+</div>
+<div *ngIf="!loading">
+    <table class='table'>
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+
+            </tr>
+        </thead>
+        <tbody *ngFor="let player of players">
+            <tr>
+                <td>{{ player.firstName }}</td>
+                <td>{{ player.lastName }}</td>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Score</th>
+                            <th>Date</th>
+
+                        </tr>
+                    </thead>
+                    <tbody *ngFor="let score of player.allPlayerScores">
+                        <tr>
+                            <td>{{score.score}}</td>
+                            <td>{{score.date}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+            </tr>
+        </tbody>
+    </table>
+</div>
