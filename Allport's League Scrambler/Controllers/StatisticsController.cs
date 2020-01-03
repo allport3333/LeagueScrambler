@@ -12,15 +12,42 @@ namespace Allport_s_League_Scrambler.Controllers
     [Route("api/[controller]")]
     public class StatisticsController : Controller
     {
-        [HttpGet("[action]/{leagueID}")]
-        public List<Team> GetTeams(int leagueID)
+        [HttpGet("[action]/{leagueName}")]
+        public List<LeagueTeam> GetTeams(string leagueName)
         {
-            List<Team> teams = new List<Team>();
+            List<LeagueTeam> teams = new List<LeagueTeam>();
             var context = new DataContext();
-            teams = context.Team.Where(x => x.LeagueID == leagueID).ToList();
+            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+            try
+            {
+                teams = context.LeagueTeam.Where(x => x.LeagueID == league.ID).ToList();
+            }
+            catch (Exception)
+            {
+
+                return teams;
+            }
+
 
 
             return teams;
+        }
+
+        [HttpPost("[action]")]
+        public TeamScore AddScore([FromBody] TeamScore teamScore)
+        {
+            var context = new DataContext();
+            var newScore = new TeamScore()
+            {
+                Date = teamScore.Date,                
+                Team1ID = teamScore.Team1ID,
+                Team2ID = teamScore.Team2ID,
+                Team1Score = teamScore.Team1Score,
+                Team2Score = teamScore.Team2Score                
+            };
+            context.TeamScore.Add(newScore);
+            context.SaveChanges();
+            return newScore;
         }
 
         [HttpGet("[action]/{leagueID}")]
@@ -58,6 +85,40 @@ namespace Allport_s_League_Scrambler.Controllers
             return playerInformation;
         }
 
+        [HttpPost("[action]")]
+        public LeagueTeam AddTeam([FromBody] NewCreatedTeam newCreatedTeam)
+        {
+            var context = new DataContext();
+            var newTeam = new LeagueTeam();
+            var league = context.Leagues.Where(x => x.LeagueName == newCreatedTeam.LeagueName).FirstOrDefault();
+            var teamExists = context.LeagueTeam.Where(x => x.TeamName == newCreatedTeam.TeamName && x.LeagueID == league.ID).FirstOrDefault();
+
+            if (teamExists == null)
+            {
+                newTeam = new LeagueTeam()
+                {
+                    TeamName = newCreatedTeam.TeamName,
+                    TotalLosses = 0,
+                    TotalWins = 0,
+                    LeagueID = league.ID
+                };
+
+
+                context.LeagueTeam.Add(newTeam);
+                context.SaveChanges();
+
+                return newTeam;
+
+            }
+            else
+            {
+                return newTeam;
+            }
+
+
+
+
+        }
 
     }
 }

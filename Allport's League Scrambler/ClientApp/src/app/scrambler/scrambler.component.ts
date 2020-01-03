@@ -306,15 +306,18 @@ export class ScramblerComponent implements OnInit {
     }
 
     addTopPlayers() {
-        this.totalTopPlayers = new Array();
-        for (let player of this.selectedList) {
-            this.totalTopPlayers.push(player);
-        }
-        this.displayTopPlayers = this.totalTopPlayers;
+        confirm("Are you sure you want to add these players to top players?");
+        if (confirm) {
+            this.totalTopPlayers = new Array();
+            for (let player of this.selectedList) {
+                this.totalTopPlayers.push(player);
+            }
+            this.displayTopPlayers = this.totalTopPlayers;
 
-        this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
-        this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
-        this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
+            this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
+            this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
+            this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
+        }
     }
 
     clearTopPLayers() {

@@ -13,5 +13,6 @@ namespace Allport_s_League_Scrambler.Models
         public int Team1Score { get; set; }
         public int Team2Score { get; set; }
         public DateTime Date { get; set; }
+
     }
 }
