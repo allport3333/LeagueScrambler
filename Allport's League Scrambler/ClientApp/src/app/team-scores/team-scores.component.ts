@@ -15,7 +15,7 @@ import { Password } from '../data-models/password.model';
     templateUrl: './team-scores.component.html',
     styleUrls: ['./team-scores.component.less']
 })
-export class TeamScoresComponent implements OnInit{
+export class TeamScoresComponent implements OnInit {
     teams: LeagueTeams[];
     team: LeagueTeams;
     loading: boolean;
@@ -40,7 +40,7 @@ export class TeamScoresComponent implements OnInit{
     teamName: string;
     password: Password;
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, public statisticsService: StatisticsService) {
-        
+
     }
 
     ngOnInit() {
@@ -76,11 +76,14 @@ export class TeamScoresComponent implements OnInit{
                     if (this.selectedLeague != null) {
                         this.statisticsService.AddScore(newScore).subscribe(result => {
                             var temp = result;
-                            this.statisticsService.GetTeams(this.selectedLeague).subscribe(result => {
-                                this.teams = result;
-                            }, error => console.error(error));
-                        }
-                            , error => console.error(error));
+                            this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe(result => {
+
+                                this.statisticsService.GetTeams(this.selectedLeague).subscribe(result => {
+                                    this.teams = result;
+                                }, error => console.error(error));
+                            }
+                                , error => console.error(error));
+                        });
                     }
                     else {
                         alert("Please Select A League From The Dropdown");
@@ -92,7 +95,7 @@ export class TeamScoresComponent implements OnInit{
 
     addTeam() {
         this.containsTeam = false;
-        this.playerService.GetPassword().subscribe(result => { 
+        this.playerService.GetPassword().subscribe(result => {
             this.password = result;
             if (this.NewTeamForm.controls["password"].value == "" || this.NewTeamForm.controls["password"].value != this.password.password) {
                 alert("Password is not correct.")
@@ -106,8 +109,12 @@ export class TeamScoresComponent implements OnInit{
 
                 this.statisticsService.AddTeam(newTeam).subscribe(result => {
 
-                    if (result.id == null) {
-                        alert('Error creating team.')
+                    if (result.id == 0) {
+                        alert('Error creating team. Make sure a league is selected.');
+                    }
+                    else {
+                        alert(newTeam.teamName + ' successfully created for league ' + newTeam.leagueName + '.');
+                        this.getTeams();
                     }
 
                 }, error => console.error(error));

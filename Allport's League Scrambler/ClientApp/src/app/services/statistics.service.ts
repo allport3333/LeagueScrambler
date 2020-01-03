@@ -31,6 +31,10 @@ export class StatisticsService {
         return this.httpClient.get<LeagueTeams[]>(this.baseUrl + 'api/Statistics/GetTeams/' + leagueName);
     }
 
+    public UpdateTeamScores(leagueName: string) {
+        return this.httpClient.get<LeagueTeams[]>(this.baseUrl + 'api/Statistics/UpdateTeamScores/' + leagueName);
+    }
+
     public AddTeam(team: NewCreatedTeam) {
         return this.httpClient.post<LeagueTeams>(this.baseUrl + 'api/Statistics/AddTeam/', team);
     }

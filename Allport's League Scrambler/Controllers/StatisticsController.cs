@@ -39,15 +39,53 @@ namespace Allport_s_League_Scrambler.Controllers
             var context = new DataContext();
             var newScore = new TeamScore()
             {
-                Date = teamScore.Date,                
+                Date = teamScore.Date,
                 Team1ID = teamScore.Team1ID,
                 Team2ID = teamScore.Team2ID,
                 Team1Score = teamScore.Team1Score,
-                Team2Score = teamScore.Team2Score                
+                Team2Score = teamScore.Team2Score
             };
             context.TeamScore.Add(newScore);
             context.SaveChanges();
+
             return newScore;
+        }
+
+        [HttpGet("[action]/{leagueName}")]
+        public List<LeagueTeam> UpdateTeamScores(string leagueName)
+        {
+            var context = new DataContext();
+            var teams = new List<LeagueTeam>();
+            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+            teams = context.LeagueTeam.Where(x => x.LeagueID == league.ID).ToList();
+
+            foreach (var team in teams)
+            {
+                var teamScores1 = new List<TeamScore>();
+                teamScores1 = context.TeamScore.Where(x => x.Team1ID == team.Id && x.Team1Score == 15).ToList();
+                var teamScores2 = new List<TeamScore>();
+                teamScores2 = context.TeamScore.Where(x => x.Team2ID == team.Id && x.Team2Score == 15).ToList();
+                var totalWins = teamScores1.Count();
+                totalWins = totalWins + teamScores2.Count(); ;
+
+                var teamScoresLosses1 = new List<TeamScore>();
+                teamScoresLosses1 = context.TeamScore.Where(x => x.Team1ID == team.Id && x.Team1Score != 15).ToList();
+                var teamScoresLosses2 = new List<TeamScore>();
+                teamScoresLosses2 = context.TeamScore.Where(x => x.Team2ID == team.Id && x.Team2Score != 15).ToList();
+                var totalLosses = teamScoresLosses1.Count();
+                totalLosses = totalLosses + teamScoresLosses2.Count();
+
+                var leagueTeam = context.LeagueTeam.Where(x => x.Id == team.Id).FirstOrDefault();
+                leagueTeam.TotalWins = totalWins;
+                leagueTeam.TotalLosses = totalLosses;
+                context.LeagueTeam.Update(leagueTeam);
+                context.SaveChanges();
+            }
+
+            var updatedTeams =  GetTeams(league.LeagueName);
+            
+            context.SaveChanges();
+            return updatedTeams;
         }
 
         [HttpGet("[action]/{leagueID}")]
@@ -90,31 +128,37 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             var context = new DataContext();
             var newTeam = new LeagueTeam();
-            var league = context.Leagues.Where(x => x.LeagueName == newCreatedTeam.LeagueName).FirstOrDefault();
-            var teamExists = context.LeagueTeam.Where(x => x.TeamName == newCreatedTeam.TeamName && x.LeagueID == league.ID).FirstOrDefault();
-
-            if (teamExists == null)
+            if (newCreatedTeam.LeagueName != null)
             {
-                newTeam = new LeagueTeam()
+                var league = context.Leagues.Where(x => x.LeagueName == newCreatedTeam.LeagueName).FirstOrDefault();
+                var teamExists = context.LeagueTeam.Where(x => x.TeamName == newCreatedTeam.TeamName && x.LeagueID == league.ID).FirstOrDefault();
+
+                if (teamExists == null)
                 {
-                    TeamName = newCreatedTeam.TeamName,
-                    TotalLosses = 0,
-                    TotalWins = 0,
-                    LeagueID = league.ID
-                };
+                    newTeam = new LeagueTeam()
+                    {
+                        TeamName = newCreatedTeam.TeamName,
+                        TotalLosses = 0,
+                        TotalWins = 0,
+                        LeagueID = league.ID
+                    };
 
 
-                context.LeagueTeam.Add(newTeam);
-                context.SaveChanges();
+                    context.LeagueTeam.Add(newTeam);
+                    context.SaveChanges();
 
-                return newTeam;
+                    return newTeam;
 
+                }
+                else
+                {
+                    return newTeam;
+                }
             }
             else
             {
                 return newTeam;
             }
-
 
 
 

@@ -7,7 +7,7 @@ Loading...
             <h4>Select League</h4>
             <mat-form-field>
                 <mat-label>League</mat-label>
-                <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" [(value)]="league" (selectionChange)="getTeams(selectedLeague)">
+                <mat-select style="min-width:210px;" [(ngModel)]="selectedLeague" [(value)]="league" (selectionChange)="getTeams(selectedLeague)">
                     <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
                         {{league.leagueName}}
                     </mat-option>
