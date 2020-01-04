@@ -306,8 +306,8 @@ export class ScramblerComponent implements OnInit {
     }
 
     addTopPlayers() {
-        confirm("Are you sure you want to add these players to top players?");
-        if (confirm) {
+        var c = confirm("Are you sure you want to add these players to top players?");
+        if (c) {
             this.totalTopPlayers = new Array();
             for (let player of this.selectedList) {
                 this.totalTopPlayers.push(player);
