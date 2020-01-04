@@ -177,7 +177,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             foreach (var team in teams)
             {
-                List<TeamScore> teamScores = context.TeamScore.Where(x => x.Team1ID == team.Id && x.Date == newDate || x.Team2ID == team.Id && x.Date == newDate).ToList();
+                List<TeamScore> teamScores = context.TeamScore.Where(x => x.Team1ID == team.Id && x.Date == newDate ).ToList();
                 foreach (var teamScoreSingle in teamScores)
                 {
                     LeagueTeamScore leagueTeamScore = new LeagueTeamScore();
