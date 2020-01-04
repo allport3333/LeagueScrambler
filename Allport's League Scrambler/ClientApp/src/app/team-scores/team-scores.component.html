@@ -141,9 +141,9 @@
     <table *ngIf="teamScores != null" class='table' style="max-width:600px;">
         <thead>
             <tr>
-                <th>Team 1 ID</th>
+                <th>Team 1 Name</th>
                 <th>Team 1 Score</th>
-                <th>Team 2 ID</th>
+                <th>Team 2 Name</th>
                 <th>Team 2 Score</th>
                 <th>Date</th>
 
@@ -151,11 +151,11 @@
         </thead>
         <tbody>
             <tr *ngFor="let score of teamScores">
-                <td>{{ score.team1ID }}</td>
+                <td>{{ score.team1Name }}</td>
                 <td>{{ score.team1Score }}</td>
-                <td>{{ score.team2ID }}</td>
+                <td>{{ score.team2Name }}</td>
                 <td>{{ score.team2Score }}</td>
-                <td>{{ score.date }}</td>
+                <td>{{ score.date | date }}</td>
 
             </tr>
         </tbody>

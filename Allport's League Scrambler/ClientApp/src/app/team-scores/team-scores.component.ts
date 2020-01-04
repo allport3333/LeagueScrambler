@@ -11,6 +11,7 @@ import { LeagueTeams } from '../data-models/leagueTeams.model';
 import { TeamScores } from '../data-models/teamScores.model';
 import { Password } from '../data-models/password.model';
 import { MatInput } from '@angular/material';
+import { LeagueTeamScores } from '../data-models/leagueTeamScores.model';
 @Component({
     selector: 'app-team-scores',
     templateUrl: './team-scores.component.html',
@@ -27,7 +28,7 @@ export class TeamScoresComponent implements OnInit {
     containsTeam: boolean;
     selectedTeam2: LeagueTeams;
     gameDate: Date;
-    teamScores: TeamScores[];
+    teamScores: LeagueTeamScores[];
     newTeam: NewCreatedTeam;
     TeamScoresForm = new FormGroup({
         team1Score: new FormControl(),

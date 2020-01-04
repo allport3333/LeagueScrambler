@@ -163,28 +163,47 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpGet("[action]/{date}/{leagueName}")]
-        public List<TeamScore> GetTeamScores(string date, string leagueName)
+        public List<LeagueTeamScore> GetTeamScores(string date, string leagueName)
         {
             var context = new DataContext();
             var teams = new List<LeagueTeam>();
-            List<TeamScore> leagueTeamScores = new List<TeamScore>();
+            //List<TeamScore> leagueTeamScores = new List<TeamScore>();
             List<LeagueTeam> leagueTeams = new List<LeagueTeam>();
             var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
             leagueTeams = context.LeagueTeam.Where(x => x.LeagueID == league.ID).ToList();
             teams = context.LeagueTeam.Where(x => x.LeagueID == league.ID).ToList();
             var newDate = DateTime.Parse(date);
+            List<LeagueTeamScore> leagueTeamScores1 = new List<LeagueTeamScore>();
 
             foreach (var team in teams)
             {
                 List<TeamScore> teamScores = context.TeamScore.Where(x => x.Team1ID == team.Id && x.Date == newDate || x.Team2ID == team.Id && x.Date == newDate).ToList();
                 foreach (var teamScoreSingle in teamScores)
                 {
-                    leagueTeamScores.Add(teamScoreSingle);
+                    LeagueTeamScore leagueTeamScore = new LeagueTeamScore();
+                    leagueTeamScore.Team1ID = teamScoreSingle.Team1ID;
+                    leagueTeamScore.Team2ID = teamScoreSingle.Team2ID;
+                    leagueTeamScore.Team1Score = teamScoreSingle.Team1Score;
+                    leagueTeamScore.Team2Score = teamScoreSingle.Team2Score;
+                    leagueTeamScore.Id = teamScoreSingle.Id;
+                    leagueTeamScore.Date = teamScoreSingle.Date;
+                    foreach (var leagueTeam in leagueTeams)
+                    {
+                        if (leagueTeam.Id == teamScoreSingle.Team1ID)
+                        {
+                            leagueTeamScore.Team1Name = leagueTeam.TeamName;
+                        }
+                        if (leagueTeam.Id == teamScoreSingle.Team2ID)
+                        {
+                            leagueTeamScore.Team2Name = leagueTeam.TeamName;
+                        }
+                    }
+                    leagueTeamScores1.Add(leagueTeamScore);
                 }
                 
             }            
             
-            return leagueTeamScores;
+            return leagueTeamScores1.OrderBy(x => x.Team1Name).ToList();
         }
     }
 }

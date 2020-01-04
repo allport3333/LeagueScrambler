@@ -10,6 +10,7 @@ import { Password } from '../data-models/password.model';
 import { PlayerInformation } from '../data-models/playerInformation';
 import { LeagueTeams } from '../data-models/leagueTeams.model';
 import { NewCreatedTeam } from '../data-models/newCreatedTeam.model';
+import { LeagueTeamScores } from '../data-models/leagueTeamScores.model';
 
 @Injectable({
     providedIn: 'root'
@@ -32,7 +33,7 @@ export class StatisticsService {
     }
 
     public GetTeamScores(date: Date, leagueName: string) {
-        return this.httpClient.get<TeamScores[]>(this.baseUrl + 'api/Statistics/GetTeamScores/' + date.toUTCString() + '/' + leagueName);
+        return this.httpClient.get<LeagueTeamScores[]>(this.baseUrl + 'api/Statistics/GetTeamScores/' + date.toUTCString() + '/' + leagueName);
     }
 
     public UpdateTeamScores(leagueName: string) {
