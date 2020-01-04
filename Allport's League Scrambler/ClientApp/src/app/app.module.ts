@@ -37,8 +37,7 @@ import { PlayerScoresComponent } from './player-scores/player-scores.component';
       MatCardModule,
       MatButtonModule,
       MatMenuModule,
-      MatToolbarModule,
-
+      MatToolbarModule,      
       MatIconModule,
       MatTableModule,
       MatPaginatorModule,

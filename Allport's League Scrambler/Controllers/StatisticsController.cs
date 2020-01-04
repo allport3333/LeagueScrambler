@@ -160,9 +160,31 @@ namespace Allport_s_League_Scrambler.Controllers
                 return newTeam;
             }
 
-
-
         }
 
+        [HttpGet("[action]/{date}/{leagueName}")]
+        public List<TeamScore> GetTeamScores(string date, string leagueName)
+        {
+            var context = new DataContext();
+            var teams = new List<LeagueTeam>();
+            List<TeamScore> leagueTeamScores = new List<TeamScore>();
+            List<LeagueTeam> leagueTeams = new List<LeagueTeam>();
+            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+            leagueTeams = context.LeagueTeam.Where(x => x.LeagueID == league.ID).ToList();
+            teams = context.LeagueTeam.Where(x => x.LeagueID == league.ID).ToList();
+            var newDate = DateTime.Parse(date);
+
+            foreach (var team in teams)
+            {
+                List<TeamScore> teamScores = context.TeamScore.Where(x => x.Team1ID == team.Id && x.Date == newDate || x.Team2ID == team.Id && x.Date == newDate).ToList();
+                foreach (var teamScoreSingle in teamScores)
+                {
+                    leagueTeamScores.Add(teamScoreSingle);
+                }
+                
+            }            
+            
+            return leagueTeamScores;
+        }
     }
 }

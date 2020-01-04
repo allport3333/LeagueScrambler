@@ -1,7 +1,7 @@
 <div *ngIf="loading">
-Loading...
+    Loading...
 </div>
-    <div *ngIf="!loading">
+<div *ngIf="!loading">
     <div style="align-self:center;">
         <div *ngIf="!hideInputOptions">
             <h4>Select League</h4>
@@ -85,6 +85,7 @@ Loading...
                             <mat-label>Date</mat-label>
                             <input matInput placeholder="Date" type="datetime" formControlName="date" value="{{teamScores?.date}}" required />
                         </mat-form-field>
+                        <button mat-raised-button color="primary">Submit</button><br /><br />
                     </div>
                     <div class="col-5">
                         <mat-form-field style="max-width:180px" appearance="outline">
@@ -95,11 +96,11 @@ Loading...
                             <mat-label>Password</mat-label>
                             <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
                         </mat-form-field>
-
                     </div>
                 </div>
-                <button mat-raised-button color="primary">Submit</button><br /><br />
+
             </form>
+            <button (click)="updateScores()" mat-raised-button color="primary">Update Scores</button>
 
         </mat-expansion-panel>
 
@@ -125,6 +126,41 @@ Loading...
                 <br />
                 <button (click)="addTeam()" mat-raised-button color="primary">Add Team</button>
             </form>
+
         </mat-expansion-panel>
     </div>
+    <br />
+    <mat-form-field>
+        <input matInput [matDatepicker]="picker" placeholder="Choose a date" [(ngModel)]="initialDate">
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+    </mat-form-field>
+    <br />
+    <button (click)="getTeamScores()" mat-raised-button color="primary">Get Dates Scores</button>
+
+    <table *ngIf="teamScores != null" class='table' style="max-width:600px;">
+        <thead>
+            <tr>
+                <th>Team 1 ID</th>
+                <th>Team 1 Score</th>
+                <th>Team 2 ID</th>
+                <th>Team 2 Score</th>
+                <th>Date</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let score of teamScores">
+                <td>{{ score.team1ID }}</td>
+                <td>{{ score.team1Score }}</td>
+                <td>{{ score.team2ID }}</td>
+                <td>{{ score.team2Score }}</td>
+                <td>{{ score.date }}</td>
+
+            </tr>
+        </tbody>
+    </table>
+
 </div>
+
+

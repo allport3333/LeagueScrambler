@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 import { FormGroup, FormControl } from '@angular/forms';
@@ -10,6 +10,7 @@ import { NewCreatedTeam } from '../data-models/newCreatedTeam.model';
 import { LeagueTeams } from '../data-models/leagueTeams.model';
 import { TeamScores } from '../data-models/teamScores.model';
 import { Password } from '../data-models/password.model';
+import { MatInput } from '@angular/material';
 @Component({
     selector: 'app-team-scores',
     templateUrl: './team-scores.component.html',
@@ -25,7 +26,8 @@ export class TeamScoresComponent implements OnInit {
     selectedTeam1: LeagueTeams;
     containsTeam: boolean;
     selectedTeam2: LeagueTeams;
-    teamScores: TeamScores;
+    gameDate: Date;
+    teamScores: TeamScores[];
     newTeam: NewCreatedTeam;
     TeamScoresForm = new FormGroup({
         team1Score: new FormControl(),
@@ -37,12 +39,14 @@ export class TeamScoresComponent implements OnInit {
         newTeamName: new FormControl(),
         password: new FormControl()
     });
+    picker: Date;
     teamName: string;
     password: Password;
+    initialDate = new Date();
+    @ViewChild('dateInput', { read: MatInput }) dateInput;
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, public statisticsService: StatisticsService) {
 
     }
-
     ngOnInit() {
         this.loading = true;
         this.playerService.GetLeagues().subscribe(result => {
@@ -91,6 +95,41 @@ export class TeamScoresComponent implements OnInit {
                 }
             }
         });
+    }
+
+    updateScores() {
+        if (this.selectedLeague != null) {
+
+            this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe(result => {
+
+                this.statisticsService.GetTeams(this.selectedLeague).subscribe(result => {
+                    this.teams = result;
+                }, error => console.error(error));
+            }
+                , error => console.error(error));
+
+        }
+        else {
+            alert("Please Select A League From The Dropdown");
+        }
+    }
+
+
+
+
+    getTeamScores() {
+        if (this.selectedLeague == null) {
+            alert('Please select a league');
+        }
+        else {
+            this.gameDate = this.initialDate;
+            this.gameDate.toUTCString();
+            this.statisticsService.GetTeamScores(this.gameDate, this.selectedLeague).subscribe(result => {
+                this.teamScores = result;
+                
+            });
+
+        }
     }
 
     addTeam() {
