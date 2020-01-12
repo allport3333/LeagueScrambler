@@ -9,7 +9,7 @@ namespace Allport_s_League_Scrambler.Models
     {
         public int Id { get; set; }
         public int PlayersLeagueID { get; set; }
-        public int Score { get; set; }
+        public int PlayersScore { get; set; }
         public DateTime Date { get; set; }
 
     }

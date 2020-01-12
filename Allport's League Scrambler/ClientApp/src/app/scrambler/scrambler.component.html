@@ -1,36 +1,30 @@
-<div class="row">
-    <div class="col-4" style="max-width:280px">
-        <mat-card style="background-color:lightgray" class="ml-3 mt-2">
+<div class="row" [hidden]="hideEverything">
+    <div class="col-2">
+        <mat-card style="background-color:lightgray; " class="ml-1 mt-2">
 
             <h4>Select League</h4>
-            <div class="row">
-                <div class="col-12 mt-1" *ngIf="!hideInputOptions">
-                    <mat-form-field>
-                        <mat-label>League</mat-label>
-                        <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" [(value)]="league" (selectionChange)="selectLeague(selectedLeague)">
-                            <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
-                                {{league.leagueName}}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
+
+            <div class=" mt-1" *ngIf="!hideInputOptions">
+                <mat-form-field>
+                    <mat-label>League</mat-label>
+                    <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" [(value)]="league" (selectionChange)="selectLeague(selectedLeague)">
+                        <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
+                            {{league.leagueName}}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </div>
+
+            <button (click)="hideOptions()" *ngIf="!hideInputOptions" mat-raised-button color="primary">Hide Options</button>
+            <div *ngIf="hideInputOptions">
+                <button (click)="hideOptions()" mat-raised-button color="primary">Show Options</button>
+                <button (click)="scramblePlayers()" style="margin-top:10px" mat-raised-button color="primary" *ngIf="!lockedResults">Scramble Players</button>
+                <div class="mt-2">
+                    <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
                 </div>
-            </div>            
-
-                <button (click)="hideOptions()" *ngIf="!hideInputOptions" mat-raised-button color="primary">Hide Options</button>
-                <div *ngIf="hideInputOptions">
-                    <button (click)="hideOptions()" mat-raised-button color="primary">Show Options</button>
-                    <button (click)="scramblePlayers()" style="margin-top:10px" mat-raised-button color="primary" *ngIf="!lockedResults">Scramble Players</button>
-                    <div class="mt-2">
-                        <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
-                    </div>
-                </div>
-
-        </mat-card>
-        <div id="hideListOptions">
-
-            <mat-card style="background-color:lightgray" class="ml-3 mt-2 mr-auto">
-                <h4>Scramble Options</h4>
-
+            </div>
+            <div id="hideListOptions" style="max-width:280px">
+                <br />
                 <mat-form-field>
                     <mat-label>Max Team Size</mat-label>
                     <mat-select [(ngModel)]="teamSize">
@@ -55,168 +49,220 @@
                 <button style="margin-top:10px" (click)="addTopPlayers()" mat-raised-button color="primary">Set Top Players</button>
                 <br />
                 <button style="margin-top:10px" (click)="reset()" mat-raised-button color="primary">Reset</button>
-                
-
-            </mat-card>
-            <mat-expansion-panel style="background-color:lightgray;" class="ml-3 mt-2 mr-auto">
-                <mat-expansion-panel-header>
-                    <mat-panel-title><h4>Add Player</h4></mat-panel-title>
 
 
-                </mat-expansion-panel-header>
-                <h5>Enter New Player</h5>
 
-                <mat-form-field>
-                    <mat-label>Gender</mat-label>
-                    <mat-select [(ngModel)]="selectedGender">
-                        <mat-option *ngFor="let gender of gendersPossible" [value]="gender">
-                            {{gender.value}}
-                        </mat-option>
-                    </mat-select>
-                </mat-form-field>
+            </div>
+        </mat-card>
+        <mat-card style="background-color:lightgray; " class="ml-1 mt-2" *ngIf="displayTopPlayers.length > 0 && !hideInputOptions">
+            <div>
 
-                <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()">
-                    <mat-form-field style="max-width:180px" appearance="outline">
-                        <mat-label>First Name:</mat-label>
-                        <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
-                    </mat-form-field>
+                <h5>Top Players </h5>
+                <table style="width:200px">
 
-                    <mat-form-field style="max-width:180px" appearance="outline">
-                        <mat-label>Last Name:</mat-label>
-                        <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
-                    </mat-form-field>
+                    <thead style="display:block">
+                        <tr>
+                            <th style="width:100px;">Last Name </th>
+                            <th style="width:100px;">First Name</th>
+                        </tr>
+                    </thead>
+                    <tbody style="display: block; overflow-y: auto; max-height:150px;">
+                        <tr *ngFor="let player of displayTopPlayers">
+                            <td *ngIf="player.isMale == true" style="background-color:lightblue; width:151px;border-bottom:solid 1px black;">{{ player.lastName }}</td>
+                            <td *ngIf="player.isMale == true" style="background-color:lightblue; width:150px; border-bottom:solid 1px black;">{{ player.firstName }}</td>
+                            <td *ngIf="player.isMale == false" style="background-color:pink; width:151px; border-bottom:solid 1px black;">{{ player.lastName }}</td>
+                            <td *ngIf="player.isMale == false" style="background-color:pink; width:150px; border-bottom:solid 1px black;">{{ player.firstName }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div>
+                    <h5>Required Players</h5>
+                    <p>2 player teams - {{numberOfPlayersNeededTwo}}</p>
+                    <p>3 player teams - {{numberOfPlayersNeededThree}}</p>
+                    <p>4 player teams - {{numberOfPlayersNeededFour}}</p>
+                </div>
+
+            </div>
+
+        </mat-card>
+    </div>
+    <div class="col-10">
+        <mat-card class=" ml-3 mt-2 " style="background-color:lightgray;">
+            <mat-tab-group>
+                <mat-tab label="Select Players">
+                    <div class="container-fluid">
+                        <div class="row">
+
+                            <div class="col-12" id="hideInputOptions">
+                                <mat-card id="playerListHidden" style="margin-top:20px; margin-bottom:20px; background-color:#eeeeee ">
+                                    <mat-card-title style="color:gray; margin:-10px -10px -5px -10px">Players Selected - {{selectedList.length}}</mat-card-title>
+                                    <mat-selection-list dense #selected [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
+                                        <div>
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <p style="margin-top:5px">Total Male Players Selected - {{malePlayersDisplayCount.length}}</p>
+
+                                                    <mat-list-option style="display:inline-block; width:50%;  margin-top:-4px; background-color:#DBFDFF" *ngFor="let player1 of malePlayers1" [value]="player1">
+
+                                                        {{player1.lastName}}, {{player1.firstName}}
+
+                                                    </mat-list-option>
+
+
+                                                </div>
+                                                <mat-divider></mat-divider>
+                                                <div class="col-6">
+                                                    <p style="margin-top:5px">Total Female Players Selected - {{femalePlayersDisplayCount.length}}</p>
+                                                    <mat-list-option style="display:inline-block; width:50%; margin-top:-4px; background-color:#FCE0FF; " *ngFor="let player1 of femalePlayers1" [value]="player1">
+                                                        {{player1.lastName}}, {{player1.firstName}}
+                                                    </mat-list-option>
+                                                </div>
+
+
+                                            </div>
+                                        </div>
+                                    </mat-selection-list>
+                                </mat-card>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ml-3 row" *ngIf="displayTopPlayers.length > 0 && hideInputOptions">
+                        <div col-5>
+                            <h5>Top Players </h5>
+                            <table style="width:300px">
+
+                                <thead style="display:block">
+                                    <tr>
+                                        <th style="width:143px;">Last Name </th>
+                                        <th style="width:150px;">First Name</th>
+                                    </tr>
+                                </thead>
+                                <tbody style="display: inline-block; overflow-y: auto; max-height:125px;">
+                                    <tr *ngFor="let player of displayTopPlayers">
+                                        <td *ngIf="player.isMale == true" style="background-color:lightblue; width:151px;border-bottom:solid 1px black;">{{ player.lastName }}</td>
+                                        <td *ngIf="player.isMale == true" style="background-color:lightblue; width:150px; border-bottom:solid 1px black;">{{ player.firstName }}</td>
+                                        <td *ngIf="player.isMale == false" style="background-color:pink; width:151px; border-bottom:solid 1px black;">{{ player.lastName }}</td>
+                                        <td *ngIf="player.isMale == false" style="background-color:pink; width:150px; border-bottom:solid 1px black;">{{ player.firstName }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-5 ml-2">
+                            <div>
+                                <h5>Required Players</h5>
+                                <p>2 player teams - {{numberOfPlayersNeededTwo}}</p>
+                                <p>3 player teams - {{numberOfPlayersNeededThree}}</p>
+                                <p>4 player teams - {{numberOfPlayersNeededFour}}</p>
+                            </div>
+                        </div>
+                    </div>
+                </mat-tab>
+                <mat-tab label="Add Player" class="mt-2">
+                    <br />
+                    <h5>Enter New Player</h5>
 
                     <mat-form-field>
-                        <mat-label>Password</mat-label>
-                        <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
+                        <mat-label>Gender</mat-label>
+                        <mat-select [(ngModel)]="selectedGender">
+                            <mat-option *ngFor="let gender of gendersPossible" [value]="gender">
+                                {{gender.value}}
+                            </mat-option>
+                        </mat-select>
                     </mat-form-field>
-                    <button mat-raised-button color="primary">Submit</button><br /><br />
+                    <br />
+                    <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()">
+                        <mat-form-field style="max-width:180px" appearance="outline">
+                            <mat-label>First Name:</mat-label>
+                            <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
+                        </mat-form-field>
+                        <br />
+                        <mat-form-field style="max-width:180px" appearance="outline">
+                            <mat-label>Last Name:</mat-label>
+                            <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
+                        </mat-form-field>
+                        <br />
+                        <mat-form-field>
+                            <mat-label>Password</mat-label>
+                            <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
+                        </mat-form-field>
+                        <br />
+                        <button mat-raised-button color="primary">Submit</button><br /><br />
 
-                </form>
-
-            </mat-expansion-panel>
-            <mat-expansion-panel style="background-color:lightgray;" class="ml-3 mt-2 mr-auto">
-                <mat-expansion-panel-header>
-                    <mat-panel-title>
-                        <h4>Add League</h4>
-                    </mat-panel-title>
-
-
-                </mat-expansion-panel-header>
-                <form [formGroup]="LeagueForm">
-                    <mat-form-field style="max-width:180px" appearance="outline">
-                        <mat-label>New League Name</mat-label>
-                        <input matInput placeholder="League Name" type="text" formControlName="newLeagueName"  required />
-                    </mat-form-field>
-                    <button (click)="addLeague()" mat-raised-button color="primary">Add New League</button>
-                </form>
-            </mat-expansion-panel>
-        </div>
-    </div>
-    <div class="col-4" id="hideInputOptions">
-        <mat-card id="playerListHidden" style="margin-top:20px; margin-bottom:20px; max-width:550px">
-            <mat-card-title style="color:gray; margin:-10px -10px -5px -10px">Players Selected - {{selectedList.length}}</mat-card-title>
-            <mat-selection-list dense #selected [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
-                <div >
-                    <div class="row">
-                        <div>
-                            <p style="margin-top:5px">Total Male Players Selected - {{malePlayersDisplayCount.length}}</p>
-
-                            <mat-list-option style="margin-top:-4px" *ngFor="let player1 of malePlayers1" [value]="player1">
-
-                                {{player1.lastName}}, {{player1.firstName}}
-
-                            </mat-list-option>
+                    </form>
 
 
-                        </div>
-                        <mat-divider></mat-divider>
-                        <div style="margin-top:5px" class="ml-3">
-                            <p>Total Female Players Selected - {{femalePlayersDisplayCount.length}}</p>
-                            <mat-list-option style="margin-top:-4px" *ngFor="let player1 of femalePlayers1" [value]="player1">
-                                {{player1.lastName}}, {{player1.firstName}}
-                            </mat-list-option>
-                        </div>
+                </mat-tab>
+                <mat-tab label="Add League">
+                    <br />
+                    <h5>Enter New League</h5>
+                    <form [formGroup]="LeagueForm">
+                        <mat-form-field style="max-width:180px" appearance="outline">
+                            <mat-label>New League Name</mat-label>
+                            <input matInput placeholder="League Name" type="text" formControlName="newLeagueName" required />
+                        </mat-form-field>
+                        <br />
+                        <mat-form-field>
+                            <mat-label>Password</mat-label>
+                            <input matInput placeholder="Password" type="password" formControlName="passwordLeague" value="{{passwordLeague}}" required />
+                        </mat-form-field>
+                        <br />
+                        <button (click)="addLeague()" mat-raised-button color="primary">Add New League</button>
+                    </form>
+
+                </mat-tab>
 
 
-                    </div>
-                </div>
-            </mat-selection-list>
+            </mat-tab-group>
         </mat-card>
-
     </div>
-    <div class="col-3" *ngIf="displayTopPlayers.length > 0" >
-        <h5 >Top Players </h5>
-        <table style="width:300px" >
-
-            <thead style="display:block">
-                <tr>
-                    <th style="width:143px;">Last Name </th>
-                    <th style="width:150px;">First Name</th>
-                </tr>
-            </thead>
-            <tbody style="display: block; overflow-y: scroll; max-height:150px;">
-                <tr *ngFor="let player of displayTopPlayers">
-                    <td *ngIf="player.isMale == true" style="background-color:lightblue; width:151px;border-bottom:solid 1px black;">{{ player.lastName }}</td>
-                    <td *ngIf="player.isMale == true" style="background-color:lightblue; width:150px; border-bottom:solid 1px black;">{{ player.firstName }}</td>
-                    <td *ngIf="player.isMale == false" style="background-color:pink; width:151px; border-bottom:solid 1px black;">{{ player.lastName }}</td>
-                    <td *ngIf="player.isMale == false" style="background-color:pink; width:150px; border-bottom:solid 1px black;">{{ player.firstName }}</td>
-                </tr>
-            </tbody>
-        </table>
-
-    </div>
-    <div class="col-2"  *ngIf="displayTopPlayers.length > 0">
-        <h5>Required Players</h5>
-        <p>2 player teams - {{numberOfPlayersNeededTwo}}</p>
-        <p>3 player teams - {{numberOfPlayersNeededThree}}</p>
-        <p>4 player teams - {{numberOfPlayersNeededFour}}</p>
-    </div>
-    <br />
-    <br />
 </div>
 <div class="row mh-100 mt-2">
 
-        <ng-container *ngFor="let team of listOfTeams; let i=index; ">
+    <ng-container *ngFor="let team of listOfTeams; let i=index; ">
 
-            <div style="margin-left:-50px" *ngIf="(i+1)%2 == 0">
-                <div style="text-align:center; float:none; margin-left:-10px; margin-right:auto;" class="offset-4">
-                    <h4>
-                        Court
-                        <br />
-                    </h4>
-                </div>
-                
-                <input style="max-width:30px; text-align:center; z-index:9999; position:relative; float:none; margin-left:6px; margin-right:auto;" type="text" />
-                <h4 style="margin-top:40px; text-align:center; float:none; margin-left:-10px; margin-right:auto;">
-                    vs
+        <div style="margin-left:-50px" *ngIf="(i+1)%2 == 0">
+            <div style="text-align:center; float:none; margin-left:-10px; margin-right:auto;" class="offset-4">
+                <h4>
+                    Court
+                    <br />
                 </h4>
-
-
-            </div>
-            <div class="row col-3">
-                <table class="table ">
-                    <thead>
-                        <h2 style="text-align:center; float:none; margin-left:-50px; margin-right:auto;" > {{"Team " + (i + 1)}}</h2>
-                        <tr class="d-flex">
-                            <th class="col-5">Last Name</th>
-                            <th class="col-5">First Name</th>
-
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let player of team.players" class="d-flex">
-                            <td *ngIf="player.isMale == true" style="background-color:lightblue" class="col-5">{{ player.lastName }}</td>
-                            <td *ngIf="player.isMale == true" style="background-color:lightblue" class="col-5">{{ player.firstName }}</td>
-                            <td *ngIf="player.isMale == false" style="background-color:pink" class="col-5">{{ player.lastName }}</td>
-                            <td *ngIf="player.isMale == false" style="background-color:pink" class="col-5">{{ player.firstName }}</td>
-                        </tr>
-                    </tbody>
-
-                </table>
-
             </div>
 
-        </ng-container>
+            <input style="max-width:30px; text-align:center; z-index:9999; position:relative; float:none; margin-left:6px; margin-right:auto;" type="text" />
+            <h4 style="margin-top:40px; text-align:center; float:none; margin-left:-10px; margin-right:auto;">
+                vs
+            </h4>
+
+
+        </div>
+        <div class="row col-3">
+            <table class="table ">
+                <thead>
+                    <h2 style="text-align:center; float:none; margin-left:-50px; margin-right:auto;"> {{"Team " + (i + 1)}}</h2>
+                    <tr class="d-flex">
+                        <th class="col-5">Last Name</th>
+                        <th class="col-5">First Name</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let player of team.players" class="d-flex">
+                        <td *ngIf="player.isMale == true" style="background-color:lightblue" class="col-5">{{ player.lastName }}</td>
+                        <td *ngIf="player.isMale == true" style="background-color:lightblue" class="col-5">{{ player.firstName }}</td>
+                        <td *ngIf="player.isMale == false" style="background-color:pink" class="col-5">{{ player.lastName }}</td>
+                        <td *ngIf="player.isMale == false" style="background-color:pink" class="col-5">{{ player.firstName }}</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </ng-container>
 
 </div>
+<button *ngIf="!hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class"  color="primary">Hide</button>
+<button *ngIf="hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class"  color="primary">Show</button>
+<button *ngIf="!hideEverything && !lockedResults" (click)="scramblePlayers()" style="margin-left:10px; " class="my-class" mat-raised-button color="primary">Scramble</button>

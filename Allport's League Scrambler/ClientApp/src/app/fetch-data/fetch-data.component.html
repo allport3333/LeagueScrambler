@@ -1,7 +1,11 @@
+<div *ngIf="loading; else elseBlock">
+    Loading...
+</div>
+<ng-template #elseBlock>
 <h1>Player List</h1>
 
-<p>List of Current Players</p>
-<form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()">
+<p>List of All Players</p>
+<!--<form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()">
     <mat-form-field appearance="outline" style="border-width:2px;">
         <mat-label>First Name:</mat-label>
         <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
@@ -21,12 +25,37 @@
         <input matInput placeholder="League name?" formControlName="leagueName" value="{{leagueName}}" type="text" required />
     </mat-form-field>
     <button mat-raised-button color="primary">Submit</button><br /><br />
-</form>
+</form>-->
+
+<mat-form-field>
+    <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter">
+</mat-form-field>
 
 
 
-<table class='table'>
-    <thead>
+<table *ngIf="dataSource !=null" mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8 w-50">
+    <!-- First Name Column -->
+    <ng-container matColumnDef="firstName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> First Name </th>
+        <td mat-cell *matCellDef="let element"> {{element.firstName}} </td>
+    </ng-container>
+
+    <!-- Last Name Column -->
+    <ng-container matColumnDef="lastName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> Last Name </th>
+        <td mat-cell *matCellDef="let element"> {{element.lastName}} </td>
+    </ng-container>
+
+    <!-- Gender Column -->
+    <ng-container matColumnDef="gender">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> Gender </th>
+        <td mat-cell *matCellDef="let element"> {{element.gender}} </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+    <!--<thead>
         <tr>
             <th>First Name</th>
             <th>Last Name </th>
@@ -35,9 +64,10 @@
     </thead>
     <tbody>
         <tr *ngFor="let player1 of players">
-            <td>{{ player1.firstName }}</td>
             <td>{{ player1.lastName }}</td>
+            <td>{{ player1.firstName }}</td>
             <td>{{ player1.gender }}</td>
         </tr>
-    </tbody>
+    </tbody>-->
 </table>
+    </ng-template>

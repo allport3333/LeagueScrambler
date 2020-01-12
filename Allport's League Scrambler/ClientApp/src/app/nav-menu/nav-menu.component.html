@@ -29,6 +29,11 @@
                       </a>
                   </li>
                   <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                      <a [routerLink]='["/schedule"]' class="nav-link" (click)='collapse()'>
+                          <span class='fas fa-database'></span> League Schedule
+                      </a>
+                  </li>
+                  <li class="nav-item" [routerLinkActive]='["link-active"]'>
                       <a [routerLink]='["/player-scores"]' class="nav-link" (click)='collapse()'>
                           <span class='fas fa-database'></span> Player Scores
                       </a>

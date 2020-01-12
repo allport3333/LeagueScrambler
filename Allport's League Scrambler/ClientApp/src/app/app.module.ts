@@ -17,57 +17,60 @@ import {
 } from '@angular/material';
 import { TeamScoresComponent } from './team-scores/team-scores.component';
 import { PlayerScoresComponent } from './player-scores/player-scores.component';
+import { ScheduleComponent } from './schedule/schedule.component';
 
 @NgModule({
-  declarations: [
-    AppComponent,
-    NavMenuComponent,
-    HomeComponent,
-    ScramblerComponent,
+    declarations: [
+        AppComponent,
+        NavMenuComponent,
+        HomeComponent,
+        ScramblerComponent,
         FetchDataComponent,
         TeamScoresComponent,
-        PlayerScoresComponent
+        PlayerScoresComponent,
+        ScheduleComponent
 
-  ],
-  imports: [
-    BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
-    HttpClientModule,
-      FormsModule,
-      MatInputModule,
-      MatCardModule,
-      MatButtonModule,
-      MatMenuModule,
-      MatToolbarModule,      
-      MatIconModule,
-      MatTableModule,
-      MatPaginatorModule,
-      MatSortModule,
-      MatSidenavModule,
-      MatTabsModule,
-      MatTooltipModule,
-      MatCheckboxModule,
-      ReactiveFormsModule,
-      MatGridListModule,
-      MatSelectModule,
-      MatListModule,
-      MatOptionModule,
-      MatAutocompleteModule,
-      MatExpansionModule,
-      MatDialogModule,
-      MatStepperModule,
-      MatNativeDateModule,
-      MatDatepickerModule,
-      MatTreeModule,
-    RouterModule.forRoot([
-      { path: '', component: HomeComponent, pathMatch: 'full' },
-      { path: 'scrambler', component: ScramblerComponent },
-        { path: 'fetch-data', component: FetchDataComponent },
-        { path: 'team-scores', component: TeamScoresComponent },
-        { path: 'player-scores', component: PlayerScoresComponent }
-    ]),
-    BrowserAnimationsModule
-  ],
-  providers: [],
-  bootstrap: [AppComponent]
+    ],
+    imports: [
+        BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
+        HttpClientModule,
+        FormsModule,
+        MatInputModule,
+        MatCardModule,
+        MatButtonModule,
+        MatMenuModule,
+        MatToolbarModule,
+        MatIconModule,
+        MatTableModule,
+        MatPaginatorModule,
+        MatSortModule,
+        MatSidenavModule,
+        MatTabsModule,
+        MatTooltipModule,
+        MatCheckboxModule,
+        ReactiveFormsModule,
+        MatGridListModule,
+        MatSelectModule,
+        MatListModule,
+        MatOptionModule,
+        MatAutocompleteModule,
+        MatExpansionModule,
+        MatDialogModule,
+        MatStepperModule,
+        MatNativeDateModule,
+        MatDatepickerModule,
+        MatTreeModule,
+        RouterModule.forRoot([
+            { path: '', component: HomeComponent, pathMatch: 'full' },
+            { path: 'scrambler', component: ScramblerComponent },
+            { path: 'fetch-data', component: FetchDataComponent },
+            { path: 'team-scores', component: TeamScoresComponent },
+            { path: 'player-scores', component: PlayerScoresComponent },
+            { path: 'schedule', component: ScheduleComponent }
+        ]),
+        BrowserAnimationsModule
+    ],
+    providers: [],
+    bootstrap: [AppComponent]
 })
 export class AppModule { }

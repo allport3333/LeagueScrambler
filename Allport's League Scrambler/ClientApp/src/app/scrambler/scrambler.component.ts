@@ -11,9 +11,11 @@ import { Gender } from '../data-models/gender.model';
 import { Password } from '../data-models/password.model';
 @Component({
     selector: 'app-scrambler-component',
-    templateUrl: './scrambler.component.html'
+    templateUrl: './scrambler.component.html',
+    styleUrls: ['./scrambler.component.less']
 })
 export class ScramblerComponent implements OnInit {
+    hideEverything: boolean;
     totalPlayers: Player[];
     players: Player[];
     selectedMalePlayers: Player[];
@@ -39,6 +41,7 @@ export class ScramblerComponent implements OnInit {
     randomTopPlayer: Player;
     addedPlayer: Player;
     password: Password;
+    passwordLeague: Password;
     teamSizePossible: number[] = [2, 3, 4];
     femalePlayerCount: number;
     malePlayerCount: number;
@@ -70,7 +73,8 @@ export class ScramblerComponent implements OnInit {
         password: new FormControl()
     });
     LeagueForm = new FormGroup({
-        newLeagueName: new FormControl()
+        newLeagueName: new FormControl(),
+        passwordLeague: new FormControl()
     });
 
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService) {
@@ -82,6 +86,7 @@ export class ScramblerComponent implements OnInit {
         this.displayTopPlayers = new Array();
         this.hideInputOptions = false;
         this.hideListOptions = false;
+        this.hideEverything = false;
         this.playerService.GetAllMalePlayers().subscribe(result => {
             this.malePlayers1 = result;
             this.malePlayerCount = result.length;
@@ -144,28 +149,45 @@ export class ScramblerComponent implements OnInit {
         }
 
     addLeague() {
-        this.containsLeague = false;
-        for (var i = 0; i < this.leaguesAvailable.length; i++) {
-            if (this.leaguesAvailable[i].leagueName == this.LeagueForm.controls["newLeagueName"].value) {
-                this.containsLeague = true;
-                break;
-            }
-        }
-        if (this.containsLeague) {
-            alert('League name already exists.')
-        }
-        else {
-            this.playerService.AddNewLeague(this.LeagueForm.controls["newLeagueName"].value).subscribe(result => {
+        this.playerService.GetPassword().subscribe(result => {
 
-                if (result.leagueName == null) {
-                    alert('Error creating league.')
+            this.passwordLeague = result;
+            if (this.LeagueForm.controls["passwordLeague"].value == "" || this.LeagueForm.controls["passwordLeague"].value != this.passwordLeague.password) {
+                alert("Password is not correct.")
+            }
+            else {
+                if (this.LeagueForm.controls["newLeagueName"].value == "") {
+                    alert("Please enter a league name.")
                 }
                 else {
-                    this.leaguesAvailable.push(result);
-                }
+                    this.containsLeague = false;
+                    for (var i = 0; i < this.leaguesAvailable.length; i++) {
+                        if (this.leaguesAvailable[i].leagueName == this.LeagueForm.controls["newLeagueName"].value) {
+                            this.containsLeague = true;
+                            break;
+                        }
+                    }
+                    if (this.containsLeague) {
+                        alert('League name already exists.')
+                    }
+                    else {
+                        this.playerService.AddNewLeague(this.LeagueForm.controls["newLeagueName"].value).subscribe(result => {
 
-            }, error => console.error(error));
-        }
+                            if (result.leagueName == null) {
+                                alert('Error creating league.')
+                            }
+                            else {
+                                this.leaguesAvailable.push(result);
+                            }
+
+                        }, error => console.error(error));
+                    }
+
+
+                }
+            }
+        });
+        
     }
 
     hidePlayerList() {
@@ -193,6 +215,17 @@ export class ScramblerComponent implements OnInit {
         } else {
             y.style.display = "none";
         }
+    }
+
+    hideShowEverything() {
+        this.hideEverything = !this.hideEverything;
+        var z = document.getElementById("hideEverything");
+        if (z.style.display === "none") {
+            z.style.display = "block";
+        } else {
+            z.style.display = "none";
+        }
+
     }
 
     onSubmitClick() {
