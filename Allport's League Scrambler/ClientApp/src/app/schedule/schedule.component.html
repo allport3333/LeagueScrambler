@@ -18,162 +18,163 @@
         <div class="col-10">
 
         </div>
-
-        <div class="row">
-            <mat-card  style="background-color:lightgray;">
-                <table class='table col-6' style="max-width:650px;">
-                    <thead>
-                        <tr>
-                            <th>Week</th>
-                            <th>Date</th>
-                            <th>Court 3</th>
-                            <th>Court 4</th>
-                            <th>Court 5</th>
-                            <th>Court 6</th>
-                            <th>Court 7</th>
-
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>0</td>
-                            <td>01/08/2020</td>
-                            <td>Free Play</td>
-                            <td>Free Play</td>
-                            <td>Free Play</td>
-                            <td>Free Play</td>
-                            <td>Free Play</td>
-                        </tr>
-                        <tr>
-                            <td>1</td>
-                            <td>01/15/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>01/22/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>01/29/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>4</td>
-                            <td>02/05/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>5</td>
-                            <td>02/12/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>6</td>
-                            <td>02/19/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>7</td>
-                            <td>02/26/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>8</td>
-                            <td>03/04/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>9</td>
-                            <td>03/11/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>10</td>
-                            <td>03/18/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>11</td>
-                            <td>03/25/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>12</td>
-                            <td>04/01/2020</td>
-                            <td>TBD</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-
-                    </tbody>
-                </table>
-            </mat-card>
-            <div  *ngIf="teams != null">
-                <mat-card class="ml-3" style="background-color:lightgray;">
-                    <table class='table col-4 ml-2' style="max-width:600px;">
+        <div *ngIf="teams != null">
+            <div class="row" *ngIf="leagueID == 1">
+                <mat-card style="background-color:lightgray;">
+                    <table class='table col-6' style="max-width:650px;">
                         <thead>
                             <tr>
-                                <th>Team Name</th>
-                                <th>Team Number</th>
+                                <th>Week</th>
+                                <th>Date</th>
+                                <th>Court 3</th>
+                                <th>Court 4</th>
+                                <th>Court 5</th>
+                                <th>Court 6</th>
+                                <th>Court 7</th>
+
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let singleTeam of teams">
-                                <td>{{ singleTeam.teamName }}</td>
-                                <td>{{ singleTeam.id }}</td>
-
+                            <tr>
+                                <td>0</td>
+                                <td>01/08/2020</td>
+                                <td>Free Play</td>
+                                <td>Free Play</td>
+                                <td>Free Play</td>
+                                <td>Free Play</td>
+                                <td>Free Play</td>
                             </tr>
+                            <tr>
+                                <td>1</td>
+                                <td>01/15/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>01/22/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>01/29/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>02/05/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>02/12/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>6</td>
+                                <td>02/19/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>7</td>
+                                <td>02/26/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>8</td>
+                                <td>03/04/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>9</td>
+                                <td>03/11/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>10</td>
+                                <td>03/18/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>11</td>
+                                <td>03/25/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>12</td>
+                                <td>04/01/2020</td>
+                                <td>TBD</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+
                         </tbody>
                     </table>
                 </mat-card>
+                <div *ngIf="teams != null">
+                    <mat-card class="ml-3" style="background-color:lightgray;">
+                        <table class='table col-4 ml-2' style="max-width:600px;">
+                            <thead>
+                                <tr>
+                                    <th>Team Name</th>
+                                    <th>Team Number</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let singleTeam of teams">
+                                    <td>{{ singleTeam.teamName }}</td>
+                                    <td>{{ singleTeam.id }}</td>
+
+                                </tr>
+                            </tbody>
+                        </table>
+                    </mat-card>
+                </div>
             </div>
         </div>
     </div>

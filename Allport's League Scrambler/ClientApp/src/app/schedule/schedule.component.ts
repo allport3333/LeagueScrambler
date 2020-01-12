@@ -24,6 +24,7 @@ export class ScheduleComponent implements OnInit {
     teams: LeagueTeams[];
     selectedLeague: string;
     weeks: number;
+    leagueID: number;
     leaguesAvailable: Leagues[];
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, public statisticsService: StatisticsService) {
 
@@ -48,6 +49,9 @@ export class ScheduleComponent implements OnInit {
     getTeams() {
         this.statisticsService.GetTeams(this.selectedLeague).subscribe(result => {
             this.teams = result;
+            for (let team of this.teams) {
+                this.leagueID = team.leagueID
+            }
         }, error => console.error(error));
     }
 }
