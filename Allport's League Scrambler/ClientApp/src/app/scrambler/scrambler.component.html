@@ -166,39 +166,43 @@
                     </div>
                 </mat-tab>
                 <mat-tab label="Add Player" class="mt-2">
-                    <br />
-                    <h5>Enter New Player</h5>
-
-                    <mat-form-field>
-                        <mat-label>Gender</mat-label>
-                        <mat-select [(ngModel)]="selectedGender">
-                            <mat-option *ngFor="let gender of gendersPossible" [value]="gender">
-                                {{gender.value}}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                    <br />
-                    <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()">
-                        <mat-form-field style="max-width:180px" appearance="outline">
-                            <mat-label>First Name:</mat-label>
-                            <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
-                        </mat-form-field>
+                    <div class="container-fluid">
                         <br />
-                        <mat-form-field style="max-width:180px" appearance="outline">
-                            <mat-label>Last Name:</mat-label>
-                            <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
-                        </mat-form-field>
+                        <h5>Enter New Player</h5>
                         <br />
-                        <mat-form-field>
-                            <mat-label>Password</mat-label>
-                            <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
-                        </mat-form-field>
-                        <br />
-                        <button mat-raised-button color="primary">Submit</button><br /><br />
-
-                    </form>
-
-
+                        <div class="row">
+                            <div class="col-2">
+                                <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()">
+                                    <mat-form-field style="max-width:180px" appearance="outline">
+                                        <mat-label>First Name:</mat-label>
+                                        <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
+                                    </mat-form-field>
+                                    <br />
+                                    <mat-form-field style="max-width:180px" appearance="outline">
+                                        <mat-label>Last Name:</mat-label>
+                                        <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
+                                    </mat-form-field>
+                                    <br />
+                                    <mat-form-field>
+                                        <mat-label>Password</mat-label>
+                                        <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
+                                    </mat-form-field>
+                                    <br />
+                                    <button mat-raised-button color="primary">Submit</button><br /><br />
+                                </form>
+                            </div>
+                            <div class="col-2">
+                                <mat-form-field>
+                                    <mat-label>Gender</mat-label>
+                                    <mat-select [(ngModel)]="selectedGender">
+                                        <mat-option *ngFor="let gender of gendersPossible" [value]="gender">
+                                            {{gender.value}}
+                                        </mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                            </div>
+                        </div>
+                    </div>
                 </mat-tab>
                 <mat-tab label="Add League">
                     <br />
