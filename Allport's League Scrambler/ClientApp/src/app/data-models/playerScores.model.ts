@@ -1,7 +1,7 @@
 ﻿export interface PlayerScores {
     id: number;
     playersLeagueID: number;
-    playerScore: number;
+    playersScore: number;
     date: Date;
 
 }

@@ -95,36 +95,41 @@
                         <div class="row">
 
                             <div class="col-12" id="hideInputOptions">
-                                <mat-card id="playerListHidden" style="margin-top:20px; margin-bottom:20px; background-color:#eeeeee ">
-                                    <mat-card-title style="color:gray; margin:-10px -10px -5px -10px">Players Selected - {{selectedList.length}}</mat-card-title>
-                                    <mat-selection-list dense #selected [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
-                                        <div>
-                                            <div class="row">
-                                                <div class="col-6">
-                                                    <p style="margin-top:5px">Total Male Players Selected - {{malePlayersDisplayCount.length}}</p>
+                                <div [hidden]="playerLoading">
+                                    <mat-card id="playerListHidden" style="margin-top:20px; margin-bottom:20px; background-color:#eeeeee ">
+                                        <mat-card-title style="color:gray; margin:-10px -10px -5px -10px">Players Selected - {{selectedList.length}}</mat-card-title>
+                                        <mat-selection-list dense #selected [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
+                                            <div>
+                                                <div class="row">
+                                                    <div class="col-6">
+                                                        <p style="margin-top:5px">Total Male Players Selected - {{malePlayersDisplayCount.length}}</p>
 
-                                                    <mat-list-option style="display:inline-block; width:50%;  margin-top:-4px; background-color:#DBFDFF" *ngFor="let player1 of malePlayers1" [value]="player1">
+                                                        <mat-list-option style="display:inline-block; width:50%;  margin-top:-4px; background-color:#DBFDFF" *ngFor="let player1 of malePlayers1" [value]="player1">
 
-                                                        {{player1.lastName}}, {{player1.firstName}}
+                                                            {{player1.lastName}}, {{player1.firstName}}
 
-                                                    </mat-list-option>
+                                                        </mat-list-option>
+
+
+                                                    </div>
+                                                    <mat-divider></mat-divider>
+                                                    <div class="col-6">
+                                                        <p style="margin-top:5px">Total Female Players Selected - {{femalePlayersDisplayCount.length}}</p>
+                                                        <mat-list-option style="display:inline-block; width:50%; margin-top:-4px; background-color:#FCE0FF; " *ngFor="let player1 of femalePlayers1" [value]="player1">
+                                                            {{player1.lastName}}, {{player1.firstName}}
+                                                        </mat-list-option>
+                                                    </div>
 
 
                                                 </div>
-                                                <mat-divider></mat-divider>
-                                                <div class="col-6">
-                                                    <p style="margin-top:5px">Total Female Players Selected - {{femalePlayersDisplayCount.length}}</p>
-                                                    <mat-list-option style="display:inline-block; width:50%; margin-top:-4px; background-color:#FCE0FF; " *ngFor="let player1 of femalePlayers1" [value]="player1">
-                                                        {{player1.lastName}}, {{player1.firstName}}
-                                                    </mat-list-option>
-                                                </div>
-
-
                                             </div>
-                                        </div>
-                                    </mat-selection-list>
-                                </mat-card>
-
+                                        </mat-selection-list>
+                                    </mat-card>
+                                </div>
+                                <div [hidden]="!playerLoading" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; margin-top: -200px;">
+                                    <h2 class="ml-4">Loading...</h2>
+                                    <mat-spinner diameter="200"></mat-spinner>
+                                </div>
                             </div>
                         </div>
                     </div>

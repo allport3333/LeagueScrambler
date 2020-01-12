@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatTableDataSource, MatSort } from '@angular/material';
+import { MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatTableDataSource, MatSort, MatProgressSpinnerModule } from '@angular/material';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 import { FormGroup, FormControl } from '@angular/forms';

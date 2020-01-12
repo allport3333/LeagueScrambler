@@ -13,7 +13,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {
     MatCardModule, MatButtonModule, MatMenuModule, MatToolbarModule, MatInputModule, MatIconModule, MatTableModule, MatPaginatorModule, MatSortModule, MatSidenavModule,
     MatTabsModule, MatTooltipModule, MatCheckboxModule, MatGridListModule, MatSelectModule, MatListModule, MatFormFieldModule, MatOptionModule, MatAutocompleteModule, MatExpansionModule, MatDialogModule,
-    MatStepperModule, MatDatepickerModule, MatNativeDateModule, MatTreeModule
+    MatStepperModule, MatDatepickerModule, MatNativeDateModule, MatTreeModule, MatProgressSpinnerModule
 } from '@angular/material';
 import { TeamScoresComponent } from './team-scores/team-scores.component';
 import { PlayerScoresComponent } from './player-scores/player-scores.component';
@@ -39,6 +39,7 @@ import { ScheduleComponent } from './schedule/schedule.component';
         MatCardModule,
         MatButtonModule,
         MatMenuModule,
+        MatProgressSpinnerModule,
         MatToolbarModule,
         MatIconModule,
         MatTableModule,

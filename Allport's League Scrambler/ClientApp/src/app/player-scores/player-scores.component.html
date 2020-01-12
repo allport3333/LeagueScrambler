@@ -1,5 +1,6 @@
-<div *ngIf="loading">
-    Loading...
+<div *ngIf="loading" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; margin-top: -200px;">
+    <h2 class="ml-4">Loading...</h2>
+    <mat-spinner diameter="200"></mat-spinner>
 </div>
 <div *ngIf="!loading">
     <table class='table'>
@@ -24,7 +25,7 @@
                     </thead>
                     <tbody *ngFor="let score of player.allPlayerScores">
                         <tr>
-                            <td>{{score.score}}</td>
+                            <td>{{score.playersScore}}</td>
                             <td>{{score.date}}</td>
                         </tr>
                     </tbody>

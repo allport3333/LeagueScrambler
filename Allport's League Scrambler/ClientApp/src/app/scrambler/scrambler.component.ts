@@ -63,6 +63,7 @@ export class ScramblerComponent implements OnInit {
     hideInputOptions: boolean;
     isMale1: boolean;
     completeRandom: false;
+    playerLoading: boolean;
     leagueName: string;
     selectedLeague: string;
     PlayerForm = new FormGroup({
@@ -87,6 +88,7 @@ export class ScramblerComponent implements OnInit {
         this.hideInputOptions = false;
         this.hideListOptions = false;
         this.hideEverything = false;
+        this.playerLoading = false;
         this.playerService.GetAllMalePlayers().subscribe(result => {
             this.malePlayers1 = result;
             this.malePlayerCount = result.length;
@@ -110,6 +112,7 @@ export class ScramblerComponent implements OnInit {
     }
 
     selectLeague() {
+        this.playerLoading = true;
         this.playerService.SelectLeague(this.selectedLeague).subscribe(result => {
             this.queriedPlayers = result;
             this.malePlayerCount = result.length;
@@ -127,6 +130,7 @@ export class ScramblerComponent implements OnInit {
             }
             this.malePlayerCount = this.malePlayers1.length;
             this.femalePlayerCount = this.femalePlayers1.length;
+            this.playerLoading = false;
         });
     }
 
