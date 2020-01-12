@@ -72,9 +72,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="ClientApp\dist\assets\img\loading.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="ClientApp\src\app\data-models\playerInformation.js">
       <DependentUpon>playerInformation.ts</DependentUpon>
     </None>

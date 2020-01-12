@@ -28,6 +28,7 @@ export class TeamScoresComponent implements OnInit {
     containsTeam: boolean;
     selectedTeam2: LeagueTeams;
     gameDate: Date;
+    newTeamScoreLoading: boolean;
     teamScores: LeagueTeamScores[];
     newTeam: NewCreatedTeam;
     TeamScoresForm = new FormGroup({
@@ -50,6 +51,7 @@ export class TeamScoresComponent implements OnInit {
     }
     ngOnInit() {
         this.loading = true;
+        this.newTeamScoreLoading = false;
         this.playerService.GetLeagues().subscribe(result => {
             this.leaguesAvailable = result;
             this.loading = false;
@@ -64,9 +66,13 @@ export class TeamScoresComponent implements OnInit {
                 alert("Password is not correct.")
             }
             else {
+                this.newTeamScoreLoading = true;
+                console.log(this.TeamScoresForm.controls["team1Score"].value);
+                console.log(this.TeamScoresForm.controls["team2Score"].value);
                 if (this.TeamScoresForm.controls["team1Score"].value == "" || this.TeamScoresForm.controls["team2Score"].value == "" || this.selectedTeam1 == null || this.selectedTeam2 == null
                     || this.TeamScoresForm.controls["date"].value == "" || this.TeamScoresForm == null) {
-                    alert("Please ensure that all fields are filled out.")
+                    alert("Please ensure that all fields are filled out.");
+                    this.newTeamScoreLoading = false;
                 }
                 else {
                     let newScore: TeamScores = {
@@ -85,6 +91,8 @@ export class TeamScoresComponent implements OnInit {
 
                                 this.statisticsService.GetTeams(this.selectedLeague).subscribe(result => {
                                     this.teams = result;
+                                    this.newTeamScoreLoading = false;
+                                    alert('Succesfully added score.')
                                 }, error => console.error(error));
                             }
                                 , error => console.error(error));
@@ -100,11 +108,13 @@ export class TeamScoresComponent implements OnInit {
 
     updateScores() {
         if (this.selectedLeague != null) {
-
+            this.newTeamScoreLoading = true;
             this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe(result => {
 
                 this.statisticsService.GetTeams(this.selectedLeague).subscribe(result => {
                     this.teams = result;
+                    this.newTeamScoreLoading = false;
+                    alert('Succesfully updated score.')
                 }, error => console.error(error));
             }
                 , error => console.error(error));
