@@ -159,6 +159,7 @@
                 <div *ngIf="teams != null">
                     <mat-card *ngIf="leagueID == 1" class="ml-3" style="background-color:lightgray;">
                         <table class='table col-4 ml-2' style="max-width:600px;">
+                            
                             <thead>
                                 <tr>
                                     <th>Captain Name</th>
@@ -168,13 +169,13 @@
                             </thead>
                             <tbody>
                                 <!--<tr *ngFor="let singleTeam of teams; let i = index ">
-                                    <td>{{ singleTeam.teamName }}</td>
-                                    <td>{{ i + 1 }}</td>
+                            <td>{{ singleTeam.teamName }}</td>
+                            <td>{{ i + 1 }}</td>
 
-                                </tr>-->
+                        </tr>-->
                                 <tr>
                                     <td>Megan McGlynn</td>
-                                    <td>Silver Aces</td>
+                                    <td>Silver Snakes</td>
                                     <td>1</td>
                                 </tr>
                                 <tr>
@@ -221,6 +222,236 @@
                                     <td>Devin June</td>
                                     <td>Nice Aces</td>
                                     <td>10</td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </mat-card>
+                </div>
+            </div>
+
+            <div class="row" *ngIf="leagueID == 6">
+                <mat-card style="background-color:lightgray;">
+                    <table class='table col-6' style="max-width:650px;">
+
+                        <th class="text-center" colspan="5">Group A</th>
+
+
+                        <tr>
+                            <th>Week</th>
+                            <th>Date</th>
+                            <th>Court 3</th>
+                            <th>Court 5</th>
+                            <th>Court 7</th>
+
+                        </tr>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>2/27/2020</td>
+                                <td>1 vs 2</td>
+                                <td>3 vs 4</td>
+                                <td>5 vs 6</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>3/2/2020</td>
+                                <td>5 vs 4</td>
+                                <td>1 vs 6</td>
+                                <td>2 vs 3</td>
+
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>3/9/2020</td>
+                                <td>3 vs 1</td>
+                                <td>2 vs 5</td>
+                                <td>6 vs 4</td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>3/16/2020</td>
+                                <td>2 vs 6</td>
+                                <td>4 vs 1</td>
+                                <td>3 vs 5</td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>3/23/2020</td>
+                                <td>1 vs 5</td>
+                                <td>6 vs 3</td>
+                                <td>4 vs 2</td>
+                            </tr>
+                            <tr>
+                                <td>6</td>
+                                <td>3/30/2020</td>
+                                <td>Playoff </td>
+                                <td>Playoff </td>
+                                <td>Playoff </td>
+
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </mat-card>
+                <div *ngIf="teams != null">
+                    <mat-card *ngIf="leagueID == 6" class="ml-3" style="background-color:lightgray;">
+                        <table class='table col-4 ml-2' style="max-width:600px;">
+                            <th class="text-center" colspan="5">Group A</th>
+
+                            <tr>
+                                <th>Captain Name</th>
+                                <th>Team Name</th>
+                                <th>Team Number</th>
+                            </tr>
+
+                            <tr>
+                                <td>Amber Bernard</td>
+                                <td>Digz</td>
+                                <td>1</td>
+                            </tr>
+                            <tr>
+                                <td>Jamie</td>
+                                <td>Namo</td>
+                                <td>2</td>
+                            </tr>
+                            <tr>
+                                <td>Crissy</td>
+                                <td>Sugar and Spikes</td>
+                                <td>3</td>
+                            </tr>
+                            <tr>
+                                <td>Tracey</td>
+                                <td>We Showed Up</td>
+                                <td>4</td>
+                            </tr>
+                            <tr>
+                                <td>Danielle</td>
+                                <td>Banger Sisters</td>
+                                <td>5</td>
+                            </tr>
+                            <tr>
+                                <td>Debbie Carter</td>
+                                <td>JRC</td>
+                                <td>6</td>
+                            </tr>
+
+                            </tbody>
+                        </table>
+                    </mat-card>
+                </div>
+            </div>
+            <br />
+
+            <div class="row" *ngIf="leagueID == 6">
+                <mat-card style="background-color:lightgray;">
+                    <table class='table col-6' style="max-width:650px;">
+                        
+                            <th class="text-center" colspan="5">Group B</th>
+
+                        
+                        <tr>
+                            <th>Week</th>
+                            <th>Date</th>
+                            <th>Court 3</th>
+                            <th>Court 5</th>
+                            <th>Court 7</th>
+
+                        </tr>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>2/27/2020</td>
+                                <td>3 vs 2</td>
+                                <td>4 vs 5</td>
+                                <td>1 vs 6</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>3/2/2020</td>
+                                <td>5 vs 6</td>
+                                <td>1 vs 2</td>
+                                <td>3 vs 4</td>
+
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>3/9/2020</td>
+                                <td>1 vs 4</td>
+                                <td>5 vs 3</td>
+                                <td>6 vs 2</td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>3/16/2020</td>
+                                <td>6 vs 3</td>
+                                <td>2 vs 4</td>
+                                <td>5 vs 1</td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>3/23/2020</td>
+                                <td>2 vs 5</td>
+                                <td>3 vs 1</td>
+                                <td>4 vs 6</td>
+                            </tr>
+                            <tr>
+                                <td>6</td>
+                                <td>3/30/2020</td>
+                                <td>Playoff </td>
+                                <td>Playoff </td>
+                                <td>Playoff </td>
+
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </mat-card>
+                <div *ngIf="teams != null">
+                    <mat-card *ngIf="leagueID == 6" class="ml-3" style="background-color:lightgray;">
+                        <table  class='table col-4 ml-2' style="max-width:600px;">
+                            
+                            <th class="text-center" colspan="5">Group B</th>                            
+                           
+                                <tr>
+                                    <th>Captain Name</th>
+                                    <th>Team Name</th>
+                                    <th>Team Number</th>
+                                </tr>
+
+                            <tbody>
+
+                                <tr>
+                                    <td>Darlene</td>
+                                    <td>Kiss Our Aces</td>
+                                    <td>1</td>
+
+                                </tr>
+
+                                <tr>
+                                    <td>Rhonda Nagle</td>
+                                    <td>Screwballs</td>
+                                    <td>2</td>
+                                </tr>
+                                <tr>
+                                    <td>Megan Mitter</td>
+                                    <td>Don't Suck</td>
+                                    <td>3</td>
+                                </tr>
+                                <tr>
+                                    <td>Foster</td>
+                                    <td>Fosters</td>
+                                    <td>4</td>
+                                </tr>
+                                <tr>
+                                    <td>Shelly</td>
+                                    <td>Ann's bitches</td>
+                                    <td>5</td>
+                                </tr>
+                                <tr>
+                                    <td>Kimmie</td>
+                                    <td>Buttercups</td>
+                                    <td>6</td>
                                 </tr>
 
                             </tbody>
