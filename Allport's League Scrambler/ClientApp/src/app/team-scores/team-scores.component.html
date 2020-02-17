@@ -118,25 +118,57 @@
                                 <form [formGroup]="TeamScoresForm" (ngSubmit)="onSubmitClick()">
                                     <div class="row">
                                         <div class="col-3">
-                                            <mat-form-field style="max-width:180px" appearance="outline">
-                                                <mat-label>Team 1 Score:</mat-label>
-                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team1Score" value="{{teamScores?.team1Score}}" required />
+                                            <mat-form-field style="max-width:220px" appearance="outline">
+                                                <mat-label>Team 1 Game 1 Score:</mat-label>
+                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team1Score" value="{{teamScores?.team1Score}}"  />
                                             </mat-form-field>
-                                            <mat-form-field style="max-width:180px" appearance="outline">
-                                                <mat-label>Date</mat-label>
+                                            <mat-form-field style="max-width:220px" appearance="outline">
+                                                <mat-label>Team 1 Game 2 Score:</mat-label>
+                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team1Score1" value="{{teamScores?.team1Score1}}"  />
+                                            </mat-form-field>
+                                            <mat-form-field style="max-width:220px" appearance="outline">
+                                                <mat-label>Team 1 Game 3 Score:</mat-label>
+                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team1Score2" value="{{teamScores?.team1Score2}}"  />
+                                            </mat-form-field>
+                                            <mat-form-field style="max-width:220px" appearance="outline">
+                                                <mat-label>Team 1 Game 4 Score:</mat-label>
+                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team1Score3" value="{{teamScores?.team1Score3}}"  />
+                                            </mat-form-field>
+                                            <mat-form-field style="max-width:220px" appearance="outline">
+                                                <mat-label>Team 1 Game 5 Score:</mat-label>
+                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team1Score4" value="{{teamScores?.team1Score4}}"  />
+                                            </mat-form-field>
+                                            <mat-form-field style="max-width:220px" appearance="outline">
+                                                <mat-label>Date: DD/MM/YYYY</mat-label>
                                                 <input matInput placeholder="Date" type="datetime" formControlName="date" value="{{teamScores?.date}}" required />
                                             </mat-form-field>
                                             <br />
                                             <button mat-raised-button color="primary">Submit</button><br /><br />
                                         </div>
                                         <div class="col-3">
-                                            <mat-form-field style="max-width:180px" appearance="outline">
-                                                <mat-label>Team 2 Score:</mat-label>
-                                                <input matInput placeholder="Team 2 Score" type="number" formControlName="team2Score" value="{{teamScores?.team2Score}}" required />
+                                            <mat-form-field style="max-width:220px" appearance="outline">
+                                                <mat-label>Team 2 Game 1 Score:</mat-label>
+                                                <input matInput placeholder="Team 2 Score" type="number" formControlName="team2Score" value="{{teamScores?.team2Score}}"  />
+                                            </mat-form-field>
+                                            <mat-form-field style="max-width:220px" appearance="outline">
+                                                <mat-label>Team 2 Game 2 Score:</mat-label>
+                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team2Score1" value="{{teamScores?.team2Score1}}"  />
+                                            </mat-form-field>
+                                            <mat-form-field style="max-width:220px" appearance="outline">
+                                                <mat-label>Team 2 Game 3 Score:</mat-label>
+                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team2Score2" value="{{teamScores?.team2Score2}}"  />
+                                            </mat-form-field>
+                                            <mat-form-field style="max-width:220px" appearance="outline">
+                                                <mat-label>Team 2 Game 4 Score::</mat-label>
+                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team2Score3" value="{{teamScores?.team2Score3}}"  />
+                                            </mat-form-field>
+                                            <mat-form-field style="max-width:220px" appearance="outline">
+                                                <mat-label>Team 2 Game 5 Score:</mat-label>
+                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team2Score4" value="{{teamScores?.team2Score4}}"  />
                                             </mat-form-field>
                                             <mat-form-field>
                                                 <mat-label>Password</mat-label>
-                                                <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
+                                                <input matInput placeholder="Password" type="password" formControlName="password" value="{{password.password}}" required />
                                             </mat-form-field>
                                             <br />
 
@@ -148,6 +180,8 @@
 
                                 </form>
                                 <button style="float:right; margin-top:-50px" (click)="updateScores()" mat-raised-button color="primary">Update Scores</button>
+                                <br />
+                                <!--<button style="float:right; margin-top:-30px" (click)="showScoresEntry()" mat-raised-button color="primary">Add Additional Scores</button>-->
                             </div>
                         </div>
                     </mat-tab>>

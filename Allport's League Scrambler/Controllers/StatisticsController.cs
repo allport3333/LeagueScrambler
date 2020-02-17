@@ -34,21 +34,27 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]")]
-        public TeamScore AddScore([FromBody] TeamScore teamScore)
+        public List<TeamScore> AddScore([FromBody] List<TeamScore> teamScore)
         {
             var context = new DataContext();
-            var newScore = new TeamScore()
+            List<TeamScore> teamScoresAdded = new List<TeamScore>();
+            foreach (var score in teamScore)
             {
-                Date = teamScore.Date,
-                Team1ID = teamScore.Team1ID,
-                Team2ID = teamScore.Team2ID,
-                Team1Score = teamScore.Team1Score,
-                Team2Score = teamScore.Team2Score
-            };
-            context.TeamScore.Add(newScore);
+                var newScore = new TeamScore()
+                {
+                    Date = score.Date,
+                    Team1ID = score.Team1ID,
+                    Team2ID = score.Team2ID,
+                    Team1Score = score.Team1Score,
+                    Team2Score = score.Team2Score
+                };
+                teamScoresAdded.Add(newScore);
+                context.TeamScore.Add(newScore);
+            }
+
             context.SaveChanges();
 
-            return newScore;
+            return teamScoresAdded;
         }
 
         [HttpGet("[action]/{leagueName}")]

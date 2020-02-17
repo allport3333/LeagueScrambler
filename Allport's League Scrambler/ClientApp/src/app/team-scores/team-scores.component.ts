@@ -28,12 +28,21 @@ export class TeamScoresComponent implements OnInit {
     containsTeam: boolean;
     selectedTeam2: LeagueTeams;
     gameDate: Date;
+    TeamScoresMultiple: TeamScores[];
     newTeamScoreLoading: boolean;
     teamScores: LeagueTeamScores[];
     newTeam: NewCreatedTeam;
     TeamScoresForm = new FormGroup({
         team1Score: new FormControl(),
         team2Score: new FormControl(),
+        team1Score1: new FormControl(),
+        team2Score1: new FormControl(),
+        team1Score2: new FormControl(),
+        team2Score2: new FormControl(),
+        team1Score3: new FormControl(),
+        team2Score3: new FormControl(),
+        team1Score4: new FormControl(),
+        team2Score4: new FormControl(),
         date: new FormControl(),
         password: new FormControl()
     });
@@ -43,7 +52,10 @@ export class TeamScoresComponent implements OnInit {
     });
     picker: Date;
     teamName: string;
-    password: Password;
+    password: Password = {
+        password: '',
+        id: null 
+    };
     initialDate = new Date();
     @ViewChild('dateInput', { read: MatInput }) dateInput;
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, public statisticsService: StatisticsService) {
@@ -60,7 +72,7 @@ export class TeamScoresComponent implements OnInit {
 
     onSubmitClick() {
         this.playerService.GetPassword().subscribe(result => {
-
+            this.TeamScoresMultiple = [];
             this.password = result;
             if (this.TeamScoresForm.controls["password"].value == "" || this.TeamScoresForm.controls["password"].value != this.password.password) {
                 alert("Password is not correct.")
@@ -69,7 +81,8 @@ export class TeamScoresComponent implements OnInit {
                 this.newTeamScoreLoading = true;
                 console.log(this.TeamScoresForm.controls["team1Score"].value);
                 console.log(this.TeamScoresForm.controls["team2Score"].value);
-                if (this.TeamScoresForm.controls["team1Score"].value == "" || this.TeamScoresForm.controls["team2Score"].value == "" || this.selectedTeam1 == null || this.selectedTeam2 == null
+
+                if (this.TeamScoresForm.controls["team1Score"].value === null || this.TeamScoresForm.controls["team2Score"].value === null || this.selectedTeam1 == null || this.selectedTeam2 == null
                     || this.TeamScoresForm.controls["date"].value == "" || this.TeamScoresForm == null) {
                     alert("Please ensure that all fields are filled out.");
                     this.newTeamScoreLoading = false;
@@ -83,16 +96,75 @@ export class TeamScoresComponent implements OnInit {
                         team2ID: this.selectedTeam2.id,
                         date: this.TeamScoresForm.controls["date"].value
                     };
-
+                    let newScore1: TeamScores = {
+                        id: 0,
+                        team1Score: this.TeamScoresForm.controls["team1Score1"].value,
+                        team2Score: this.TeamScoresForm.controls["team2Score1"].value,
+                        team1ID: this.selectedTeam1.id,
+                        team2ID: this.selectedTeam2.id,
+                        date: this.TeamScoresForm.controls["date"].value
+                    };
+                    let newScore2: TeamScores = {
+                        id: 0,
+                        team1Score: this.TeamScoresForm.controls["team1Score2"].value,
+                        team2Score: this.TeamScoresForm.controls["team2Score2"].value,
+                        team1ID: this.selectedTeam1.id,
+                        team2ID: this.selectedTeam2.id,
+                        date: this.TeamScoresForm.controls["date"].value
+                    };
+                    let newScore3: TeamScores = {
+                        id: 0,
+                        team1Score: this.TeamScoresForm.controls["team1Score3"].value,
+                        team2Score: this.TeamScoresForm.controls["team2Score3"].value,
+                        team1ID: this.selectedTeam1.id,
+                        team2ID: this.selectedTeam2.id,
+                        date: this.TeamScoresForm.controls["date"].value
+                    };
+                    let newScore4: TeamScores = {
+                        id: 0,
+                        team1Score: this.TeamScoresForm.controls["team1Score4"].value,
+                        team2Score: this.TeamScoresForm.controls["team2Score4"].value,
+                        team1ID: this.selectedTeam1.id,
+                        team2ID: this.selectedTeam2.id,
+                        date: this.TeamScoresForm.controls["date"].value
+                    };
+                    this.TeamScoresMultiple.push(newScore);
+                    if (newScore1.team1Score != null && newScore1.team2Score != null) {
+                        this.TeamScoresMultiple.push(newScore1);
+                    };
+                    if (newScore2.team1Score != null && newScore2.team2Score != null) {
+                        this.TeamScoresMultiple.push(newScore2);
+                    };
+                    if (newScore3.team1Score != null && newScore3.team2Score != null) {
+                        this.TeamScoresMultiple.push(newScore3);
+                    };
+                    if (newScore4.team1Score != null && newScore4.team2Score != null) {
+                        this.TeamScoresMultiple.push(newScore4);
+                    };
+                    this.TeamScoresForm = new FormGroup({
+                        team1Score: new FormControl(),
+                        team2Score: new FormControl(),
+                        team1Score1: new FormControl(),
+                        team2Score1: new FormControl(),
+                        team1Score2: new FormControl(),
+                        team2Score2: new FormControl(),
+                        team1Score3: new FormControl(),
+                        team2Score3: new FormControl(),
+                        team1Score4: new FormControl(),
+                        team2Score4: new FormControl(),
+                        date: new FormControl(),
+                        password: new FormControl()
+                    });
+                    
                     if (this.selectedLeague != null) {
-                        this.statisticsService.AddScore(newScore).subscribe(result => {
+                        this.statisticsService.AddScore(this.TeamScoresMultiple).subscribe(result => {
                             var temp = result;
                             this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe(result => {
 
                                 this.statisticsService.GetTeams(this.selectedLeague).subscribe(result => {
                                     this.teams = result;
                                     this.newTeamScoreLoading = false;
-                                    alert('Succesfully added score.')
+                                    alert('Succesfully added score(s).')
                                 }, error => console.error(error));
                             }
                                 , error => console.error(error));
@@ -101,6 +173,7 @@ export class TeamScoresComponent implements OnInit {
                     else {
                         alert("Please Select A League From The Dropdown");
                     }
+                    this.password.password = '';
                 }
             }
         });

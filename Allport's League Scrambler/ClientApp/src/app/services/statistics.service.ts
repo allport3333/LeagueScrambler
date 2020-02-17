@@ -24,8 +24,8 @@ export class StatisticsService {
         return this.httpClient.get<PlayerInformation[]>(this.baseUrl + 'api/Statistics/GetPlayers/' + leagueID);
     }
 
-    public AddScore(newScore: TeamScores) {
-        return this.httpClient.post<TeamScores>(this.baseUrl + 'api/Statistics/AddScore/', newScore);
+    public AddScore(newScore: TeamScores[]) {
+        return this.httpClient.post<TeamScores[]>(this.baseUrl + 'api/Statistics/AddScore/', newScore);
     }
 
     public GetTeams(leagueName: string) {
