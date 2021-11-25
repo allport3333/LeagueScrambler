@@ -22,8 +22,10 @@ namespace Allport_s_League_Scrambler.Data
         {
             if (!optionsBuilder.IsConfigured)
             {
-
-                optionsBuilder.UseSqlServer(@"workstation id=LeagueScrambler.mssql.somee.com;packet size=4096;user id=allport;pwd=Sephiroth3;data source=LeagueScrambler.mssql.somee.com;persist security info=False;initial catalog=LeagueScrambler");
+                //optionsBuilder.UseSqlServer(@"Server=(localdb)\LeagueDB; Database = LeagueScrambler; Trusted_Connection = True;");
+                optionsBuilder.UseSqlServer(System.Configuration.ConfigurationManager.
+                    ConnectionStrings["LeagueDBConnectionString"].ConnectionString);
+                //optionsBuilder.UseSqlServer(@"workstation id=LeagueScrambler.mssql.somee.com;packet size=4096;user id=allport;pwd=Sephiroth3;data source=LeagueScrambler.mssql.somee.com;persist security info=False;initial catalog=LeagueScrambler");
             }
         }
 
