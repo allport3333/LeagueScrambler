@@ -5,5 +5,5 @@ export interface PlayerInformation {
     lastName: string;
     allPlayerScores: PlayerScores[];
     playerID: number;
-
+    isSub: boolean;
 }

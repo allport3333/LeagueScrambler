@@ -33,6 +33,7 @@ export class ScramblerComponent implements OnInit {
     queriedPlayers: Player[];
     leaguesAvailable: Leagues[];
     gendersPossible: Gender[] = [{ value: 'Female', isMale: false }, { value: 'Male', isMale: true }];
+    isSub: boolean;
     selectedGender: Gender;
     player: Player;
     randomMalePlayer: Player;
@@ -42,7 +43,7 @@ export class ScramblerComponent implements OnInit {
     addedPlayer: Player;
     password: Password;
     passwordLeague: Password;
-    teamSizePossible: number[] = [2, 3, 4];
+    teamSizePossible: number[] = [2, 3, 4, 5];
     femalePlayerCount: number;
     malePlayerCount: number;
     topPlayerCount: number;
@@ -71,7 +72,8 @@ export class ScramblerComponent implements OnInit {
         lastName: new FormControl(),
         isMale: new FormControl(),
         leagueName: new FormControl(),
-        password: new FormControl()
+        password: new FormControl(),
+        isSub: new FormControl()
     });
     LeagueForm = new FormGroup({
         newLeagueName: new FormControl(),
@@ -147,10 +149,10 @@ export class ScramblerComponent implements OnInit {
                 this.femalePlayersDisplayCount.push(player);
             }
         }
-    
+
         this.malePlayerCount = this.malePlayersDisplayCount.length;
         this.femalePlayerCount = this.femalePlayersDisplayCount.length;
-        }
+    }
 
     addLeague() {
         this.playerService.GetPassword().subscribe(result => {
@@ -191,7 +193,7 @@ export class ScramblerComponent implements OnInit {
                 }
             }
         });
-        
+
     }
 
     hidePlayerList() {
@@ -250,7 +252,8 @@ export class ScramblerComponent implements OnInit {
                         firstName: this.PlayerForm.controls["firstName"].value,
                         lastName: this.PlayerForm.controls["lastName"].value,
                         gender: this.selectedGender.value,
-                        isMale: this.selectedGender.isMale
+                        isMale: this.selectedGender.isMale,
+                        isSub: this.PlayerForm.controls["isSub"].value
                     };
 
                     if (this.selectedLeague != null) {
@@ -284,8 +287,8 @@ export class ScramblerComponent implements OnInit {
                                     this.femalePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
                                 }
                             }
-                            }                        
-                        , error => console.error(error));
+                        }
+                            , error => console.error(error));
                     }
                     else {
                         alert("Please Select A League From The Dropdown");
@@ -310,7 +313,7 @@ export class ScramblerComponent implements OnInit {
 
     }
 
-    topPlayerScramble(bracketTeamPlayers){
+    topPlayerScramble(bracketTeamPlayers) {
         this.randomTopPlayer = this.totalTopPlayers[Math.floor(Math.random() * this.totalTopPlayers.length)];
         bracketTeamPlayers.push(this.randomTopPlayer);
         this.totalTopPlayers = this.totalTopPlayers.filter(x => x !== this.randomTopPlayer);
@@ -357,6 +360,36 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
+    addPlayerToTopPlayerList(player: Player) {
+        this.totalTopPlayers.push(player);
+        player.isTopPlayer = true;
+        // Implement your logic here to add the player to a list or perform any desired action.
+        // For example, you can add the player to an array:
+        this.displayTopPlayers = this.totalTopPlayers;
+        this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
+        this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
+        this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
+    }
+
+    removePlayerFromTopPlayerList(player: Player) {
+        // Find the index of the player in the totalTopPlayers array
+        const playerIndex = this.totalTopPlayers.indexOf(player);
+
+        if (playerIndex !== -1) {
+            // Remove the player from the totalTopPlayers array
+            this.totalTopPlayers.splice(playerIndex, 1);
+
+            // Update the player's isTopPlayer status
+            player.isTopPlayer = false;
+
+            // Implement your logic here to update other variables as needed.
+            this.displayTopPlayers = this.totalTopPlayers;
+            this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
+            this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
+            this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
+        }
+    }
+
     clearTopPLayers() {
         this.totalTopPlayers = new Array();
         this.totalTopPlayers = new Array();
@@ -396,7 +429,17 @@ export class ScramblerComponent implements OnInit {
             this.randomPlayerCount = this.totalRandomPlayers.length;
             this.topPlayerCount = this.totalTopPlayers.length;
 
-            if (this.teamSize == 4) {
+            if (this.teamSize == 5) {
+                if ((this.selectedList.length / 10) % 1 == 0) {
+                    this.teamCount = (Math.floor(this.selectedList.length / 10) * 2);
+                }
+                else {
+
+                    this.teamCount = (Math.floor(this.selectedList.length / 10) * 2) + 2;
+
+                }
+            }
+            else if (this.teamSize == 4) {
                 if ((this.selectedList.length / 8) % 1 == 0) {
                     this.teamCount = (Math.floor(this.selectedList.length / 8) * 2);
                 }

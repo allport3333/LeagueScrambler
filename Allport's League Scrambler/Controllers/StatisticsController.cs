@@ -119,7 +119,8 @@ namespace Allport_s_League_Scrambler.Controllers
                     AllPlayerScores = allOnePlayerScores,
                     PlayerID = playerLeague.PlayerID,
                     FirstName = singlePlayer.FirstName,
-                    LastName = singlePlayer.LastName
+                    LastName = singlePlayer.LastName,
+                    IsSub = playerLeague.IsSub
                 };
                 playerInformation.Add(information);
             }

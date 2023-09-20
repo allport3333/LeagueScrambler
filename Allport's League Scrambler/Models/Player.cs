@@ -12,5 +12,6 @@ namespace Allport_s_League_Scrambler.Models
         public string LastName { get; set; }
         public bool IsMale { get; set; }
         public string Gender { get; set; }
+        public bool? IsSub { get; set; }
     }
 }

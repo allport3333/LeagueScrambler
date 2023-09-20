@@ -18,13 +18,13 @@ export class FetchDataComponent implements OnInit {
     isMale1: boolean;
     leagueName: string;
     dataSource = new MatTableDataSource();
-    displayedColumns: string[] = ['firstName', 'lastName', 'gender']
+    displayedColumns: string[] = ['firstName', 'lastName', 'gender', 'isSub']
     PlayerForm = new FormGroup({
         firstName: new FormControl(),
         lastName: new FormControl(),
         isMale: new FormControl(),
-        leagueName: new FormControl()
-
+        leagueName: new FormControl(),
+        isSub: new FormControl()
     });
     @ViewChild(MatSort) sort: MatSort;
     @ViewChild(MatSort) set matSort(ms: MatSort) {
@@ -65,7 +65,8 @@ export class FetchDataComponent implements OnInit {
             firstName: this.PlayerForm.controls["firstName"].value,
             lastName: this.PlayerForm.controls["lastName"].value,
             gender: this.PlayerForm.controls["isMale"].value,
-            isMale: this.isMale1
+            isMale: this.isMale1,
+            isSub: this.PlayerForm.controls["isSub"].value,
         };
         
 

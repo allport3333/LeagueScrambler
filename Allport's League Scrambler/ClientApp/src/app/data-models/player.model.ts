@@ -5,4 +5,6 @@ export interface Player {
     lastName: string;
     isMale: boolean;
     gender: string;
+    isSub: boolean;
+    isTopPlayer?: boolean;
 }

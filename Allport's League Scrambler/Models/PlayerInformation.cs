@@ -12,6 +12,7 @@ namespace Allport_s_League_Scrambler.Models
         public List<PlayerScore> AllPlayerScores { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public bool? IsSub { get; set; }
 
     }
 }

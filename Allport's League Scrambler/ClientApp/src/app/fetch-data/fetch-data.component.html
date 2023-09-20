@@ -52,7 +52,11 @@
         <th mat-header-cell *matHeaderCellDef mat-sort-header> Gender </th>
         <td mat-cell *matCellDef="let element"> {{element.gender}} </td>
     </ng-container>
-
+    <!-- Gender Column -->
+    <ng-container matColumnDef="gender">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header> Sub </th>
+        <td mat-cell *matCellDef="let element"> {{element.isSub}} </td>
+    </ng-container>
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
 

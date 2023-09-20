@@ -64,6 +64,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             return leagues;
         }
+
         [HttpGet("[action]")]
         public IEnumerable<Player> GetAllFemalePlayers()
         {
@@ -132,7 +133,7 @@ namespace Allport_s_League_Scrambler.Controllers
             foreach (var leagueLink in leagueLinks)
             {
                 var singlePlayer = context.Players.Where(x => x.Id == leagueLink.PlayerID).FirstOrDefault();
-
+                singlePlayer.IsSub = leagueLink.IsSub;
                 players.Add(singlePlayer); 
             }
            players = players.OrderBy(x => x.LastName).ToList();
@@ -158,7 +159,8 @@ namespace Allport_s_League_Scrambler.Controllers
                     var addNewLink = new PlayersLeague()
                     {
                         PlayerID = playerExists.Id,
-                        LeagueID = existingLeague.ID
+                        LeagueID = existingLeague.ID,
+                        IsSub = player.IsSub
                         
                     };
 
@@ -184,7 +186,8 @@ namespace Allport_s_League_Scrambler.Controllers
             var addedPlayersLeagues = new PlayersLeague()
             {
                 LeagueID = league.ID,
-                PlayerID = addedPlayer.Id
+                PlayerID = addedPlayer.Id,
+                IsSub = player.IsSub
             };
 
             context.PlayersLeagues.Add(addedPlayersLeagues);

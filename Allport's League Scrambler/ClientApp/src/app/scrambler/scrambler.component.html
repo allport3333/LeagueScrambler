@@ -105,9 +105,11 @@
                                                         <p style="margin-top:5px">Total Male Players Selected - {{malePlayersDisplayCount.length}}</p>
 
                                                         <mat-list-option style="display:inline-block; width:50%;  margin-top:-4px; background-color:#DBFDFF" *ngFor="let player1 of malePlayers1" [value]="player1">
-
-                                                            {{player1.lastName}}, {{player1.firstName}}
-
+                                                            <div>
+                                                                {{player1.lastName}}, {{player1.firstName}}
+                                                                <button *ngIf="!player1.isTopPlayer" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()">Add Top Player</button>
+                                                                <button *ngIf="player1.isTopPlayer" (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()">Remove Top Player</button>
+                                                            </div>
                                                         </mat-list-option>
 
 
@@ -116,7 +118,11 @@
                                                     <div class="col-6">
                                                         <p style="margin-top:5px">Total Female Players Selected - {{femalePlayersDisplayCount.length}}</p>
                                                         <mat-list-option style="display:inline-block; width:50%; margin-top:-4px; background-color:#FCE0FF; " *ngFor="let player1 of femalePlayers1" [value]="player1">
-                                                            {{player1.lastName}}, {{player1.firstName}}
+                                                            <div>
+                                                                {{player1.lastName}}, {{player1.firstName}}
+                                                                <button *ngIf="!player1.isTopPlayer" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()">Add Top Player</button>
+                                                                <button *ngIf="player1.isTopPlayer" (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()">Remove Top Player</button>
+                                                            </div>
                                                         </mat-list-option>
                                                     </div>
 
@@ -184,9 +190,17 @@
                                     </mat-form-field>
                                     <br />
                                     <mat-form-field>
+                                        <mat-select formControlName="isSub" placeholder="Sub/Flex">
+                                            <mat-option [value]="true">Sub</mat-option>
+                                            <mat-option [value]="false">Not a Sub</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                    <br />
+                                    <mat-form-field>
                                         <mat-label>Password</mat-label>
                                         <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
                                     </mat-form-field>
+
                                     <br />
                                     <button mat-raised-button color="primary">Submit</button><br /><br />
                                 </form>
@@ -200,6 +214,7 @@
                                         </mat-option>
                                     </mat-select>
                                 </mat-form-field>
+
                             </div>
                         </div>
                     </div>
@@ -260,9 +275,13 @@
                 <tbody>
                     <tr *ngFor="let player of team.players" class="d-flex">
                         <td *ngIf="player.isMale == true" style="background-color:lightblue" class="col-5">{{ player.lastName }}</td>
-                        <td *ngIf="player.isMale == true" style="background-color:lightblue" class="col-5">{{ player.firstName }}</td>
+                        <td *ngIf="player.isMale == true && !player.isSub" style="background-color:lightblue" class="col-5">{{ player.firstName }}</td>
+
+                        <td *ngIf="player.isMale == true && player.isSub" style="background-color:lightblue" class="col-5">{{ player.firstName }} - Sub</td>
                         <td *ngIf="player.isMale == false" style="background-color:pink" class="col-5">{{ player.lastName }}</td>
-                        <td *ngIf="player.isMale == false" style="background-color:pink" class="col-5">{{ player.firstName }}</td>
+                        <td *ngIf="player.isMale == false && !player.isSub" style="background-color:pink" class="col-5">{{ player.firstName }}</td>
+
+                        <td *ngIf="player.isMale == false && player.isSub" style="background-color:pink" class="col-5">{{ player.firstName }} - Sub</td>
                     </tr>
                 </tbody>
 
