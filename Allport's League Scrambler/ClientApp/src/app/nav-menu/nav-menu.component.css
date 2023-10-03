@@ -1,54 +1,51 @@
-.main-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  z-index: 1;
-  height: 100%;
-}
-.main-nav li a {
-  cursor: pointer;
-  padding: 10px 16px;
-  border-radius: 4px;
-}
-.main-nav li .fa {
-  margin-right: 10px;
-}
-.main-nav li.link-active a,
-.main-nav li.link-active a:hover,
-.main-nav li.link-active a:focus {
-  background-color: #4189C7;
-  color: white;
-}
+/* Adjusted styles for top navigation */
 @media (min-width: 368px) {
-  .main-nav {
-    width: calc(15% - 30px);
-    min-width: 80px;
-  }
-  .main-nav .navbar {
-    border-radius: 0 15px 15px 0;
-    border-width: 0px;
-    height: 100%;
-    vertical-align: top;
-  }
-  .main-nav .navbar a {
-    width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .main-nav .navbar ul {
-    float: none;
-  }
-  .main-nav .navbar li {
-    float: none;
-    font-size: 15px;
-    margin: 6px;
-  }
-  .main-nav .navbar li a {
-    padding: 10px 16px;
-    border-radius: 4px;
-  }
-  .main-nav .navbar-header {
-    float: none;
-  }
+    .main-nav {
+        position: static; /* Change from fixed position to static */
+        height: auto; /* Remove fixed height */
+        text-align: center; /* Center-align the menu options */
+    }
+
+        .main-nav ul {
+            padding: 0; /* Remove default padding */
+        }
+
+        .main-nav li {
+            display: inline-block; /* Display the list items horizontally */
+            font-size: 15px;
+            margin: 0 6px; /* Adjust margins as needed */
+        }
+
+            .main-nav li a {
+                padding: 10px 16px;
+                border-radius: 4px;
+            }
+
+        .main-nav .navbar {
+            border-radius: 0; /* Remove border-radius */
+            border-width: 0px;
+            height: auto; /* Adjust height as needed */
+            vertical-align: middle; /* Center the content vertically */
+        }
+
+            .main-nav .navbar a {
+                width: auto; /* Remove width constraint */
+                white-space: nowrap; /* Prevent line breaks in link text */
+                overflow: visible; /* Show overflowing content */
+                text-overflow: clip; /* Display full text without ellipsis */
+            }
+
+            .main-nav .navbar li {
+                float: none; /* Remove float */
+                font-size: 15px;
+            }
+
+                .main-nav .navbar li a {
+                    padding: 10px 16px;
+                    border-radius: 4px;
+                }
+
+        .main-nav .navbar-header {
+            float: none; /* Remove float */
+        }
 }

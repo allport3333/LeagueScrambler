@@ -43,7 +43,9 @@ export class ScramblerComponent implements OnInit {
     addedPlayer: Player;
     password: Password;
     passwordLeague: Password;
+    passwordDelete: Password;
     teamSizePossible: number[] = [2, 3, 4, 5];
+    maxNumberOfTeams: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
     femalePlayerCount: number;
     malePlayerCount: number;
     topPlayerCount: number;
@@ -54,6 +56,7 @@ export class ScramblerComponent implements OnInit {
     brackets: number;
     teamCount: number;
     teamSize: number;
+    numberOfTeams: number;
     containsMale: boolean = false;
     containsFemale: boolean = false;
     lockedResults: boolean = false;
@@ -62,6 +65,7 @@ export class ScramblerComponent implements OnInit {
     containsLeague: boolean = false;
     hideListOptions: boolean;
     hideInputOptions: boolean;
+    selectedOption: boolean = false;
     isMale1: boolean;
     completeRandom: false;
     playerLoading: boolean;
@@ -75,6 +79,11 @@ export class ScramblerComponent implements OnInit {
         password: new FormControl(),
         isSub: new FormControl()
     });
+    deletePlayerForm = new FormGroup({
+        firstName: new FormControl(),
+        lastName: new FormControl(),
+        passwordDelete: new FormControl(),
+    });
     LeagueForm = new FormGroup({
         newLeagueName: new FormControl(),
         passwordLeague: new FormControl()
@@ -82,6 +91,7 @@ export class ScramblerComponent implements OnInit {
 
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService) {
         this.teamSize = 4;
+
     }
 
     ngOnInit() {
@@ -232,6 +242,104 @@ export class ScramblerComponent implements OnInit {
             z.style.display = "none";
         }
 
+    }
+
+    deselectAllPlayers() {
+        this.selectedList = [];
+    }
+
+    selectAllPlayers() {
+        // Clear the selected list first
+        this.selectedList = [];
+
+        // Add all male players to the selected list (excluding players with first name "open" or "Open")
+        this.malePlayers1.forEach(player => {
+            if (!/open/i.test(player.firstName) && !this.selectedList.includes(player)) {
+                this.selectedList.push(player);
+            }
+        });
+
+        // Add all female players to the selected list (excluding players with first name "open" or "Open")
+        this.femalePlayers1.forEach(player => {
+            if (!/open/i.test(player.firstName) && !this.selectedList.includes(player)) {
+                this.selectedList.push(player);
+            }
+        });
+
+        this.malePlayersDisplayCount = new Array();
+        this.femalePlayersDisplayCount = new Array();
+        for (let player of this.selectedList) {
+            if (player.isMale) {
+                this.malePlayersDisplayCount.push(player);
+
+            }
+            else {
+                this.femalePlayersDisplayCount.push(player);
+            }
+        }
+
+        this.malePlayerCount = this.malePlayersDisplayCount.length;
+        this.femalePlayerCount = this.femalePlayersDisplayCount.length;
+    }
+
+    onDeletePlayerClick() {
+        this.playerService.GetPassword().subscribe(result => {
+            this.password = result;
+            if (this.deletePlayerForm.controls["passwordDelete"].value == "" || this.deletePlayerForm.controls["passwordDelete"].value != this.password.password) {
+                alert("Password is not correct.")
+            }
+            else {
+
+                // Get the selected player's first and last name from the form controls
+                const firstNameToDelete = this.deletePlayerForm.controls["firstName"].value;
+                const lastNameToDelete = this.deletePlayerForm.controls["lastName"].value;
+
+                if (!firstNameToDelete || !lastNameToDelete || !this.selectedLeague) {
+                    alert("Please select both a player and a league to delete the player.");
+                    return;
+                }
+
+                let deletingPlayer: Player = {
+
+                    firstName: firstNameToDelete,
+                    lastName: lastNameToDelete,
+                    gender: 'male',
+                    isMale: true,
+                    isSub: false
+                };
+
+                this.playerService.DeletePlayer(deletingPlayer, this.selectedLeague).subscribe(result => {
+
+                    let test = result;
+
+                    if (result) {
+                        const maleIndex = this.malePlayers1.findIndex(
+                            player => player.firstName === firstNameToDelete && player.lastName === lastNameToDelete
+                        );
+
+                        if (maleIndex !== -1) {
+                            this.malePlayers1.splice(maleIndex, 1);
+                        }
+
+                        // Find the player in the femalePlayers1 array and remove it
+                        const femaleIndex = this.femalePlayers1.findIndex(
+                            player => player.firstName === firstNameToDelete && player.lastName === lastNameToDelete
+                        );
+
+                        if (femaleIndex !== -1) {
+                            this.femalePlayers1.splice(femaleIndex, 1);
+                        }
+
+                        // Clear the form and display a success message
+                        this.deletePlayerForm.reset();
+                        alert("Player deleted successfully.");
+                    }
+                    // Find the player in the malePlayers1 array and remove it
+
+
+                }, error => console.error(error));
+            }
+        });
     }
 
     onSubmitClick() {
@@ -394,6 +502,26 @@ export class ScramblerComponent implements OnInit {
         this.totalTopPlayers = new Array();
         this.totalTopPlayers = new Array();
         this.displayTopPlayers = new Array();
+        for (let player of this.malePlayers1) {
+            player.isTopPlayer = false;
+        }
+        for (let player of this.femalePlayers1) {
+            player.isTopPlayer = false;
+        }
+    }
+
+    updateNumberOfTeams(selectedTeamSize: number): void {
+        // Deselect the other mat-select when one is selected
+        if (selectedTeamSize) {
+            this.numberOfTeams = null;
+        }
+    }
+
+    updateTeamSize(selectedNumberOfTeams: number): void {
+        // Deselect the other mat-select when one is selected
+        if (selectedNumberOfTeams) {
+            this.teamSize = null;
+        }
     }
 
     scramblePlayers() {
@@ -428,47 +556,52 @@ export class ScramblerComponent implements OnInit {
             this.femalePlayerCount = this.femalePlayers.length;
             this.randomPlayerCount = this.totalRandomPlayers.length;
             this.topPlayerCount = this.totalTopPlayers.length;
+            if (this.numberOfTeams != null) {
+                this.teamCount = this.numberOfTeams;
+            }
+            else {
+                if (this.teamSize == 5) {
+                    if ((this.selectedList.length / 10) % 1 == 0) {
+                        this.teamCount = (Math.floor(this.selectedList.length / 10) * 2);
+                    }
+                    else {
 
-            if (this.teamSize == 5) {
-                if ((this.selectedList.length / 10) % 1 == 0) {
-                    this.teamCount = (Math.floor(this.selectedList.length / 10) * 2);
+                        this.teamCount = (Math.floor(this.selectedList.length / 10) * 2) + 2;
+
+                    }
                 }
-                else {
+                else if (this.teamSize == 4) {
+                    if ((this.selectedList.length / 8) % 1 == 0) {
+                        this.teamCount = (Math.floor(this.selectedList.length / 8) * 2);
+                    }
+                    else {
 
-                    this.teamCount = (Math.floor(this.selectedList.length / 10) * 2) + 2;
+                        this.teamCount = (Math.floor(this.selectedList.length / 8) * 2) + 2;
 
+                    }
+                }
+                else if (this.teamSize == 3) {
+                    if ((this.selectedList.length / 6) % 1 == 0) {
+                        this.teamCount = (Math.floor(this.selectedList.length / 6) * 2);
+                    }
+                    else {
+
+                        this.teamCount = (Math.floor(this.selectedList.length / 6) * 2) + 2;
+
+                    }
+                }
+                else if (this.teamSize == 2) {
+                    if ((this.selectedList.length / 4) % 1 == 0) {
+                        this.teamCount = (Math.floor(this.selectedList.length / 4) * 2);
+                    }
+                    else {
+
+                        this.teamCount = (Math.floor(this.selectedList.length / 4) * 2) + 2;
+
+                    }
                 }
             }
-            else if (this.teamSize == 4) {
-                if ((this.selectedList.length / 8) % 1 == 0) {
-                    this.teamCount = (Math.floor(this.selectedList.length / 8) * 2);
-                }
-                else {
 
-                    this.teamCount = (Math.floor(this.selectedList.length / 8) * 2) + 2;
-
-                }
-            }
-            else if (this.teamSize == 3) {
-                if ((this.selectedList.length / 6) % 1 == 0) {
-                    this.teamCount = (Math.floor(this.selectedList.length / 6) * 2);
-                }
-                else {
-
-                    this.teamCount = (Math.floor(this.selectedList.length / 6) * 2) + 2;
-
-                }
-            }
-            else if (this.teamSize == 2) {
-                if ((this.selectedList.length / 4) % 1 == 0) {
-                    this.teamCount = (Math.floor(this.selectedList.length / 4) * 2);
-                }
-                else {
-
-                    this.teamCount = (Math.floor(this.selectedList.length / 4) * 2) + 2;
-
-                }
-            }
             for (var i = 0; i < this.teamCount; i++) {
                 let team = {
                     players: [],

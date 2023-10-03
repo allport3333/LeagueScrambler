@@ -1,66 +1,71 @@
 .main-nav {
     position: fixed;
+    top: 0; /* Position the navigation at the top of the page */
     left: 0;
     right: 0;
     z-index: 1;
-    height: 100%;
+    background-color: #333; /* Background color for the top navigation */
+}
 
-    li {
-        a {
-            cursor: pointer;
-            padding: 10px 16px;
-            border-radius: 4px;
-        }
+.main-nav li {
+    display: inline-block; /* Display the list items horizontally */
+    margin-right: 20px; /* Add some spacing between the navigation items */
+}
 
-        .fa {
-            margin-right: 10px;
-        }
+.main-nav li a {
+    cursor: pointer;
+    padding: 10px 16px;
+    border-radius: 4px;
+    color: white; /* Text color for navigation links */
+    text-decoration: none; /* Remove underlines from links */
+}
 
-        &.link-active a,
-        &.link-active a:hover,
-        &.link-active a:focus {
-            background-color: #4189C7;
-            color: white;
-        }
-    }
+.main-nav li a .fa {
+    margin-right: 10px;
+}
+
+.main-nav li.link-active a,
+.main-nav li.link-active a:hover,
+.main-nav li.link-active a:focus {
+    background-color: #4189C7;
+    color: white;
 }
 
 @media (min-width: 100px) {
-  .main-nav {
-    width: calc(~"10% - 30px");
-    min-width: 120px;
+    .main-nav {
+        width: 100%; /* Expand the navigation bar to full width */
+        min-width: auto; /* Remove the minimum width constraint */
+        .navbar {
+            border-radius: 0; /* Remove border-radius */
+            border-width: 1px; /* Optionally, add a border */
+            height: auto; /* Adjust height as needed */
+            vertical-align: middle; /* Center the content vertically */
+            a {
+                width: auto; /* Remove width constraint */
+                white-space: nowrap; /* Prevent line breaks in link text */
+                overflow: visible; /* Show overflowing content */
+                text-overflow: clip; /* Display full text without ellipsis */
+            }
 
-    .navbar {
-      border-radius: 0 15px 15px 0;
-      border-width: 0px;
-      height: 100%;
-      vertical-align:top;
+            ul {
+                float: none; /* Remove float */
+                text-align: center; /* Center-align the links */
+            }
 
-      a {
-        width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      ul {
-        float: none;
-      }
-
-      li {
-        float: none;
-        font-size: 15px;
-        margin: 6px;
-
-        a {
-          padding: 10px 16px;
-          border-radius: 4px;
+            li {
+                float: none; /* Remove float */
+                display: inline-block; /* Display the list items horizontally */
+                font-size: 15px;
+                margin: 0 6px; /* Adjust margins as needed */
+                a {
+                    padding: 10px 16px;
+                    border-radius: 4px;
+                }
+            }
         }
-      }
-    }
 
-    .navbar-header {
-      float: none;
+        .navbar-header {
+            float: none; /* Remove float */
+        }
     }
-  }
 }

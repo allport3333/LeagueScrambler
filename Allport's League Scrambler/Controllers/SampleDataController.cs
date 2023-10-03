@@ -28,7 +28,11 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             List<Player> players = new List<Player>();
             var context = new DataContext();
-            players = context.Players.OrderBy(x => x.LastName).ToList();
+            players = context.Players
+                .OrderBy(x => x.FirstName == "Open" ? 1 : 0) // Order "Open" to the end
+                .ThenBy(x => x.FirstName)
+                .ToList();
+
             foreach (var player in players)
             {
                 if (player.IsMale != false)
@@ -51,7 +55,12 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             List<Player> players = new List<Player>();
             var context = new DataContext();
-            players = context.Players.Where(x => x.IsMale == true).OrderBy(x => x.LastName).ToList();
+            players = context.Players
+                .Where(x => x.IsMale)
+                .OrderBy(x => x.FirstName == "Open" ? 1 : 0) // Order "Open" to the end
+                .ThenBy(x => x.FirstName)
+                .ToList();
+
 
             return players;
         }
@@ -70,7 +79,12 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             List<Player> players = new List<Player>();
             var context = new DataContext();
-            players = context.Players.Where(x => x.IsMale == false).OrderBy(x => x.LastName).ToList();
+            players = context.Players
+                .Where(x => x.IsMale)
+                .OrderBy(x => x.FirstName == "Open" ? 1 : 0) // Order "Open" to the end
+                .ThenBy(x => x.FirstName)
+                .ToList();
+
 
             return players;
         }
@@ -134,9 +148,13 @@ namespace Allport_s_League_Scrambler.Controllers
             {
                 var singlePlayer = context.Players.Where(x => x.Id == leagueLink.PlayerID).FirstOrDefault();
                 singlePlayer.IsSub = leagueLink.IsSub;
-                players.Add(singlePlayer); 
+                players.Add(singlePlayer);
             }
-           players = players.OrderBy(x => x.LastName).ToList();
+            players = players
+                .OrderBy(x => x.FirstName == "Open" ? 1 : 0) // Order "Open" to the end
+                .ThenBy(x => x.FirstName)
+                .ToList();
+
             return players;
         }
 
@@ -161,7 +179,7 @@ namespace Allport_s_League_Scrambler.Controllers
                         PlayerID = playerExists.Id,
                         LeagueID = existingLeague.ID,
                         IsSub = player.IsSub
-                        
+
                     };
 
                     context.PlayersLeagues.Add(addNewLink);
@@ -191,7 +209,24 @@ namespace Allport_s_League_Scrambler.Controllers
             };
 
             context.PlayersLeagues.Add(addedPlayersLeagues);
- 
+
+            context.SaveChanges();
+
+            return player;
+
+        }
+
+        [HttpPost("[action]/{leagueName}")]
+        public Player DeletePlayer([FromBody] Player player, string leagueName)
+        {
+            var context = new DataContext();
+            var playerExists = context.Players.Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName).FirstOrDefault();
+
+            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+            var playerLeaguesExist = context.PlayersLeagues.Where(x => x.LeagueID == league.ID && x.PlayerID == playerExists.Id).FirstOrDefault();
+
+            context.PlayersLeagues.Remove(playerLeaguesExist);
+
             context.SaveChanges();
 
             return player;
@@ -213,17 +248,17 @@ namespace Allport_s_League_Scrambler.Controllers
                 };
 
 
-                    context.Leagues.Add(newLeague);
-                    context.SaveChanges();
+                context.Leagues.Add(newLeague);
+                context.SaveChanges();
 
-                    return newLeague;
-                
+                return newLeague;
+
             }
             else
             {
-                    return newLeague;
+                return newLeague;
             }
-            
+
 
 
 

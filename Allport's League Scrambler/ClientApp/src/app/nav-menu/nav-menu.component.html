@@ -1,45 +1,46 @@
-<div class='main-nav'>
-  <nav class='navbar navbar-expand-lg navbar-dark bg-dark d-flex flex-column'>
-      <div class="navbar-header p-0">
-          <a class='navbar-brand' [routerLink]='["/"]'>Home</a>
-          <button type='button' class='navbar-toggler' data-toggle='collapse' data-target='#navbarNav' [attr.aria-expanded]='isExpanded' (click)='toggle()'>
-              <span class='sr-only'>Toggle navigation</span>
-              <span class='navbar-toggler-icon'></span>
-          </button>
-          <div id="navbarNav" class='navbar-collapse collapse p-0' [ngClass]='{ "in": isExpanded }'>
-              <ul class='nav navbar-nav flex-column'>
-                  <li class="nav-item" [routerLinkActive]='["link-active"]' [routerLinkActiveOptions]='{ exact: true }'>
-                      <a [routerLink]='["/"]' class="nav-link" (click)='collapse()'>
-                          <span class='fas fa-home'></span> Home
-                      </a>
-                  </li>
-                  <li class="nav-item" [routerLinkActive]='["link-active"]'>
-                      <a [routerLink]='["/scrambler"]' class="nav-link" (click)='collapse()'>
-                          <span class='fas fa-sort-amount-up'></span> Scrambler
-                      </a>
-                  </li>
-                  <li class="nav-item" [routerLinkActive]='["link-active"]'>
-                      <a [routerLink]='["/fetch-data"]' class="nav-link" (click)='collapse()'>
-                          <span class='fas fa-database'></span> Players
-                      </a>
-                  </li>
-                  <li class="nav-item" [routerLinkActive]='["link-active"]'>
-                      <a [routerLink]='["/team-scores"]' class="nav-link" (click)='collapse()'>
-                          <span class='fas fa-database'></span> Team Scores
-                      </a>
-                  </li>
-                  <li class="nav-item" [routerLinkActive]='["link-active"]'>
-                      <a [routerLink]='["/schedule"]' class="nav-link" (click)='collapse()'>
-                          <span class='fas fa-database'></span> League Schedule
-                      </a>
-                  </li>
-                  <li class="nav-item" [routerLinkActive]='["link-active"]'>
-                      <a [routerLink]='["/player-scores"]' class="nav-link" (click)='collapse()'>
-                          <span class='fas fa-database'></span> Player Scores
-                      </a>
-                  </li>
-              </ul>
-          </div>
-      </div>
-  </nav>
+<div class='main-nav text-center'>
+    <!-- Add 'text-center' class here -->
+    <nav class='navbar navbar-expand-lg navbar-dark bg-dark d-flex justify-content-center'>
+        <div class="navbar-header">
+            <a class='navbar-brand' [routerLink]='["/"]'>Home</a>
+        </div>
+        <button type='button' class='navbar-toggler' data-toggle='collapse' data-target='#navbarNav' [attr.aria-expanded]='isExpanded' (click)='toggle()'>
+            <span class='sr-only'>Toggle navigation</span>
+            <span class='navbar-toggler-icon'></span>
+        </button>
+        <div id="navbarNav" class='navbar-collapse collapse' [ngClass]='{ "in": isExpanded }'>
+            <ul class='nav navbar-nav'>
+                <li class="nav-item" [routerLinkActive]='["link-active"]' [routerLinkActiveOptions]='{ exact: true }'>
+                    <a [routerLink]='["/"]' class="nav-link" (click)='collapse()'>
+                        <span class='fas fa-home'></span> Home
+                    </a>
+                </li>
+                <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                    <a [routerLink]='["/scrambler"]' class="nav-link" (click)='collapse()'>
+                        <span class='fas fa-sort-amount-up'></span> Scrambler
+                    </a>
+                </li>
+                <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                    <a [routerLink]='["/fetch-data"]' class="nav-link" (click)='collapse()'>
+                        <span class='fas fa-database'></span> Players
+                    </a>
+                </li>
+                <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                    <a [routerLink]='["/team-scores"]' class="nav-link" (click)='collapse()'>
+                        <span class='fas fa-database'></span> Team Scores
+                    </a>
+                </li>
+                <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                    <a [routerLink]='["/schedule"]' class="nav-link" (click)='collapse()'>
+                        <span class='fas fa-database'></span> League Schedule
+                    </a>
+                </li>
+                <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                    <a [routerLink]='["/player-scores"]' class="nav-link" (click)='collapse()'>
+                        <span class='fas fa-database'></span> Player Scores
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
 </div>
