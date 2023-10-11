@@ -9,6 +9,9 @@ import { Team } from '../data-models/teams.model';
 import { Leagues } from '../data-models/leagues.model';
 import { Gender } from '../data-models/gender.model';
 import { Password } from '../data-models/password.model';
+import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
+import { KingQueenTeamWithPlayers } from '../data-models/KingQueenTeamWithPlayers.model';
+
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
@@ -27,6 +30,7 @@ export class ScramblerComponent implements OnInit {
     displayTopPlayers: Player[] = new Array();
     totalTopPlayers: Player[] = new Array();
     listOfTeams: Team[] = new Array();
+    matchups: Team[] = new Array();
     selectedList: Player[] = new Array();
     malePlayers1: Player[];
     femalePlayers1: Player[];
@@ -57,12 +61,14 @@ export class ScramblerComponent implements OnInit {
     teamCount: number;
     teamSize: number;
     numberOfTeams: number;
+    scrambleNumber: number;
     containsMale: boolean = false;
     containsFemale: boolean = false;
     lockedResults: boolean = false;
     locked: boolean = false;
     hidePlayers: boolean = false;
     containsLeague: boolean = false;
+    isSmallScreen = false;
     hideListOptions: boolean;
     hideInputOptions: boolean;
     selectedOption: boolean = false;
@@ -100,6 +106,11 @@ export class ScramblerComponent implements OnInit {
         this.hideInputOptions = false;
         this.hideListOptions = false;
         this.hideEverything = false;
+        this.checkScreenSize();
+        // Subscribe to window resize events to update isSmallScreen
+        window.addEventListener('resize', () => {
+            this.checkScreenSize();
+        });
         this.playerLoading = false;
         this.playerService.GetAllMalePlayers().subscribe(result => {
             this.malePlayers1 = result;
@@ -142,6 +153,7 @@ export class ScramblerComponent implements OnInit {
             }
             this.malePlayerCount = this.malePlayers1.length;
             this.femalePlayerCount = this.femalePlayers1.length;
+
             this.playerLoading = false;
         });
     }
@@ -149,7 +161,6 @@ export class ScramblerComponent implements OnInit {
     addPlayer(player) {
         this.malePlayersDisplayCount = new Array();
         this.femalePlayersDisplayCount = new Array();
-        console.log(this.selectedList);
         for (let player of this.selectedList) {
             if (player.isMale) {
                 this.malePlayersDisplayCount.push(player);
@@ -233,6 +244,14 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
+    getTotalMaleSelectedPlayers() {
+        return this.selectedList.filter(player => player.isMale).length;
+    }
+
+    getTotalFemaleSelectedPlayers() {
+        return this.selectedList.filter(player => !player.isMale).length;
+    }
+
     hideShowEverything() {
         this.hideEverything = !this.hideEverything;
         var z = document.getElementById("hideEverything");
@@ -241,46 +260,39 @@ export class ScramblerComponent implements OnInit {
         } else {
             z.style.display = "none";
         }
-
     }
 
     deselectAllPlayers() {
         this.selectedList = [];
     }
-
     selectAllPlayers() {
         // Clear the selected list first
         this.selectedList = [];
 
         // Add all male players to the selected list (excluding players with first name "open" or "Open")
         this.malePlayers1.forEach(player => {
-            if (!/open/i.test(player.firstName) && !this.selectedList.includes(player)) {
+            if (!/open/i.test(player.firstName)) {
                 this.selectedList.push(player);
             }
         });
 
         // Add all female players to the selected list (excluding players with first name "open" or "Open")
         this.femalePlayers1.forEach(player => {
-            if (!/open/i.test(player.firstName) && !this.selectedList.includes(player)) {
+            if (!/open/i.test(player.firstName)) {
                 this.selectedList.push(player);
             }
         });
+        
+        // Update the male and female player counts
+        this.malePlayerCount = this.malePlayers1.filter(player => !/open/i.test(player.firstName)).length;
+        this.femalePlayerCount = this.femalePlayers1.filter(player => !/open/i.test(player.firstName)).length;
 
-        this.malePlayersDisplayCount = new Array();
-        this.femalePlayersDisplayCount = new Array();
-        for (let player of this.selectedList) {
-            if (player.isMale) {
-                this.malePlayersDisplayCount.push(player);
 
-            }
-            else {
-                this.femalePlayersDisplayCount.push(player);
-            }
-        }
-
-        this.malePlayerCount = this.malePlayersDisplayCount.length;
-        this.femalePlayerCount = this.femalePlayersDisplayCount.length;
     }
+
+
+
+
 
     onDeletePlayerClick() {
         this.playerService.GetPassword().subscribe(result => {
@@ -305,7 +317,8 @@ export class ScramblerComponent implements OnInit {
                     lastName: lastNameToDelete,
                     gender: 'male',
                     isMale: true,
-                    isSub: false
+                    isSub: false,
+                    id: null
                 };
 
                 this.playerService.DeletePlayer(deletingPlayer, this.selectedLeague).subscribe(result => {
@@ -346,7 +359,6 @@ export class ScramblerComponent implements OnInit {
         this.playerService.GetPassword().subscribe(result => {
 
             this.password = result;
-            console.log(this.PlayerForm.controls["password"].value)
             if (this.PlayerForm.controls["password"].value == "" || this.PlayerForm.controls["password"].value != this.password.password) {
                 alert("Password is not correct.")
             }
@@ -361,7 +373,8 @@ export class ScramblerComponent implements OnInit {
                         lastName: this.PlayerForm.controls["lastName"].value,
                         gender: this.selectedGender.value,
                         isMale: this.selectedGender.isMale,
-                        isSub: this.PlayerForm.controls["isSub"].value
+                        isSub: this.PlayerForm.controls["isSub"].value,
+                        id: null
                     };
 
                     if (this.selectedLeague != null) {
@@ -524,6 +537,76 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
+    async saveKingQueenTeams() {
+        console.log('in league ', this.selectedLeague);
+
+        // Transform Team[] into KingQueenTeamWithPlayers[]
+        const kingQueenTeamsWithPlayers: KingQueenTeamWithPlayers[] = this.listOfTeams.map(team => {
+            return {
+                kingQueenTeam: {
+                    id: 0, // Assign a default value for id or adjust it as needed
+                    leagueID: 0, // Assign a default value for leagueID or adjust it as needed
+                    dateOfTeam: new Date(), // Assign the current date or adjust it as needed
+                    scrambleNumber: 0, // Assign a default value for scrambleNumber or adjust it as needed
+                    kingQueenPlayers: team.players // You can initialize this as an empty array
+                },
+                players: team.players,
+            };
+        });
+
+        try {
+            const result = await this.playerService.saveKingQueenTeams(kingQueenTeamsWithPlayers, this.selectedLeague).toPromise();
+            if (result && result.length > 0 && result[0].kingQueenTeam) {
+                // Get the scramble number from the first team
+                this.scrambleNumber = result[0].kingQueenTeam.scrambleNumber;
+                alert('All KingQueenTeams saved successfully!');
+            } else {
+                // Handle the case where there was an issue with saving or no data returned
+                alert('Error saving KingQueenTeams or no data returned!');
+            }
+        } catch (error) {
+            // Handle errors, if any
+            console.error('Error saving KingQueenTeams: ', error);
+            alert('Error saving KingQueenTeams!');
+        }
+    }
+
+
+    retrieveMatchups() {
+        this.playerService.getKingQueenTeamsByScrambleNumber(this.selectedLeague, this.scrambleNumber).subscribe(
+            (matchups) => {
+                // Initialize your list of teams
+                this.listOfTeams = [];
+
+                // Map the retrieved matchups into listOfTeams
+                matchups.forEach((matchup) => {
+                    const team: Team = {
+                        players: matchup.players,
+                        maleCount: matchup.players.filter(player => player.isMale).length,
+                        femaleCount: matchup.players.filter(player => !player.isMale).length
+                    };
+                    this.listOfTeams.push(team);
+                });
+            },
+            (error) => {
+                // Handle any errors
+                console.error('Error retrieving matchups:', error);
+            }
+        );
+    }
+
+    scrambleWithNoDuplicates() {
+        // Add your logic to scramble teams here
+        // Ensure there are no duplicate teams in the result
+    }
+
+
+
+
+    // Check screen size and update isSmallScreen
+    checkScreenSize() {
+        this.isSmallScreen = window.innerWidth <= 768; // Adjust the screen size threshold as needed
+    }
     scramblePlayers() {
         this.totalTopPlayers = this.displayTopPlayers;
         if (!this.lockedResults) {

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Allport_s_League_Scrambler.Controllers
 {
@@ -80,7 +81,7 @@ namespace Allport_s_League_Scrambler.Controllers
             List<Player> players = new List<Player>();
             var context = new DataContext();
             players = context.Players
-                .Where(x => x.IsMale)
+                .Where(x => !x.IsMale)
                 .OrderBy(x => x.FirstName == "Open" ? 1 : 0) // Order "Open" to the end
                 .ThenBy(x => x.FirstName)
                 .ToList();
@@ -215,6 +216,149 @@ namespace Allport_s_League_Scrambler.Controllers
             return player;
 
         }
+
+        [HttpPost("[action]/{leagueName}")]
+        public List<KingQueenTeamWithPlayers> SaveKingQueenTeams([FromBody] List<KingQueenTeamWithPlayers> teams, string leagueName)
+        {
+            var context = new DataContext();
+            var existingLeague = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
+
+            if (existingLeague == null)
+            {
+                // Handle the case where the league doesn't exist
+                // You might want to return an error response or handle it as needed.
+                return null;
+            }
+
+            var currentDate = DateTime.Now;
+            var leagueId = existingLeague.ID;
+
+            var results = new List<KingQueenTeamWithPlayers>();
+
+            // Find the last scramble number from the database for each team
+            var lastScrambleNumber = context.KingQueenTeam
+                .Where(kt => kt.LeagueID == existingLeague.ID)
+                .Select(kt => kt.ScrambleNumber)
+                .DefaultIfEmpty(0)
+                .Max();
+
+            foreach (var team in teams)
+            {
+
+
+                // Increment the last scramble number by one to get the new scramble number
+                var newScrambleNumber = lastScrambleNumber + 1;
+
+                var newKingQueenTeam = new KingQueenTeam()
+                {
+                    LeagueID = existingLeague.ID,
+                    DateOfTeam = DateTime.Now,
+                    ScrambleNumber = newScrambleNumber // Assign the new scramble number
+                };
+
+                context.KingQueenTeam.Add(newKingQueenTeam);
+                context.SaveChanges();
+
+                var teamPlayers = new List<KingQueenPlayer>();
+
+                foreach (var player in team.Players)
+                {
+                    // Retrieve the associated Player entity
+                    var playerEntity = context.Players.FirstOrDefault(p => p.Id == player.Id);
+
+                    if (playerEntity != null)
+                    {
+                        var newKingQueenPlayer = new KingQueenPlayer()
+                        {
+                            KingQueenTeamId = newKingQueenTeam.Id,
+                            PlayerId = playerEntity.Id
+                        };
+
+                        context.KingQueenPlayer.Add(newKingQueenPlayer);
+                        context.SaveChanges();
+
+                        teamPlayers.Add(newKingQueenPlayer);
+                    }
+                }
+
+                // Retrieve the associated KingQueenTeam entity
+                var kingQueenTeam = context.KingQueenTeam
+                    .Where(t =>
+                        t.DateOfTeam.Date == currentDate.Date &&
+                        t.LeagueID == leagueId &&
+                        t.ScrambleNumber == newScrambleNumber && // Check the scramble number
+                        t.KingQueenPlayers.Any(kqp => teamPlayers.Any(tp => kqp.PlayerId == tp.PlayerId)))
+                    .FirstOrDefault();
+
+                var result = new KingQueenTeamWithPlayers
+                {
+                    KingQueenTeam = kingQueenTeam,
+                    Players = team.Players
+                };
+
+                results.Add(result);
+            }
+
+            return results;
+        }
+
+
+        [HttpGet("[action]/{leagueName}/{scrambleNumber}")]
+        public List<KingQueenTeamWithPlayers> GetKingQueenTeamsByScrambleNumber(string leagueName, int scrambleNumber)
+        {
+            var context = new DataContext();
+            var existingLeague = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
+
+            if (existingLeague == null)
+            {
+                // Handle the case where the league doesn't exist
+                // You might want to return an error response or handle it as needed.
+                return null;
+            }
+
+            var currentDate = DateTime.Now;
+            var leagueId = existingLeague.ID;
+
+            var results = new List<KingQueenTeamWithPlayers>();
+
+            // Retrieve KingQueenTeams based on the provided ScrambleNumber
+            var kingQueenTeams = context.KingQueenTeam
+                .Where(t =>
+                    t.LeagueID == leagueId &&
+                    t.ScrambleNumber == scrambleNumber)
+                .ToList();
+
+            foreach (var kingQueenTeam in kingQueenTeams)
+            {
+                // Retrieve the associated KingQueenPlayers for each team
+                var teamPlayers = context.KingQueenPlayer
+                    .Where(kqp => kqp.KingQueenTeamId == kingQueenTeam.Id)
+                    .Select(kqp => new Player
+                    {
+                // Map KingQueenPlayer properties to Player properties
+                // Example: (adjust property names as needed)
+                Id = kqp.Player.Id,
+                        FirstName = kqp.Player.FirstName,
+                        LastName = kqp.Player.LastName,
+                        IsMale = kqp.Player.IsMale,
+                // Map other properties
+            })
+                    .ToList();
+
+                var result = new KingQueenTeamWithPlayers
+                {
+                    KingQueenTeam = kingQueenTeam,
+                    Players = teamPlayers
+                };
+
+                results.Add(result);
+            }
+
+            return results;
+        }
+
+
+
 
         [HttpPost("[action]/{leagueName}")]
         public Player DeletePlayer([FromBody] Player player, string leagueName)

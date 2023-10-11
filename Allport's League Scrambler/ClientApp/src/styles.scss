@@ -9,10 +9,110 @@ body {
     font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
+/* Default style for 4 columns */
+.mat-list-option-four-columns {
+    background-color: #DBFDFF;
+    width: calc(25% - 10px);
+    margin-bottom: 10px;
+}
 
+/* Style for 2 columns on smaller screens */
+@media screen and (max-width: 768px) {
+    .mat-list-option-two-columns {
+        width: calc(50% - 10px);
+    }
 
+    /* Adjust the font size for smaller screens */
+    td {
+        font-size: 14px;
+    }
+
+    /* Your existing styles for screens up to 768px */
+    /* Add your existing styles here */
+}
+
+/* Default style for mat-selection-list in horizontal layout */
 mat-selection-list.list-horizontal {
     display: inline-block;
     height: auto;
     width: auto;
+}
+
+/* Style for extended background */
+.extended-background-blue {
+    position: relative;
+    padding-left: 5px;
+    padding-bottom: 5px;
+    padding-top: 5px;
+    padding-right: 80px; /* Adjust the padding as needed */
+    background-color: lightblue; /* Background color */
+}
+
+.extended-background-pink {
+    position: relative;
+    padding-left: 5px;
+    padding-bottom: 5px;
+    padding-top: 5px;
+    padding-right: 80px; /* Adjust the padding as needed */
+    background-color: pink; /* Background color */
+}
+
+/* Style for extended background */
+.extended-background-blue-lastName {
+    position: relative;
+    padding-left: 5px;
+    padding-bottom: 5px;
+    padding-top: 5px;
+    padding-right: 80px !important; /* Adjust the padding as needed */
+    background-color: lightblue; /* Background color */
+}
+
+.extended-background-pink-lastName {
+    position: relative;
+    padding-left: 5px;
+    padding-bottom: 5px;
+    padding-top: 5px;
+    padding-right: 80px !important; /* Adjust the padding as needed */
+    background-color: pink; /* Background color */
+}
+
+.name {
+    position: relative;
+    z-index: 1; /* Place the text above the background */
+}
+/* Add your other existing @media queries and styles here */
+
+.input {
+    min-width: 30px;
+    max-width: 30px;
+    display: inline-block;
+}
+
+.input.input-large {
+    width: 500px;
+}
+
+input {
+    width: 100%;
+}
+
+.no-wrap {
+    white-space: nowrap;
+}
+
+.player-list {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.player-item {
+    flex: 0 0 calc(33.33% - 10px); /* Adjust the width as needed */
+    margin: 5px;
+    word-wrap: break-word;
+    background-color: lightblue; /* Add background color for male players */
+    white-space: nowrap; /* Prevent player names from wrapping */
+}
+
+.player-item.female-bg {
+    background-color: pink; /* Add background color for female players */
 }
