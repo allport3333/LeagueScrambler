@@ -6,9 +6,7 @@ namespace Allport_s_League_Scrambler.Models
     {
         public int Id { get; set; }
 
-        [ForeignKey("KingQueenTeam")]
         public int KingQueenTeamId { get; set; }
-        public KingQueenTeam KingQueenTeam { get; set; }
 
 
         public int PlayerId { get; set; }
