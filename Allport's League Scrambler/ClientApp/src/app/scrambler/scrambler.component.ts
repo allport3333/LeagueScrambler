@@ -595,7 +595,7 @@ export class ScramblerComponent implements OnInit {
         );
     }
 
-    scrambleWithNoDuplicates() {
+    scrambleTeamsWithNoDuplicates() {
         // Add your logic to scramble teams here
         // Ensure there are no duplicate teams in the result
     }
