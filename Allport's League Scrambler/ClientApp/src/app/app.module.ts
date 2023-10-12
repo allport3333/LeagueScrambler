@@ -13,7 +13,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {
     MatCardModule, MatButtonModule, MatMenuModule, MatToolbarModule, MatInputModule, MatIconModule, MatTableModule, MatPaginatorModule, MatSortModule, MatSidenavModule,
     MatTabsModule, MatTooltipModule, MatCheckboxModule, MatGridListModule, MatSelectModule, MatListModule, MatFormFieldModule, MatOptionModule, MatAutocompleteModule, MatExpansionModule, MatDialogModule,
-    MatStepperModule, MatDatepickerModule, MatNativeDateModule, MatTreeModule, MatProgressSpinnerModule
+    MatStepperModule, MatDatepickerModule, MatNativeDateModule, MatTreeModule, MatProgressSpinnerModule, MatSnackBar, MatSnackBarContainer, MatSnackBarModule
 } from '@angular/material';
 import { TeamScoresComponent } from './team-scores/team-scores.component';
 import { PlayerScoresComponent } from './player-scores/player-scores.component';
@@ -61,6 +61,7 @@ import { ScheduleComponent } from './schedule/schedule.component';
         MatNativeDateModule,
         MatDatepickerModule,
         MatTreeModule,
+        MatSnackBarModule,
         RouterModule.forRoot([
             { path: '', component: HomeComponent, pathMatch: 'full' },
             { path: 'scrambler', component: ScramblerComponent },
@@ -71,7 +72,8 @@ import { ScheduleComponent } from './schedule/schedule.component';
         ]),
         BrowserAnimationsModule
     ],
-    providers: [],
-    bootstrap: [AppComponent]
+    providers: [MatSnackBar],
+    bootstrap: [AppComponent],
+    entryComponents: [MatSnackBarContainer]
 })
 export class AppModule { }

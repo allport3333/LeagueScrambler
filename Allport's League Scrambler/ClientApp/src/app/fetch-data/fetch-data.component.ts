@@ -66,8 +66,7 @@ export class FetchDataComponent implements OnInit {
             lastName: this.PlayerForm.controls["lastName"].value,
             gender: this.PlayerForm.controls["isMale"].value,
             isMale: this.isMale1,
-            isSub: this.PlayerForm.controls["isSub"].value,
-            id: null
+            isSub: this.PlayerForm.controls["isSub"].value
         };
         
 

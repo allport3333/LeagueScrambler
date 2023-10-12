@@ -234,140 +234,145 @@
                         </div>
                     </mat-tab>
                     <mat-tab label="Retrieve Scramble">
-                        <div class="tab-content d-flex flex-column align-items-center">
-                            <div class="d-flex flex-column align-items-center mb-2">
-                                <mat-form-field>
-                                    <input matInput placeholder="Enter Scramble Number" [(ngModel)]="scrambleNumber">
-                                </mat-form-field>
-
-                                <button mat-raised-button color="primary" (click)="retrieveMatchups()">Retrieve Matchups</button>
-
-                                <!-- Add margin between the two buttons -->
-                                <div style="margin-top: 10px;"></div>
-
-                                <button mat-raised-button color="primary" (click)="scrambleTeamsWithNoDuplicates()">Scramble With No Duplicate Teams</button>
-                            </div>
-
-                            <!-- Display previous matchups centered -->
-                            <div class="matchup-container row justify-content-center align-items-center">
-                                <ng-container *ngFor="let matchup of matchups; let i = index">
-                                    <div *ngIf="(i + 1) % 2 == 0" class="matchup-divider">
-                                        <h4 class="vs-text">vs</h4>
-                                    </div>
-                                    <div class="col-3">
-                                        <table class=" table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Team {{ i + 1 }}</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr *ngFor="let player of matchup.players">
-                                                    <!-- Display player details here -->
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </ng-container>
-                            </div>
-                        </div>
-                    </mat-tab>
-
-
-                    <mat-tab label="Add Player" class="mt-2">
-                        <div class="container-fluid">
-                            <br />
-                            <h5>Enter New Player</h5>
-                            <br />
-                            <div class="row">
-                                <div class="col-2">
-                                    <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()">
-                                        <mat-form-field style="max-width:180px" appearance="outline">
-                                            <mat-label>First Name:</mat-label>
-                                            <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
-                                        </mat-form-field>
-                                        <br />
-                                        <mat-form-field style="max-width:180px" appearance="outline">
-                                            <mat-label>Last Name:</mat-label>
-                                            <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
-                                        </mat-form-field>
-                                        <br />
-                                        <mat-form-field>
-                                            <mat-select formControlName="isSub" placeholder="Sub/Flex">
-                                                <mat-option [value]="true">Sub</mat-option>
-                                                <mat-option [value]="false">Not a Sub</mat-option>
-                                            </mat-select>
-                                        </mat-form-field>
-                                        <br />
-                                        <mat-form-field>
-                                            <mat-label>Password</mat-label>
-                                            <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
-                                        </mat-form-field>
-
-                                        <br />
-                                        <button mat-raised-button color="primary">Submit</button><br /><br />
-                                    </form>
-                                </div>
-                                <div class="col-2">
+                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                            <div class="tab-content d-flex flex-column align-items-center">
+                                <div class="d-flex flex-column align-items-center mb-2">
                                     <mat-form-field>
-                                        <mat-label>Gender</mat-label>
-                                        <mat-select [(ngModel)]="selectedGender">
-                                            <mat-option *ngFor="let gender of gendersPossible" [value]="gender">
-                                                {{gender.value}}
-                                            </mat-option>
-                                        </mat-select>
+                                        <input matInput placeholder="Enter Scramble Number" [(ngModel)]="scrambleNumber">
                                     </mat-form-field>
 
+                                    <button mat-raised-button color="primary" (click)="retrieveMatchups()">Retrieve Matchups</button>
+
+                                    <!-- Add margin between the two buttons -->
+                                    <div style="margin-top: 10px;"></div>
+
+                                    <button mat-raised-button color="primary" (click)="scrambleTeamsWithNoDuplicates()">Scramble With No Duplicate Teams</button>
+                                </div>
+
+                                <!-- Display previous matchups centered -->
+                                <div class="matchup-container row justify-content-center align-items-center">
+                                    <ng-container *ngFor="let matchup of matchups; let i = index">
+                                        <div *ngIf="(i + 1) % 2 == 0" class="matchup-divider">
+                                            <h4 class="vs-text">vs</h4>
+                                        </div>
+                                        <div class="col-3">
+                                            <table class=" table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Team {{ i + 1 }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr *ngFor="let player of matchup.players">
+                                                        <!-- Display player details here -->
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </ng-container>
                                 </div>
                             </div>
-                        </div>
+                        </mat-card>
                     </mat-tab>
+
+
+                    <mat-tab label="Enter New Player">
+                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                            <div class="tab-content d-flex flex-column align-items-center">
+                                <h5 class="mb-2">Enter New Player</h5>
+                                <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()" class="d-flex flex-column align-items-center">
+                                    <div class="row">
+                                        <div class="col-12 col-lg-6">
+                                            <mat-form-field style="max-width: 180px" appearance="outline">
+                                                <mat-label>First Name:</mat-label>
+                                                <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
+                                            </mat-form-field>
+                                            <br />
+                                            <mat-form-field style="max-width: 180px" appearance="outline">
+                                                <mat-label>Last Name:</mat-label>
+                                                <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
+                                            </mat-form-field>
+                                            <br />
+                                            <mat-form-field style="max-width: 180px" appearance="outline">
+                                                <mat-label>Password:</mat-label>
+                                                <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
+                                            </mat-form-field>
+                                        </div>
+                                        <div class="col-12 col-lg-6">
+                                            <mat-form-field appearance="outline">
+                                                <mat-select formControlName="isSub" placeholder="Sub/Flex">
+                                                    <mat-option [value]="true">Sub</mat-option>
+                                                    <mat-option [value]="false">Not a Sub</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                            <br />
+                                            <mat-form-field appearance="outline">
+                                                <mat-label>Gender:</mat-label>
+                                                <mat-select [formControl]="PlayerForm.get('selectedGender')" placeholder="Gender">
+                                                    <mat-option *ngFor="let gender of gendersPossible" [value]="gender.value">
+                                                        {{ gender.value }}
+                                                    </mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                            <br />
+                                            <button mat-raised-button color="primary">Submit</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </mat-card>
+                    </mat-tab>
+
+                    
                     <mat-tab label="Delete Player" class="mt-2">
                         <div class="container-fluid">
-                            <br />
-                            <h5>Delete Player</h5>
-                            <br />
-                            <div class="row">
-                                <div class="col-2">
-                                    <!-- Create a form to select the player to delete -->
-                                    <form [formGroup]="deletePlayerForm" (ngSubmit)="onDeletePlayerClick()">
-                                        <mat-form-field style="max-width:180px" appearance="outline">
-                                            <mat-label>First Name:</mat-label>
-                                            <input matInput formControlName="firstName" placeholder="Player First Name" required />
-                                        </mat-form-field>
-                                        <mat-form-field style="max-width:180px" appearance="outline">
-                                            <mat-label>Last Name:</mat-label>
-                                            <input matInput formControlName="lastName" placeholder="Player Last Name" required />
-                                        </mat-form-field>
-                                        <mat-form-field>
-                                            <mat-label>Password</mat-label>
-                                            <input matInput placeholder="Password" type="password" formControlName="passwordDelete" value="{{passwordDelete}}" required />
-                                        </mat-form-field>
-                                        <br />
-                                        <button mat-raised-button color="warn">Delete Player</button><br /><br />
-                                    </form>
+                            <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                                <br />
+                                <h5>Delete Player</h5>
+                                <br />
+                                <div class="row">
+                                    <div class="col-2">
+                                        <!-- Create a form to select the player to delete -->
+                                        <form [formGroup]="deletePlayerForm" (ngSubmit)="onDeletePlayerClick()">
+                                            <mat-form-field style="max-width:180px" appearance="outline">
+                                                <mat-label>First Name:</mat-label>
+                                                <input matInput formControlName="firstName" placeholder="Player First Name" required />
+                                            </mat-form-field>
+                                            <mat-form-field style="max-width:180px" appearance="outline">
+                                                <mat-label>Last Name:</mat-label>
+                                                <input matInput formControlName="lastName" placeholder="Player Last Name" required />
+                                            </mat-form-field>
+                                            <mat-form-field>
+                                                <mat-label>Password</mat-label>
+                                                <input matInput placeholder="Password" type="password" formControlName="passwordDelete" value="{{passwordDelete}}" required />
+                                            </mat-form-field>
+                                            <br />
+                                            <button mat-raised-button color="warn">Delete Player</button><br /><br />
+                                        </form>
 
+                                    </div>
                                 </div>
-                            </div>
+                            </mat-card>
                         </div>
                     </mat-tab>
                     <mat-tab label="Add League">
-                        <br />
-                        <h5>Enter New League</h5>
-                        <form [formGroup]="LeagueForm">
-                            <mat-form-field style="max-width:180px" appearance="outline">
-                                <mat-label>New League Name</mat-label>
-                                <input matInput placeholder="League Name" type="text" formControlName="newLeagueName" required />
-                            </mat-form-field>
+                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <br />
-                            <mat-form-field>
-                                <mat-label>Password</mat-label>
-                                <input matInput placeholder="Password" type="password" formControlName="passwordLeague" value="{{passwordLeague}}" required />
-                            </mat-form-field>
-                            <br />
-                            <button (click)="addLeague()" mat-raised-button color="primary">Add New League</button>
-                        </form>
-
+                            <h5>Enter New League</h5>
+                            <form [formGroup]="LeagueForm">
+                                <mat-form-field style="max-width:180px" appearance="outline">
+                                    <mat-label>New League Name</mat-label>
+                                    <input matInput placeholder="League Name" type="text" formControlName="newLeagueName" required />
+                                </mat-form-field>
+                                <br />
+                                <mat-form-field>
+                                    <mat-label>Password</mat-label>
+                                    <input matInput placeholder="Password" type="password" formControlName="passwordLeague" value="{{passwordLeague}}" required />
+                                </mat-form-field>
+                                <br />
+                                <button (click)="addLeague()" mat-raised-button color="primary">Add New League</button>
+                            </form>
+                        </mat-card>
                     </mat-tab>
 
 
