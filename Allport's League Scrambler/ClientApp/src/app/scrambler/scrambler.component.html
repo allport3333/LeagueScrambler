@@ -63,7 +63,11 @@
             </mat-card>
             <mat-card style="background-color: lightgray;" class="ml-1 mt-2" *ngIf="displayTopPlayers.length > 0 && !hideInputOptions">
                 <div class="d-flex flex-column align-items-center">
-                    <h5>Top Players</h5>
+                    <h5>
+                        Top Players
+                        <span *ngIf="totalTopPlayers.length > 0">({{ totalTopPlayers.length }})</span>
+                    </h5>
+                    
                     <div class="player-list">
                         <ng-container *ngFor="let player of displayTopPlayers">
                             <div class="player-item" [ngClass]="{'male-bg': player.isMale, 'female-bg': !player.isMale}">
@@ -91,16 +95,16 @@
                     <button (click)="hideOptions()"  mat-raised-button color="primary" class="w-100">Hide Options</button>
                 </div>
                 <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <button (click)="reset()" mat-raised-button color="primary" class="w-100">Reset</button>
+                    <button (click)="reset()" mat-raised-button color="primary" class="w-100">Reset Top Players</button>
                 </div>
                 <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
                     <button (click)="hidePlayerList()" mat-raised-button color="primary" class="w-100">
                         {{ hidePlayers ? 'Show Player List' : 'Hide Player List' }}
                     </button>
                 </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 col-12">
+                <!--<div class="col-lg-2 col-md-4 col-sm-6 col-12">
                     <button (click)="addTopPlayers()" mat-raised-button color="primary" class="w-100">Set Top Players</button>
-                </div>
+                </div>-->
             </div>
 
 
@@ -239,7 +243,7 @@
                             <div class="tab-content d-flex flex-column align-items-center">
                                 <h5 class="mb-2">Retrieve Previous Scramble</h5>
                                 <div class="d-flex flex-column align-items-center mb-2">
-                                    <mat-form-field>
+                                    <mat-form-field appearance="outline">
                                         <input matInput placeholder="Enter Scramble Number" [(ngModel)]="scrambleNumber">
                                     </mat-form-field>
 

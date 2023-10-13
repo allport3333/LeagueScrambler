@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Allport_s_League_Scrambler.Controllers
 {
     [Route("api/[controller]")]
-    public class SampleDataController : Controller
+    public class ScrambleDataController : Controller
     {
         [HttpGet("[action]")]
         public Password GetPassword()
