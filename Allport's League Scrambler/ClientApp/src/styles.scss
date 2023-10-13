@@ -26,7 +26,9 @@ body {
     td {
         font-size: 14px;
     }
-
+    .navbar-toggler {
+        width: 100px; /* Adjust the width for smaller screens */
+    }
     /* Your existing styles for screens up to 768px */
     /* Add your existing styles here */
 }
@@ -116,3 +118,18 @@ input {
 .player-item.female-bg {
     background-color: pink; /* Add background color for female players */
 }
+/* Center the tabs */
+.tab-container {
+    display: flex;
+    justify-content: center;
+}
+
+.navbar-nav .nav-link {
+    font-size: 18px; /* Increase the font size */
+    padding: 10px 20px; /* Increase the padding */
+}
+
+.navbar-toggler {
+    width: 60px; /* Adjust the width to your desired size */
+}
+

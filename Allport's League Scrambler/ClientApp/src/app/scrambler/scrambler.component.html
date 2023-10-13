@@ -84,11 +84,11 @@
 
 
             <div class="row justify-content-center mt-3">
-                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <button *ngIf="!hideInputOptions" (click)="scramblePlayers()" mat-raised-button color="primary" class="w-100">Scramble Players</button>
+                <div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                    <button  (click)="scramblePlayers()" mat-raised-button color="primary" class="w-100">Scramble Players</button>
                 </div>
-                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <button (click)="hideOptions()" *ngIf="!hideInputOptions" mat-raised-button color="primary" class="w-100">Hide Options</button>
+                <div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                    <button (click)="hideOptions()"  mat-raised-button color="primary" class="w-100">Hide Options</button>
                 </div>
                 <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
                     <button (click)="reset()" mat-raised-button color="primary" class="w-100">Reset</button>
@@ -119,7 +119,8 @@
     <div class="row">
         <div class="col-12">
             <mat-card class=" ml-3 mt-2 " style="background-color:lightgray; ">
-                <mat-tab-group>
+
+                <mat-tab-group mat-align-tabs="center">
                     <mat-tab label="Select Players">
                         <div class="container-fluid">
                             <div class="row">
@@ -236,6 +237,7 @@
                     <mat-tab label="Retrieve Scramble">
                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <div class="tab-content d-flex flex-column align-items-center">
+                                <h5 class="mb-2">Retrieve Previous Scramble</h5>
                                 <div class="d-flex flex-column align-items-center mb-2">
                                     <mat-form-field>
                                         <input matInput placeholder="Enter Scramble Number" [(ngModel)]="scrambleNumber">
@@ -276,7 +278,7 @@
                     </mat-tab>
 
 
-                    <mat-tab label="Enter New Player">
+                    <mat-tab label="Add Player">
                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <div class="tab-content d-flex flex-column align-items-center">
                                 <h5 class="mb-2">Enter New Player</h5>
@@ -315,7 +317,9 @@
                                                 </mat-select>
                                             </mat-form-field>
                                             <br />
-                                            <button mat-raised-button color="primary">Submit</button>
+                                            <div class="d-flex justify-content-center">
+                                                <button mat-raised-button color="primary">Submit</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </form>
@@ -323,60 +327,72 @@
                         </mat-card>
                     </mat-tab>
 
-                    
+
                     <mat-tab label="Delete Player" class="mt-2">
                         <div class="container-fluid">
                             <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                                <br />
-                                <h5>Delete Player</h5>
+                                <h5 class="text-center">Delete Player</h5>
                                 <br />
                                 <div class="row">
-                                    <div class="col-2">
-                                        <!-- Create a form to select the player to delete -->
+                                    <div class="col-12 d-flex flex-column align-items-center">
                                         <form [formGroup]="deletePlayerForm" (ngSubmit)="onDeletePlayerClick()">
-                                            <mat-form-field style="max-width:180px" appearance="outline">
-                                                <mat-label>First Name:</mat-label>
-                                                <input matInput formControlName="firstName" placeholder="Player First Name" required />
-                                            </mat-form-field>
-                                            <mat-form-field style="max-width:180px" appearance="outline">
-                                                <mat-label>Last Name:</mat-label>
-                                                <input matInput formControlName="lastName" placeholder="Player Last Name" required />
-                                            </mat-form-field>
-                                            <mat-form-field>
-                                                <mat-label>Password</mat-label>
-                                                <input matInput placeholder="Password" type="password" formControlName="passwordDelete" value="{{passwordDelete}}" required />
-                                            </mat-form-field>
-                                            <br />
-                                            <button mat-raised-button color="warn">Delete Player</button><br /><br />
+                                            <div class="d-flex flex-column align-items-center">
+                                                <mat-form-field style="max-width: 180px" appearance="outline">
+                                                    <mat-label>First Name:</mat-label>
+                                                    <input matInput formControlName="firstName" placeholder="Player First Name" required />
+                                                </mat-form-field>
+                                                <mat-form-field style="max-width: 180px" appearance="outline">
+                                                    <mat-label>Last Name:</mat-label>
+                                                    <input matInput formControlName="lastName" placeholder="Player Last Name" required />
+                                                </mat-form-field>
+                                                <mat-form-field style="max-width: 180px" appearance="outline">
+                                                    <mat-label>Password</mat-label>
+                                                    <input matInput placeholder="Password" type="password" formControlName="passwordDelete" required />
+                                                </mat-form-field>
+                                            </div>
+                                            <div class="d-flex justify-content-center">
+                                                <button mat-raised-button color="warn" class="text-center">Delete Player</button><br /><br />
+                                            </div>
                                         </form>
-
                                     </div>
                                 </div>
                             </mat-card>
                         </div>
                     </mat-tab>
-                    <mat-tab label="Add League">
-                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                            <br />
-                            <h5>Enter New League</h5>
-                            <form [formGroup]="LeagueForm">
-                                <mat-form-field style="max-width:180px" appearance="outline">
-                                    <mat-label>New League Name</mat-label>
-                                    <input matInput placeholder="League Name" type="text" formControlName="newLeagueName" required />
-                                </mat-form-field>
+
+
+
+
+
+                    <mat-tab label="Add League" class="mt-2">
+                        <div class="container-fluid">
+                            <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">                                
+                                <h5 class="text-center">Enter New League</h5>
                                 <br />
-                                <mat-form-field>
-                                    <mat-label>Password</mat-label>
-                                    <input matInput placeholder="Password" type="password" formControlName="passwordLeague" value="{{passwordLeague}}" required />
-                                </mat-form-field>
-                                <br />
-                                <button (click)="addLeague()" mat-raised-button color="primary">Add New League</button>
-                            </form>
-                        </mat-card>
+                                <form [formGroup]="LeagueForm" (ngSubmit)="addLeague()">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <mat-form-field style="max-width: 180px" appearance="outline">
+                                            <mat-label>New League Name</mat-label>
+                                            <input matInput placeholder="League Name" type="text" formControlName="newLeagueName" required />
+                                        </mat-form-field>
+                                        <mat-form-field style="max-width: 180px" appearance="outline">
+                                            <mat-label>Password</mat-label>
+                                            <input matInput placeholder="Password" type="password" formControlName="passwordLeague" required />
+                                        </mat-form-field>
+                                    </div>
+                                    <br />
+                                    <div class="d-flex justify-content-center">
+                                        <button mat-raised-button color="primary">Add New League</button>
+                                    </div>
+                                </form>
+                            </mat-card>
+                        </div>
                     </mat-tab>
 
 
+
                 </mat-tab-group>
+
             </mat-card>
         </div>
     </div>
