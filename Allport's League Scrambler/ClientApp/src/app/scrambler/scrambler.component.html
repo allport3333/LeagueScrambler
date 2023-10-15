@@ -89,7 +89,7 @@
 
             <div class="row justify-content-center mt-3">
                 <div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <button  (click)="scramblePlayers()" mat-raised-button color="primary" class="w-100">Scramble Players</button>
+                    <button  (click)="scramblePlayers(false)" mat-raised-button color="primary" class="w-100">Scramble Players</button>
                 </div>
                 <div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
                     <button (click)="hideOptions()"  mat-raised-button color="primary" class="w-100">Hide Options</button>
@@ -113,7 +113,7 @@
 
             <div class="text-center mt-3" *ngIf="hideInputOptions">
                 <button (click)="hideOptions()" mat-raised-button color="primary">Show Options</button>
-                <button *ngIf="!lockedResults" style="margin-top:10px; margin-left: 10px" (click)="scramblePlayers()" mat-raised-button color="primary">Scramble Players</button>
+                <button *ngIf="!lockedResults" style="margin-top:10px; margin-left: 10px" (click)="scramblePlayers(false)" mat-raised-button color="primary">Scramble Players</button>
                 <div class="mt-2">
                     <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
                 </div>
@@ -252,7 +252,7 @@
                                     <!-- Add margin between the two buttons -->
                                     <div style="margin-top: 10px;"></div>
 
-                                    <button mat-raised-button color="primary" (click)="scrambleTeamsWithNoDuplicates()">Scramble With No Duplicate Teams</button>
+                                    <button mat-raised-button color="primary" (click)="scramblePlayers(true)">Scramble With No Duplicate Teams</button>
                                 </div>
 
                                 <!-- Display previous matchups centered -->
@@ -472,5 +472,5 @@
 <div class="text-center" style="margin-top: 10px;">
     <button *ngIf="!hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class" color="primary">Hide</button>
     <button *ngIf="hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class" color="primary">Show</button>
-    <button *ngIf="hideEverything && !lockedResults" (click)="scramblePlayers()" style="margin-left:10px; " class="my-class" mat-raised-button color="primary">Scramble</button>
+    <button *ngIf="hideEverything && !lockedResults" (click)="scramblePlayers(false)" style="margin-left:10px; " class="my-class" mat-raised-button color="primary">Scramble</button>
 </div>
