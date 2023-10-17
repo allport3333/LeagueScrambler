@@ -159,6 +159,21 @@ namespace Allport_s_League_Scrambler.Controllers
             return players;
         }
 
+        [HttpGet("[action]/{leagueName}")]
+        public IEnumerable<KingQueenTeam> SelectedLeagueScrambles(string leagueName)
+        {
+            List<KingQueenTeam> players = new List<KingQueenTeam>();
+            var context = new DataContext();
+            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+            var kingQueenTeamsDistinct = context.KingQueenTeam
+                .Where(x => x.LeagueID == league.ID)
+                .GroupBy(x => x.ScrambleNumber)
+                .Select(g => g.First())
+                .ToList();
+
+            return kingQueenTeamsDistinct;
+        }
+
         [HttpPost("[action]/{leagueName}")]
         public Player AddPlayer([FromBody] Player player, string leagueName)
         {
@@ -357,7 +372,59 @@ namespace Allport_s_League_Scrambler.Controllers
             return results;
         }
 
+        [HttpPost("[action]/{leagueName}")]
+        public List<KingQueenTeamWithPlayers> GetKingQueenTeamsByScrambleNumbers(string leagueName, [FromBody] List<int> scrambleNumbers)
+        {
+            var context = new DataContext();
+            var existingLeague = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
 
+            if (existingLeague == null)
+            {
+                // Handle the case where the league doesn't exist
+                // You might want to return an error response or handle it as needed.
+                return null;
+            }
+
+            var currentDate = DateTime.Now;
+            var leagueId = existingLeague.ID;
+
+            var results = new List<KingQueenTeamWithPlayers>();
+
+            // Retrieve KingQueenTeams based on the provided ScrambleNumbers
+            var kingQueenTeams = context.KingQueenTeam
+                .Where(t =>
+                    t.LeagueID == leagueId &&
+                    scrambleNumbers.Contains(t.ScrambleNumber))
+                .ToList();
+
+            foreach (var kingQueenTeam in kingQueenTeams)
+            {
+                // Retrieve the associated KingQueenPlayers for each team
+                var teamPlayers = context.KingQueenPlayer
+                    .Where(kqp => kqp.KingQueenTeamId == kingQueenTeam.Id)
+                    .Select(kqp => new Player
+                    {
+                // Map KingQueenPlayer properties to Player properties
+                // Example: (adjust property names as needed)
+                Id = kqp.Player.Id,
+                        FirstName = kqp.Player.FirstName,
+                        LastName = kqp.Player.LastName,
+                        IsMale = kqp.Player.IsMale,
+                // Map other properties
+            })
+                    .ToList();
+
+                var result = new KingQueenTeamWithPlayers
+                {
+                    KingQueenTeam = kingQueenTeam,
+                    Players = teamPlayers
+                };
+
+                results.Add(result);
+            }
+
+            return results;
+        }
 
 
         [HttpPost("[action]/{leagueName}")]

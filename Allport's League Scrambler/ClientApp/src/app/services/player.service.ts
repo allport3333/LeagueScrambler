@@ -1,5 +1,5 @@
 import { Component, Inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 
 import { Player } from '../data-models/player.model';
 import { Leagues } from '../data-models/leagues.model';
@@ -37,6 +37,10 @@ export class PlayerService {
         return this.httpClient.get<Player[]>(this.baseUrl + 'api/ScrambleData/SelectLeague/' + leagueName);
     }
 
+    public SelectedLeagueScrambles(leagueName: string) {
+        return this.httpClient.get<KingQueenTeam[]>(this.baseUrl + 'api/ScrambleData/SelectedLeagueScrambles/' + leagueName);
+    }
+
     public GetAllFemalePlayers() {
         return this.httpClient.get<Player[]>(this.baseUrl + 'api/ScrambleData/GetAllFemalePlayers');
     }
@@ -61,6 +65,15 @@ export class PlayerService {
     getKingQueenTeamsByScrambleNumber(leagueName: string, scrambleNumber: number): Observable<KingQueenTeamWithPlayers[]> {
         return this.httpClient.get<KingQueenTeamWithPlayers[]>(
             `${this.baseUrl}api/ScrambleData/GetKingQueenTeamsByScrambleNumber/${leagueName}/${scrambleNumber}`
+        );
+    }
+
+    getMultipleKingQueenTeamsByScrambleNumbers(leagueName: string, scrambleNumbers: number[]): Observable<KingQueenTeamWithPlayers[]> {
+        const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+        const options = { headers: headers };
+        return this.httpClient.post<KingQueenTeamWithPlayers[]>(
+            `${this.baseUrl}api/ScrambleData/GetKingQueenTeamsByScrambleNumbers/${leagueName}`, scrambleNumbers, options
+            
         );
     }
 

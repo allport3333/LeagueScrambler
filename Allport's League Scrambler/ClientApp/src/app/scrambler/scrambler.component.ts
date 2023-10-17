@@ -35,9 +35,11 @@ export class ScramblerComponent implements OnInit {
     retrievedListOfTeams: Team[] = new Array();
     matchups: Team[] = new Array();
     selectedList: Player[] = new Array();
+    selectedRetrieveScrambleList: KingQueenTeam[] = new Array();
     malePlayers1: Player[];
     femalePlayers1: Player[];
     queriedPlayers: Player[];
+    queriedScrambles: KingQueenTeam[];
     leaguesAvailable: Leagues[];
     gendersPossible: Gender[] = [{ value: 'Female', isMale: false }, { value: 'Male', isMale: true }];
     isSub: boolean;
@@ -51,6 +53,7 @@ export class ScramblerComponent implements OnInit {
     password: Password;
     passwordLeague: Password;
     passwordDelete: Password;
+    listOfScrambleNumbers: number[] = [];
     teamSizePossible: number[] = [2, 3, 4, 5];
     maxNumberOfTeams: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
     femalePlayerCount: number;
@@ -160,6 +163,11 @@ export class ScramblerComponent implements OnInit {
 
             this.playerLoading = false;
         });
+        this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe(result => {
+            this.queriedScrambles = result;
+
+            this.playerLoading = false;
+        });
     }
 
     addPlayer(player) {
@@ -177,6 +185,14 @@ export class ScramblerComponent implements OnInit {
 
         this.malePlayerCount = this.malePlayersDisplayCount.length;
         this.femalePlayerCount = this.femalePlayersDisplayCount.length;
+    }
+
+    updateScrambleNumbers(selectedItems: any[]) {
+        // Clear the existing list and add selected items
+        this.listOfScrambleNumbers.length = 0; // Clear the array
+        selectedItems.forEach(selected => {
+            this.listOfScrambleNumbers.push(selected.scrambleNumber);
+        });
     }
 
     addLeague() {
@@ -526,7 +542,7 @@ export class ScramblerComponent implements OnInit {
     femaleScramble2(bracketTeamPlayers) {
         let randomFemalePlayer;
         let players;
-        let maxIterations = 100; // Set a reasonable maximum number of iterations
+        let maxIterations = 500; // Set a reasonable maximum number of iterations
         let iterations = 0;
 
         while (iterations < maxIterations) {
@@ -630,6 +646,55 @@ export class ScramblerComponent implements OnInit {
             this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
             this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
         }
+    }
+
+    retrieveScramble(scramble: KingQueenTeam) {
+        this.retrievedListOfTeams = [];
+        this.playerService.getKingQueenTeamsByScrambleNumber(this.selectedLeague, scramble.scrambleNumber).subscribe(
+            (matchups) => {
+                // Initialize your list of teams
+                this.listOfTeams = [];
+
+                // Map the retrieved matchups into listOfTeams
+                matchups.forEach((matchup) => {
+                    const team: Team = {
+                        players: matchup.players,
+                        maleCount: matchup.players.filter(player => player.isMale).length,
+                        femaleCount: matchup.players.filter(player => !player.isMale).length
+                    };
+                    this.listOfTeams.push(team);
+                    this.retrievedListOfTeams.push(team);
+                });
+            },
+            (error) => {
+                // Handle any errors
+                console.error('Error retrieving matchups:', error);
+            }
+        );
+    }
+
+    retrieveMultipleScrambles() {
+        this.playerService.getMultipleKingQueenTeamsByScrambleNumbers(this.selectedLeague, this.listOfScrambleNumbers).subscribe(
+            (matchups) => {
+                // Initialize your list of teams
+                this.listOfTeams = [];
+                this.retrievedListOfTeams = [];
+                // Map the retrieved matchups into listOfTeams
+                matchups.forEach((matchup) => {
+                    const team: Team = {
+                        players: matchup.players,
+                        maleCount: matchup.players.filter(player => player.isMale).length,
+                        femaleCount: matchup.players.filter(player => !player.isMale).length
+                    };
+                    this.listOfTeams.push(team);
+                    this.retrievedListOfTeams.push(team);
+                });
+            },
+            (error) => {
+                // Handle any errors
+                console.error('Error retrieving matchups:', error);
+            }
+        );
     }
 
     clearTopPLayers() {
@@ -791,7 +856,7 @@ export class ScramblerComponent implements OnInit {
     ): boolean {
         this.totalTopPlayersTemp = [...this.totalTopPlayers];
         this.totalPlayersTemp = [...this.totalPlayers];
-        const maxRetries = 100; // Set a maximum number of retries
+        const maxRetries = 101; // Set a maximum number of retries
         for (let retry = 0; retry < maxRetries; retry++) {
             this.fillTopPlayers();
             
@@ -808,13 +873,20 @@ export class ScramblerComponent implements OnInit {
             this.femalePlayers = [];
             this.totalTopPlayers = [...this.totalTopPlayersTemp];
             this.totalPlayers = [...this.totalPlayersTemp];
-            this.fillPlayers();
-            if (this.listOfTeams.length === 0) {
-                this.fillTeam()
+            if (retry != 100 ) {
+                this.fillPlayers();
+                if (this.listOfTeams.length === 0) {
+                    this.fillTeam()
+                }
             }
+            
+            
 
             // You can add a delay between retries if needed
         }
+        this.malePlayers = [];
+        this.femalePlayers = [];
+        this.retrievedListOfTeams = [];
         return false; // All retries failed
     }
 
@@ -951,7 +1023,9 @@ export class ScramblerComponent implements OnInit {
             }
             else {
 
+                try {
 
+                
                 // Use the function to select players for both males and females with retries
                 if (this.selectPlayersWithRetries(nonDuplicates)) {
                     if (nonDuplicates) {
@@ -963,6 +1037,9 @@ export class ScramblerComponent implements OnInit {
                 }
                 else {
                     this.showSnackBar("Not enough players to complete non-duplicate scramble.", true);
+                    }
+                } catch (e) {
+
                 }
 
             }

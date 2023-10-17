@@ -1,7 +1,7 @@
 <div class="container-fluid" [hidden]="hideEverything">
     <div class="row">
         <div class="col-12">
-            <mat-card style="background-color:lightgray; " class="ml-1 mt-2" *ngIf="!hideInputOptions">
+            <mat-card style="background-color:lightgray; " class="ml-1 mt-2" >
                 <div class="row">
                     <div class="col">
                         <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
@@ -242,19 +242,43 @@
                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <div class="tab-content d-flex flex-column align-items-center">
                                 <h5 class="mb-2">Retrieve Previous Scramble</h5>
-                                <div class="d-flex flex-column align-items-center mb-2">
-                                    <mat-form-field appearance="outline">
-                                        <input matInput placeholder="Enter Scramble Number" [(ngModel)]="scrambleNumber">
-                                    </mat-form-field>
+                                <!--<div class="d-flex flex-column align-items-center mb-2">
+        <mat-form-field appearance="outline">
+            <input matInput placeholder="Enter Scramble Number" [(ngModel)]="scrambleNumber">
+        </mat-form-field>
 
-                                    <button mat-raised-button color="primary" (click)="retrieveMatchups()">Retrieve Matchups</button>
+        <button mat-raised-button color="primary" (click)="retrieveMatchups()">Retrieve Matchups</button>
 
-                                    <!-- Add margin between the two buttons -->
-                                    <div style="margin-top: 10px;"></div>
+        <div style="margin-top: 10px;"></div>
 
-                                    <button mat-raised-button color="primary" (click)="scramblePlayers(true)">Scramble With No Duplicate Teams</button>
-                                </div>
-
+        <button mat-raised-button color="primary" (click)="scramblePlayers(true)">Scramble With No Duplicate Teams</button>
+    </div>-->
+                                <mat-selection-list dense [(ngModel)]="selectedRetrieveScrambleList" (ngModelChange)="updateScrambleNumbers($event)">
+                                    <div>
+                                        <!-- Male Players -->
+                                        <div style="display: flex; flex-direction: column;">
+                                            <mat-list style="display: flex; flex-wrap: wrap; justify-content: space-between;">
+                                                <mat-list-option [style.width.%]="isSmallScreen ? 100 : 50" [style.margin-bottom.px]="isSmallScreen ? 10 : 2" style="background-color: lightgray; text-align: center;" *ngFor="let scramble of queriedScrambles; let i = index" [value]="scramble">
+                                                    <div style="display: flex; align-items: center; justify-content: center;">
+                                                        <div style="margin: 5px;">
+                                                            <!-- Add margin here -->
+                                                            <span>Scramble Number: {{ scramble.scrambleNumber }}</span>
+                                                            <br>
+                                                            <span>Date of Scramble: {{ scramble.dateOfTeam | date:'shortDate' }}</span>
+                                                        </div>
+                                                        <button mat-icon-button (click)="retrieveScramble(scramble); $event.stopPropagation()" matTooltip="Retrieve Scramble">
+                                                            <mat-icon>sync</mat-icon>
+                                                        </button>
+                                                    </div>
+                                                </mat-list-option>
+                                            </mat-list>
+                                        </div>
+                                    </div>
+                                </mat-selection-list>
+                                <ng-container *ngIf="!isSmallScreen"><br></ng-container>
+                                <button mat-raised-button color="primary" (click)="retrieveMultipleScrambles()">Retrieve All Selected Scrambles</button>
+                                <br />
+                                <button mat-raised-button color="primary" (click)="scramblePlayers(true)">Scramble With No Duplicate Teams</button>
                                 <!-- Display previous matchups centered -->
                                 <div class="matchup-container row justify-content-center align-items-center">
                                     <ng-container *ngFor="let matchup of matchups; let i = index">
