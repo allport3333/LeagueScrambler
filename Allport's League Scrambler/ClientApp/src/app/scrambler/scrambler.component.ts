@@ -69,6 +69,8 @@ export class ScramblerComponent implements OnInit {
     numberOfTeams: number;
     scrambleNumber: number;
     containsMale: boolean = false;
+    numberOfTeamsSelected: boolean = false;
+    teamSizeSelected: boolean = true;
     containsFemale: boolean = false;
     lockedResults: boolean = false;
     locked: boolean = false;
@@ -710,6 +712,8 @@ export class ScramblerComponent implements OnInit {
     }
 
     updateNumberOfTeams(selectedTeamSize: number): void {
+        this.numberOfTeamsSelected = true;
+        this.teamSizeSelected = false;
         // Deselect the other mat-select when one is selected
         if (selectedTeamSize) {
             this.numberOfTeams = null;
@@ -718,6 +722,8 @@ export class ScramblerComponent implements OnInit {
 
     updateTeamSize(selectedNumberOfTeams: number): void {
         // Deselect the other mat-select when one is selected
+        this.teamSizeSelected = true;
+        this.numberOfTeamsSelected = false;
         if (selectedNumberOfTeams) {
             this.teamSize = null;
         }

@@ -9,7 +9,7 @@
                             <div class="mt-1">
                                 <mat-form-field>
                                     <mat-label>League</mat-label>
-                                    <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" [(value)]="league" (selectionChange)="selectLeague(selectedLeague)">
+                                    <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague"  (selectionChange)="selectLeague()">
                                         <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
                                             {{league.leagueName}}
                                         </mat-option>
@@ -24,13 +24,13 @@
                             <div class="mt-1">
                                 <mat-form-field>
                                     <mat-label>Max Team Size</mat-label>
-                                    <mat-select [(ngModel)]="teamSize" (ngModelChange)="updateNumberOfTeams($event); teamSizeSelected = false; numberOfTeamsSelected = true; ">
+                                    <mat-select [(ngModel)]="teamSize" (ngModelChange)="updateNumberOfTeams($event); teamSizeSelected = true; numberOfTeamsSelected = false; ">
                                         <mat-option *ngFor="let team of teamSizePossible" [value]="team">
                                             {{team}}
                                         </mat-option>
                                     </mat-select>
                                 </mat-form-field>
-                                <p [style.color]="teamSizeSelected ? 'red' : '#999'" style="font-size: 12px; margin-top: 5px;">Deselected when max team size selected.</p>
+                                <p [style.color]="teamSizeSelected ? '#999' : 'red'" style="font-size: 12px; margin-top: 5px;">Deselected when max team size selected.</p>
                             </div>
                         </mat-card>
                     </div>
@@ -40,13 +40,13 @@
                             <div class="mt-1">
                                 <mat-form-field>
                                     <mat-label style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Number of Teams</mat-label>
-                                    <mat-select [(ngModel)]="numberOfTeams" (ngModelChange)="updateTeamSize($event); numberOfTeamsSelected = false; teamSizeSelected = true;">
+                                    <mat-select [(ngModel)]="numberOfTeams" (ngModelChange)="updateTeamSize($event); numberOfTeamsSelected = true; teamSizeSelected = false;">
                                         <mat-option *ngFor="let maxNumberTeam of maxNumberOfTeams" [value]="maxNumberTeam">
                                             {{maxNumberTeam}}
                                         </mat-option>
                                     </mat-select>
                                 </mat-form-field>
-                                <p [style.color]="numberOfTeamsSelected ? 'red' : '#999'" style="font-size: 12px; margin-top: 5px;">Deselected when number of teams selected.</p>
+                                <p [style.color]="numberOfTeamsSelected ? '#999' : 'red'" style="font-size: 12px; margin-top: 5px;">Deselected when number of teams selected.</p>
                             </div>
                         </mat-card>
 
