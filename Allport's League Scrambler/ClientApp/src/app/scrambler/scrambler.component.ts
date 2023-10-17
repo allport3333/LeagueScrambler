@@ -29,6 +29,8 @@ export class ScramblerComponent implements OnInit {
     totalRandomPlayers: Player[] = new Array();
     displayTopPlayers: Player[] = new Array();
     totalTopPlayers: Player[] = new Array();
+    totalTopPlayersTemp: Player[] = new Array();
+    totalPlayersTemp: Player[] = new Array();
     listOfTeams: Team[] = new Array();
     retrievedListOfTeams: Team[] = new Array();
     matchups: Team[] = new Array();
@@ -469,16 +471,22 @@ export class ScramblerComponent implements OnInit {
         let iterations = 0;
 
         while (iterations < maxIterations) {
-            randomMalePlayer = this.malePlayers[Math.floor(Math.random() * this.malePlayers.length)];
-            players = this.getPlayersInSameTeam(randomMalePlayer, this.retrievedListOfTeams);
-            if (!players.some(player => bracketTeamPlayers.some(bp => this.arePlayersEqual(player, bp)))) {
-                // Found a valid player
-                this.randomMalePlayer = randomMalePlayer;
-                bracketTeamPlayers.push(this.randomMalePlayer);
-                this.malePlayers = this.malePlayers.filter(x => x !== this.randomMalePlayer);
-                this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomMalePlayer);
-                return true; // Exit the function
+            if (this.malePlayers.length > 0) {
+                randomMalePlayer = this.malePlayers[Math.floor(Math.random() * this.malePlayers.length)];
+                players = this.getPlayersInSameTeam(randomMalePlayer, this.retrievedListOfTeams);
+                if (!players.some(player => bracketTeamPlayers.some(bp => this.arePlayersEqual(player, bp)))) {
+                    // Found a valid player
+                    this.randomMalePlayer = randomMalePlayer;
+                    bracketTeamPlayers.push(this.randomMalePlayer);
+                    this.malePlayers = this.malePlayers.filter(x => x !== this.randomMalePlayer);
+                    this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomMalePlayer);
+                    return true; // Exit the function
+                }
             }
+            else {
+                return true;
+            }
+
 
             iterations++;
         }
@@ -522,18 +530,22 @@ export class ScramblerComponent implements OnInit {
         let iterations = 0;
 
         while (iterations < maxIterations) {
-            randomFemalePlayer = this.femalePlayers[Math.floor(Math.random() * this.femalePlayers.length)];
-            players = this.getPlayersInSameTeam(randomFemalePlayer, this.retrievedListOfTeams);
+            if (this.femalePlayers.length > 0) {
+                randomFemalePlayer = this.femalePlayers[Math.floor(Math.random() * this.femalePlayers.length)];
+                players = this.getPlayersInSameTeam(randomFemalePlayer, this.retrievedListOfTeams);
 
-            if (!players.some(player => bracketTeamPlayers.some(bp => this.arePlayersEqual(player, bp)))) {
-                // Found a valid player
-                this.randomFemalePlayer = randomFemalePlayer;
-                bracketTeamPlayers.push(this.randomFemalePlayer);
-                this.femalePlayers = this.femalePlayers.filter(x => x !== this.randomFemalePlayer);
-                this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomFemalePlayer);
-                return true; // Exit the function
+                if (!players.some(player => bracketTeamPlayers.some(bp => this.arePlayersEqual(player, bp)))) {
+                    // Found a valid player
+                    this.randomFemalePlayer = randomFemalePlayer;
+                    bracketTeamPlayers.push(this.randomFemalePlayer);
+                    this.femalePlayers = this.femalePlayers.filter(x => x !== this.randomFemalePlayer);
+                    this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomFemalePlayer);
+                    return true; // Exit the function
+                }
             }
-
+            else {
+                return true;
+            }
             iterations++;
         }
 
@@ -752,15 +764,39 @@ export class ScramblerComponent implements OnInit {
         return true; // Return true if the selection was successful for all players
     }
 
+    fillTopPlayers() {
+        if (this.totalTopPlayers != null) {
+            for (var i = 0; i < this.topPlayerCount; i++) {
+
+                let bestTeam: Team = null;
+                for (let i = 0; i < this.listOfTeams.length - 1; i++) {
+                    if (this.listOfTeams[i].players.length > this.listOfTeams[i + 1].players.length) {
+                        bestTeam = this.listOfTeams[i + 1];
+                    }
+                    else if (this.listOfTeams[i].players.length < this.listOfTeams[i + 1].players.length) {
+                        bestTeam = this.listOfTeams[i];
+                    }
+                }
+                if (bestTeam == null) {
+                    bestTeam = this.listOfTeams[0];
+                }
+                this.topPlayerScramble(bestTeam.players);
+
+            }
+        }
+    }
+
     selectPlayersWithRetries(
-        malePlayerCount: number,
-        femalePlayerCount: number,
         nonDuplicates: boolean
     ): boolean {
+        this.totalTopPlayersTemp = [...this.totalTopPlayers];
+        this.totalPlayersTemp = [...this.totalPlayers];
         const maxRetries = 100; // Set a maximum number of retries
         for (let retry = 0; retry < maxRetries; retry++) {
-            let maleSuccess = this.selectPlayers(malePlayerCount, true, nonDuplicates);
-            let femaleSuccess = this.selectPlayers(femalePlayerCount, false, nonDuplicates);
+            this.fillTopPlayers();
+            
+            let maleSuccess = this.selectPlayers(this.malePlayerCount, true, nonDuplicates);
+            let femaleSuccess = this.selectPlayers(this.femalePlayerCount, false, nonDuplicates);
             if (maleSuccess && femaleSuccess) {
 
                 // Player selection was successful, break out of the loop
@@ -770,6 +806,8 @@ export class ScramblerComponent implements OnInit {
             this.listOfTeams = [];
             this.malePlayers = [];
             this.femalePlayers = [];
+            this.totalTopPlayers = [...this.totalTopPlayersTemp];
+            this.totalPlayers = [...this.totalPlayersTemp];
             this.fillPlayers();
             if (this.listOfTeams.length === 0) {
                 this.fillTeam()
@@ -801,7 +839,6 @@ export class ScramblerComponent implements OnInit {
     }
 
     fillTeam() {
-
             if (this.numberOfTeams) {
                 this.teamCount = this.numberOfTeams;
             }
@@ -913,33 +950,10 @@ export class ScramblerComponent implements OnInit {
                 }
             }
             else {
-                if (this.totalTopPlayers != null) {
-                    for (var i = 0; i < this.topPlayerCount; i++) {
 
-                        let bestTeam: Team = null;
-                        for (let i = 0; i < this.listOfTeams.length - 1; i++) {
-                            if (this.listOfTeams[i].players.length > this.listOfTeams[i + 1].players.length) {
-                                bestTeam = this.listOfTeams[i + 1];
-                            }
-                            else if (this.listOfTeams[i].players.length < this.listOfTeams[i + 1].players.length) {
-                                bestTeam = this.listOfTeams[i];
-                            }
-                        }
-                        if (bestTeam == null) {
-                            bestTeam = this.listOfTeams[0];
-                        }
-                        if (nonDuplicates) {
-                            //this.nonDuplicateTopPlayerScramble(bestTeam.players);
-                        }
-                        else {
-                            this.topPlayerScramble(bestTeam.players);
-                        }
-
-                    }
-                }
 
                 // Use the function to select players for both males and females with retries
-                if (this.selectPlayersWithRetries(this.malePlayerCount, this.femalePlayerCount, nonDuplicates)) {
+                if (this.selectPlayersWithRetries(nonDuplicates)) {
                     if (nonDuplicates) {
                         this.showSnackBar("Scramble with no duplicates completed successfully.");
                     }
