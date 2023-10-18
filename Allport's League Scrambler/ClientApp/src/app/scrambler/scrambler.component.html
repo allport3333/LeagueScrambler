@@ -30,7 +30,7 @@
                                         </mat-option>
                                     </mat-select>
                                 </mat-form-field>
-                                <p [style.color]="teamSizeSelected ? '#999' : 'red'" style="font-size: 12px; margin-top: 5px;">Deselected when max team size selected.</p>
+                                <p [style.color]="teamSizeSelected ? '#999' : 'red'" style="font-size: 12px; margin-top: 5px;">Deselected when number of teams selected.</p>
                             </div>
                         </mat-card>
                     </div>
@@ -46,7 +46,7 @@
                                         </mat-option>
                                     </mat-select>
                                 </mat-form-field>
-                                <p [style.color]="numberOfTeamsSelected ? '#999' : 'red'" style="font-size: 12px; margin-top: 5px;">Deselected when number of teams selected.</p>
+                                <p [style.color]="numberOfTeamsSelected ? '#999' : 'red'" style="font-size: 12px; margin-top: 5px;">Deselected when max team size selected.</p>
                             </div>
                         </mat-card>
 
@@ -258,7 +258,7 @@
                                         <!-- Male Players -->
                                         <div style="display: flex; flex-direction: column;">
                                             <mat-list style="display: flex; flex-wrap: wrap; justify-content: space-between;">
-                                                <mat-list-option [style.width.%]="isSmallScreen ? 100 : 50" [style.margin-bottom.px]="isSmallScreen ? 10 : 2" style="background-color: lightgray; text-align: center;" *ngFor="let scramble of queriedScrambles; let i = index" [value]="scramble">
+                                                <mat-list-option [style.width.%]="getListItemWidth(queriedScrambles.length)" [style.margin-bottom.px]="isSmallScreen ? 10 : 2" style="background-color: lightgray; text-align: center;" *ngFor="let scramble of queriedScrambles; let i = index" [value]="scramble">
                                                     <div style="display: flex; align-items: center; justify-content: center;">
                                                         <div style="margin: 5px;">
                                                             <!-- Add margin here -->
@@ -275,6 +275,14 @@
                                         </div>
                                     </div>
                                 </mat-selection-list>
+
+
+
+
+
+
+
+
                                 <ng-container *ngIf="!isSmallScreen"><br></ng-container>
                                 <button mat-raised-button color="primary" (click)="retrieveMultipleScrambles()">Retrieve All Selected Scrambles</button>
                                 <br />

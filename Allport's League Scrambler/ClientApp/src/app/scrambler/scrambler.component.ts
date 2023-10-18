@@ -720,6 +720,23 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
+
+    getListItemWidth(scrambleCount: number): number {
+        if (!this.isSmallScreen && scrambleCount > 1) {
+            return 49;
+        } else
+        if (!this.isSmallScreen && scrambleCount == 1) {
+            return 100;
+        } else
+        if (this.isSmallScreen) {
+            return 100;
+        } else
+            if (!this.isSmallScreen) {
+                return 49;
+            }
+    }
+
+
     updateTeamSize(selectedNumberOfTeams: number): void {
         // Deselect the other mat-select when one is selected
         this.teamSizeSelected = true;
