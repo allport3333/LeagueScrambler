@@ -33,6 +33,7 @@ export class ScramblerComponent implements OnInit {
     totalPlayersTemp: Player[] = new Array();
     listOfTeams: Team[] = new Array();
     retrievedListOfTeams: Team[] = new Array();
+    uniqueScrambleNumbers: number[] = [];
     matchups: Team[] = new Array();
     selectedList: Player[] = new Array();
     selectedRetrieveScrambleList: KingQueenTeam[] = new Array();
@@ -54,6 +55,7 @@ export class ScramblerComponent implements OnInit {
     passwordLeague: Password;
     passwordDelete: Password;
     listOfScrambleNumbers: number[] = [];
+    listOfRetrievedScrambleNumbers: number[] = [];
     teamSizePossible: number[] = [2, 3, 4, 5];
     maxNumberOfTeams: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
     femalePlayerCount: number;
@@ -195,6 +197,8 @@ export class ScramblerComponent implements OnInit {
         selectedItems.forEach(selected => {
             this.listOfScrambleNumbers.push(selected.scrambleNumber);
         });
+
+
     }
 
     addLeague() {
@@ -571,6 +575,9 @@ export class ScramblerComponent implements OnInit {
     }
 
 
+    updateUniqueScrambleNumbers() {
+        this.uniqueScrambleNumbers = Array.from(new Set(this.listOfScrambleNumbers));
+    }
 
     topPlayerScramble(bracketTeamPlayers) {
         this.randomTopPlayer = this.totalTopPlayers[Math.floor(Math.random() * this.totalTopPlayers.length)];
@@ -656,7 +663,7 @@ export class ScramblerComponent implements OnInit {
             (matchups) => {
                 // Initialize your list of teams
                 this.listOfTeams = [];
-
+                this.listOfRetrievedScrambleNumbers = [];
                 // Map the retrieved matchups into listOfTeams
                 matchups.forEach((matchup) => {
                     const team: Team = {
@@ -667,6 +674,7 @@ export class ScramblerComponent implements OnInit {
                     this.listOfTeams.push(team);
                     this.retrievedListOfTeams.push(team);
                 });
+                this.listOfRetrievedScrambleNumbers.push(scramble.scrambleNumber);
             },
             (error) => {
                 // Handle any errors
@@ -679,6 +687,7 @@ export class ScramblerComponent implements OnInit {
         this.playerService.getMultipleKingQueenTeamsByScrambleNumbers(this.selectedLeague, this.listOfScrambleNumbers).subscribe(
             (matchups) => {
                 // Initialize your list of teams
+                this.listOfRetrievedScrambleNumbers = [];
                 this.listOfTeams = [];
                 this.retrievedListOfTeams = [];
                 // Map the retrieved matchups into listOfTeams
@@ -691,6 +700,8 @@ export class ScramblerComponent implements OnInit {
                     this.listOfTeams.push(team);
                     this.retrievedListOfTeams.push(team);
                 });
+                this.listOfRetrievedScrambleNumbers = [...this.listOfScrambleNumbers];
+
             },
             (error) => {
                 // Handle any errors

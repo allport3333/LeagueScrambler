@@ -262,7 +262,7 @@
                                                     <div style="display: flex; align-items: center; justify-content: center;">
                                                         <div style="margin: 5px;">
                                                             <!-- Add margin here -->
-                                                            <span>Scramble Number: {{ scramble.scrambleNumber }}</span>
+                                                            <span>Scramble Number: <b>{{ scramble.scrambleNumber }}</b></span>
                                                             <br>
                                                             <span>Date of Scramble: {{ scramble.dateOfTeam | date:'shortDate' }}</span>
                                                         </div>
@@ -275,16 +275,25 @@
                                         </div>
                                     </div>
                                 </mat-selection-list>
-
-
-
-
-
-
-
-
                                 <ng-container *ngIf="!isSmallScreen"><br></ng-container>
                                 <button mat-raised-button color="primary" (click)="retrieveMultipleScrambles()">Retrieve All Selected Scrambles</button>
+                                <br *ngIf="listOfRetrievedScrambleNumbers.length > 0" />
+                                <!-- Display selected scramble numbers at the bottom -->
+                                <div *ngIf="listOfRetrievedScrambleNumbers.length > 0" style="text-align: center;">
+                                    <span>Retrieved Scramble Numbers To Use:</span>
+                                    <br>
+                                    
+                                    <div style="margin: 0 auto; display: inline-block;">
+                                        <ng-container *ngFor="let scrambleNumber of listOfRetrievedScrambleNumbers; let last = last; let i = index">
+                                            <span>Scramble Number: </span> <b>{{ scrambleNumber }}</b>
+                                            <span *ngIf="!last">, </span>
+                                            <span *ngIf="i % 3 === 2 && !last"><br></span>
+                                        </ng-container>
+                                    </div>
+                                </div>
+
+
+
                                 <br />
                                 <button mat-raised-button color="primary" (click)="scramblePlayers(true)">Scramble With No Duplicate Teams</button>
                                 <!-- Display previous matchups centered -->
