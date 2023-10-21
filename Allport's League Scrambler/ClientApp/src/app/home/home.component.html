@@ -3,6 +3,63 @@
         <h1 style="text-align: center">Allport's Custom League Scrambler</h1>
     </div>
 </div>
+
 <div class="center">
     <img style="max-width: 90%" src="assets/img/sportsballs1.png">
+</div>
+
+<div style="display: flex; justify-content: top; align-items: center; min-height: 100vh; flex-direction: column; text-align: center;">
+
+    <div style="margin-top: 1rem;">
+        <button *ngIf="!showLoginForm" (click)="toggleLoginForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem;">
+            Login
+        </button>
+        <button *ngIf="!showRegistrationForm && !showLoginForm" (click)="toggleRegistrationForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-left: 1rem;">
+            Register
+        </button>
+    </div>
+
+    <div *ngIf="showLoginForm" style="background: #f4f4f4; padding: 20px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px; text-align: center; margin: 10px;">
+        <h2>Login</h2>
+        <div>
+            <label for="loginUsername">Username:</label>
+            <input type="text" id="loginUsername" [(ngModel)]="loginUsername" placeholder="Enter your username">
+        </div>
+        <div>
+            <label for="loginPassword">Password:</label>
+            <input type="password" id="loginPassword" [(ngModel)]="loginPassword" placeholder="Enter your password">
+        </div>
+        <br />
+        <button (click)="login()">Submit</button>
+    </div>
+
+    <button *ngIf="showLoginForm" (click)="toggleRegistrationForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-left: 1rem;">
+        Register
+    </button>
+
+    <div *ngIf="showRegistrationForm" style="background: #f4f4f4; padding: 20px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px; text-align: center; margin: 10px;">
+        <h2>Register</h2>
+        <div>
+            <label for="registerUsername">Username:</label>
+            <input type="text" id="registerUsername" [(ngModel)]="registerUsername" placeholder="Choose a username">
+        </div>
+        <div>
+            <label for="registerEmail">Email:</label>
+            <input type="email" id="registerEmail" [(ngModel)]="registerEmail" placeholder="Enter your email">
+        </div>
+        <div>
+            <label for="registerPassword">Password:</label>
+            <input type="password" id="registerPassword" [(ngModel)]="registerPassword" placeholder="Create a password">
+        </div>
+        <div>
+            <label for="registerFirstName">First Name:</label>
+            <input type="text" id="registerFirstName" [(ngModel)]="registerFirstName" placeholder="Enter your first name">
+        </div>
+        <div>
+            <label for="registerLastName">Last Name:</label>
+            <input type="text" id="registerLastName" [(ngModel)]="registerLastName" placeholder="Enter your last name">
+        </div>
+        <br />
+        <button (click)="register()">Submit</button>
+    </div>
 </div>

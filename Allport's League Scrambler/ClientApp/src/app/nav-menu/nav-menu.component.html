@@ -36,6 +36,12 @@
                         <span class='fas fa-database'></span> Player Scores
                     </a>
                 </li>
+                <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                    <a [routerLink]='["/"]' class="nav-link" (click)="logoutAndNavigate()">
+                        <span class="fas fa-database"></span> Logout
+                    </a>
+                </li>
+
             </ul>
         </div>
     </nav>

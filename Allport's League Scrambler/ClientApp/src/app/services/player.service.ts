@@ -14,7 +14,7 @@ import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
 export class PlayerService {
     players: Player[];
 
-    constructor(http: HttpClient, @Inject('BASE_URL') public baseUrl: string, public httpClient: HttpClient) {
+    constructor(@Inject('BASE_URL') public baseUrl: string, public httpClient: HttpClient) {
     }
 
     public GetPlayers() {

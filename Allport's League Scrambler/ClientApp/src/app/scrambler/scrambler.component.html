@@ -340,7 +340,7 @@
                                                 <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
                                             </mat-form-field>
                                             <br />
-                                            <mat-form-field style="max-width: 180px" appearance="outline">
+                                            <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!loggedIn">
                                                 <mat-label>Password:</mat-label>
                                                 <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
                                             </mat-form-field>
@@ -390,7 +390,7 @@
                                                     <mat-label>Last Name:</mat-label>
                                                     <input matInput formControlName="lastName" placeholder="Player Last Name" required />
                                                 </mat-form-field>
-                                                <mat-form-field style="max-width: 180px" appearance="outline">
+                                                <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!loggedIn">
                                                     <mat-label>Password</mat-label>
                                                     <input matInput placeholder="Password" type="password" formControlName="passwordDelete" required />
                                                 </mat-form-field>
@@ -416,7 +416,7 @@
                                             <mat-label>New League Name</mat-label>
                                             <input matInput placeholder="League Name" type="text" formControlName="newLeagueName" required />
                                         </mat-form-field>
-                                        <mat-form-field style="max-width: 180px" appearance="outline">
+                                        <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!loggedIn">
                                             <mat-label>Password</mat-label>
                                             <input matInput placeholder="Password" type="password" formControlName="passwordLeague" required />
                                         </mat-form-field>

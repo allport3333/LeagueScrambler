@@ -9,5 +9,6 @@ namespace Allport_s_League_Scrambler.Models
     {
         public int ID { get; set; }
         public string LeagueName { get; set; }
+
     }
 }

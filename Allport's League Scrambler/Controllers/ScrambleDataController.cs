@@ -75,6 +75,7 @@ namespace Allport_s_League_Scrambler.Controllers
             return leagues;
         }
 
+
         [HttpGet("[action]")]
         public IEnumerable<Player> GetAllFemalePlayers()
         {
@@ -350,14 +351,14 @@ namespace Allport_s_League_Scrambler.Controllers
                     .Where(kqp => kqp.KingQueenTeamId == kingQueenTeam.Id)
                     .Select(kqp => new Player
                     {
-                // Map KingQueenPlayer properties to Player properties
-                // Example: (adjust property names as needed)
-                Id = kqp.Player.Id,
+                        // Map KingQueenPlayer properties to Player properties
+                        // Example: (adjust property names as needed)
+                        Id = kqp.Player.Id,
                         FirstName = kqp.Player.FirstName,
                         LastName = kqp.Player.LastName,
                         IsMale = kqp.Player.IsMale,
-                // Map other properties
-            })
+                        // Map other properties
+                    })
                     .ToList();
 
                 var result = new KingQueenTeamWithPlayers
@@ -404,14 +405,14 @@ namespace Allport_s_League_Scrambler.Controllers
                     .Where(kqp => kqp.KingQueenTeamId == kingQueenTeam.Id)
                     .Select(kqp => new Player
                     {
-                // Map KingQueenPlayer properties to Player properties
-                // Example: (adjust property names as needed)
-                Id = kqp.Player.Id,
+                        // Map KingQueenPlayer properties to Player properties
+                        // Example: (adjust property names as needed)
+                        Id = kqp.Player.Id,
                         FirstName = kqp.Player.FirstName,
                         LastName = kqp.Player.LastName,
                         IsMale = kqp.Player.IsMale,
-                // Map other properties
-            })
+                        // Map other properties
+                    })
                     .ToList();
 
                 var result = new KingQueenTeamWithPlayers
@@ -449,7 +450,11 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             var context = new DataContext();
             var newLeague = new LeagueType();
+            var newUserLeague = new UserLeague();
             var leagueExists = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+
+            var username = User.Identity.Name; // Assuming the username is in the claim
+
 
             if (leagueExists == null)
             {
@@ -462,11 +467,40 @@ namespace Allport_s_League_Scrambler.Controllers
                 context.Leagues.Add(newLeague);
                 context.SaveChanges();
 
+                
+
+                if (username != null)
+                {
+                    var newRetrievedLeague = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+                    var retrievedUser = context.Users.Where(x => x.LoginName == username).FirstOrDefault();
+                    newUserLeague = new UserLeague()
+                    {
+                        LeagueTypeId = newRetrievedLeague.ID,
+                        UserId = retrievedUser.UserId
+
+                    };
+                    context.UserLeagues.Add(newUserLeague);
+                    context.SaveChanges();
+                }
+
                 return newLeague;
 
             }
             else
             {
+                if (username != null)
+                {
+                    var newRetrievedLeague = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+                    var retrievedUser = context.Users.Where(x => x.LoginName == username).FirstOrDefault();
+                    newUserLeague = new UserLeague()
+                    {
+                        LeagueTypeId = newRetrievedLeague.ID,
+                        UserId = retrievedUser.UserId
+
+                    };
+                    context.UserLeagues.Add(newUserLeague);
+                    context.SaveChanges();
+                }
                 return newLeague;
             }
 

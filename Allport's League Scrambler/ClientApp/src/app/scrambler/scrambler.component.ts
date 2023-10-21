@@ -12,6 +12,7 @@ import { Password } from '../data-models/password.model';
 import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
 import { KingQueenTeamWithPlayers } from '../data-models/KingQueenTeamWithPlayers.model';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
+import { LoginService } from '../services/login.service';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
@@ -41,9 +42,10 @@ export class ScramblerComponent implements OnInit {
     femalePlayers1: Player[];
     queriedPlayers: Player[];
     queriedScrambles: KingQueenTeam[];
-    leaguesAvailable: Leagues[];
+    leaguesAvailable: Leagues[] = [];
     gendersPossible: Gender[] = [{ value: 'Female', isMale: false }, { value: 'Male', isMale: true }];
     isSub: boolean;
+    loggedIn: boolean = false;
     selectedGender: Gender;
     player: Player;
     randomMalePlayer: Player;
@@ -106,12 +108,13 @@ export class ScramblerComponent implements OnInit {
         passwordLeague: new FormControl()
     });
 
-    constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, private snackBar: MatSnackBar) {
+    constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, public loginService: LoginService, private snackBar: MatSnackBar) {
         this.teamSize = 4;
 
     }
 
     ngOnInit() {
+
         this.completeRandom = false;
         this.displayTopPlayers = new Array();
         this.hideInputOptions = false;
@@ -139,10 +142,21 @@ export class ScramblerComponent implements OnInit {
         this.playerService.GetPlayers().subscribe(result => {
             this.totalPlayers = result;
         }, error => console.error(error));
-        this.playerService.GetLeagues().subscribe(result => {
-            this.leaguesAvailable = result;
+        this.loginService.isLoggedIn().subscribe(result => {
+            this.loggedIn = result;
+            if (result) {
+                this.loginService.getUserLeagues().subscribe(result => {
+                    this.leaguesAvailable = result;
+                });
+            }
+            else {
+                this.playerService.GetLeagues().subscribe(result => {
+                    this.leaguesAvailable = result;
+                });
+            }
+        });
 
-        }, error => console.error(error));
+
     }
 
     selectLeague() {
@@ -201,46 +215,61 @@ export class ScramblerComponent implements OnInit {
 
     }
 
-    addLeague() {
-        this.playerService.GetPassword().subscribe(result => {
-
-            this.passwordLeague = result;
-            if (this.LeagueForm.controls["passwordLeague"].value == "" || this.LeagueForm.controls["passwordLeague"].value != this.passwordLeague.password) {
-                this.showSnackBar("Password is not correct.")
+    addLeagueLogic() {
+        if (this.LeagueForm.controls["newLeagueName"].value == "") {
+            this.showSnackBar("Please enter a league name.")
+        }
+        else {
+            this.containsLeague = false;
+            if (this.leaguesAvailable && this.leaguesAvailable.length > 0) {
+                this.containsLeague = false;
+                for (let i = 0; i < this.leaguesAvailable.length; i++) {
+                    if (this.leaguesAvailable[i].leagueName == this.LeagueForm.controls["newLeagueName"].value) {
+                        this.containsLeague = true;
+                        break;
+                    }
+                }
+            } else {
+                // Handle the case where this.leaguesAvailable is undefined or empty
+                this.containsLeague = false; // Or any other handling you need
+            }
+            if (this.containsLeague) {
+                this.showSnackBar('League name already exists.')
             }
             else {
-                if (this.LeagueForm.controls["newLeagueName"].value == "") {
-                    this.showSnackBar("Please enter a league name.")
-                }
-                else {
-                    this.containsLeague = false;
-                    for (var i = 0; i < this.leaguesAvailable.length; i++) {
-                        if (this.leaguesAvailable[i].leagueName == this.LeagueForm.controls["newLeagueName"].value) {
-                            this.containsLeague = true;
-                            break;
-                        }
-                    }
-                    if (this.containsLeague) {
-                        this.showSnackBar('League name already exists.')
+                this.playerService.AddNewLeague(this.LeagueForm.controls["newLeagueName"].value).subscribe(result => {
+
+                    if (result.leagueName == null) {
+                        this.showSnackBar('Error creating league.', true);
                     }
                     else {
-                        this.playerService.AddNewLeague(this.LeagueForm.controls["newLeagueName"].value).subscribe(result => {
-
-                            if (result.leagueName == null) {
-                                this.showSnackBar('Error creating league.')
-                            }
-                            else {
-                                this.leaguesAvailable.push(result);
-                            }
-
-                        }, error => console.error(error));
+                        this.showSnackBar('Succesfully created league.');
+                        this.leaguesAvailable.push(result);
                     }
 
-
-                }
+                }, error => console.error(error));
             }
-        });
 
+
+        }
+    }
+
+    addLeague() {
+        if (this.loggedIn) {
+            this.addLeagueLogic();
+        }
+        else {
+            this.playerService.GetPassword().subscribe(result => {
+
+                this.passwordLeague = result;
+                if (this.LeagueForm.controls["passwordLeague"].value == "" || this.LeagueForm.controls["passwordLeague"].value != this.passwordLeague.password) {
+                    this.showSnackBar("Password is not correct.")
+                }
+                else {
+                    this.addLeagueLogic();
+                }
+            });
+        }
     }
 
     hidePlayerList() {
@@ -317,145 +346,163 @@ export class ScramblerComponent implements OnInit {
     }
 
 
+    deletePlayerLogic() {
+        // Get the selected player's first and last name from the form controls
+        const firstNameToDelete = this.deletePlayerForm.controls["firstName"].value;
+        const lastNameToDelete = this.deletePlayerForm.controls["lastName"].value;
 
+        if (!firstNameToDelete || !lastNameToDelete || !this.selectedLeague) {
+            this.showSnackBar("Please select both a player and a league to delete the player.");
+            return;
+        }
+
+        let deletingPlayer: Player = {
+
+            firstName: firstNameToDelete,
+            lastName: lastNameToDelete,
+            gender: 'male',
+            isMale: true,
+            isSub: false
+        };
+
+        this.playerService.DeletePlayer(deletingPlayer, this.selectedLeague).subscribe(result => {
+
+            let test = result;
+
+            if (result) {
+                const maleIndex = this.malePlayers1.findIndex(
+                    player => player.firstName === firstNameToDelete && player.lastName === lastNameToDelete
+                );
+
+                if (maleIndex !== -1) {
+                    this.malePlayers1.splice(maleIndex, 1);
+                }
+
+                // Find the player in the femalePlayers1 array and remove it
+                const femaleIndex = this.femalePlayers1.findIndex(
+                    player => player.firstName === firstNameToDelete && player.lastName === lastNameToDelete
+                );
+
+                if (femaleIndex !== -1) {
+                    this.femalePlayers1.splice(femaleIndex, 1);
+                }
+
+                // Clear the form and display a success message
+                this.deletePlayerForm.reset();
+                this.showSnackBar("Player deleted successfully.");
+            }
+            // Find the player in the malePlayers1 array and remove it
+
+
+        }, error => console.error(error));
+    }
 
 
     onDeletePlayerClick() {
-        this.playerService.GetPassword().subscribe(result => {
-            this.password = result;
-            if (this.deletePlayerForm.controls["passwordDelete"].value == "" || this.deletePlayerForm.controls["passwordDelete"].value != this.password.password) {
-                this.showSnackBar("Password is not correct.")
-            }
-            else {
-
-                // Get the selected player's first and last name from the form controls
-                const firstNameToDelete = this.deletePlayerForm.controls["firstName"].value;
-                const lastNameToDelete = this.deletePlayerForm.controls["lastName"].value;
-
-                if (!firstNameToDelete || !lastNameToDelete || !this.selectedLeague) {
-                    this.showSnackBar("Please select both a player and a league to delete the player.");
-                    return;
+        if (this.loggedIn) {
+            this.deletePlayerLogic();
+        }
+        else {
+            this.playerService.GetPassword().subscribe(result => {
+                this.password = result;
+                if (this.deletePlayerForm.controls["passwordDelete"].value == "" || this.deletePlayerForm.controls["passwordDelete"].value != this.password.password) {
+                    this.showSnackBar("Password is not correct.")
                 }
+                else {
+                    this.deletePlayerLogic();
 
-                let deletingPlayer: Player = {
-
-                    firstName: firstNameToDelete,
-                    lastName: lastNameToDelete,
-                    gender: 'male',
-                    isMale: true,
-                    isSub: false
-                };
-
-                this.playerService.DeletePlayer(deletingPlayer, this.selectedLeague).subscribe(result => {
-
-                    let test = result;
-
-                    if (result) {
-                        const maleIndex = this.malePlayers1.findIndex(
-                            player => player.firstName === firstNameToDelete && player.lastName === lastNameToDelete
-                        );
-
-                        if (maleIndex !== -1) {
-                            this.malePlayers1.splice(maleIndex, 1);
-                        }
-
-                        // Find the player in the femalePlayers1 array and remove it
-                        const femaleIndex = this.femalePlayers1.findIndex(
-                            player => player.firstName === firstNameToDelete && player.lastName === lastNameToDelete
-                        );
-
-                        if (femaleIndex !== -1) {
-                            this.femalePlayers1.splice(femaleIndex, 1);
-                        }
-
-                        // Clear the form and display a success message
-                        this.deletePlayerForm.reset();
-                        this.showSnackBar("Player deleted successfully.");
-                    }
-                    // Find the player in the malePlayers1 array and remove it
-
-
-                }, error => console.error(error));
-            }
-        });
+                }
+            }); 
+        }
     }
-    onSubmitClick() {
-        this.playerService.GetPassword().subscribe(result => {
-            this.password = result;
-            if (
-                this.PlayerForm.controls["password"].value == "" ||
-                this.PlayerForm.controls["password"].value != this.password.password
-            ) {
-                this.showSnackBar("Password is not correct.");
+
+    addPlayerLogic() {
+        const selectedGenderValue = this.PlayerForm.get("selectedGender").value;
+        const isMale = selectedGenderValue === "Male";
+
+        if (
+            this.PlayerForm.controls["firstName"].value == "" ||
+            this.PlayerForm.controls["lastName"].value == "" ||
+            !selectedGenderValue
+        ) {
+            this.showSnackBar(
+                "Please ensure that both first and last name fields are filled in as well as the gender field."
+            );
+        } else {
+            let newPlayer: Player = {
+                firstName: this.PlayerForm.controls["firstName"].value,
+                lastName: this.PlayerForm.controls["lastName"].value,
+                gender: selectedGenderValue,
+                isMale: isMale,
+                isSub: this.PlayerForm.controls["isSub"].value,
+            };
+
+            if (this.selectedLeague != null) {
+                this.playerService.AddPlayer(newPlayer, this.selectedLeague).subscribe(
+                    (result) => {
+                        this.player = result;
+                        this.containsFemale = false;
+                        this.containsMale = false;
+
+                        // Check if the player already exists
+                        for (var i = 0; i < this.malePlayers1.length; i++) {
+                            if (
+                                this.malePlayers1[i].firstName == result.firstName &&
+                                this.malePlayers1[i].lastName == result.lastName
+                            ) {
+                                this.containsMale = true;
+                                break;
+                            }
+                        }
+                        for (var i = 0; i < this.femalePlayers1.length; i++) {
+                            if (
+                                this.femalePlayers1[i].firstName == result.firstName &&
+                                this.femalePlayers1[i].lastName == result.lastName
+                            ) {
+                                this.containsFemale = true;
+                                break;
+                            }
+                        }
+                        if (this.containsMale || this.containsFemale) {
+                            this.showSnackBar("Player already in the list.");
+                        } else {
+                            if (newPlayer.isMale) {
+                                this.malePlayers1.push(newPlayer);
+                                this.malePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
+                            } else {
+                                this.femalePlayers1.push(newPlayer);
+                                this.femalePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
+                            }
+                            // Show success message
+                            this.showSnackBar("Player added successfully!");
+                        }
+                    },
+                    (error) => console.error(error)
+                );
             } else {
-                const selectedGenderValue = this.PlayerForm.get("selectedGender").value;
-                const isMale = selectedGenderValue === "Male";
-
-                if (
-                    this.PlayerForm.controls["firstName"].value == "" ||
-                    this.PlayerForm.controls["lastName"].value == "" ||
-                    !selectedGenderValue
-                ) {
-                    this.showSnackBar(
-                        "Please ensure that both first and last name fields are filled in as well as the gender field."
-                    );
-                } else {
-                    let newPlayer: Player = {
-                        firstName: this.PlayerForm.controls["firstName"].value,
-                        lastName: this.PlayerForm.controls["lastName"].value,
-                        gender: selectedGenderValue,
-                        isMale: isMale,
-                        isSub: this.PlayerForm.controls["isSub"].value,
-                    };
-
-                    if (this.selectedLeague != null) {
-                        this.playerService.AddPlayer(newPlayer, this.selectedLeague).subscribe(
-                            (result) => {
-                                this.player = result;
-                                this.containsFemale = false;
-                                this.containsMale = false;
-
-                                // Check if the player already exists
-                                for (var i = 0; i < this.malePlayers1.length; i++) {
-                                    if (
-                                        this.malePlayers1[i].firstName == result.firstName &&
-                                        this.malePlayers1[i].lastName == result.lastName
-                                    ) {
-                                        this.containsMale = true;
-                                        break;
-                                    }
-                                }
-                                for (var i = 0; i < this.femalePlayers1.length; i++) {
-                                    if (
-                                        this.femalePlayers1[i].firstName == result.firstName &&
-                                        this.femalePlayers1[i].lastName == result.lastName
-                                    ) {
-                                        this.containsFemale = true;
-                                        break;
-                                    }
-                                }
-                                if (this.containsMale || this.containsFemale) {
-                                    this.showSnackBar("Player already in the list.");
-                                } else {
-                                    if (newPlayer.isMale) {
-                                        this.malePlayers1.push(newPlayer);
-                                        this.malePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
-                                    } else {
-                                        this.femalePlayers1.push(newPlayer);
-                                        this.femalePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
-                                    }
-                                    // Show success message
-                                    this.showSnackBar("Player added successfully!");
-                                }
-                            },
-                            (error) => console.error(error)
-                        );
-                    } else {
-                        this.showSnackBar("Please Select A League From The Dropdown");
-                    }
-                }
+                this.showSnackBar("Please Select A League From The Dropdown");
             }
-        });
+        }
+    }
+
+
+    onSubmitClick() {
+        if (this.loggedIn) {
+            this.addPlayerLogic();
+        }
+        else {
+            this.playerService.GetPassword().subscribe(result => {
+                this.password = result;
+                if (
+                    this.PlayerForm.controls["password"].value == "" ||
+                    this.PlayerForm.controls["password"].value != this.password.password
+                ) {
+                    this.showSnackBar("Password is not correct.");
+                } else {
+                    this.addPlayerLogic();
+                }
+            });
+        }
     }
 
 
@@ -736,15 +783,15 @@ export class ScramblerComponent implements OnInit {
         if (!this.isSmallScreen && scrambleCount > 1) {
             return 49;
         } else
-        if (!this.isSmallScreen && scrambleCount == 1) {
-            return 100;
-        } else
-        if (this.isSmallScreen) {
-            return 100;
-        } else
-            if (!this.isSmallScreen) {
-                return 49;
-            }
+            if (!this.isSmallScreen && scrambleCount == 1) {
+                return 100;
+            } else
+                if (this.isSmallScreen) {
+                    return 100;
+                } else
+                    if (!this.isSmallScreen) {
+                        return 49;
+                    }
     }
 
 
@@ -778,6 +825,9 @@ export class ScramblerComponent implements OnInit {
                 // Get the scramble number from the first team
                 this.scrambleNumber = result[0].kingQueenTeam.scrambleNumber;
                 this.showSnackBar('All KingQueenTeams saved successfully!');
+                this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe(result => {
+                    this.queriedScrambles = result;
+                });
             } else {
                 // Handle the case where there was an issue with saving or no data returned
                 this.showSnackBar('Error saving KingQueenTeams or no data returned!');
@@ -893,7 +943,7 @@ export class ScramblerComponent implements OnInit {
         const maxRetries = 101; // Set a maximum number of retries
         for (let retry = 0; retry < maxRetries; retry++) {
             this.fillTopPlayers();
-            
+
             let maleSuccess = this.selectPlayers(this.malePlayerCount, true, nonDuplicates);
             let femaleSuccess = this.selectPlayers(this.femalePlayerCount, false, nonDuplicates);
             if (maleSuccess && femaleSuccess) {
@@ -907,14 +957,14 @@ export class ScramblerComponent implements OnInit {
             this.femalePlayers = [];
             this.totalTopPlayers = [...this.totalTopPlayersTemp];
             this.totalPlayers = [...this.totalPlayersTemp];
-            if (retry != 100 ) {
+            if (retry != 100) {
                 this.fillPlayers();
                 if (this.listOfTeams.length === 0) {
                     this.fillTeam()
                 }
             }
-            
-            
+
+
 
             // You can add a delay between retries if needed
         }
@@ -945,21 +995,21 @@ export class ScramblerComponent implements OnInit {
     }
 
     fillTeam() {
-            if (this.numberOfTeams) {
-                this.teamCount = this.numberOfTeams;
-            }
-            else {
-                this.setTeamCount();
-            }
-            for (let i = 0; i < this.teamCount; i++) {
-                let team = {
-                    players: [],
-                    femaleCount: 0,
-                    maleCount: 0
-                };
-                this.listOfTeams.push(team);
-            }
-        
+        if (this.numberOfTeams) {
+            this.teamCount = this.numberOfTeams;
+        }
+        else {
+            this.setTeamCount();
+        }
+        for (let i = 0; i < this.teamCount; i++) {
+            let team = {
+                players: [],
+                femaleCount: 0,
+                maleCount: 0
+            };
+            this.listOfTeams.push(team);
+        }
+
     }
 
     setTeamCount() {
@@ -1059,18 +1109,18 @@ export class ScramblerComponent implements OnInit {
 
                 try {
 
-                
-                // Use the function to select players for both males and females with retries
-                if (this.selectPlayersWithRetries(nonDuplicates)) {
-                    if (nonDuplicates) {
-                        this.showSnackBar("Scramble with no duplicates completed successfully.");
+
+                    // Use the function to select players for both males and females with retries
+                    if (this.selectPlayersWithRetries(nonDuplicates)) {
+                        if (nonDuplicates) {
+                            this.showSnackBar("Scramble with no duplicates completed successfully.");
+                        }
+                        else {
+                            this.showSnackBar("Scramble Succesful.");
+                        }
                     }
                     else {
-                        this.showSnackBar("Scramble Succesful.");
-                    }
-                }
-                else {
-                    this.showSnackBar("Not enough players to complete non-duplicate scramble.", true);
+                        this.showSnackBar("Not enough players to complete non-duplicate scramble.", true);
                     }
                 } catch (e) {
 
