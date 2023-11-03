@@ -221,5 +221,6 @@ namespace Allport_s_League_Scrambler.Controllers
 
             return Ok(userLeagues);
         }
+
     }
 }

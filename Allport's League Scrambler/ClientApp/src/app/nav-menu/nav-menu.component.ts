@@ -1,18 +1,27 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { LoginService } from '../services/login.service';
 import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
+import { AuthService } from '../auth.service';
 
 @Component({
     selector: 'app-nav-menu',
     templateUrl: './nav-menu.component.html',
     styleUrls: ['./nav-menu.component.css']
 })
-export class NavMenuComponent {
+export class NavMenuComponent implements OnInit {
     isExpanded = false;
-    constructor(private loginService: LoginService, private router: Router, private snackBar: MatSnackBar,) { }
+    loggedIn = false; 
+    constructor(private loginService: LoginService, private router: Router, private snackBar: MatSnackBar, private authService: AuthService) { }
     collapse() {
         this.isExpanded = false;
+    }
+
+    ngOnInit() {
+        // Check if the user is logged in
+        this.authService.isLoggedIn$.subscribe((loggedIn) => {
+            this.loggedIn = loggedIn;
+        });
     }
 
     toggle() {
@@ -36,10 +45,12 @@ export class NavMenuComponent {
         }
     }
 
+
     logoutAndNavigate() {
         // Call the logout method from your service
         this.loginService.logout().subscribe(() => {
             this.showSnackBar('Logout Successful', true);
+            this.authService.setLoggedIn(false);
             // After a successful logout, navigate to the home page
             this.router.navigate(['/']);
         });

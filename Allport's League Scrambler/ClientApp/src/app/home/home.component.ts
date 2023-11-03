@@ -1,13 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { LoginService } from '../services/login.service';
-import { MatSnackBarConfig, MatSnackBar } from '@angular/material';
+import { MatSnackBarConfig, MatSnackBar, MatDialog } from '@angular/material';
 import { Router } from '@angular/router';
+import { AuthService } from '../auth.service';
+import { ForgotPasswordDialogComponent } from '../forgot-password-dialog/forgot-password-dialog.component';
 @Component({
     selector: 'app-home',
     templateUrl: './home.component.html',
     styleUrls: ['./home.component.less']
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit {
     loginUsername: string = '';
     loginPassword: string = '';
     registerUsername: string = '';
@@ -17,11 +19,42 @@ export class HomeComponent {
     registerLastName: string = '';
     showRegistrationForm: boolean = false;
     showLoginForm: boolean = false;
-    constructor(private loginService: LoginService, private snackBar: MatSnackBar, private router: Router) { }
+    isLoggedIn: boolean = false;
+    constructor(private loginService: LoginService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService) { }
+
+    ngOnInit() {
+        this.authService.isLoggedIn$.subscribe((loggedIn) => {
+            this.isLoggedIn = loggedIn;
+        });
+    }
+
+    logout() {
+        this.authService.setLoggedIn(false);
+    }
+
+    forgotPassword(email: string) {
+        // You can add some additional logic here, if required, before calling the PasswordService.
+        return this.loginService.forgotPassword(email);
+    }
+
+    openForgotPasswordDialog(): void {
+        const dialogRef = this.dialog.open(ForgotPasswordDialogComponent, {
+            width: '300px',
+        });
+
+        dialogRef.afterClosed().subscribe((result) => {
+            if (result) {
+                // User clicked "Submit" in the dialog
+                this.forgotPassword(result); // Pass the entered email to the forgotPassword method
+            }
+        });
+    }
+
 
     login() {
         this.loginService.login(this.loginUsername, this.loginPassword).subscribe(
             (response) => {
+                this.authService.setLoggedIn(true);
                 // The server will handle setting the session cookie upon successful login.
                 // You can simply navigate to a protected route if the server returns a success response.
                 this.router.navigate(['/scrambler']);

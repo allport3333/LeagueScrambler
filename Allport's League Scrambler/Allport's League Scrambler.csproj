@@ -45,10 +45,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="ClientApp\src\app\auth.service.ts" />
     <None Remove="ClientApp\src\app\data-models\leagueTeamScores.model.ts" />
     <None Remove="ClientApp\src\app\data-models\playerInformation.ts" />
     <None Remove="ClientApp\src\app\data-models\playerScores.model.ts" />
     <None Remove="ClientApp\src\app\data-models\teamScores.model.ts" />
+    <None Remove="ClientApp\src\app\forgot-password-dialog.component.ts" />
   </ItemGroup>
 
   <ItemGroup>
@@ -61,6 +63,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <TypeScriptCompile Include="ClientApp\src\app\auth.service.ts" />
     <TypeScriptCompile Include="ClientApp\src\app\data-models\playerInformation.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
@@ -71,6 +74,7 @@
       <SubType>Code</SubType>
     </TypeScriptCompile>
     <TypeScriptCompile Include="ClientApp\src\app\data-models\teamScores.model.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\forgot-password-dialog\forgot-password-dialog.component.ts" />
   </ItemGroup>
 
   <ItemGroup>

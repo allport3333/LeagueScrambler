@@ -18,6 +18,7 @@ export class LoginService {
     private userLeaguesUrl = this.baseUrl + 'api/Login/getuserleagues';
     private registerUrl = this.baseUrl + 'api/Login/register';
     private isauthenticated = this.baseUrl + 'api/Login/isauthenticated';
+    private forgotPasswordUrl = this.baseUrl + 'api/Login/forgotpassword'; // Define your password recovery endpoint
     login(username: string, password: string) {
         const loginData = {
             username: username,
@@ -57,5 +58,13 @@ export class LoginService {
     // Fetch user leagues
     getUserLeagues() {
         return this.httpClient.get<Leagues[]>(this.userLeaguesUrl, { withCredentials: true });
+    }
+
+    forgotPassword(email: string) {
+        const recoveryData = {
+            email: email // You may need additional data as required by your API
+        };
+
+        return this.httpClient.post(this.forgotPasswordUrl, recoveryData, { withCredentials: true });
     }
 }

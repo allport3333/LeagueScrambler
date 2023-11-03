@@ -18,6 +18,8 @@ import {
 import { TeamScoresComponent } from './team-scores/team-scores.component';
 import { PlayerScoresComponent } from './player-scores/player-scores.component';
 import { ScheduleComponent } from './schedule/schedule.component';
+import { AuthService } from './auth.service';
+import { ForgotPasswordDialogComponent } from './forgot-password-dialog/forgot-password-dialog.component';
 
 @NgModule({
     declarations: [
@@ -28,7 +30,8 @@ import { ScheduleComponent } from './schedule/schedule.component';
         FetchDataComponent,
         TeamScoresComponent,
         PlayerScoresComponent,
-        ScheduleComponent
+        ScheduleComponent,
+        ForgotPasswordDialogComponent
 
     ],
     imports: [
@@ -72,8 +75,8 @@ import { ScheduleComponent } from './schedule/schedule.component';
         ]),
         BrowserAnimationsModule
     ],
-    providers: [MatSnackBar],
+    providers: [MatSnackBar, AuthService], 
     bootstrap: [AppComponent],
-    entryComponents: [MatSnackBarContainer]
+    entryComponents: [MatSnackBarContainer, ForgotPasswordDialogComponent]
 })
 export class AppModule { }
