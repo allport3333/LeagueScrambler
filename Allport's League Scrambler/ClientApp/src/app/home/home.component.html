@@ -11,15 +11,13 @@
 <div style="display: flex; justify-content: top; align-items: center; min-height: 100vh; flex-direction: column; text-align: center;">
 
     <div style="margin-top: 1rem;">
-        <button *ngIf="!showLoginForm && !isLoggedIn" (click)="toggleLoginForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem;">
+        <button *ngIf="!showLoginForm && !isLoggedIn && !showRegistrationForm" (click)="toggleLoginForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem;">
             Login
         </button>
         <button *ngIf="!showRegistrationForm && !showLoginForm && !isLoggedIn" (click)="toggleRegistrationForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-left: 1rem;">
             Register
         </button>
-        <button *ngIf="!isLoggedIn" (click)="openForgotPasswordDialog()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-top: 1rem;">
-            Forgot Password
-        </button>
+
     </div>
 
     <div *ngIf="showLoginForm" style="background: #f4f4f4; padding: 20px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px; text-align: center; margin: 10px;">
@@ -33,36 +31,56 @@
             <input type="password" id="loginPassword" [(ngModel)]="loginPassword" placeholder="Enter your password">
         </div>
         <br />
-        <button (click)="login()">Submit</button>
+        <button (click)="login()" style="margin-right: 10px;">Submit</button>
+        <button (click)="cancel()">Cancel</button>
     </div>
 
-    <button *ngIf="showLoginForm" (click)="toggleRegistrationForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-left: 1rem;">
+    <!--<button *ngIf="showLoginForm" (click)="toggleRegistrationForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-left: 1rem;">
         Register
-    </button>
+    </button>-->
 
+    <button *ngIf="!isLoggedIn && !showRegistrationForm && !showLoginForm" (click)="openForgotPasswordDialog()"
+            style="font-size: 1rem; padding: 0.25rem 1rem; background-color: white; color: blue; border-radius: 4px; cursor: pointer; margin-top: 1rem;">
+        Forgot Password
+    </button>
     <div *ngIf="showRegistrationForm" style="background: #f4f4f4; padding: 20px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px; text-align: center; margin: 10px;">
         <h2>Register</h2>
-        <div>
-            <label for="registerUsername">Username:</label>
-            <input type="text" id="registerUsername" [(ngModel)]="registerUsername" placeholder="Choose a username">
-        </div>
-        <div>
-            <label for="registerEmail">Email:</label>
-            <input type="email" id="registerEmail" [(ngModel)]="registerEmail" placeholder="Enter your email">
-        </div>
-        <div>
-            <label for="registerPassword">Password:</label>
-            <input type="password" id="registerPassword" [(ngModel)]="registerPassword" placeholder="Create a password">
-        </div>
-        <div>
-            <label for="registerFirstName">First Name:</label>
-            <input type="text" id="registerFirstName" [(ngModel)]="registerFirstName" placeholder="Enter your first name">
-        </div>
-        <div>
-            <label for="registerLastName">Last Name:</label>
-            <input type="text" id="registerLastName" [(ngModel)]="registerLastName" placeholder="Enter your last name">
-        </div>
-        <br />
-        <button (click)="register()">Submit</button>
+        <form [formGroup]="registerForm" (ngSubmit)="register()" novalidate>
+            <div>
+                <label for="registerUsername">Username:</label>
+                <input type="text" id="registerUsername" formControlName="registerUsername" placeholder="Choose a username">
+            </div>
+            <div>
+                <label for="registerEmail">Email:</label>
+                <input type="email" id="registerEmail" formControlName="registerEmail" placeholder="Enter your email">
+                <div style="color: red" *ngIf="registerForm.get('registerEmail').hasError('email') && registerForm.get('registerEmail').touched">
+                    Invalid email format
+                </div>
+            </div>
+            <div>
+                <label for="registerPassword">Password:</label>
+                <input type="password" id="registerPassword" formControlName="registerPassword" placeholder="Create a password">
+            </div>
+            <div>
+                <label for="confirmPassword">Confirm Password:</label>
+                <input type="password" id="confirmPassword" formControlName="confirmPassword" placeholder="Confirm your password">
+                <div style="color: red" *ngIf="registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword').touched">
+                    Passwords do not match
+                </div>
+            </div>
+            <div>
+                <label for="registerFirstName">First Name:</label>
+                <input type="text" id="registerFirstName" formControlName="registerFirstName" placeholder="Enter your first name">
+            </div>
+            <div>
+                <label for="registerLastName">Last Name:</label>
+                <input type="text" id="registerLastName" formControlName="registerLastName" placeholder="Enter your last name">
+            </div>
+            <br />
+            <button [disabled]="!registerForm.valid || registerForm.hasError('passwordMismatch')" style="margin-right: 10px;">Submit</button>
+            <button (click)="cancel()">Cancel</button>
+        </form>
+
     </div>
+
 </div>

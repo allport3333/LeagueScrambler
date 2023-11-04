@@ -35,7 +35,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("KingQueenPlayer");
+                    b.ToTable("KingQueenPlayer","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.KingQueenTeam", b =>
@@ -52,7 +52,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("KingQueenTeam");
+                    b.ToTable("KingQueenTeam","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.LeagueTeam", b =>
@@ -71,7 +71,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("LeagueTeam");
+                    b.ToTable("LeagueTeam","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.LeagueType", b =>
@@ -84,7 +84,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("LeagueType");
+                    b.ToTable("LeagueType","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.Password", b =>
@@ -97,7 +97,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Password");
+                    b.ToTable("Password","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.Player", b =>
@@ -118,7 +118,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Player");
+                    b.ToTable("Player","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.PlayerScore", b =>
@@ -135,7 +135,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PlayerScore");
+                    b.ToTable("PlayerScore","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.PlayersLeague", b =>
@@ -152,7 +152,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PlayersLeague");
+                    b.ToTable("PlayersLeague","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.TeamScore", b =>
@@ -173,7 +173,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TeamScore");
+                    b.ToTable("TeamScore","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.User", b =>
@@ -202,7 +202,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("User");
+                    b.ToTable("User","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.UserLeague", b =>
@@ -221,7 +221,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserLeague");
+                    b.ToTable("UserLeague","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.KingQueenPlayer", b =>

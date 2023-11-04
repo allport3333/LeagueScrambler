@@ -4,6 +4,7 @@ import { MatSnackBarConfig, MatSnackBar, MatDialog } from '@angular/material';
 import { Router } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { ForgotPasswordDialogComponent } from '../forgot-password-dialog/forgot-password-dialog.component';
+import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
 @Component({
     selector: 'app-home',
     templateUrl: './home.component.html',
@@ -15,17 +16,40 @@ export class HomeComponent implements OnInit {
     registerUsername: string = '';
     registerEmail: string = '';
     registerPassword: string = '';
+    confirmPassword: string = '';
     registerFirstName: string = '';
     registerLastName: string = '';
     showRegistrationForm: boolean = false;
     showLoginForm: boolean = false;
     isLoggedIn: boolean = false;
-    constructor(private loginService: LoginService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService) { }
+    registerForm: FormGroup; 
+    constructor(private loginService: LoginService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private fb: FormBuilder) { }
 
     ngOnInit() {
+        this.registerForm = this.fb.group({
+            registerUsername: ['', Validators.required],
+            registerEmail: ['', [Validators.required, Validators.email]],
+            registerPassword: ['', Validators.required],
+            confirmPassword: ['', Validators.required],
+            registerFirstName: ['', Validators.required],
+            registerLastName: ['', Validators.required]
+        }, {
+            validator: this.passwordMatchValidator // Add custom validation function
+        });
         this.authService.isLoggedIn$.subscribe((loggedIn) => {
             this.isLoggedIn = loggedIn;
         });
+    }
+
+    passwordMatchValidator(control: AbstractControl): { [key: string]: boolean } | null {
+        const password = control.get('registerPassword').value;
+        const confirmPassword = control.get('confirmPassword').value;
+
+        if (password !== confirmPassword) {
+            return { 'passwordMismatch': true };
+        }
+
+        return null;
     }
 
     logout() {
@@ -77,12 +101,37 @@ export class HomeComponent implements OnInit {
     }
 
     register() {
-        this.loginService.register(this.registerUsername, this.registerEmail, this.registerPassword, this.registerFirstName, this.registerLastName).subscribe(
+        if (this.registerForm.invalid) {
+            // Form is invalid, show an error message and mark invalid fields as touched
+            this.showSnackBar('Please fill in all required fields and make sure the email is valid.', true);
+            this.markFormGroupTouched(this.registerForm);
+            return;
+        }
+
+        const password = this.registerForm.get('registerPassword').value;
+        const confirmPassword = this.registerForm.get('confirmPassword').value;
+
+        if (password !== confirmPassword) {
+            // Password and confirm password do not match, show an error message
+            this.showSnackBar('Passwords do not match. Please make sure they match.', true);
+            return;
+        }
+
+        // If the control reaches here, the form is valid, and passwords match
+        // Proceed with registration
+        this.loginService.register(
+            this.registerForm.get('registerUsername').value,
+            this.registerForm.get('registerEmail').value,
+            password,
+            this.registerForm.get('registerFirstName').value,
+            this.registerForm.get('registerLastName').value
+        ).subscribe(
             (response) => {
                 // After a successful registration, show the snackbar.
-                const username = this.registerUsername; // Replace with your actual username variable
+                const username = this.registerForm.get('registerUsername').value;
                 const snackbarMessage = `Registration successful for ${username}`;
-
+                this.showLoginForm = true;
+                this.showRegistrationForm = false;
                 this.showSnackBar(snackbarMessage, false); // Show success message
             },
             (error) => {
@@ -91,6 +140,23 @@ export class HomeComponent implements OnInit {
             }
         );
     }
+
+    markFormGroupTouched(formGroup: FormGroup) {
+        Object.values(formGroup.controls).forEach(control => {
+            control.markAsTouched();
+            if (control instanceof FormGroup) {
+                this.markFormGroupTouched(control);
+            }
+        });
+    }
+
+
+
+    cancel() {
+        this.showLoginForm = false;
+        this.showRegistrationForm = false;
+    }
+
 
     showSnackBar(message: string, error: boolean = false) {
         const config = new MatSnackBarConfig();

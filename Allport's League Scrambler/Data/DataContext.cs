@@ -26,7 +26,8 @@ namespace Allport_s_League_Scrambler.Data
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseSqlServer(@"Server=localhost;Database=LeagueScrambler;User Id=AllportDB;Password=Sephiroth3;");
+                //optionsBuilder.UseSqlServer(@"Server=localhost;Database=LeagueScrambler;User Id=AllportDB;Password=Sephiroth3;");
+                optionsBuilder.UseSqlServer(@"Server=localhost;Database=LeagueScrambler;Integrated Security=True;");
 
                 //optionsBuilder.UseSqlServer(System.Configuration.ConfigurationManager.
                 //    ConnectionStrings["LeagueDBConnectionString"].ConnectionString);
@@ -36,17 +37,17 @@ namespace Allport_s_League_Scrambler.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Player>().ToTable("Player");
-            modelBuilder.Entity<PlayersLeague>().ToTable("PlayersLeague");
-            modelBuilder.Entity<LeagueType>().ToTable("LeagueType");
-            modelBuilder.Entity<Password>().ToTable("Password");
-            modelBuilder.Entity<PlayerScore>().ToTable("PlayerScore");
-            modelBuilder.Entity<LeagueTeam>().ToTable("LeagueTeam");
-            modelBuilder.Entity<TeamScore>().ToTable("TeamScore");
-            modelBuilder.Entity<KingQueenPlayer>().ToTable("KingQueenPlayer");
-            modelBuilder.Entity<KingQueenTeam>().ToTable("KingQueenTeam");
-            modelBuilder.Entity<User>().ToTable("User");
-            modelBuilder.Entity<UserLeague>().ToTable("UserLeague");
+            modelBuilder.Entity<Player>().ToTable("Player", "dbo");
+            modelBuilder.Entity<PlayersLeague>().ToTable("PlayersLeague", "dbo");
+            modelBuilder.Entity<LeagueType>().ToTable("LeagueType", "dbo");
+            modelBuilder.Entity<Password>().ToTable("Password", "dbo");
+            modelBuilder.Entity<PlayerScore>().ToTable("PlayerScore", "dbo");
+            modelBuilder.Entity<LeagueTeam>().ToTable("LeagueTeam", "dbo");
+            modelBuilder.Entity<TeamScore>().ToTable("TeamScore", "dbo");
+            modelBuilder.Entity<KingQueenPlayer>().ToTable("KingQueenPlayer", "dbo");
+            modelBuilder.Entity<KingQueenTeam>().ToTable("KingQueenTeam", "dbo");
+            modelBuilder.Entity<User>().ToTable("User", "dbo");
+            modelBuilder.Entity<UserLeague>().ToTable("UserLeague", "dbo");
         }
 
         }
