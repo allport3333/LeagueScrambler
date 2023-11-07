@@ -49,7 +49,7 @@ export class NavMenuComponent implements OnInit {
     logoutAndNavigate() {
         // Call the logout method from your service
         this.loginService.logout().subscribe(() => {
-            this.showSnackBar('Logout Successful', true);
+            this.showSnackBar('Logout Successful', false);
             this.authService.setLoggedIn(false);
             // After a successful logout, navigate to the home page
             this.router.navigate(['/']);

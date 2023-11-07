@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net.Mail;
+using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -17,9 +19,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
 namespace Allport_s_League_Scrambler.Controllers
 {
+    public class ForgotPasswordRequest
+    {
+        public string Email { get; set; }
+    }
+
+    public class ResetPasswordRequest
+    {
+        public string Password { get; set; }
+        public string Token { get; set; }
+    }
     [Route("api/[controller]")]
     public class LoginController : Controller
     {
@@ -220,6 +233,155 @@ namespace Allport_s_League_Scrambler.Controllers
             }
 
             return Ok(userLeagues);
+        }
+
+        [Route("resetpassword")]
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            try
+            {
+                var _context = new DataContext(); // Create a new instance of DataContext
+                // Validate the request
+                if (request == null || string.IsNullOrWhiteSpace(request.Password))
+                {
+                    return BadRequest("Invalid request.");
+                }
+
+                var userData = await _context.Users
+                                .Where(u => u.ResetToken == request.Token)
+                                .FirstOrDefaultAsync();
+                if (userData == null)
+                {
+                    return BadRequest("Password reset failed, token already used or invalid");
+                }
+                var userModel = new RegistrationModel()
+                {
+                    Email = userData.Email,
+                    FirstName = userData.FirstName,
+                    LastName = userData.LastName,
+                    LoginName = userData.LoginName,
+                    Password = request.Password
+                };
+                var user = userModel.ToUser();
+                userData.PasswordHash = user.PasswordHash;
+                userData.PasswordSalt = user.PasswordSalt;
+                userData.ResetToken= null;
+                _context.Users.Update(userData);
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Password reset successful" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest("Password reset failed");
+            }
+        }
+
+
+        [HttpPost("forgotpassword")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            try
+            {
+                var _context = new DataContext();
+                // Validate the request
+                if (request == null || string.IsNullOrWhiteSpace(request.Email))
+                {
+                    return BadRequest("Invalid request.");
+                }
+
+                // Check if the email exists in your database asynchronously
+                var userExists = await CheckEmailExistsAsync(request.Email);
+
+                if (userExists != null)
+                {
+                    // Generate a password reset token asynchronously
+                    string resetToken = await GenerateResetTokenAsync(request.Email);
+                    userExists.ResetToken = resetToken;
+
+                    // Send the password reset email asynchronously
+                    await SendPasswordResetEmailAsync(request.Email, resetToken);
+                    _context.Users.Update(userExists);
+                    await _context.SaveChangesAsync();
+                    return Ok(new { message = "Password reset successfully emailed." });
+                }
+                else
+                {
+                    return BadRequest("Email not found.");
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        private async Task<User> CheckEmailExistsAsync(string email)
+        {
+            var _context = new DataContext(); // Create a new instance of DataContext
+
+            var userData = await _context.Users
+               .Where(u => u.Email == email)
+               .FirstOrDefaultAsync();
+
+            // For simplicity, assume email exists (replace with your actual implementation)
+            return await Task.FromResult(userData);
+        }
+
+        private async Task<string> GenerateResetTokenAsync(string email)
+        {
+            // Create a byte array to store the token
+            byte[] tokenBytes = new byte[32]; // 32 bytes for a 256-bit token
+
+            // Use a secure random number generator to fill the array with random bytes
+            using (var rng = new System.Security.Cryptography.RNGCryptoServiceProvider())
+            {
+                rng.GetBytes(tokenBytes);
+            }
+
+            // Convert the byte array to a hexadecimal string
+            string token = BitConverter.ToString(tokenBytes).Replace("-", "").ToLower();
+
+            return await Task.FromResult(token);
+        }
+
+        private async Task SendPasswordResetEmailAsync(string email, string resetToken)
+        {
+            // Configure your email settings (SMTP server, port, credentials, etc.)
+            string smtpServer = "smtp.gmail.com";
+            int smtpPort = 587;
+            string smtpUsername = "Allport3333@gmail.com";
+            string smtpPassword = "bkhjsbsjktwdedyo";
+
+            using (var client = new SmtpClient(smtpServer))
+            {
+                client.Port = smtpPort;
+                client.Credentials = new NetworkCredential(smtpUsername, smtpPassword);
+                client.EnableSsl = true;
+
+                var mail = new MailMessage
+                {
+                    From = new MailAddress("LeagueScrambler@gmail.com"),
+                    Subject = "Password Reset For League Scrambler",
+                    Body = $"Click the following link to reset your password for your login to LeagueScrambler: https://leaguescrambler.com/resetpassword?token={resetToken}",
+                    IsBodyHtml = false
+                };
+
+                mail.To.Add(email);
+
+                try
+                {
+                    // Send the email asynchronously
+                    await client.SendMailAsync(mail);
+
+
+                }
+                catch (Exception ex)
+                {
+                    // Handle any exceptions, e.g., log the error
+                    Console.WriteLine("Error sending email: " + ex.Message);
+                }
+            }
         }
 
     }

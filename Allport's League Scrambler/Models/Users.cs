@@ -9,6 +9,7 @@ namespace Allport_s_League_Scrambler.Models
         public string LoginName { get; set; } // User's login name or username
         public byte[] PasswordHash { get; set; } // Hashed password
         public byte[] PasswordSalt { get; set; } // Password salt
+        public string ResetToken { get; set; } // User's Reset Token
         public string Email { get; set; } // User's email address
         public string FirstName { get; set; } // User's first name
         public string LastName { get; set; } // User's last name

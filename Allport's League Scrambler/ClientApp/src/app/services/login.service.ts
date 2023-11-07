@@ -19,6 +19,7 @@ export class LoginService {
     private registerUrl = this.baseUrl + 'api/Login/register';
     private isauthenticated = this.baseUrl + 'api/Login/isauthenticated';
     private forgotPasswordUrl = this.baseUrl + 'api/Login/forgotpassword'; // Define your password recovery endpoint
+    private resetPasswordUrl = this.baseUrl + 'api/Login/resetpassword'; // Define your password recovery endpoint
     login(username: string, password: string) {
         const loginData = {
             username: username,
@@ -65,6 +66,23 @@ export class LoginService {
             email: email // You may need additional data as required by your API
         };
 
-        return this.httpClient.post(this.forgotPasswordUrl, recoveryData, { withCredentials: true });
+        return this.httpClient.post(this.forgotPasswordUrl, recoveryData, { withCredentials: true })
+            .pipe(
+                catchError((error) => {
+                    // Handle the error and create an error message
+                    const errorMessage = 'Failed to initiate password recovery';
+                    console.error(errorMessage, error);
+                    return throwError(errorMessage); // Return an error observable
+                })
+            );
+    }
+
+    resetPassword(password: string, token: string) {
+        const recoveryData = {
+            password: password,
+            token: token
+        };
+        console.log('recoveryData', recoveryData);
+        return this.httpClient.post(this.resetPasswordUrl, recoveryData, { withCredentials: true });
     }
 }

@@ -20,6 +20,7 @@ import { PlayerScoresComponent } from './player-scores/player-scores.component';
 import { ScheduleComponent } from './schedule/schedule.component';
 import { AuthService } from './auth.service';
 import { ForgotPasswordDialogComponent } from './forgot-password-dialog/forgot-password-dialog.component';
+import { ResetPasswordComponent } from './reset-password/reset-password.component';
 
 @NgModule({
     declarations: [
@@ -31,7 +32,8 @@ import { ForgotPasswordDialogComponent } from './forgot-password-dialog/forgot-p
         TeamScoresComponent,
         PlayerScoresComponent,
         ScheduleComponent,
-        ForgotPasswordDialogComponent
+        ForgotPasswordDialogComponent,
+        ResetPasswordComponent
 
     ],
     imports: [
@@ -71,7 +73,8 @@ import { ForgotPasswordDialogComponent } from './forgot-password-dialog/forgot-p
             { path: 'fetch-data', component: FetchDataComponent },
             { path: 'team-scores', component: TeamScoresComponent },
             { path: 'player-scores', component: PlayerScoresComponent },
-            { path: 'schedule', component: ScheduleComponent }
+            { path: 'schedule', component: ScheduleComponent },
+            { path: 'resetpassword', component: ResetPasswordComponent }
         ]),
         BrowserAnimationsModule
     ],

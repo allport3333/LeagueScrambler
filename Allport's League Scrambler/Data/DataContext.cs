@@ -26,8 +26,8 @@ namespace Allport_s_League_Scrambler.Data
         {
             if (!optionsBuilder.IsConfigured)
             {
-                //optionsBuilder.UseSqlServer(@"Server=localhost;Database=LeagueScrambler;User Id=AllportDB;Password=Sephiroth3;");
-                optionsBuilder.UseSqlServer(@"Server=localhost;Database=LeagueScrambler;Integrated Security=True;");
+                optionsBuilder.UseSqlServer(@"Server=localhost;Database=LeagueScrambler;User Id=AllportDB;Password=Sephiroth3;");
+                //optionsBuilder.UseSqlServer(@"Server=localhost;Database=LeagueScrambler;Integrated Security=True;");
 
                 //optionsBuilder.UseSqlServer(System.Configuration.ConfigurationManager.
                 //    ConnectionStrings["LeagueDBConnectionString"].ConnectionString);
@@ -46,8 +46,8 @@ namespace Allport_s_League_Scrambler.Data
             modelBuilder.Entity<TeamScore>().ToTable("TeamScore", "dbo");
             modelBuilder.Entity<KingQueenPlayer>().ToTable("KingQueenPlayer", "dbo");
             modelBuilder.Entity<KingQueenTeam>().ToTable("KingQueenTeam", "dbo");
-            modelBuilder.Entity<User>().ToTable("User", "dbo");
-            modelBuilder.Entity<UserLeague>().ToTable("UserLeague", "dbo");
+            modelBuilder.Entity<User>().ToTable("User");
+            modelBuilder.Entity<UserLeague>().ToTable("UserLeague");
         }
 
         }

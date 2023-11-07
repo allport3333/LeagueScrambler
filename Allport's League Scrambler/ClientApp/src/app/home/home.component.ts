@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { LoginService } from '../services/login.service';
-import { MatSnackBarConfig, MatSnackBar, MatDialog } from '@angular/material';
-import { Router } from '@angular/router';
+import { MatSnackBarConfig, MatSnackBar, MatDialog, MatDialogRef } from '@angular/material';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { ForgotPasswordDialogComponent } from '../forgot-password-dialog/forgot-password-dialog.component';
 import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -23,7 +23,14 @@ export class HomeComponent implements OnInit {
     showLoginForm: boolean = false;
     isLoggedIn: boolean = false;
     registerForm: FormGroup; 
-    constructor(private loginService: LoginService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private fb: FormBuilder) { }
+    dialogRef: MatDialogRef<ForgotPasswordDialogComponent>;
+    constructor(private loginService: LoginService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: FormBuilder) {
+        this.route.queryParams.subscribe((queryParams) => {
+            if (queryParams.toggleLoginForm === 'true') {
+                this.toggleLoginForm();
+            }
+        });
+    }
 
     ngOnInit() {
         this.registerForm = this.fb.group({
@@ -56,21 +63,25 @@ export class HomeComponent implements OnInit {
         this.authService.setLoggedIn(false);
     }
 
-    forgotPassword(email: string) {
-        // You can add some additional logic here, if required, before calling the PasswordService.
-        return this.loginService.forgotPassword(email);
-    }
-
     openForgotPasswordDialog(): void {
-        const dialogRef = this.dialog.open(ForgotPasswordDialogComponent, {
+        this.dialogRef = this.dialog.open(ForgotPasswordDialogComponent, {
             width: '300px',
         });
 
-        dialogRef.afterClosed().subscribe((result) => {
+        this.dialogRef.afterClosed().subscribe((result) => {
             if (result) {
                 // User clicked "Submit" in the dialog
-                this.forgotPassword(result); // Pass the entered email to the forgotPassword method
+                // Pass the entered email to the forgotPassword method
             }
+        });
+    }
+
+
+
+    showNotification(message: string): void {
+        this.snackBar.open(message, 'Close', {
+            duration: 5000, // Adjust the duration as needed
+            panelClass: ['mat-snack-bar-container-custom'], // You can create a custom CSS class for the notification container
         });
     }
 
