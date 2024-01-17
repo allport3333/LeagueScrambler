@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatSelectionListChange } from '@angular/material';
 import { Player } from '../data-models/player.model';
@@ -19,6 +19,8 @@ import { LoginService } from '../services/login.service';
     styleUrls: ['./scrambler.component.less']
 })
 export class ScramblerComponent implements OnInit {
+    @ViewChild('matchupDiv') matchupDiv!: ElementRef;
+    @ViewChild('saveTeamsDiv') saveTeamsDiv!: ElementRef;
     hideEverything: boolean;
     totalPlayers: Player[];
     players: Player[];
@@ -158,7 +160,9 @@ export class ScramblerComponent implements OnInit {
 
 
     }
-
+    ngAfterViewInit() {
+        // At this point, targetDiv is guaranteed to be initialized
+    }
     selectLeague() {
         this.playerLoading = true;
         this.playerService.SelectLeague(this.selectedLeague).subscribe(result => {
@@ -274,30 +278,33 @@ export class ScramblerComponent implements OnInit {
 
     hidePlayerList() {
         this.hidePlayers = !this.hidePlayers;
+
         var x = document.getElementById("playerListHidden");
-        if (x.style.display === "none") {
-            x.style.display = "block";
-        } else {
-            x.style.display = "none";
+
+        // Check if the element with ID "playerListHidden" exists
+        if (x) {
+            // Toggle the display property directly
+            x.style.display = this.hidePlayers ? "none" : "block";
         }
     }
 
-    hideOptions() {
-        this.hideInputOptions = !this.hideInputOptions;
-        this.hideListOptions = !this.hideListOptions;
-        var x = document.getElementById("hideInputOptions");
-        if (x.style.display === "none") {
-            x.style.display = "block";
-        } else {
-            x.style.display = "none";
-        }
-        var y = document.getElementById("hideListOptions");
-        if (y.style.display === "none") {
-            y.style.display = "block";
-        } else {
-            y.style.display = "none";
-        }
-    }
+
+    //hideOptions() {
+    //    this.hideInputOptions = !this.hideInputOptions;
+    //    this.hideListOptions = !this.hideListOptions;
+    //    var x = document.getElementById("hideInputOptions");
+    //    if (x.style.display === "none") {
+    //        x.style.display = "block";
+    //    } else {
+    //        x.style.display = "none";
+    //    }
+    //    var y = document.getElementById("hideListOptions");
+    //    if (y.style.display === "none") {
+    //        y.style.display = "block";
+    //    } else {
+    //        y.style.display = "none";
+    //    }
+    //}
 
     getTotalMaleSelectedPlayers() {
         return this.selectedList.filter(player => player.isMale).length;
@@ -309,13 +316,16 @@ export class ScramblerComponent implements OnInit {
 
     hideShowEverything() {
         this.hideEverything = !this.hideEverything;
+
         var z = document.getElementById("hideEverything");
-        if (z.style.display === "none") {
-            z.style.display = "block";
-        } else {
-            z.style.display = "none";
+
+        // Check if the element with ID "hideEverything" exists
+        if (z) {
+            // Toggle the display property
+            z.style.display = this.hideEverything ? "none" : "block";
         }
     }
+
 
     deselectAllPlayers() {
         this.selectedList = [];
@@ -675,25 +685,46 @@ export class ScramblerComponent implements OnInit {
     }
 
     addPlayerToTopPlayerList(player: Player) {
-        this.totalTopPlayers.push(player);
-        player.isTopPlayer = true;
-        // Implement your logic here to add the player to a list or perform any desired action.
-        // For example, you can add the player to an array:
-        this.displayTopPlayers = this.totalTopPlayers;
-        this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
-        this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
-        this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
+        // Check if the player already exists in the totalTopPlayers array
+        const playerExists = this.totalTopPlayers.some(existingPlayer => existingPlayer === player);
+
+        if (!playerExists) {
+            // If the player doesn't exist, add them to the totalTopPlayers array
+            if (this.totalTopPlayers.length === 0 && this.totalTopPlayersTemp.length !== 0) {
+                this.totalTopPlayers = this.totalTopPlayersTemp.filter(player => player.isTopPlayer);
+            }
+
+            this.totalTopPlayers.push(player);
+            player.isTopPlayer = true;
+
+            // Update other variables as needed.
+            this.displayTopPlayers = this.totalTopPlayers;
+            this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
+            this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
+            this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
+        }
+        else {
+            player.isTopPlayer = true;
+        }
     }
 
+
     removePlayerFromTopPlayerList(player: Player) {
-        // Find the index of the player in the totalTopPlayers array
-        const playerIndex = this.totalTopPlayers.indexOf(player);
+        // Find all indices of the player in the totalTopPlayers array
+        const playerIndices = this.totalTopPlayers.reduce((indices, current, index) => {
+            if (current === player) {
+                indices.push(index);
+            }
+            return indices;
+        }, []);
 
-        if (playerIndex !== -1) {
-            // Remove the player from the totalTopPlayers array
-            this.totalTopPlayers.splice(playerIndex, 1);
+        if (playerIndices.length > 0) {
+            // Remove all occurrences of the player from the totalTopPlayers array
+            for (const index of playerIndices.reverse()) {
+                this.totalTopPlayers.splice(index, 1);
+            }
 
-            // Update the player's isTopPlayer status
+            // Update the isTopPlayer status for all occurrences of the player
             player.isTopPlayer = false;
 
             // Implement your logic here to update other variables as needed.
@@ -701,8 +732,13 @@ export class ScramblerComponent implements OnInit {
             this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
             this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
             this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
+            
+        } else {
+            player.isTopPlayer = false;
         }
+        this.totalTopPlayers = this.totalTopPlayers.filter(player => player.isTopPlayer);
     }
+
 
     retrieveScramble(scramble: KingQueenTeam) {
         this.retrievedListOfTeams = [];
@@ -758,7 +794,6 @@ export class ScramblerComponent implements OnInit {
     }
 
     clearTopPLayers() {
-        this.totalTopPlayers = new Array();
         this.totalTopPlayers = new Array();
         this.displayTopPlayers = new Array();
         for (let player of this.malePlayers1) {
@@ -947,7 +982,8 @@ export class ScramblerComponent implements OnInit {
             let maleSuccess = this.selectPlayers(this.malePlayerCount, true, nonDuplicates);
             let femaleSuccess = this.selectPlayers(this.femalePlayerCount, false, nonDuplicates);
             if (maleSuccess && femaleSuccess) {
-
+                this.totalTopPlayers = [...this.totalTopPlayersTemp];
+                this.totalPlayers = [...this.totalPlayersTemp];
                 // Player selection was successful, break out of the loop
                 return true;
             }
@@ -964,13 +1000,11 @@ export class ScramblerComponent implements OnInit {
                 }
             }
 
-
-
-            // You can add a delay between retries if needed
         }
         this.malePlayers = [];
         this.femalePlayers = [];
         this.retrievedListOfTeams = [];
+        this.totalTopPlayers = [...this.totalTopPlayersTemp];
         return false; // All retries failed
     }
 
@@ -1133,8 +1167,13 @@ export class ScramblerComponent implements OnInit {
             else {
                 this.locked = false;
             }
-            if (this.hideInputOptions == false) {
-                this.hideOptions();
+            //if (this.hideInputOptions == false) {
+            //    this.hideOptions();
+            //}
+            if (this.saveTeamsDiv) {
+                // Set focus on the div element
+                this.saveTeamsDiv.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+                this.saveTeamsDiv.nativeElement.focus();
             }
         }
     }

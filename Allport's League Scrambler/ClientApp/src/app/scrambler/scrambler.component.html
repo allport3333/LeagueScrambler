@@ -91,9 +91,9 @@
                 <div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
                     <button  (click)="scramblePlayers(false)" mat-raised-button color="primary" class="w-100">Scramble Players</button>
                 </div>
-                <div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                <!--<div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
                     <button (click)="hideOptions()"  mat-raised-button color="primary" class="w-100">Hide Options</button>
-                </div>
+                </div>-->
                 <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
                     <button (click)="reset()" mat-raised-button color="primary" class="w-100">Reset Top Players</button>
                 </div>
@@ -112,7 +112,7 @@
 
 
             <div class="text-center mt-3" *ngIf="hideInputOptions">
-                <button (click)="hideOptions()" mat-raised-button color="primary">Show Options</button>
+                <!--<button (click)="hideOptions()" mat-raised-button color="primary">Show Options</button>-->
                 <button *ngIf="!lockedResults" style="margin-top:10px; margin-left: 10px" (click)="scramblePlayers(false)" mat-raised-button color="primary">Scramble Players</button>
                 <div class="mt-2">
                     <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
@@ -434,10 +434,10 @@
         </div>
     </div>
 </div>
-<div class="row justify-content-center align-items-center">
+<div class="row justify-content-center align-items-center" #matchupDiv>
 
     <ng-container *ngFor="let team of listOfTeams; let i=index; ">
-        <div *ngIf="(i+1) % 2 == 0 " style="margin-top:-205px; margin-left:-35px">
+        <div *ngIf="(i+1) % 2 == 0 " style="margin-top:-205px; margin-left:-35px" >
 
             <!--<div>
                 <h4 style="font-size: 18px;">Court</h4>
@@ -491,7 +491,7 @@
     </ng-container>
 
 </div>
-<div class="row justify-content-center mt-3">
+<div class="row justify-content-center mt-3" #saveTeamsDiv>
     <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
         <div class="d-flex flex-column align-items-center text-center">
             <button (click)="saveKingQueenTeams()" mat-raised-button color="primary" class="mb-2">Save Teams</button>
