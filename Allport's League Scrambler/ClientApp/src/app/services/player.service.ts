@@ -7,6 +7,7 @@ import { Password } from '../data-models/password.model';
 import { KingQueenTeamWithPlayers } from '../data-models/KingQueenTeamWithPlayers.model';
 import { Observable } from 'rxjs';
 import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
+import { SaveKingQueenTeamsResponse } from '../data-models/saveKingQueenTeamsResponse';
 
 @Injectable({
     providedIn: 'root'
@@ -53,13 +54,26 @@ export class PlayerService {
         return this.httpClient.post<Player>(this.baseUrl + 'api/ScrambleData/AddPlayer/' + leagueName, player);
     }
 
-    public saveKingQueenTeams(teamsWithPlayers: KingQueenTeamWithPlayers[], leagueName: string): Observable<KingQueenTeamWithPlayers[]> {
-        // Make a POST request to your controller with leagueName appended to the URL
-        return this.httpClient.post<KingQueenTeamWithPlayers[]>(
+    public saveKingQueenTeams(
+        teamsWithPlayers: KingQueenTeamWithPlayers[],
+        leagueName: string,
+        byePlayers: Player[]
+    ): Observable<SaveKingQueenTeamsResponse> {
+        // Prepare the request using the SaveKingQueenTeamsResponse model
+        const request: SaveKingQueenTeamsResponse = {
+            kingQueenTeams: teamsWithPlayers,
+            byePlayers: byePlayers
+        };
+
+        // Send the request and expect a response of type SaveKingQueenTeamsResponse
+        return this.httpClient.post<SaveKingQueenTeamsResponse>(
             `${this.baseUrl}api/ScrambleData/SaveKingQueenTeams/${leagueName}`,
-            teamsWithPlayers
+            request
         );
     }
+
+
+
 
     // New method to retrieve KingQueenTeams by ScrambleNumber
     getKingQueenTeamsByScrambleNumber(leagueName: string, scrambleNumber: number): Observable<KingQueenTeamWithPlayers[]> {

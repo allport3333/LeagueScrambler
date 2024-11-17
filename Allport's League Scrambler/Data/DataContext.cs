@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Allport_s_League_Scrambler.Data
 {
-    public class DataContext: DbContext
+    public class DataContext : DbContext
     {
 
         public virtual DbSet<Player> Players { get; set; }
@@ -22,6 +22,8 @@ namespace Allport_s_League_Scrambler.Data
         public virtual DbSet<KingQueenPlayer> KingQueenPlayer { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<UserLeague> UserLeagues { get; set; }
+        public virtual DbSet<ByeRounds> ByeRounds { get; set; }
+        public virtual DbSet<ByePlayer> ByePlayer { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -46,10 +48,13 @@ namespace Allport_s_League_Scrambler.Data
             modelBuilder.Entity<TeamScore>().ToTable("TeamScore", "dbo");
             modelBuilder.Entity<KingQueenPlayer>().ToTable("KingQueenPlayer", "dbo");
             modelBuilder.Entity<KingQueenTeam>().ToTable("KingQueenTeam", "dbo");
-            modelBuilder.Entity<User>().ToTable("User");
-            modelBuilder.Entity<UserLeague>().ToTable("UserLeague");
+            modelBuilder.Entity<User>().ToTable("User", "dbo");
+            modelBuilder.Entity<UserLeague>().ToTable("UserLeague", "dbo");
+
+            modelBuilder.Entity<ByeRounds>().ToTable("ByeRounds", "dbo");
+            modelBuilder.Entity<ByePlayer>().ToTable("ByePlayer", "dbo");
         }
 
-        }
-    
+    }
+
 }

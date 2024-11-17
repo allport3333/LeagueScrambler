@@ -234,89 +234,91 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
-        public List<KingQueenTeamWithPlayers> SaveKingQueenTeams([FromBody] List<KingQueenTeamWithPlayers> teams, string leagueName)
+        public SaveKingQueenTeamsResponse SaveKingQueenTeams([FromBody] SaveKingQueenTeamsResponse request, string leagueName)
         {
             var context = new DataContext();
             var existingLeague = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
 
             if (existingLeague == null)
             {
-                // Handle the case where the league doesn't exist
-                // You might want to return an error response or handle it as needed.
-                return null;
+                return null; // Return null if league doesn't exist
             }
 
             var currentDate = DateTime.Now;
             var leagueId = existingLeague.ID;
 
             var results = new List<KingQueenTeamWithPlayers>();
-
-            // Find the last scramble number from the database for each team
-            var lastScrambleNumber = context.KingQueenTeam
-                .Where(kt => kt.LeagueID == existingLeague.ID)
+            var scrambleNumber = context.KingQueenTeam
+                .Where(kt => kt.LeagueID == leagueId)
                 .Select(kt => kt.ScrambleNumber)
                 .DefaultIfEmpty(0)
-                .Max();
+                .Max() + 1;
 
-            foreach (var team in teams)
+            var savedByePlayers = new List<Player>();
+
+            // Process and save KingQueenTeams
+            foreach (var team in request.KingQueenTeams)
             {
-
-
-                // Increment the last scramble number by one to get the new scramble number
-                var newScrambleNumber = lastScrambleNumber + 1;
-
-                var newKingQueenTeam = new KingQueenTeam()
+                var newTeam = new KingQueenTeam
                 {
-                    LeagueID = existingLeague.ID,
-                    DateOfTeam = DateTime.Now,
-                    ScrambleNumber = newScrambleNumber // Assign the new scramble number
+                    LeagueID = leagueId,
+                    DateOfTeam = currentDate,
+                    ScrambleNumber = scrambleNumber
                 };
 
-                context.KingQueenTeam.Add(newKingQueenTeam);
+                context.KingQueenTeam.Add(newTeam);
                 context.SaveChanges();
-
-                var teamPlayers = new List<KingQueenPlayer>();
 
                 foreach (var player in team.Players)
                 {
-                    // Retrieve the associated Player entity
-                    var playerEntity = context.Players.FirstOrDefault(p => p.Id == player.Id);
-
-                    if (playerEntity != null)
+                    var newKingQueenPlayer = new KingQueenPlayer
                     {
-                        var newKingQueenPlayer = new KingQueenPlayer()
-                        {
-                            KingQueenTeamId = newKingQueenTeam.Id,
-                            PlayerId = playerEntity.Id
-                        };
-
-                        context.KingQueenPlayer.Add(newKingQueenPlayer);
-                        context.SaveChanges();
-
-                        teamPlayers.Add(newKingQueenPlayer);
-                    }
+                        KingQueenTeamId = newTeam.Id,
+                        PlayerId = player.Id
+                    };
+                    context.KingQueenPlayer.Add(newKingQueenPlayer);
                 }
+                context.SaveChanges();
 
-                // Retrieve the associated KingQueenTeam entity
-                var kingQueenTeam = context.KingQueenTeam
-                    .Where(t =>
-                        t.DateOfTeam.Date == currentDate.Date &&
-                        t.LeagueID == leagueId &&
-                        t.ScrambleNumber == newScrambleNumber && // Check the scramble number
-                        t.KingQueenPlayers.Any(kqp => teamPlayers.Any(tp => kqp.PlayerId == tp.PlayerId)))
-                    .FirstOrDefault();
-
-                var result = new KingQueenTeamWithPlayers
+                results.Add(new KingQueenTeamWithPlayers
                 {
-                    KingQueenTeam = kingQueenTeam,
+                    KingQueenTeam = newTeam,
                     Players = team.Players
-                };
-
-                results.Add(result);
+                });
             }
 
-            return results;
+            var newByeRound = new ByeRounds
+            {
+                LeagueID = leagueId,
+                DateOfRound = DateTime.Now,
+                ScrambleNumber = scrambleNumber
+            };
+            context.ByeRounds.Add(newByeRound);
+            context.SaveChanges(); // Save the ByeRound to generate its Id
+
+            // Process and save ByePlayers
+            foreach (var player in request.ByePlayers)
+            {
+                var newByePlayer = new ByePlayer
+                {
+                    ByeRoundId = newByeRound.Id,
+                    PlayerId = player.Id
+                };
+                context.ByePlayer.Add(newByePlayer);
+                context.SaveChanges();
+
+                savedByePlayers.Add(player);
+            }
+
+            // Return the combined response
+            return new SaveKingQueenTeamsResponse
+            {
+                KingQueenTeams = results,
+                ByePlayers = savedByePlayers
+            };
         }
+
+
 
 
         [HttpGet("[action]/{leagueName}/{scrambleNumber}")]
@@ -467,7 +469,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 context.Leagues.Add(newLeague);
                 context.SaveChanges();
 
-                
+
 
                 if (username != null)
                 {

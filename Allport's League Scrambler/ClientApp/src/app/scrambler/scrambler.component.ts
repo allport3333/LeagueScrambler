@@ -25,6 +25,7 @@ export class ScramblerComponent implements OnInit {
     totalPlayers: Player[];
     players: Player[];
     selectedMalePlayers: Player[];
+    byePlayers: Player[] = new Array();
     malePlayers: Player[] = new Array();
     femalePlayers: Player[] = new Array();
     malePlayersDisplayCount: Player[] = new Array();
@@ -422,7 +423,7 @@ export class ScramblerComponent implements OnInit {
                     this.deletePlayerLogic();
 
                 }
-            }); 
+            });
         }
     }
 
@@ -666,6 +667,7 @@ export class ScramblerComponent implements OnInit {
         else {
             this.listOfTeams = [];
             this.clearTopPLayers();
+            this.clearByePlayers();
         }
     }
 
@@ -727,12 +729,11 @@ export class ScramblerComponent implements OnInit {
             // Update the isTopPlayer status for all occurrences of the player
             player.isTopPlayer = false;
 
-            // Implement your logic here to update other variables as needed.
             this.displayTopPlayers = this.totalTopPlayers;
             this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
             this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
             this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
-            
+
         } else {
             player.isTopPlayer = false;
         }
@@ -804,6 +805,17 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
+    clearByePlayers() {
+        this.byePlayers = [];
+        for (let player of this.malePlayers1) {
+            player.isByePlayer = false;
+        }
+        for (let player of this.femalePlayers1) {
+            player.isByePlayer = false;
+        }
+    }
+
+
     updateNumberOfTeams(selectedTeamSize: number): void {
         this.numberOfTeamsSelected = true;
         this.teamSizeSelected = false;
@@ -855,11 +867,23 @@ export class ScramblerComponent implements OnInit {
         });
 
         try {
-            const result = await this.playerService.saveKingQueenTeams(kingQueenTeamsWithPlayers, this.selectedLeague).toPromise();
-            if (result && result.length > 0 && result[0].kingQueenTeam) {
-                // Get the scramble number from the first team
-                this.scrambleNumber = result[0].kingQueenTeam.scrambleNumber;
-                this.showSnackBar('All KingQueenTeams saved successfully!');
+            // Call the service and await the result
+            const result = await this.playerService.saveKingQueenTeams(
+                kingQueenTeamsWithPlayers,
+                this.selectedLeague,
+                this.byePlayers
+            ).toPromise();
+
+            // Check if the response is valid
+            if (result) {
+                // Get the scramble number from the first team, if available
+                if (result.kingQueenTeams.length > 0 && result.kingQueenTeams[0].kingQueenTeam) {
+                    this.scrambleNumber = result.kingQueenTeams[0].kingQueenTeam.scrambleNumber;
+                }
+
+                this.showSnackBar('All KingQueenTeams and Bye Players saved successfully!');
+
+                // Update the queried scrambles
                 this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe(result => {
                     this.queriedScrambles = result;
                 });
@@ -873,6 +897,7 @@ export class ScramblerComponent implements OnInit {
             this.showSnackBar('Error saving KingQueenTeams!');
         }
     }
+
 
 
     retrieveMatchups() {
@@ -1008,24 +1033,28 @@ export class ScramblerComponent implements OnInit {
         return false; // All retries failed
     }
 
+    addPlayerToByeList(player: Player) {
+        player.isByePlayer = true;
+        this.byePlayers.push(player);
+    }
+
+    removePlayerFromByeList(player: Player) {
+        player.isByePlayer = false;
+        this.byePlayers = this.byePlayers.filter(p => p !== player);
+    }
+
+
     fillPlayers() {
+        // Separate bye players
+        this.byePlayers = this.selectedList.filter(player => player.isByePlayer);
+
+        // Separate remaining players based on the randomization flag
         if (this.completeRandom) {
-            for (let player of this.selectedList) {
-                this.totalRandomPlayers.push(player);
-            }
+            this.totalRandomPlayers = this.selectedList.filter(player => !player.isByePlayer);
+        } else {
+            this.malePlayers = this.selectedList.filter(player => !player.isByePlayer && player.isMale);
+            this.femalePlayers = this.selectedList.filter(player => !player.isByePlayer && !player.isMale);
         }
-        else {
-            for (let player of this.selectedList) {
-                if (player.isMale) {
-                    this.malePlayers.push(player);
-                }
-                else {
-                    this.femalePlayers.push(player);
-                }
-            }
-        }
-
-
     }
 
     fillTeam() {

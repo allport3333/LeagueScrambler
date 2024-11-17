@@ -1,7 +1,7 @@
 <div class="container-fluid" [hidden]="hideEverything">
     <div class="row">
         <div class="col-12">
-            <mat-card style="background-color:lightgray; " class="ml-1 mt-2" >
+            <mat-card style="background-color:lightgray; " class="ml-1 mt-2">
                 <div class="row">
                     <div class="col">
                         <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
@@ -9,7 +9,7 @@
                             <div class="mt-1">
                                 <mat-form-field>
                                     <mat-label>League</mat-label>
-                                    <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague"  (selectionChange)="selectLeague()">
+                                    <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" (selectionChange)="selectLeague()">
                                         <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
                                             {{league.leagueName}}
                                         </mat-option>
@@ -67,7 +67,7 @@
                         Top Players
                         <span *ngIf="totalTopPlayers.length > 0">({{ totalTopPlayers.length }})</span>
                     </h5>
-                    
+
                     <div class="player-list">
                         <ng-container *ngFor="let player of displayTopPlayers">
                             <div class="player-item" [ngClass]="{'male-bg': player.isMale, 'female-bg': !player.isMale}">
@@ -89,7 +89,7 @@
 
             <div class="row justify-content-center mt-3">
                 <div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <button  (click)="scramblePlayers(false)" mat-raised-button color="primary" class="w-100">Scramble Players</button>
+                    <button (click)="scramblePlayers(false)" mat-raised-button color="primary" class="w-100">Scramble Players</button>
                 </div>
                 <!--<div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
                     <button (click)="hideOptions()"  mat-raised-button color="primary" class="w-100">Hide Options</button>
@@ -170,11 +170,21 @@
                                                             <mat-list-option [style.width.%]="isSmallScreen ? 50 : 25" [style.margin-bottom.px]="10" style="background-color: #DBFDFF;" *ngFor="let player1 of malePlayers1; let i = index" [value]="player1">
                                                                 <div style="display: flex; align-items: center;">
                                                                     <span>{{ player1.firstName }} {{ player1.lastName }}</span>
+
+                                                                    <!-- Top Player Button -->
                                                                     <button *ngIf="!player1.isTopPlayer" mat-icon-button (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
                                                                         <mat-icon>star_border</mat-icon>
                                                                     </button>
                                                                     <button *ngIf="player1.isTopPlayer" mat-icon-button (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
                                                                         <mat-icon>star</mat-icon>
+                                                                    </button>
+
+                                                                    <!-- Bye Player Button -->
+                                                                    <button *ngIf="!player1.isByePlayer" mat-icon-button (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
+                                                                        <mat-icon>radio_button_unchecked</mat-icon>
+                                                                    </button>
+                                                                    <button *ngIf="player1.isByePlayer" mat-icon-button (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
+                                                                        <mat-icon>cancel</mat-icon>
                                                                     </button>
                                                                 </div>
                                                             </mat-list-option>
@@ -187,20 +197,31 @@
                                                     <!-- Female Players -->
                                                     <div style="display: flex; flex-direction: column;">
                                                         <mat-list style="display: flex; flex-wrap: wrap; justify-content: space-between;">
-                                                            <mat-list-option [style.width.%]="isSmallScreen ? 50 : 25" [style.margin-bottom.px]="10" style="background-color: #FCE0FF; " *ngFor="let player1 of femalePlayers1; let i = index" [value]="player1">
+                                                            <mat-list-option [style.width.%]="isSmallScreen ? 50 : 25" [style.margin-bottom.px]="10" style="background-color: #FCE0FF;" *ngFor="let player1 of femalePlayers1; let i = index" [value]="player1">
                                                                 <div style="display: flex; align-items: center;">
                                                                     <span>{{ player1.firstName }} {{ player1.lastName }}</span>
+
+                                                                    <!-- Top Player Button -->
                                                                     <button *ngIf="!player1.isTopPlayer" mat-icon-button (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
                                                                         <mat-icon>star_border</mat-icon>
                                                                     </button>
                                                                     <button *ngIf="player1.isTopPlayer" mat-icon-button (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
                                                                         <mat-icon>star</mat-icon>
                                                                     </button>
+
+                                                                    <!-- Bye Player Button -->
+                                                                    <button *ngIf="!player1.isByePlayer" mat-icon-button (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
+                                                                        <mat-icon>radio_button_unchecked</mat-icon>
+                                                                    </button>
+                                                                    <button *ngIf="player1.isByePlayer" mat-icon-button (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
+                                                                        <mat-icon>cancel</mat-icon>
+                                                                    </button>
                                                                 </div>
                                                             </mat-list-option>
                                                         </mat-list>
                                                     </div>
                                                 </div>
+
                                             </mat-selection-list>
                                         </mat-card>
 
@@ -243,16 +264,16 @@
                             <div class="tab-content d-flex flex-column align-items-center">
                                 <h5 class="mb-2">Retrieve Previous Scramble</h5>
                                 <!--<div class="d-flex flex-column align-items-center mb-2">
-        <mat-form-field appearance="outline">
-            <input matInput placeholder="Enter Scramble Number" [(ngModel)]="scrambleNumber">
-        </mat-form-field>
+                                    <mat-form-field appearance="outline">
+                                        <input matInput placeholder="Enter Scramble Number" [(ngModel)]="scrambleNumber">
+                                    </mat-form-field>
 
-        <button mat-raised-button color="primary" (click)="retrieveMatchups()">Retrieve Matchups</button>
+                                    <button mat-raised-button color="primary" (click)="retrieveMatchups()">Retrieve Matchups</button>
 
-        <div style="margin-top: 10px;"></div>
+                                    <div style="margin-top: 10px;"></div>
 
-        <button mat-raised-button color="primary" (click)="scramblePlayers(true)">Scramble With No Duplicate Teams</button>
-    </div>-->
+                                    <button mat-raised-button color="primary" (click)="scramblePlayers(true)">Scramble With No Duplicate Teams</button>
+                                </div>-->
                                 <mat-selection-list dense [(ngModel)]="selectedRetrieveScrambleList" (ngModelChange)="updateScrambleNumbers($event)">
                                     <div>
                                         <!-- Male Players -->
@@ -282,7 +303,7 @@
                                 <div *ngIf="listOfRetrievedScrambleNumbers.length > 0" style="text-align: center;">
                                     <span>Retrieved Scramble Numbers To Use:</span>
                                     <br>
-                                    
+
                                     <div style="margin: 0 auto; display: inline-block;">
                                         <ng-container *ngFor="let scrambleNumber of listOfRetrievedScrambleNumbers; let last = last; let i = index">
                                             <span>Scramble Number: </span> <b>{{ scrambleNumber }}</b>
@@ -407,7 +428,7 @@
 
                     <mat-tab label="Add League" class="mt-2">
                         <div class="container-fluid">
-                            <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">                                
+                            <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                 <h5 class="text-center">Enter New League</h5>
                                 <br />
                                 <form [formGroup]="LeagueForm" (ngSubmit)="addLeague()">
@@ -437,7 +458,7 @@
 <div class="row justify-content-center align-items-center" #matchupDiv>
 
     <ng-container *ngFor="let team of listOfTeams; let i=index; ">
-        <div *ngIf="(i+1) % 2 == 0 " style="margin-top:-205px; margin-left:-35px" >
+        <div *ngIf="(i+1) % 2 == 0 " style="margin-top:-205px; margin-left:-35px">
 
             <!--<div>
                 <h4 style="font-size: 18px;">Court</h4>
@@ -489,6 +510,56 @@
             </table>
         </div>
     </ng-container>
+    <!-- Bye Players Section -->
+    <div class="row col-3 justify-content-center mt-5">
+        <h2 *ngIf="isSmallScreen" style="text-align:center; float:none; margin-left:-50px; font-size:18px;">
+            Bye Players
+        </h2>
+        <h2 *ngIf="!isSmallScreen" style="text-align:center; float:none; margin-left:-50px; font-size:28px;">
+            Bye Players
+        </h2>
+        <table class="table mt-3" style="pointer-events: none; width: 100%;">
+            <thead>
+                <tr class="d-flex">
+                    <th *ngIf="!isSmallScreen" class="col-5">First Name</th>
+                    <th *ngIf="!isSmallScreen" class="col-5">Last Name</th>
+                    <th *ngIf="isSmallScreen" class="col-5" style="font-size:12px">Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let player of byePlayers" class="d-flex flex-column flex-sm-row">
+                    <!-- Male Players Formatting -->
+                    <td *ngIf="player.isMale && !isSmallScreen" class="col-5 extended-background-blue">
+                        {{ player.firstName }}
+                    </td>
+                    <td *ngIf="player.isMale && !player.isSub && isSmallScreen" class="col-5 extended-background-blue-lastName">
+                        {{ player.firstName[0] }}.{{ player.lastName }}
+                    </td>
+                    <td *ngIf="player.isMale && !player.isSub && !isSmallScreen" class="col-5 extended-background-blue-lastName">
+                        {{ player.lastName }}
+                    </td>
+                    <td *ngIf="player.isMale && player.isSub" class="col-5 extended-background-blue-lastName">
+                        {{ player.lastName }} - Sub
+                    </td>
+
+                    <!-- Female Players Formatting -->
+                    <td *ngIf="!player.isMale && !isSmallScreen" class="col-5 extended-background-pink">
+                        {{ player.firstName }}
+                    </td>
+                    <td *ngIf="!player.isMale && !player.isSub && isSmallScreen" class="col-5 extended-background-pink-lastName">
+                        {{ player.firstName[0] }}.{{ player.lastName }}
+                    </td>
+                    <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen" class="col-5 extended-background-pink-lastName">
+                        {{ player.lastName }}
+                    </td>
+                    <td *ngIf="!player.isMale && player.isSub" class="col-5 extended-background-pink-lastName">
+                        {{ player.lastName }} - Sub
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
 
 </div>
 <div class="row justify-content-center mt-3" #saveTeamsDiv>

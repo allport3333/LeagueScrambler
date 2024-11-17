@@ -7,4 +7,5 @@ export interface Player {
     gender: string;
     isSub: boolean;
     isTopPlayer?: boolean;
+    isByePlayer?: boolean;
 }
