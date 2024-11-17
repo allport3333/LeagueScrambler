@@ -898,6 +898,49 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
+    printMatchups(): void {
+        const printSection = document.getElementById('printSection');
+        if (printSection) {
+            const printContent = printSection.innerHTML;
+            const printWindow = window.open('', '_blank', 'width=800,height=600');
+            if (printWindow) {
+                printWindow.document.open();
+                printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Print Matchups</title>
+                        <style>
+                            @media print {
+                                @page { size: portrait; margin: 1cm; }
+                                body {
+                                    font-family: Arial, sans-serif;
+                                    padding: 20px;
+                                }
+                                table {
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                }
+                                th, td {
+                                    border: 1px solid #000;
+                                    padding: 5px;
+                                    text-align: center;
+                                }
+                            }
+                        </style>
+                    </head>
+                    <body>${printContent}</body>
+                </html>
+            `);
+                printWindow.document.close();
+                printWindow.onload = () => {
+                    printWindow.print();
+                    printWindow.close();
+                };
+            }
+        }
+    }
+
+
 
 
     retrieveMatchups() {

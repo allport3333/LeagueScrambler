@@ -145,3 +145,32 @@ input {
 .red-snackbar {
     background: #FF0000;
 }
+
+/* Default hidden state */
+#printSection {
+    visibility: hidden;
+    position: absolute;
+    top: -9999px;
+}
+
+/* Show only the print section when printing */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #printSection, #printSection * {
+        visibility: visible;
+    }
+
+    #printSection {
+        position: static;
+        top: 0;
+        left: 0;
+        width: auto; /* Changed from 100% to auto to prevent full-width stretching */
+        margin: 0 auto;
+        display: flex; /* Use flex layout to align items side by side */
+        flex-wrap: wrap; /* Allow content to wrap if needed */
+        justify-content: space-between; /* Ensure items are spaced evenly */
+    }
+}

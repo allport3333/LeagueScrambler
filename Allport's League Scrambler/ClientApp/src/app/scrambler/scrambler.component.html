@@ -455,113 +455,118 @@
         </div>
     </div>
 </div>
-<div class="row justify-content-center align-items-center" #matchupDiv>
+<div>
+    <div class="row justify-content-center align-items-center" #matchupDiv>
 
-    <ng-container *ngFor="let team of listOfTeams; let i=index; ">
-        <div *ngIf="(i+1) % 2 == 0 " style="margin-top:-205px; margin-left:-35px">
+        <ng-container *ngFor="let team of listOfTeams; let i=index; ">
+            <div *ngIf="(i+1) % 2 == 0 " style="margin-top:-205px; margin-left:-35px">
 
-            <!--<div>
-                <h4 style="font-size: 18px;">Court</h4>
-            </div>-->
-            <!--<input style="width: 35px; height: 35px; font-size: 14px; z-index: 99999;" type="text" />-->
-            <h4 style="font-size: 20px; margin-top: 8px; padding:25px">vs</h4>
-        </div>
-        <div class="row col-3">
-            <table class="table" style="pointer-events: none;">
+                <!--<div>
+                    <h4 style="font-size: 18px;">Court</h4>
+                </div>-->
+                <!--<input style="width: 35px; height: 35px; font-size: 14px; z-index: 99999;" type="text" />-->
+                <h4 style="font-size: 20px; margin-top: 8px; padding:25px">vs</h4>
+            </div>
+            <div class="row col-3">
+                <table class="table" style="pointer-events: none;">
+                    <thead>
+                        <h2 *ngIf="isSmallScreen" style="text-align:center; float:none; margin-left:-50px; margin-right:auto; font-size:18px"> {{"Team " + (i + 1)}}</h2>
+                        <h2 *ngIf="!isSmallScreen" style="text-align:center; float:none; margin-left:-50px; margin-right:auto; font-size:28px"> {{"Team " + (i + 1)}}</h2>
+                        <tr class="d-flex">
+                            <th *ngIf="!isSmallScreen" class="col-5">First Name</th>
+                            <th *ngIf="!isSmallScreen" class="col-5">Last Name</th>
+                            <th *ngIf="isSmallScreen" class="col-5" style="font-size:12px">Name</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr *ngFor="let player of team.players" class="d-flex flex-column flex-sm-row">
+                            <td *ngIf="player.isMale == true && !isSmallScreen" class="col-5 extended-background-blue">
+                                {{ player.firstName }}
+                            </td>
+                            <td *ngIf="player.isMale == true && !player.isSub && isSmallScreen" class="col-5 extended-background-blue-lastName">
+                                {{ player.firstName[0] }}.{{ player.lastName }}
+                            </td>
+                            <td *ngIf="player.isMale == true && !player.isSub && !isSmallScreen" class="col-5 extended-background-blue-lastName">
+                                {{ player.lastName }}
+                            </td>
+                            <td *ngIf="player.isMale == true && player.isSub" class="col-5 extended-background-blue-lastName">
+                                {{ player.lastName }} - Sub
+                            </td>
+                            <td *ngIf="player.isMale == false && !isSmallScreen" class="col-5 extended-background-pink">
+                                {{ player.firstName }}
+                            </td>
+                            <td *ngIf="player.isMale == false && !player.isSub && isSmallScreen" class="col-5 extended-background-pink-lastName">
+                                {{ player.firstName[0] }}.{{ player.lastName }}
+                            </td>
+                            <td *ngIf="player.isMale == false && !player.isSub && !isSmallScreen" class="col-5 extended-background-pink-lastName">
+                                {{ player.lastName }}
+                            </td>
+                            <td *ngIf="player.isMale == false && player.isSub" class="col-5 extended-background-pink-lastName">
+                                {{ player.lastName }} - Sub
+                            </td>
+                        </tr>
+
+                    </tbody>
+                </table>
+
+            </div>
+        </ng-container>
+        <!-- Bye Players Section -->
+        <div class="row col-3 justify-content-center mt-5">
+            <h2 *ngIf="isSmallScreen" style="text-align:center; float:none; margin-left:-50px; font-size:18px;">
+                Bye Players
+            </h2>
+            <h2 *ngIf="!isSmallScreen" style="text-align:center; float:none; margin-left:-50px; font-size:28px;">
+                Bye Players
+            </h2>
+            <table class="table mt-3" style="pointer-events: none; width: 100%;">
                 <thead>
-                    <h2 *ngIf="isSmallScreen" style="text-align:center; float:none; margin-left:-50px; margin-right:auto; font-size:18px"> {{"Team " + (i + 1)}}</h2>
-                    <h2 *ngIf="!isSmallScreen" style="text-align:center; float:none; margin-left:-50px; margin-right:auto; font-size:28px"> {{"Team " + (i + 1)}}</h2>
                     <tr class="d-flex">
                         <th *ngIf="!isSmallScreen" class="col-5">First Name</th>
                         <th *ngIf="!isSmallScreen" class="col-5">Last Name</th>
                         <th *ngIf="isSmallScreen" class="col-5" style="font-size:12px">Name</th>
                     </tr>
                 </thead>
-
                 <tbody>
-                    <tr *ngFor="let player of team.players" class="d-flex flex-column flex-sm-row">
-                        <td *ngIf="player.isMale == true && !isSmallScreen" class="col-5 extended-background-blue">
+                    <tr *ngFor="let player of byePlayers" class="d-flex flex-column flex-sm-row">
+                        <!-- Male Players Formatting -->
+                        <td *ngIf="player.isMale && !isSmallScreen" class="col-5 extended-background-blue">
                             {{ player.firstName }}
                         </td>
-                        <td *ngIf="player.isMale == true && !player.isSub && isSmallScreen" class="col-5 extended-background-blue-lastName">
+                        <td *ngIf="player.isMale && !player.isSub && isSmallScreen" class="col-5 extended-background-blue-lastName">
                             {{ player.firstName[0] }}.{{ player.lastName }}
                         </td>
-                        <td *ngIf="player.isMale == true && !player.isSub && !isSmallScreen" class="col-5 extended-background-blue-lastName">
+                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen" class="col-5 extended-background-blue-lastName">
                             {{ player.lastName }}
                         </td>
-                        <td *ngIf="player.isMale == true && player.isSub" class="col-5 extended-background-blue-lastName">
+                        <td *ngIf="player.isMale && player.isSub" class="col-5 extended-background-blue-lastName">
                             {{ player.lastName }} - Sub
                         </td>
-                        <td *ngIf="player.isMale == false && !isSmallScreen" class="col-5 extended-background-pink">
+
+                        <!-- Female Players Formatting -->
+                        <td *ngIf="!player.isMale && !isSmallScreen" class="col-5 extended-background-pink">
                             {{ player.firstName }}
                         </td>
-                        <td *ngIf="player.isMale == false && !player.isSub && isSmallScreen" class="col-5 extended-background-pink-lastName">
+                        <td *ngIf="!player.isMale && !player.isSub && isSmallScreen" class="col-5 extended-background-pink-lastName">
                             {{ player.firstName[0] }}.{{ player.lastName }}
                         </td>
-                        <td *ngIf="player.isMale == false && !player.isSub && !isSmallScreen" class="col-5 extended-background-pink-lastName">
+                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen" class="col-5 extended-background-pink-lastName">
                             {{ player.lastName }}
                         </td>
-                        <td *ngIf="player.isMale == false && player.isSub" class="col-5 extended-background-pink-lastName">
+                        <td *ngIf="!player.isMale && player.isSub" class="col-5 extended-background-pink-lastName">
                             {{ player.lastName }} - Sub
                         </td>
                     </tr>
-
                 </tbody>
             </table>
         </div>
-    </ng-container>
-    <!-- Bye Players Section -->
-    <div class="row col-3 justify-content-center mt-5">
-        <h2 *ngIf="isSmallScreen" style="text-align:center; float:none; margin-left:-50px; font-size:18px;">
-            Bye Players
-        </h2>
-        <h2 *ngIf="!isSmallScreen" style="text-align:center; float:none; margin-left:-50px; font-size:28px;">
-            Bye Players
-        </h2>
-        <table class="table mt-3" style="pointer-events: none; width: 100%;">
-            <thead>
-                <tr class="d-flex">
-                    <th *ngIf="!isSmallScreen" class="col-5">First Name</th>
-                    <th *ngIf="!isSmallScreen" class="col-5">Last Name</th>
-                    <th *ngIf="isSmallScreen" class="col-5" style="font-size:12px">Name</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let player of byePlayers" class="d-flex flex-column flex-sm-row">
-                    <!-- Male Players Formatting -->
-                    <td *ngIf="player.isMale && !isSmallScreen" class="col-5 extended-background-blue">
-                        {{ player.firstName }}
-                    </td>
-                    <td *ngIf="player.isMale && !player.isSub && isSmallScreen" class="col-5 extended-background-blue-lastName">
-                        {{ player.firstName[0] }}.{{ player.lastName }}
-                    </td>
-                    <td *ngIf="player.isMale && !player.isSub && !isSmallScreen" class="col-5 extended-background-blue-lastName">
-                        {{ player.lastName }}
-                    </td>
-                    <td *ngIf="player.isMale && player.isSub" class="col-5 extended-background-blue-lastName">
-                        {{ player.lastName }} - Sub
-                    </td>
-
-                    <!-- Female Players Formatting -->
-                    <td *ngIf="!player.isMale && !isSmallScreen" class="col-5 extended-background-pink">
-                        {{ player.firstName }}
-                    </td>
-                    <td *ngIf="!player.isMale && !player.isSub && isSmallScreen" class="col-5 extended-background-pink-lastName">
-                        {{ player.firstName[0] }}.{{ player.lastName }}
-                    </td>
-                    <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen" class="col-5 extended-background-pink-lastName">
-                        {{ player.lastName }}
-                    </td>
-                    <td *ngIf="!player.isMale && player.isSub" class="col-5 extended-background-pink-lastName">
-                        {{ player.lastName }} - Sub
-                    </td>
-                </tr>
-            </tbody>
-        </table>
     </div>
 
-
 </div>
+
+<button (click)="printMatchups()">Print Matchups</button>
+
 <div class="row justify-content-center mt-3" #saveTeamsDiv>
     <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
         <div class="d-flex flex-column align-items-center text-center">
@@ -577,4 +582,101 @@
     <button *ngIf="!hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class" color="primary">Hide</button>
     <button *ngIf="hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class" color="primary">Show</button>
     <button *ngIf="hideEverything && !lockedResults" (click)="scramblePlayers(false)" style="margin-left:10px; " class="my-class" mat-raised-button color="primary">Scramble</button>
+</div>
+<!-- Print Section -->
+<div id="printSection">
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h2>Matchups & Scores</h2>
+    </div>
+
+    <!-- Matchups Section -->
+    <div *ngFor="let team of listOfTeams; let i = index">
+        <!-- Only show matchups for even-indexed teams -->
+        <div *ngIf="i % 2 === 0 && listOfTeams[i + 1]" style="display: table; width: 100%; page-break-inside: avoid;">
+            <div style="display: table-cell; width: 48%; vertical-align: top;">
+                <h4 style="text-align: center;">{{ "Team " + (i + 1) }}</h4>
+                <table class="table table-bordered" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let player of team.players">
+                            <td>{{ player.firstName }}</td>
+                            <td>{{ player.lastName }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: table-cell; width: 48%; vertical-align: top; padding-left: 20px;">
+                <h4 style="text-align: center;">{{ "Team " + (i + 2) }}</h4>
+                <table class="table table-bordered" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let player of listOfTeams[i + 1]?.players">
+                            <td>{{ player.firstName }}</td>
+                            <td>{{ player.lastName }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Scores Table Below the Two Matchups -->
+        <div *ngIf="i % 2 === 0 && listOfTeams[i + 1]" style="text-align: center; margin-top: 20px; page-break-inside: avoid;">
+            <h4>Scores</h4>
+            <table class="table table-bordered" style="width: 80%; margin: 0 auto;">
+                <thead>
+                    <tr>
+                        <th>Round 1</th>
+                        <th>Round 2</th>
+                        <th>Round 3</th>
+                        <th>Round 4</th>
+                        <th>Round 5</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let round of [1, 2]">
+                        <td style="height: 30px; padding: 10px;"></td>
+                        <td style="height: 30px; padding: 10px;"></td>
+                        <td style="height: 30px; padding: 10px;"></td>
+                        <td style="height: 30px; padding: 10px;"></td>
+                        <td style="height: 30px; padding: 10px;"></td>
+                        <td style="height: 30px; padding: 10px;"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Force a page break after every two matchups -->
+        <div *ngIf="(i + 2) % 4 === 0" style="page-break-after: always;"></div>
+    </div>
+
+    <!-- Bye Players Section -->
+    <div style="margin-top: 30px; page-break-inside: avoid;">
+        <h3 style="text-align: center;">Bye Players</h3>
+        <table class="table table-bordered" style="width: 50%; margin: 0 auto;">
+            <thead>
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let player of byePlayers">
+                    <td>{{ player.firstName }}</td>
+                    <td>{{ player.lastName }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
