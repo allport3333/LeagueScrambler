@@ -234,7 +234,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
-        public SaveKingQueenTeamsResponse SaveKingQueenTeams([FromBody] SaveKingQueenTeamsResponse request, string leagueName)
+        public KingQueenTeamsResponse SaveKingQueenTeams([FromBody] KingQueenTeamsResponse request, string leagueName)
         {
             var context = new DataContext();
             var existingLeague = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
@@ -311,7 +311,7 @@ namespace Allport_s_League_Scrambler.Controllers
             }
 
             // Return the combined response
-            return new SaveKingQueenTeamsResponse
+            return new KingQueenTeamsResponse
             {
                 KingQueenTeams = results,
                 ByePlayers = savedByePlayers
@@ -322,7 +322,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpGet("[action]/{leagueName}/{scrambleNumber}")]
-        public List<KingQueenTeamWithPlayers> GetKingQueenTeamsByScrambleNumber(string leagueName, int scrambleNumber)
+        public KingQueenTeamsResponse GetKingQueenTeamsByScrambleNumber(string leagueName, int scrambleNumber)
         {
             var context = new DataContext();
             var existingLeague = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
@@ -372,11 +372,34 @@ namespace Allport_s_League_Scrambler.Controllers
                 results.Add(result);
             }
 
-            return results;
+            var byeRound = context.ByeRounds
+                .Where(t =>
+                    t.LeagueID == leagueId &&
+                    t.ScrambleNumber == scrambleNumber)
+                .FirstOrDefault();
+
+
+            var byePlayers = new List<Player>();
+
+            if (byeRound != null)
+            {
+                // Retrieve the ByePlayers associated with the ByeRound
+                byePlayers = context.ByePlayer
+                    .Where(bp => bp.ByeRoundId == byeRound.Id)
+                    .Select(bp => context.Players.FirstOrDefault(p => p.Id == bp.PlayerId))
+                    .Where(p => p != null) // Filter out null players, just in case
+                    .ToList();
+            }
+
+            return new KingQueenTeamsResponse
+            {
+                KingQueenTeams = results,
+                ByePlayers = byePlayers
+            };
         }
 
         [HttpPost("[action]/{leagueName}")]
-        public List<KingQueenTeamWithPlayers> GetKingQueenTeamsByScrambleNumbers(string leagueName, [FromBody] List<int> scrambleNumbers)
+        public KingQueenTeamsResponse GetKingQueenTeamsByScrambleNumbers(string leagueName, [FromBody] List<int> scrambleNumbers)
         {
             var context = new DataContext();
             var existingLeague = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
@@ -426,7 +449,35 @@ namespace Allport_s_League_Scrambler.Controllers
                 results.Add(result);
             }
 
-            return results;
+
+            var byeRounds = context.ByeRounds
+                .Where(t =>
+                    t.LeagueID == leagueId &&
+                    scrambleNumbers.Contains(t.ScrambleNumber))
+                .ToList();
+
+            var byePlayers = new List<Player>();
+
+            if (byeRounds != null && byeRounds.Any())
+            {
+                // Retrieve all ByePlayers associated with the ByeRounds
+                var byePlayerIds = context.ByePlayer
+                    .Where(bp => byeRounds.Select(br => br.Id).Contains(bp.ByeRoundId))
+                    .Select(bp => bp.PlayerId)
+                    .ToList();
+
+                // Map the ByePlayers to their corresponding Player entries
+                byePlayers = context.Players
+                    .Where(p => byePlayerIds.Contains(p.Id))
+                    .ToList();
+            }
+
+            return new KingQueenTeamsResponse
+            {
+                KingQueenTeams = results,
+                ByePlayers = byePlayers
+            };
+
         }
 
 

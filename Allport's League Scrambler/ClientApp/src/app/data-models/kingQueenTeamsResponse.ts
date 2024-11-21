@@ -1,7 +1,7 @@
 import { KingQueenTeamWithPlayers } from "./KingQueenTeamWithPlayers.model";
 import { Player } from "./player.model";
 
-export interface SaveKingQueenTeamsResponse {
+export interface KingQueenTeamsResponse {
     kingQueenTeams: KingQueenTeamWithPlayers[];
     byePlayers: Player[];
 }

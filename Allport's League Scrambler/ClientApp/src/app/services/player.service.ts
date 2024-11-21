@@ -7,7 +7,7 @@ import { Password } from '../data-models/password.model';
 import { KingQueenTeamWithPlayers } from '../data-models/KingQueenTeamWithPlayers.model';
 import { Observable } from 'rxjs';
 import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
-import { SaveKingQueenTeamsResponse } from '../data-models/saveKingQueenTeamsResponse';
+import { KingQueenTeamsResponse } from '../data-models/kingQueenTeamsResponse';
 
 @Injectable({
     providedIn: 'root'
@@ -58,15 +58,15 @@ export class PlayerService {
         teamsWithPlayers: KingQueenTeamWithPlayers[],
         leagueName: string,
         byePlayers: Player[]
-    ): Observable<SaveKingQueenTeamsResponse> {
+    ): Observable<KingQueenTeamsResponse> {
         // Prepare the request using the SaveKingQueenTeamsResponse model
-        const request: SaveKingQueenTeamsResponse = {
+        const request: KingQueenTeamsResponse = {
             kingQueenTeams: teamsWithPlayers,
             byePlayers: byePlayers
         };
 
         // Send the request and expect a response of type SaveKingQueenTeamsResponse
-        return this.httpClient.post<SaveKingQueenTeamsResponse>(
+        return this.httpClient.post<KingQueenTeamsResponse>(
             `${this.baseUrl}api/ScrambleData/SaveKingQueenTeams/${leagueName}`,
             request
         );
@@ -76,16 +76,16 @@ export class PlayerService {
 
 
     // New method to retrieve KingQueenTeams by ScrambleNumber
-    getKingQueenTeamsByScrambleNumber(leagueName: string, scrambleNumber: number): Observable<KingQueenTeamWithPlayers[]> {
-        return this.httpClient.get<KingQueenTeamWithPlayers[]>(
+    getKingQueenTeamsByScrambleNumber(leagueName: string, scrambleNumber: number): Observable<KingQueenTeamsResponse> {
+        return this.httpClient.get<KingQueenTeamsResponse>(
             `${this.baseUrl}api/ScrambleData/GetKingQueenTeamsByScrambleNumber/${leagueName}/${scrambleNumber}`
         );
     }
 
-    getMultipleKingQueenTeamsByScrambleNumbers(leagueName: string, scrambleNumbers: number[]): Observable<KingQueenTeamWithPlayers[]> {
+    getMultipleKingQueenTeamsByScrambleNumbers(leagueName: string, scrambleNumbers: number[]): Observable<KingQueenTeamsResponse> {
         const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
         const options = { headers: headers };
-        return this.httpClient.post<KingQueenTeamWithPlayers[]>(
+        return this.httpClient.post<KingQueenTeamsResponse>(
             `${this.baseUrl}api/ScrambleData/GetKingQueenTeamsByScrambleNumbers/${leagueName}`, scrambleNumbers, options
             
         );

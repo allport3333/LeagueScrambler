@@ -565,7 +565,6 @@
 
 </div>
 
-<button (click)="printMatchups()">Print Matchups</button>
 
 <div class="row justify-content-center mt-3" #saveTeamsDiv>
     <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
@@ -576,9 +575,15 @@
         </div>
     </div>
 </div>
-
-
+<div class="row justify-content-center mt-3">
+    <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+        <div class="d-flex flex-column align-items-center text-center">
+            <button color="primary" mat-raised-button (click)="printMatchups()">Print Matchups</button>
+        </div>
+    </div>
+</div>
 <div class="text-center" style="margin-top: 10px;">
+
     <button *ngIf="!hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class" color="primary">Hide</button>
     <button *ngIf="hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class" color="primary">Show</button>
     <button *ngIf="hideEverything && !lockedResults" (click)="scramblePlayers(false)" style="margin-left:10px; " class="my-class" mat-raised-button color="primary">Scramble</button>
@@ -631,7 +636,7 @@
         </div>
 
         <!-- Scores Table Below the Two Matchups -->
-        <div *ngIf="i % 2 === 0 && listOfTeams[i + 1]" style="text-align: center; margin-top: 20px; page-break-inside: avoid;">
+        <div *ngIf="i % 2 === 0 && listOfTeams[i + 1]" style="text-align: center; margin-bottom: 40px; margin-top: 20px; page-break-inside: avoid; ">
             <h4>Scores</h4>
             <table class="table table-bordered" style="width: 80%; margin: 0 auto;">
                 <thead>
