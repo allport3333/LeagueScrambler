@@ -34,6 +34,9 @@ export class ScramblerComponent implements OnInit {
     displayTopPlayers: Player[] = new Array();
     totalTopPlayers: Player[] = new Array();
     totalTopPlayersTemp: Player[] = new Array();
+    displayLowPlayers: Player[] = new Array();
+    totalLowPlayers: Player[] = new Array();
+    totalLowPlayersTemp: Player[] = new Array();
     totalPlayersTemp: Player[] = new Array();
     listOfTeams: Team[] = new Array();
     retrievedListOfTeams: Team[] = new Array();
@@ -55,6 +58,7 @@ export class ScramblerComponent implements OnInit {
     randomFemalePlayer: Player;
     randomPlayer: Player;
     randomTopPlayer: Player;
+    randomLowPlayer: Player;
     addedPlayer: Player;
     password: Password;
     passwordLeague: Password;
@@ -67,6 +71,7 @@ export class ScramblerComponent implements OnInit {
     femalePlayerCount: number;
     malePlayerCount: number;
     topPlayerCount: number;
+    lowPlayerCount: number;
     randomPlayerCount: number;
     numberOfPlayersNeededTwo: number;
     numberOfPlayersNeededThree: number;
@@ -121,6 +126,7 @@ export class ScramblerComponent implements OnInit {
 
         this.completeRandom = false;
         this.displayTopPlayers = new Array();
+        this.displayLowPlayers = new Array();
         this.hideInputOptions = false;
         this.hideListOptions = false;
         this.hideEverything = false;
@@ -653,6 +659,21 @@ export class ScramblerComponent implements OnInit {
         this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomTopPlayer);
     }
 
+    lowPlayerScramble(bracketTeamPlayers) {
+        this.randomLowPlayer = this.totalLowPlayers[Math.floor(Math.random() * this.totalLowPlayers.length)];
+        bracketTeamPlayers.push(this.randomLowPlayer);
+        this.totalLowPlayers = this.totalLowPlayers.filter(x => x !== this.randomLowPlayer);
+        if (this.randomLowPlayer.isMale) {
+            this.malePlayers = this.malePlayers.filter(x => x !== this.randomLowPlayer);
+            this.malePlayerCount = this.malePlayers.length;
+        }
+        if (!this.randomLowPlayer.isMale) {
+            this.femalePlayers = this.femalePlayers.filter(x => x !== this.randomLowPlayer);
+            this.femalePlayerCount = this.femalePlayers.length;
+        }
+        this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomLowPlayer);
+    }
+
 
     randomScramble(bracketTeamPlayers) {
         this.randomPlayer = this.totalRandomPlayers[Math.floor(Math.random() * this.totalRandomPlayers.length)];
@@ -668,26 +689,59 @@ export class ScramblerComponent implements OnInit {
         else {
             this.listOfTeams = [];
             this.clearTopPLayers();
+            this.clearLowPlayers();
             this.clearByePlayers();
         }
     }
 
-    addTopPlayers() {
-        var c = confirm("Are you sure you want to add these players to top players?");
-        if (c) {
-            this.totalTopPlayers = new Array();
-            for (let player of this.selectedList) {
-                this.totalTopPlayers.push(player);
-            }
-            this.displayTopPlayers = this.totalTopPlayers;
-
-            this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
-            this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
-            this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
-        }
+    resetTopPlayers() {
+        this.clearTopPLayers();
     }
 
+    resetByePlayers() {
+        this.clearByePlayers();
+    }
+
+    resetLowPlayers() {
+        this.clearLowPlayers();
+    }
+
+    //addTopPlayers() {
+    //    var c = confirm("Are you sure you want to add these players to top players?");
+    //    if (c) {
+    //        this.totalTopPlayers = new Array();
+    //        for (let player of this.selectedList) {
+    //            this.totalTopPlayers.push(player);
+    //        }
+    //        this.displayTopPlayers = this.totalTopPlayers;
+
+    //        this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
+    //        this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
+    //        this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
+    //    }
+    //}
+
+    //addLowPlayers() {
+    //    var c = confirm("Are you sure you want to add these players to top players?");
+    //    if (c) {
+    //        this.totalLowPlayers = new Array();
+    //        for (let player of this.selectedList) {
+    //            this.totalLowPlayers.push(player);
+    //        }
+    //        this.displayLowPlayers = this.totalLowPlayers;
+
+    //        this.numberOfPlayersNeededTwo = this.displayLowPlayers.length * 2;
+    //        this.numberOfPlayersNeededThree = this.displayLowPlayers.length * 3;
+    //        this.numberOfPlayersNeededFour = this.displayLowPlayers.length * 4;
+    //    }
+    //}
+
     addPlayerToTopPlayerList(player: Player) {
+
+        if (player.isLowPlayer) {
+            // Deselect Low Player if already selected
+            this.removePlayerFromLowPlayerList(player);
+        }
         // Check if the player already exists in the totalTopPlayers array
         const playerExists = this.totalTopPlayers.some(existingPlayer => existingPlayer === player);
 
@@ -739,6 +793,62 @@ export class ScramblerComponent implements OnInit {
             player.isTopPlayer = false;
         }
         this.totalTopPlayers = this.totalTopPlayers.filter(player => player.isTopPlayer);
+    }
+
+    addPlayerToLowPlayerList(player: Player) {
+        if (player.isTopPlayer) {
+            this.removePlayerFromTopPlayerList(player);
+        }
+        // Check if the player already exists in the totalLowPlayers array
+        const playerExists = this.totalLowPlayers.some(existingPlayer => existingPlayer === player);
+
+        if (!playerExists) {
+            // If the player doesn't exist, add them to the totalLowPlayers array
+            if (this.totalLowPlayers.length === 0 && this.totalLowPlayersTemp.length !== 0) {
+                this.totalLowPlayers = this.totalLowPlayersTemp.filter(player => player.isLowPlayer);
+            }
+
+            this.totalLowPlayers.push(player);
+            player.isLowPlayer = true;
+
+            // Update other variables as needed.
+            this.displayLowPlayers = this.totalLowPlayers;
+            this.numberOfPlayersNeededTwo = this.displayLowPlayers.length * 2;
+            this.numberOfPlayersNeededThree = this.displayLowPlayers.length * 3;
+            this.numberOfPlayersNeededFour = this.displayLowPlayers.length * 4;
+        }
+        else {
+            player.isLowPlayer = true;
+        }
+    }
+
+    removePlayerFromLowPlayerList(player: Player) {
+        // Find all indices of the player in the totalLowPlayers array
+        const playerIndices = this.totalLowPlayers.reduce((indices, current, index) => {
+            if (current === player) {
+                indices.push(index);
+            }
+            return indices;
+        }, []);
+
+        if (playerIndices.length > 0) {
+            // Remove all occurrences of the player from the totalLowPlayers array
+            for (const index of playerIndices.reverse()) {
+                this.totalLowPlayers.splice(index, 1);
+            }
+
+            // Update the isLowPlayer status for all occurrences of the player
+            player.isLowPlayer = false;
+
+            this.displayLowPlayers = this.totalLowPlayers;
+            this.numberOfPlayersNeededTwo = this.displayLowPlayers.length * 2;
+            this.numberOfPlayersNeededThree = this.displayLowPlayers.length * 3;
+            this.numberOfPlayersNeededFour = this.displayLowPlayers.length * 4;
+
+        } else {
+            player.isLowPlayer = false;
+        }
+        this.totalLowPlayers = this.totalLowPlayers.filter(player => player.isLowPlayer);
     }
 
 
@@ -809,6 +919,18 @@ export class ScramblerComponent implements OnInit {
             player.isTopPlayer = false;
         }
     }
+
+    clearLowPlayers() {
+        this.totalLowPlayers = new Array();
+        this.displayLowPlayers = new Array();
+        for (let player of this.malePlayers1) {
+            player.isLowPlayer = false;
+        }
+        for (let player of this.femalePlayers1) {
+            player.isLowPlayer = false;
+        }
+    }
+
 
     clearByePlayers() {
         this.byePlayers = [];
@@ -986,41 +1108,141 @@ export class ScramblerComponent implements OnInit {
     selectPlayers(playerCount: number, isMale: boolean, nonDuplicates: boolean): boolean {
         for (var i = 0; i < playerCount; i++) {
             let bestTeam: Team = null;
-            for (let i = 0; i < this.listOfTeams.length - 1; i++) {
-                if (this.listOfTeams[i].players.length > this.listOfTeams[i + 1].players.length) {
-                    bestTeam = this.listOfTeams[i + 1];
-                } else if (this.listOfTeams[i].players.length < this.listOfTeams[i + 1].players.length) {
-                    bestTeam = this.listOfTeams[i];
+
+            // Step 1: Identify the team with the fewest total players
+            const smallestTeamSize = Math.min(...this.listOfTeams.map(team => team.players.length));
+            const smallestTeams = this.listOfTeams.filter(team => team.players.length === smallestTeamSize);
+
+            // Step 2: Among the smallest teams, prioritize those with an imbalance
+            let maxImbalance = Number.NEGATIVE_INFINITY;
+            for (let team of smallestTeams) {
+                const maleCount = team.players.filter(player => player.isMale).length;
+                const femaleCount = team.players.length - maleCount;
+
+                // Calculate imbalance (negative means more males, positive means more females)
+                const imbalance = isMale ? femaleCount - maleCount : maleCount - femaleCount;
+
+                // Select the team with the greatest imbalance
+                if (imbalance > maxImbalance) {
+                    maxImbalance = imbalance;
+                    bestTeam = team;
+                } else if (imbalance === maxImbalance && bestTeam !== null) {
+                    // If imbalance is equal, prioritize the team with fewer total players
+                    if (team.players.length < bestTeam.players.length) {
+                        bestTeam = team;
+                    }
                 }
             }
-            if (bestTeam == null) {
-                bestTeam = this.listOfTeams[0];
-            }
 
+            // Step 3: If all teams are balanced, add the player to the smallest team
+            if (bestTeam == null) {
+                bestTeam = smallestTeams[0];
+            }
+            console.log('nonduplicates', nonDuplicates);
+            // Step 4: Add the player to the selected team
             if (nonDuplicates) {
                 if (isMale) {
                     if (!this.maleScramble2(bestTeam.players)) {
-                        return false; // If maleScramble2 returns false, return false
+                        return false; // If maleScramble2 fails, return false
                     }
                 } else {
                     if (!this.femaleScramble2(bestTeam.players)) {
-                        return false; // If femaleScramble2 returns false, return false
+                        return false; // If femaleScramble2 fails, return false
                     }
                 }
             } else {
                 if (isMale) {
                     if (!this.maleScramble(bestTeam.players)) {
-                        return false; // If maleScramble returns false, return false
+                        return false; // If maleScramble fails, return false
                     }
                 } else {
                     if (!this.femaleScramble(bestTeam.players)) {
-                        return false; // If femaleScramble returns false, return false
+                        return false; // If femaleScramble fails, return false
                     }
                 }
             }
         }
-        return true; // Return true if the selection was successful for all players
+
+        // Step 5: Rebalance team sizes after all players are added
+        this.rebalanceTeams();
+
+        return true; // Return true if selection was successful
     }
+
+
+    rebalanceTeams(): void {
+        const maxTeamSize = Math.max(...this.listOfTeams.map(team => team.players.length));
+        const minTeamSize = Math.min(...this.listOfTeams.map(team => team.players.length));
+
+        // While the difference between the largest and smallest teams is greater than 1
+        while (maxTeamSize - minTeamSize > 1) {
+            // Find the largest and smallest teams
+            const largestTeam = this.listOfTeams.find(team => team.players.length === maxTeamSize);
+            const smallestTeam = this.listOfTeams.find(team => team.players.length === minTeamSize);
+
+            // If the largest team has more players than the smallest team
+            if (largestTeam && smallestTeam) {
+                // Remove a player from the largest team
+                const playerToMove = largestTeam.players.pop();
+
+                // Add the player to the smallest team
+                if (playerToMove) {
+                    smallestTeam.players.push(playerToMove);
+                }
+            }
+
+            // Recalculate the max and min team sizes
+            const updatedMaxTeamSize = Math.max(...this.listOfTeams.map(team => team.players.length));
+            const updatedMinTeamSize = Math.min(...this.listOfTeams.map(team => team.players.length));
+
+            if (updatedMaxTeamSize === maxTeamSize && updatedMinTeamSize === minTeamSize) {
+                break; // Break out of the loop if no changes were made
+            }
+        }
+    }
+
+    reorderMatchups(): void {
+        // Group teams by gender composition
+        const groupedTeams = this.listOfTeams.map(team => {
+            const maleCount = team.players.filter(p => p.isMale).length;
+            const femaleCount = team.players.length - maleCount;
+            return { team, maleCount, femaleCount };
+        });
+
+        // Sort teams by male-to-female ratio
+        groupedTeams.sort((a, b) => {
+            if (a.maleCount === b.maleCount) {
+                return b.femaleCount - a.femaleCount;
+            }
+            return b.maleCount - a.maleCount;
+        });
+
+        // Reassign matchups to pair similar teams
+        const reorderedTeams: Team[] = [];
+        for (let i = 0; i < groupedTeams.length; i += 2) {
+            const team1 = i < groupedTeams.length ? groupedTeams[i].team : null;
+            const team2 = i + 1 < groupedTeams.length ? groupedTeams[i + 1].team : null;
+
+            // Reorder players within each team (men at the top, women at the bottom)
+            if (team1) {
+                team1.players = team1.players.sort((a, b) => Number(b.isMale) - Number(a.isMale));
+            }
+            if (team2) {
+                team2.players = team2.players.sort((a, b) => Number(b.isMale) - Number(a.isMale));
+            }
+
+            if (team1 && team2) {
+                reorderedTeams.push(team1, team2);
+            } else if (team1) {
+                reorderedTeams.push(team1);
+            }
+        }
+
+        this.listOfTeams = reorderedTeams;
+    }
+
+
+
 
     fillTopPlayers() {
         if (this.totalTopPlayers != null) {
@@ -1044,20 +1266,53 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
-    selectPlayersWithRetries(
+    fillLowPlayers() {
+        if (this.totalLowPlayers != null) {
+            for (var i = 0; i < this.lowPlayerCount; i++) {
+                let bestTeam: Team = null;
+
+                // Step 1: Create a list of candidate teams
+                const candidateTeams = this.listOfTeams.filter(team => {
+                    const lowPlayerCount = team.players.filter(player => player.isLowPlayer).length;
+                    // Allow adding to any team, but prioritize teams with fewer low players
+                    return lowPlayerCount <= Math.min(...this.listOfTeams.map(t => t.players.filter(p => p.isLowPlayer).length));
+                });
+
+                // Step 2: Randomize selection from candidate teams to avoid predictable assignments
+                if (candidateTeams.length > 0) {
+                    bestTeam = candidateTeams[Math.floor(Math.random() * candidateTeams.length)];
+                }
+
+                // Step 3: Fallback to the first team if no candidates are found
+                if (bestTeam == null) {
+                    bestTeam = this.listOfTeams[0];
+                }
+
+                // Step 4: Add the low player to the selected team
+                this.lowPlayerScramble(bestTeam.players);
+            }
+        }
+    }
+
+ 
+
+    async selectPlayersWithRetries(
         nonDuplicates: boolean
-    ): boolean {
+    ): Promise<boolean> {
         this.totalTopPlayersTemp = [...this.totalTopPlayers];
+        this.totalLowPlayersTemp = [...this.totalLowPlayers];
         this.totalPlayersTemp = [...this.totalPlayers];
         const maxRetries = 101; // Set a maximum number of retries
         for (let retry = 0; retry < maxRetries; retry++) {
-            this.fillTopPlayers();
-
+            await this.fillTopPlayers();
+            await this.fillLowPlayers();
             let maleSuccess = this.selectPlayers(this.malePlayerCount, true, nonDuplicates);
             let femaleSuccess = this.selectPlayers(this.femalePlayerCount, false, nonDuplicates);
             if (maleSuccess && femaleSuccess) {
                 this.totalTopPlayers = [...this.totalTopPlayersTemp];
+                this.totalLowPlayers = [...this.totalLowPlayersTemp];
                 this.totalPlayers = [...this.totalPlayersTemp];
+                this.reorderMatchups();
                 // Player selection was successful, break out of the loop
                 return true;
             }
@@ -1066,6 +1321,7 @@ export class ScramblerComponent implements OnInit {
             this.malePlayers = [];
             this.femalePlayers = [];
             this.totalTopPlayers = [...this.totalTopPlayersTemp];
+            this.totalLowPlayers = [...this.totalLowPlayersTemp];
             this.totalPlayers = [...this.totalPlayersTemp];
             if (retry != 100) {
                 this.fillPlayers();
@@ -1079,6 +1335,7 @@ export class ScramblerComponent implements OnInit {
         this.femalePlayers = [];
         this.retrievedListOfTeams = [];
         this.totalTopPlayers = [...this.totalTopPlayersTemp];
+        this.totalLowPlayers = [...this.totalLowPlayersTemp];
         return false; // All retries failed
     }
 
@@ -1169,6 +1426,7 @@ export class ScramblerComponent implements OnInit {
 
     scramblePlayers(nonDuplicates: boolean = false) {
         this.totalTopPlayers = this.displayTopPlayers;
+        this.totalLowPlayers = this.displayLowPlayers;
         if (!this.lockedResults) {
             this.locked = false;
 
@@ -1184,6 +1442,7 @@ export class ScramblerComponent implements OnInit {
             this.femalePlayerCount = this.femalePlayers.length;
             this.randomPlayerCount = this.totalRandomPlayers.length;
             this.topPlayerCount = this.totalTopPlayers.length;
+            this.lowPlayerCount = this.totalLowPlayers.length;
             if (this.numberOfTeams != null) {
                 this.teamCount = this.numberOfTeams;
             }

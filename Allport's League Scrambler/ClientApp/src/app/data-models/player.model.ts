@@ -8,4 +8,5 @@ export interface Player {
     isSub: boolean;
     isTopPlayer?: boolean;
     isByePlayer?: boolean;
+    isLowPlayer?: boolean;
 }
