@@ -146,31 +146,63 @@ input {
     background: #FF0000;
 }
 
-/* Default hidden state */
-#printSection {
+/* Default hidden states for all print sections */
+#printSection2,
+#printSection4,
+#printSection6 {
     visibility: hidden;
     position: absolute;
     top: -9999px;
 }
 
-/* Show only the print section when printing */
+/* Show only the appropriate print section when printing */
 @media print {
     body * {
-        visibility: hidden;
+        visibility: hidden; /* Hide everything by default */
     }
 
-    #printSection, #printSection * {
+    #printSection2, #printSection2 * {
         visibility: visible;
     }
 
-    #printSection {
+    #printSection2 {
         position: static;
         top: 0;
         left: 0;
-        width: auto; /* Changed from 100% to auto to prevent full-width stretching */
+        width: auto; /* Prevent full-width stretching */
         margin: 0 auto;
-        display: flex; /* Use flex layout to align items side by side */
-        flex-wrap: wrap; /* Allow content to wrap if needed */
-        justify-content: space-between; /* Ensure items are spaced evenly */
+        display: flex; /* Flex layout for alignment */
+        flex-wrap: wrap; /* Wrap content to avoid overflow */
+        justify-content: space-between; /* Space items evenly */
+    }
+
+    #printSection4, #printSection4 * {
+        visibility: visible;
+    }
+
+    #printSection4 {
+        position: static;
+        top: 0;
+        left: 0;
+        width: auto;
+        margin: 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    #printSection6, #printSection6 * {
+        visibility: visible;
+    }
+
+    #printSection6 {
+        position: static;
+        top: 0;
+        left: 0;
+        width: auto;
+        margin: 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
     }
 }

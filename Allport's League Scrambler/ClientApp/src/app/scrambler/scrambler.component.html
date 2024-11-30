@@ -608,7 +608,7 @@
             </div>
         </ng-container>
         <!-- Bye Players Section -->
-        <div class="row col-3 justify-content-center mt-5">
+        <div class="row col-3 justify-content-center mt-5" *ngIf="byePlayers.length > 0">
             <h2 *ngIf="isSmallScreen" style="text-align:center; float:none; margin-left:-50px; font-size:18px;">
                 Bye Players
             </h2>
@@ -661,30 +661,47 @@
 </div>
 
 
-<div class="row justify-content-center mt-3" #saveTeamsDiv>
-    <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-        <div class="d-flex flex-column align-items-center text-center">
-            <button (click)="saveKingQueenTeams()" mat-raised-button color="primary" class="mb-2">Save Teams</button>
-            <p class="mb-0" *ngIf="scrambleNumber">Scramble Number: {{ scrambleNumber }}.</p>
-            <p class="mb-0" *ngIf="scrambleNumber">Please save this number for future lookups.</p>
-        </div>
+<div class="d-flex flex-column align-items-center mt-3">
+    <!-- Save Teams Section -->
+    <div class="mb-4 text-center">
+        <button (click)="saveKingQueenTeams()" mat-raised-button color="primary" class="mb-2">
+            Save Teams
+        </button>
+        <p class="mb-0" *ngIf="scrambleNumber">Scramble Number: {{ scrambleNumber }}.</p>
+        <p class="mb-0" *ngIf="scrambleNumber">Please save this number for future lookups.</p>
+    </div>
+
+    <!-- Print Matchups Section -->
+    <div class="mb-4 text-center">
+        <button color="primary" mat-raised-button (click)="printMatchups()" class="mb-3">
+            Print Matchups
+        </button>
+        <!-- Matchups Per Page Selection -->
+        <mat-form-field appearance="fill" class="w-75">
+            <mat-label>Matchups Per Page</mat-label>
+            <mat-select [(value)]="selectedMatchupsPerPage" (selectionChange)="onSelectionChange($event)">
+                <mat-option value="2">2 Matchups</mat-option>
+                <mat-option value="4">4 Matchups</mat-option>
+                <mat-option value="6">6 Matchups</mat-option>
+            </mat-select>
+        </mat-form-field>
     </div>
 </div>
-<div class="row justify-content-center mt-3">
-    <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-        <div class="d-flex flex-column align-items-center text-center">
-            <button color="primary" mat-raised-button (click)="printMatchups()">Print Matchups</button>
-        </div>
-    </div>
-</div>
+
+
+
+
 <div class="text-center" style="margin-top: 10px;">
 
     <button *ngIf="!hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class" color="primary">Hide</button>
     <button *ngIf="hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class" color="primary">Show</button>
     <button *ngIf="hideEverything && !lockedResults" (click)="scramblePlayers(false)" style="margin-left:10px; " class="my-class" mat-raised-button color="primary">Scramble</button>
 </div>
+
+
+
 <!-- Print Section -->
-<div id="printSection">
+<div id="printSection2">
     <div style="text-align: center; margin-bottom: 20px;">
         <h2>Matchups & Scores</h2>
     </div>
@@ -780,3 +797,230 @@
         </table>
     </div>
 </div>
+
+<div id="printSection4" style="font-size: 8px; padding: 5px;">
+    <ng-container *ngFor="let team of listOfTeams; let i = index">
+        <!-- Ensure a new page starts after every 4 matchups -->
+        <div *ngIf="i % 8 === 0" style="page-break-before: always;">
+
+            <!-- Header for each page -->
+            <div style="text-align: center; margin-bottom: 10px;">
+                <h2 style="font-size: 12px;">Matchups & Scores</h2>
+            </div>
+
+            <!-- Flex Container for 4 Matchups Per Page -->
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px;">
+
+                <!-- Loop through 4 matchups -->
+                <ng-container *ngFor="let matchIndex of [0, 2, 4, 6]">
+                    <ng-container *ngIf="listOfTeams[i + matchIndex] && listOfTeams[i + matchIndex + 1]">
+                        <div style="width: 48%; border: 1px solid black; padding: 5px; margin-bottom: 10px; box-sizing: border-box;">
+                            <!-- Team A -->
+                            <div>
+                                <h4 style="text-align: center; margin: 5px 0; font-size: 10px;">{{ "Team A (Team " + (i + matchIndex + 1) + ")" }}</h4>
+                                <table class="table table-bordered" style="width: 100%; font-size: 8px;">
+                                    <tbody>
+                                        <tr *ngFor="let player of listOfTeams[i + matchIndex]?.players">
+                                            <td>{{ player.firstName }} {{ player.lastName }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Team B -->
+                            <div style="margin-top: 5px;">
+                                <h4 style="text-align: center; margin: 5px 0; font-size: 10px;">{{ "Team B (Team " + (i + matchIndex + 2) + ")" }}</h4>
+                                <table class="table table-bordered" style="width: 100%; font-size: 8px;">
+                                    <tbody>
+                                        <tr *ngFor="let player of listOfTeams[i + matchIndex + 1]?.players">
+                                            <td>{{ player.firstName }} {{ player.lastName }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Scores -->
+                            <div style="margin-top: 5px; text-align: center;">
+                                <h5 style="font-size: 10px;">Scores</h5>
+                                <table class="table table-bordered" style="width: 100%; font-size: 8px; margin: 0 auto;">
+                                    <thead>
+                                        <tr>
+                                            <th>Team</th>
+                                            <th>Game 1</th>
+                                            <th>Game 2</th>
+                                            <th>Game 3</th>
+                                            <th>Game 4</th>
+                                            <th>Game 5</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Team A</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Team B</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </ng-container>
+                </ng-container>
+            </div>
+        </div>
+    </ng-container>
+
+    <!-- Bye Players Section -->
+    <div *ngIf="byePlayers && byePlayers.length > 0" style="margin-top: 10px; page-break-inside: avoid;">
+        <h3 style="text-align: center; font-size: 10px;">Bye Players</h3>
+        <table class="table table-bordered" style="width: 50%; margin: 0 auto; font-size: 8px;">
+            <thead>
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let player of byePlayers">
+                    <td>{{ player.firstName }}</td>
+                    <td>{{ player.lastName }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="printSection6" style="font-size: 8px; padding: 5px;">
+    <ng-container *ngFor="let team of listOfTeams; let i = index">
+        <!-- Ensure a new page starts after every 6 matchups -->
+        <div *ngIf="i % 12 === 0" style="page-break-before: always;">
+            <!-- Header for each page -->
+            <div style="text-align: center; margin-bottom: 10px;">
+                <h2 style="font-size: 12px;">Matchups & Scores</h2>
+            </div>
+
+            <!-- Flex Container for 6 Matchups Per Page -->
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px;">
+                <ng-container *ngFor="let j of [0, 2, 4, 6, 8, 10]">
+                    <ng-container *ngIf="listOfTeams[i + j] && listOfTeams[i + j + 1]">
+                        <!-- Matchup Block -->
+                        <div style="width: 48%; border: 1px solid black; padding: 5px; margin-bottom: 10px; box-sizing: border-box;">
+                            <!-- Teams Side by Side -->
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <!-- Team A -->
+                                <div style="width: 48%; border-right: 1px solid black; padding-right: 5px;">
+                                    <h4 style="text-align: center; margin: 5px 0; font-size: 10px;">
+                                        {{ "Team A (Team " + (i + j + 1) + ")" }}
+                                    </h4>
+                                    <table class="table table-bordered" style="width: 100%; font-size: 8px;">
+                                        <thead>
+                                            <tr>
+                                                <th>Player Name</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let player of listOfTeams[i + j]?.players">
+                                                <td style="font-size: 14px; padding: 5px;">{{ player.firstName }} {{ player.lastName }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Team B -->
+                                <div style="width: 48%; padding-left: 5px;">
+                                    <h4 style="text-align: center; margin: 5px 0; font-size: 10px;">
+                                        {{ "Team B (Team " + (i + j + 2) + ")" }}
+                                    </h4>
+                                    <table class="table table-bordered" style="width: 100%; font-size: 8px;">
+                                        <thead>
+                                            <tr>
+                                                <th>Player Name</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let player of listOfTeams[i + j + 1]?.players">
+                                                <td style="font-size: 14px; padding: 5px;">{{ player.firstName }} {{ player.lastName }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Scores -->
+                            <div style="margin-top: 5px; text-align: center;">
+                                <h5 style="font-size: 10px;">Scores</h5>
+                                <table class="table table-bordered" style="width: 100%; font-size: 8px; margin: 0 auto;">
+                                    <thead>
+                                        <tr>
+                                            <th>Team</th>
+                                            <th>Game 1</th>
+                                            <th>Game 2</th>
+                                            <th>Game 3</th>
+                                            <th>Game 4</th>
+                                            <th>Game 5</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Team A</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Team B</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </ng-container>
+                </ng-container>
+            </div>
+        </div>
+    </ng-container>
+
+    <!-- Bye Players Section -->
+    <div style="margin-top: 10px; page-break-inside: avoid;">
+        <h3 style="text-align: center; font-size: 10px;">Bye Players</h3>
+        <table class="table table-bordered" style="width: 50%; margin: 0 auto; font-size: 8px;">
+            <thead>
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let player of byePlayers">
+                    <td style="font-size: 14px; padding: 5px;">{{ player.firstName }}</td>
+                    <td style="font-size: 14px; padding: 5px;">{{ player.lastName }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+

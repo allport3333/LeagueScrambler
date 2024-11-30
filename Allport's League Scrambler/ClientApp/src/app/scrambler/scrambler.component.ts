@@ -21,6 +21,7 @@ import { LoginService } from '../services/login.service';
 export class ScramblerComponent implements OnInit {
     @ViewChild('matchupDiv') matchupDiv!: ElementRef;
     @ViewChild('saveTeamsDiv') saveTeamsDiv!: ElementRef;
+    selectedMatchupsPerPage: string = '2';
     hideEverything: boolean;
     totalPlayers: Player[];
     players: Player[];
@@ -1025,10 +1026,45 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
+
+    onSelectionChange(event: any): void {
+        this.selectedMatchupsPerPage = event.value;
+        console.log(`Selected matchups per page: ${event.value}`);
+    }
+
     printMatchups(): void {
-        const printSection = document.getElementById('printSection');
-        if (printSection) {
-            const printContent = printSection.innerHTML;
+        let printContent = '';
+        console.log('Selected Matchups Per Page:', this.selectedMatchupsPerPage);
+
+        if (this.selectedMatchupsPerPage == '2') {
+            const printSection2 = document.getElementById('printSection2');
+            console.log('Print Section 2:', printSection2);
+            if (printSection2) {
+                printContent = printSection2.innerHTML;
+                console.log('Print Content for Section 2:', printContent);
+            }
+        } else if (this.selectedMatchupsPerPage == '4') {
+            const printSection4 = document.getElementById('printSection4');
+            console.log('Print Section 4:', printSection4);
+            if (printSection4) {
+                printContent = printSection4.innerHTML;
+                console.log('Print Content for Section 4:', printContent);
+            }
+        } else if (this.selectedMatchupsPerPage == '6') {
+            const printSection6 = document.getElementById('printSection6');
+            console.log('Print Section 6:', printSection6);
+            if (printSection6) {
+                printContent = printSection6.innerHTML;
+                console.log('Print Content for Section 6:', printContent);
+            }
+        }
+
+        // Check if content is empty and log a warning if necessary
+        if (!printContent) {
+            console.warn('Print Content is empty. Verify that the printSection elements exist and have content.');
+        }
+
+        if (printContent) {
             const printWindow = window.open('', '_blank', 'width=800,height=600');
             if (printWindow) {
                 printWindow.document.open();

@@ -4,12 +4,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using System.Text;
 
 namespace Allport_s_League_Scrambler
@@ -31,12 +33,16 @@ namespace Allport_s_League_Scrambler
                 configuration.RootPath = "ClientApp/dist";
             });
 
-            // Configure JWT authentication settings (you may keep your existing JWT setup)
+            // Configure authentication with cookie settings
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options =>
                 {
                     options.LoginPath = "/"; // Set the login page
                     options.AccessDeniedPath = ""; // Set the access denied page
+                    options.Cookie.HttpOnly = true; // Ensure cookies are only accessible via HTTP
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow cookies over HTTP (for development)
+                    options.Cookie.SameSite = SameSiteMode.Lax; // Adjust SameSite mode as needed
+                    options.ExpireTimeSpan = TimeSpan.FromDays(30); // Set cookie expiration
                 });
 
             services.AddHttpContextAccessor();
