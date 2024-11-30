@@ -203,8 +203,6 @@ export class ScramblerComponent implements OnInit {
     }
 
     onRoundsChange(event: any): void {
-        console.log('Selected Rounds:', this.selectedRounds); // Optional for debugging
-        // Handle changes if needed
     }
 
     addPlayer(player) {
@@ -584,7 +582,6 @@ export class ScramblerComponent implements OnInit {
 
             iterations++;
         }
-
         // If the loop reaches the maximum number of iterations without finding a valid player, consider handling this case (e.g., returning false or throwing an exception).
         return false;
     }
@@ -642,7 +639,6 @@ export class ScramblerComponent implements OnInit {
             }
             iterations++;
         }
-
         return false;
     }
 
@@ -1035,33 +1031,25 @@ export class ScramblerComponent implements OnInit {
 
     onSelectionChange(event: any): void {
         this.selectedMatchupsPerPage = event.value;
-        console.log(`Selected matchups per page: ${event.value}`);
     }
 
     printMatchups(): void {
         let printContent = '';
-        console.log('Selected Matchups Per Page:', this.selectedMatchupsPerPage);
 
         if (this.selectedMatchupsPerPage == '2') {
             const printSection2 = document.getElementById('printSection2');
-            console.log('Print Section 2:', printSection2);
             if (printSection2) {
                 printContent = printSection2.innerHTML;
-                console.log('Print Content for Section 2:', printContent);
             }
         } else if (this.selectedMatchupsPerPage == '4') {
             const printSection4 = document.getElementById('printSection4');
-            console.log('Print Section 4:', printSection4);
             if (printSection4) {
                 printContent = printSection4.innerHTML;
-                console.log('Print Content for Section 4:', printContent);
             }
         } else if (this.selectedMatchupsPerPage == '6') {
             const printSection6 = document.getElementById('printSection6');
-            console.log('Print Section 6:', printSection6);
             if (printSection6) {
                 printContent = printSection6.innerHTML;
-                console.log('Print Content for Section 6:', printContent);
             }
         }
 
@@ -1180,7 +1168,6 @@ export class ScramblerComponent implements OnInit {
             if (bestTeam == null) {
                 bestTeam = smallestTeams[0];
             }
-            console.log('nonduplicates', nonDuplicates);
             // Step 4: Add the player to the selected team
             if (nonDuplicates) {
                 if (isMale) {
@@ -1350,6 +1337,7 @@ export class ScramblerComponent implements OnInit {
             await this.fillLowPlayers();
             let maleSuccess = this.selectPlayers(this.malePlayerCount, true, nonDuplicates);
             let femaleSuccess = this.selectPlayers(this.femalePlayerCount, false, nonDuplicates);
+
             if (maleSuccess && femaleSuccess) {
                 this.totalTopPlayers = [...this.totalTopPlayersTemp];
                 this.totalLowPlayers = [...this.totalLowPlayersTemp];
@@ -1358,7 +1346,6 @@ export class ScramblerComponent implements OnInit {
                 // Player selection was successful, break out of the loop
                 return true;
             }
-
             this.listOfTeams = [];
             this.malePlayers = [];
             this.femalePlayers = [];
@@ -1466,7 +1453,7 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
-    scramblePlayers(nonDuplicates: boolean = false) {
+    async scramblePlayers(nonDuplicates: boolean = false) {
         this.totalTopPlayers = this.displayTopPlayers;
         this.totalLowPlayers = this.displayLowPlayers;
         if (!this.lockedResults) {
@@ -1522,9 +1509,10 @@ export class ScramblerComponent implements OnInit {
 
                 try {
 
-
+                    let result = await this.selectPlayersWithRetries(nonDuplicates);
+  
                     // Use the function to select players for both males and females with retries
-                    if (this.selectPlayersWithRetries(nonDuplicates)) {
+                    if (result) {
                         if (nonDuplicates) {
                             this.showSnackBar("Scramble with no duplicates completed successfully.");
                         }
