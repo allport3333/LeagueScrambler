@@ -663,21 +663,21 @@
 
 <div class="d-flex flex-column align-items-center mt-3">
     <!-- Save Teams Section -->
-    <div class="mb-4 text-center">
-        <button (click)="saveKingQueenTeams()" mat-raised-button color="primary" class="mb-2">
+    <div class="d-flex flex-column align-items-center mb-3" style="margin-bottom: 5px;">
+        <button (click)="saveKingQueenTeams()" mat-raised-button color="primary" class="mb-1">
             Save Teams
         </button>
-        <p class="mb-0" *ngIf="scrambleNumber">Scramble Number: {{ scrambleNumber }}.</p>
-        <p class="mb-0" *ngIf="scrambleNumber">Please save this number for future lookups.</p>
+        <p class="mb-0 text-center" *ngIf="scrambleNumber" style="margin-bottom: 3px;">Scramble Number: {{ scrambleNumber }}.</p>
+        <p class="mb-0 text-center" *ngIf="scrambleNumber" style="margin-bottom: 3px;">Please save this number for future lookups.</p>
     </div>
 
     <!-- Print Matchups Section -->
-    <div class="mb-4 text-center">
+    <div class="d-flex flex-column align-items-center">
         <button color="primary" mat-raised-button (click)="printMatchups()" class="mb-3">
             Print Matchups
         </button>
         <!-- Matchups Per Page Selection -->
-        <mat-form-field appearance="fill" class="w-75">
+        <mat-form-field appearance="fill" class="w-75 mb-0" >
             <mat-label>Matchups Per Page</mat-label>
             <mat-select [(value)]="selectedMatchupsPerPage" (selectionChange)="onSelectionChange($event)">
                 <mat-option value="2">2 Matchups</mat-option>
@@ -685,8 +685,21 @@
                 <mat-option value="6">6 Matchups</mat-option>
             </mat-select>
         </mat-form-field>
+        <!-- Number of Rounds Selection -->
+        <mat-form-field appearance="fill" class="w-75">
+            <mat-label>Number of Rounds</mat-label>
+            <mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event)">
+                <mat-option *ngFor="let round of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]" [value]="round">
+                    {{ round }} Rounds
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
     </div>
 </div>
+
+
+
+
 
 
 
@@ -721,8 +734,8 @@
                     </thead>
                     <tbody>
                         <tr *ngFor="let player of team.players">
-                            <td>{{ player.firstName }}</td>
-                            <td>{{ player.lastName }}</td>
+                            <td style="font-size: 16px; padding: 5px;">{{ player.firstName }}</td>
+                            <td style="font-size: 16px; padding: 5px;">{{ player.lastName }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -733,8 +746,8 @@
                 <table class="table table-bordered" style="width: 100%;">
                     <thead>
                         <tr>
-                            <th>First Name</th>
-                            <th>Last Name</th>
+                            <th style="font-size: 16px; padding: 5px;">First Name</th>
+                            <th style="font-size: 16px; padding: 5px;">Last Name</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -753,22 +766,21 @@
             <table class="table table-bordered" style="width: 80%; margin: 0 auto;">
                 <thead>
                     <tr>
-                        <th>Round 1</th>
-                        <th>Round 2</th>
-                        <th>Round 3</th>
-                        <th>Round 4</th>
-                        <th>Round 5</th>
+                        <th>Team</th>
+                        <th *ngFor="let round of [].constructor(selectedRounds); let index = index">Game {{ index + 1 }}</th>
                         <th>Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let round of [1, 2]">
-                        <td style="height: 30px; padding: 10px;"></td>
-                        <td style="height: 30px; padding: 10px;"></td>
-                        <td style="height: 30px; padding: 10px;"></td>
-                        <td style="height: 30px; padding: 10px;"></td>
-                        <td style="height: 30px; padding: 10px;"></td>
-                        <td style="height: 30px; padding: 10px;"></td>
+                    <tr>
+                        <td>Team A</td>
+                        <td *ngFor="let round of [].constructor(selectedRounds)" style="height: 15px; padding: 3px;">&nbsp;</td>
+                        <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                    </tr>
+                    <tr>
+                        <td>Team B</td>
+                        <td *ngFor="let round of [].constructor(selectedRounds)" style="height: 15px; padding: 3px;">&nbsp;</td>
+                        <td style="height: 15px; padding: 3px;">&nbsp;</td>
                     </tr>
                 </tbody>
             </table>
@@ -821,7 +833,7 @@
                                 <table class="table table-bordered" style="width: 100%; font-size: 8px;">
                                     <tbody>
                                         <tr *ngFor="let player of listOfTeams[i + matchIndex]?.players">
-                                            <td>{{ player.firstName }} {{ player.lastName }}</td>
+                                            <td style="font-size: 14px; padding: 5px;">{{ player.firstName }} {{ player.lastName }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -833,7 +845,7 @@
                                 <table class="table table-bordered" style="width: 100%; font-size: 8px;">
                                     <tbody>
                                         <tr *ngFor="let player of listOfTeams[i + matchIndex + 1]?.players">
-                                            <td>{{ player.firstName }} {{ player.lastName }}</td>
+                                            <td style="font-size: 14px; padding: 5px;">{{ player.firstName }} {{ player.lastName }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -846,31 +858,19 @@
                                     <thead>
                                         <tr>
                                             <th>Team</th>
-                                            <th>Game 1</th>
-                                            <th>Game 2</th>
-                                            <th>Game 3</th>
-                                            <th>Game 4</th>
-                                            <th>Game 5</th>
+                                            <th *ngFor="let round of [].constructor(selectedRounds); let index = index">Game {{ index + 1 }}</th>
                                             <th>Total</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
                                             <td>Team A</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td *ngFor="let round of [].constructor(selectedRounds)" style="height: 15px; padding: 3px;">&nbsp;</td>
                                             <td style="height: 15px; padding: 3px;">&nbsp;</td>
                                         </tr>
                                         <tr>
                                             <td>Team B</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td *ngFor="let round of [].constructor(selectedRounds)" style="height: 15px; padding: 3px;">&nbsp;</td>
                                             <td style="height: 15px; padding: 3px;">&nbsp;</td>
                                         </tr>
                                     </tbody>
@@ -966,31 +966,19 @@
                                     <thead>
                                         <tr>
                                             <th>Team</th>
-                                            <th>Game 1</th>
-                                            <th>Game 2</th>
-                                            <th>Game 3</th>
-                                            <th>Game 4</th>
-                                            <th>Game 5</th>
+                                            <th *ngFor="let round of [].constructor(selectedRounds); let index = index">Game {{ index + 1 }}</th>
                                             <th>Total</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
                                             <td>Team A</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td *ngFor="let round of [].constructor(selectedRounds)" style="height: 15px; padding: 3px;">&nbsp;</td>
                                             <td style="height: 15px; padding: 3px;">&nbsp;</td>
                                         </tr>
                                         <tr>
                                             <td>Team B</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td *ngFor="let round of [].constructor(selectedRounds)" style="height: 15px; padding: 3px;">&nbsp;</td>
                                             <td style="height: 15px; padding: 3px;">&nbsp;</td>
                                         </tr>
                                     </tbody>

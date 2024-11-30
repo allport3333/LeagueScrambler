@@ -21,6 +21,7 @@ import { LoginService } from '../services/login.service';
 export class ScramblerComponent implements OnInit {
     @ViewChild('matchupDiv') matchupDiv!: ElementRef;
     @ViewChild('saveTeamsDiv') saveTeamsDiv!: ElementRef;
+    selectedRounds: number = 5;
     selectedMatchupsPerPage: string = '2';
     hideEverything: boolean;
     totalPlayers: Player[];
@@ -199,6 +200,11 @@ export class ScramblerComponent implements OnInit {
 
             this.playerLoading = false;
         });
+    }
+
+    onRoundsChange(event: any): void {
+        console.log('Selected Rounds:', this.selectedRounds); // Optional for debugging
+        // Handle changes if needed
     }
 
     addPlayer(player) {
