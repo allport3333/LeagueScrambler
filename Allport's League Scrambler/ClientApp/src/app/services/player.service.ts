@@ -8,6 +8,9 @@ import { KingQueenTeamWithPlayers } from '../data-models/KingQueenTeamWithPlayer
 import { Observable } from 'rxjs';
 import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
 import { KingQueenTeamsResponse } from '../data-models/kingQueenTeamsResponse';
+import { KingQueenRoundScoresResponse } from '../data-models/kingQueenRoundScoresResponse';
+import { KingQueenRoundScore } from '../data-models/KingQueenRoundScore';
+import { KingQueenRoundScoresRequest } from '../data-models/kingQueenRoundScoresRequest';
 
 @Injectable({
     providedIn: 'root'
@@ -64,7 +67,6 @@ export class PlayerService {
             kingQueenTeams: teamsWithPlayers,
             byePlayers: byePlayers
         };
-
         // Send the request and expect a response of type SaveKingQueenTeamsResponse
         return this.httpClient.post<KingQueenTeamsResponse>(
             `${this.baseUrl}api/ScrambleData/SaveKingQueenTeams/${leagueName}`,
@@ -90,6 +92,24 @@ export class PlayerService {
             
         );
     }
+
+    public saveKingQueenRoundScores(
+        roundScores: KingQueenRoundScore[],
+        leagueName: string
+    ): Observable<KingQueenRoundScoresResponse> {
+        // Prepare the request object
+        const request: KingQueenRoundScoresRequest = {
+            roundScores: roundScores
+        };
+
+        console.log('request', request);
+        // Send the request and expect a response of type KingQueenRoundScoresResponse
+        return this.httpClient.post<KingQueenRoundScoresResponse>(
+            `${this.baseUrl}api/ScrambleData/SaveKingQueenRoundScores/${leagueName}`,
+            request
+        );
+    }
+
 
 
     public DeletePlayer(player: Player, leagueName: string) {

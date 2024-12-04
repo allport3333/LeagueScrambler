@@ -413,7 +413,7 @@
                                 <br />
                                 <button mat-raised-button color="primary" (click)="scramblePlayers(true)">Scramble With No Duplicate Teams</button>
                                 <!-- Display previous matchups centered -->
-                                <div class="matchup-container row justify-content-center align-items-center">
+                                <!--<div class="matchup-container row justify-content-center align-items-center">
                                     <ng-container *ngFor="let matchup of matchups; let i = index">
                                         <div *ngIf="(i + 1) % 2 == 0" class="matchup-divider">
                                             <h4 class="vs-text">vs</h4>
@@ -426,14 +426,13 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <tr *ngFor="let player of matchup.players">
-                                                        <!-- Display player details here -->
-                                                    </tr>
+                                                    <tr *ngFor="let player of matchup.players">-->
+                                                    <!--</tr>
                                                 </tbody>
                                             </table>
                                         </div>
                                     </ng-container>
-                                </div>
+                                </div>-->
                             </div>
                         </mat-card>
                     </mat-tab>
@@ -604,6 +603,41 @@
 
                     </tbody>
                 </table>
+                <div *ngIf="retrievedListOfTeams?.length > 0" class="score-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th colspan="3" style="text-align: center;">Team {{ i + 1 }}</th>
+                            </tr>
+                            <tr>
+                                <th style="text-align: center;">Round</th>
+                                <th style="text-align: center;">Score</th>
+                                <th style="text-align: center;">Win</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr *ngFor="let round of rounds; let roundIndex = index;">
+                                <td style="text-align: center;">{{ roundIndex + 1 }}</td>
+                                <td>
+                                    <input type="number"
+                                           [value]="getScore(listOfTeams[i]?.kingQueenTeamId, round)?.roundScore || ''"
+                                           (input)="updateRoundScore(listOfTeams[i]?.kingQueenTeamId, round, $event.target.value)"
+                                           class="form-control" />
+                                </td>
+                                <td>
+                                    <input type="checkbox"
+                                           [checked]="getScore(listOfTeams[i]?.kingQueenTeamId, round)?.roundWon || false"
+                                           (change)="updateRoundWon(listOfTeams[i]?.kingQueenTeamId, round, $event.target.checked)" />
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+
+
+
 
             </div>
         </ng-container>
@@ -688,7 +722,7 @@
         <!-- Number of Rounds Selection -->
         <mat-form-field appearance="fill" class="w-75">
             <mat-label>Number of Rounds</mat-label>
-            <mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event)">
+            <mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)">
                 <mat-option *ngFor="let round of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]" [value]="round">
                     {{ round }} Rounds
                 </mat-option>
@@ -696,12 +730,6 @@
         </mat-form-field>
     </div>
 </div>
-
-
-
-
-
-
 
 
 <div class="text-center" style="margin-top: 10px;">
@@ -757,7 +785,7 @@
                         </tr>
                     </tbody>
                 </table>
-            </div>
+            </div>            
         </div>
 
         <!-- Scores Table Below the Two Matchups -->
@@ -1012,3 +1040,4 @@
 </div>
 
 
+<button *ngIf="retrievedListOfTeams?.length > 0;" (click)="saveKingQueenRoundScores()">Save Round Scores</button>

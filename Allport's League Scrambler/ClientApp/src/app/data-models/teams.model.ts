@@ -6,6 +6,6 @@ export interface Team {
     players: Player[];
     maleCount: number;
     femaleCount: number;
-
+    kingQueenTeamId: number;
 }
 

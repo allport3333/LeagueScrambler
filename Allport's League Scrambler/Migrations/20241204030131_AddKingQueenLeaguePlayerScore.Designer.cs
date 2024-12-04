@@ -4,14 +4,16 @@ using Allport_s_League_Scrambler.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Allport_s_League_Scrambler.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20241204030131_AddKingQueenLeaguePlayerScore")]
+    partial class AddKingQueenLeaguePlayerScore
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -74,25 +76,6 @@ namespace Allport_s_League_Scrambler.Migrations
                     b.HasIndex("PlayerId");
 
                     b.ToTable("KingQueenPlayer","dbo");
-                });
-
-            modelBuilder.Entity("Allport_s_League_Scrambler.Models.KingQueenRoundScores", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<int>("KingQueenTeamId");
-
-                    b.Property<int>("RoundScore");
-
-                    b.Property<bool?>("RoundWon");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("KingQueenTeamId");
-
-                    b.ToTable("KingQueenRoundScores","dbo");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.KingQueenTeam", b =>
@@ -190,7 +173,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.Property<int>("PlayersLeagueID");
 
-                    b.Property<int>("PlayersTotalRoundScore");
+                    b.Property<int>("PlayersScore");
 
                     b.HasKey("Id");
 
@@ -318,14 +301,6 @@ namespace Allport_s_League_Scrambler.Migrations
                     b.HasOne("Allport_s_League_Scrambler.Models.Player", "Player")
                         .WithMany()
                         .HasForeignKey("PlayerId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Allport_s_League_Scrambler.Models.KingQueenRoundScores", b =>
-                {
-                    b.HasOne("Allport_s_League_Scrambler.Models.KingQueenTeam", "KingQueenTeam")
-                        .WithMany()
-                        .HasForeignKey("KingQueenTeamId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 

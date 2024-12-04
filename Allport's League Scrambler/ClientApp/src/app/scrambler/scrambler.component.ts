@@ -13,6 +13,9 @@ import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
 import { KingQueenTeamWithPlayers } from '../data-models/KingQueenTeamWithPlayers.model';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
 import { LoginService } from '../services/login.service';
+import { KingQueenRoundScoresResponse } from '../data-models/kingQueenRoundScoresResponse';
+import { KingQueenRoundScore } from '../data-models/KingQueenRoundScore';
+import { KingQueenRoundScoresRequest } from '../data-models/kingQueenRoundScoresRequest';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
@@ -21,7 +24,10 @@ import { LoginService } from '../services/login.service';
 export class ScramblerComponent implements OnInit {
     @ViewChild('matchupDiv') matchupDiv!: ElementRef;
     @ViewChild('saveTeamsDiv') saveTeamsDiv!: ElementRef;
-    selectedRounds: number = 5;
+    selectedRounds: number = 5; // Default to 5 rounds
+    rounds: number[] = [];
+    roundScores: { [teamId: number]: { RoundScore: number; RoundWon: boolean }[] } = {};
+    kingQueenRoundScores: KingQueenRoundScore[] = [];
     selectedMatchupsPerPage: string = '2';
     hideEverything: boolean;
     totalPlayers: Player[];
@@ -124,8 +130,35 @@ export class ScramblerComponent implements OnInit {
 
     }
 
-    ngOnInit() {
+    initializeRounds(): void {
+        this.rounds = Array.from({ length: this.selectedRounds }, (_, index) => index + 1);
+    }
 
+
+    initializeScores(): void {
+        this.kingQueenRoundScores = []; // Reset the array
+
+        for (const team of this.listOfTeams) {
+            for (let roundIndex = 0; roundIndex < this.selectedRounds; roundIndex++) {
+                this.kingQueenRoundScores.push({
+                    roundId: roundIndex + 1,
+                    teamId: team.kingQueenTeamId,
+                    roundScore: 0,
+                    roundWon: false
+                });
+            }
+        }
+
+        console.log('Initialized Scores:', this.kingQueenRoundScores);
+    }
+
+    getScore(teamId: number, roundId: number): any {
+        return this.kingQueenRoundScores.find(score => score.teamId === teamId && score.roundId === roundId);
+    }
+
+
+
+    ngOnInit() {
         this.completeRandom = false;
         this.displayTopPlayers = new Array();
         this.displayLowPlayers = new Array();
@@ -202,8 +235,44 @@ export class ScramblerComponent implements OnInit {
         });
     }
 
-    onRoundsChange(event: any): void {
+    onRoundsChange(newRounds: number): void {
+        this.selectedRounds = newRounds; // Update the selected number of rounds
+        this.updateRounds(); // Adjust the rounds dynamically
     }
+
+    updateRounds(): void {
+        // Update rounds array
+        this.rounds = Array.from({ length: this.selectedRounds });
+
+        // Ensure `listOfTeams` is defined and has elements
+        if (!this.listOfTeams || this.listOfTeams.length === 0) {
+            console.warn('listOfTeams is not defined or empty.');
+            return;
+        }
+
+        // Adjust scores for each team
+        this.listOfTeams.forEach(team => {
+            // Ensure `roundScores[team.kingQueenTeamId]` is initialized
+            if (!this.roundScores[team.kingQueenTeamId]) {
+                this.roundScores[team.kingQueenTeamId] = [];
+            }
+
+            if (this.roundScores[team.kingQueenTeamId].length > this.selectedRounds) {
+                // Trim excess rounds
+                this.roundScores[team.kingQueenTeamId] = this.roundScores[team.kingQueenTeamId].slice(0, this.selectedRounds);
+            } else {
+                // Add additional rounds
+                while (this.roundScores[team.kingQueenTeamId].length < this.selectedRounds) {
+                    this.roundScores[team.kingQueenTeamId].push({ RoundScore: 0, RoundWon: false });
+                }
+            }
+        });
+
+        console.log('Updated Rounds:', this.rounds);
+        console.log('Updated Scores:', this.roundScores);
+    }
+
+
 
     addPlayer(player) {
         this.malePlayersDisplayCount = new Array();
@@ -854,6 +923,30 @@ export class ScramblerComponent implements OnInit {
         this.totalLowPlayers = this.totalLowPlayers.filter(player => player.isLowPlayer);
     }
 
+    getRoundScore(teamId: number, roundIndex: number): { RoundScore: number; RoundWon: boolean } {
+        return (
+            (this.roundScores[teamId] && this.roundScores[teamId][roundIndex]) || { RoundScore: 0, RoundWon: false }
+        );
+    }
+
+    updateRoundScore(teamId: number, roundId: number, value: number): void {
+        const score = this.getScore(teamId, roundId);
+        if (score) {
+            score.roundScore = value;
+            console.log(`Updated Round Score for teamId: ${teamId}, roundId: ${roundId} to ${value}`);
+        }
+    }
+
+    updateRoundWon(teamId: number, roundId: number, value: boolean): void {
+        const score = this.getScore(teamId, roundId);
+        if (score) {
+            score.roundWon = value;
+            console.log(`Updated Round Won Status for teamId: ${teamId}, roundId: ${roundId} to ${value}`);
+        }
+    }
+
+
+
 
     retrieveScramble(scramble: KingQueenTeam) {
         this.retrievedListOfTeams = [];
@@ -868,14 +961,19 @@ export class ScramblerComponent implements OnInit {
                     const team: Team = {
                         players: matchup.players,
                         maleCount: matchup.players.filter(player => player.isMale).length,
-                        femaleCount: matchup.players.filter(player => !player.isMale).length
+                        femaleCount: matchup.players.filter(player => !player.isMale).length,
+                        kingQueenTeamId: matchup.kingQueenTeam.id
                     };
+                    console.log('team', team);
                     this.listOfTeams.push(team);
                     this.retrievedListOfTeams.push(team);
                 });
                 this.byePlayers  = response.byePlayers;
 
                 this.listOfRetrievedScrambleNumbers.push(scramble.scrambleNumber);
+                // Initialize rounds and scores after data is fully loaded
+                this.initializeRounds();
+                this.initializeScores();
             },
             (error) => {
                 // Handle any errors
@@ -883,6 +981,23 @@ export class ScramblerComponent implements OnInit {
             }
         );
     }
+
+    saveKingQueenRoundScores(): void {
+        this.playerService.saveKingQueenRoundScores(
+            this.kingQueenRoundScores, // Array of round scores
+            this.selectedLeague        // Selected league name
+        ).subscribe(
+            result => {
+                // Handle success response
+                console.log('Round scores saved successfully:', result);
+            },
+            error => {
+                // Handle error response
+                console.error('Error saving round scores:', error);
+            }
+        );
+    }
+
 
     retrieveMultipleScrambles() {
         this.playerService.getMultipleKingQueenTeamsByScrambleNumbers(this.selectedLeague, this.listOfScrambleNumbers).subscribe(
@@ -897,7 +1012,8 @@ export class ScramblerComponent implements OnInit {
                     const team: Team = {
                         players: matchup.players,
                         maleCount: matchup.players.filter(player => player.isMale).length,
-                        femaleCount: matchup.players.filter(player => !player.isMale).length
+                        femaleCount: matchup.players.filter(player => !player.isMale).length,
+                        kingQueenTeamId: matchup.kingQueenTeam.id
                     };
                     this.listOfTeams.push(team);
                     this.retrievedListOfTeams.push(team);
@@ -1111,7 +1227,8 @@ export class ScramblerComponent implements OnInit {
                     const team: Team = {
                         players: matchup.players,
                         maleCount: matchup.players.filter(player => player.isMale).length,
-                        femaleCount: matchup.players.filter(player => !player.isMale).length
+                        femaleCount: matchup.players.filter(player => !player.isMale).length,
+                        kingQueenTeamId: matchup.kingQueenTeam.id
                     };
                     this.listOfTeams.push(team);
                     this.retrievedListOfTeams.push(team);
@@ -1403,7 +1520,8 @@ export class ScramblerComponent implements OnInit {
             let team = {
                 players: [],
                 femaleCount: 0,
-                maleCount: 0
+                maleCount: 0,
+                kingQueenTeamId: 0
             };
             this.listOfTeams.push(team);
         }
@@ -1483,7 +1601,8 @@ export class ScramblerComponent implements OnInit {
                 let team = {
                     players: [],
                     femaleCount: 0,
-                    maleCount: 0
+                    maleCount: 0,
+                    kingQueenTeamId: 0
                 }
                 this.listOfTeams.push(team)
             }
