@@ -603,7 +603,7 @@
 
                     </tbody>
                 </table>
-                <div *ngIf="retrievedListOfTeams?.length > 0" class="score-table">
+                <div *ngIf="showSaveRoundScores" class="score-table">
                     <table class="table">
                         <thead>
                             <tr>
@@ -698,9 +698,11 @@
 <div class="d-flex flex-column align-items-center mt-3">
     <!-- Save Teams Section -->
     <div class="d-flex flex-column align-items-center mb-3" style="margin-bottom: 5px;">
+        <button  mat-raised-button color="primary" class="mb-3"*ngIf="showSaveRoundScores" (click)="saveKingQueenRoundScores()">Save Round Scores</button>
         <button (click)="saveKingQueenTeams()" mat-raised-button color="primary" class="mb-1">
             Save Teams
         </button>
+
         <p class="mb-0 text-center" *ngIf="scrambleNumber" style="margin-bottom: 3px;">Scramble Number: {{ scrambleNumber }}.</p>
         <p class="mb-0 text-center" *ngIf="scrambleNumber" style="margin-bottom: 3px;">Please save this number for future lookups.</p>
     </div>
@@ -1040,4 +1042,3 @@
 </div>
 
 
-<button *ngIf="retrievedListOfTeams?.length > 0;" (click)="saveKingQueenRoundScores()">Save Round Scores</button>

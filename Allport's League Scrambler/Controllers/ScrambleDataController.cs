@@ -7,6 +7,7 @@ using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
 namespace Allport_s_League_Scrambler.Controllers
 {
@@ -233,6 +234,60 @@ namespace Allport_s_League_Scrambler.Controllers
 
         }
 
+        [HttpPost("SaveKingQueenRoundScores/{leagueName}")]
+        public async Task<IActionResult> SaveKingQueenRoundScores(
+        [FromRoute] string leagueName,
+        [FromBody] KingQueenRoundScoresRequest request)
+        {
+            var context = new DataContext();
+            if (request == null || request.RoundScores == null || !request.RoundScores.Any())
+            {
+                return BadRequest("Invalid round scores data.");
+            }
+
+            try
+            {
+                foreach (var score in request.RoundScores)
+                {
+                    // Check if the score exists and update it, otherwise add a new entry
+                    var existingScore = await context.KingQueenRoundScores
+                        .FirstOrDefaultAsync(s => s.Id == score.Id);
+
+                    if (existingScore != null)
+                    {
+                        existingScore.RoundScore = score.RoundScore;
+                        existingScore.RoundWon = score.RoundWon;
+                        existingScore.RoundId = score.RoundId;
+                    }
+                    else
+                    {
+                        var newScore = new KingQueenRoundScores
+                        {
+                            KingQueenTeamId = score.KingQueenTeamId,
+                            RoundScore = score.RoundScore,
+                            RoundWon = score.RoundWon,
+                            RoundId = score.RoundId
+                        };
+                        context.KingQueenRoundScores.Add(newScore);
+                    }
+                }
+
+                await context.SaveChangesAsync();
+
+                return Ok(new KingQueenRoundScoresResponse
+                {
+                    Success = true,
+                    Message = "Round scores saved successfully.",
+                    SavedScores = request.RoundScores
+                });
+            }
+            catch (Exception ex)
+            {
+                // Handle and log exception
+                return StatusCode(500, new { Success = false, Message = $"An error occurred: {ex.Message}" });
+            }
+        }
+
         [HttpPost("[action]/{leagueName}")]
         public KingQueenTeamsResponse SaveKingQueenTeams([FromBody] KingQueenTeamsResponse request, string leagueName)
         {
@@ -353,15 +408,21 @@ namespace Allport_s_League_Scrambler.Controllers
                     .Where(kqp => kqp.KingQueenTeamId == kingQueenTeam.Id)
                     .Select(kqp => new Player
                     {
-                        // Map KingQueenPlayer properties to Player properties
-                        // Example: (adjust property names as needed)
                         Id = kqp.Player.Id,
                         FirstName = kqp.Player.FirstName,
                         LastName = kqp.Player.LastName,
-                        IsMale = kqp.Player.IsMale,
-                        // Map other properties
+                        IsMale = kqp.Player.IsMale
                     })
                     .ToList();
+
+                var kingQueenRoundScores = context.KingQueenRoundScores
+                    .Where(kqrs => kqrs.KingQueenTeamId == kingQueenTeam.Id)
+                    .ToList();
+
+                if (kingQueenTeam.KingQueenRoundScores == null)
+                {
+                    kingQueenTeam.KingQueenRoundScores = new List<KingQueenRoundScores>();
+                }
 
                 var result = new KingQueenTeamWithPlayers
                 {
