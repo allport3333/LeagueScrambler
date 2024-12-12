@@ -14,4 +14,5 @@ export interface RoundScore {
     roundId: number;
     score: number;
     date: Date;
+    roundWon: boolean;
 }

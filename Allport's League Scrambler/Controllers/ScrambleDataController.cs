@@ -516,7 +516,8 @@ namespace Allport_s_League_Scrambler.Controllers
                     {
                         RoundId = score.RoundId,
                         Score = score.RoundScore,
-                        ScrambleNumber = team.ScrambleNumber
+                        ScrambleNumber = team.ScrambleNumber,
+                        RoundWon = score.RoundWon,
                     }).ToList()
                 })
                 .GroupBy(playerData => new { playerData.PlayerId, playerData.PlayerName, playerData.IsMale })
@@ -530,7 +531,9 @@ namespace Allport_s_League_Scrambler.Controllers
                         ScrambleNumber = round.ScrambleNumber,
                         RoundId = round.RoundId,
                         Score = group.SelectMany(player => player.Scores)
-                                     .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.Score ?? 0 // Assign 0 for missing scores
+                                     .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.Score ?? 0, // Assign 0 for missing scores,
+                        RoundWon = group.SelectMany(player => player.Scores)
+                                .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.RoundWon ?? false // Assign false if missing
                     })
                     .OrderBy(score => score.ScrambleNumber)
                     .ThenBy(score => score.RoundId)

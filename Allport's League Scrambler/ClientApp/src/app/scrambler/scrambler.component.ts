@@ -299,32 +299,55 @@ export class ScramblerComponent implements OnInit {
                 this.maleStandings = this.maleStandings
                     .map(player => {
                         let totalScore = 0;
+                        let totalWins = 0;
                         for (let i = 0; i < player.scores.length; i++) {
                             if (player.scores[i] && player.scores[i].score) {
                                 totalScore += player.scores[i].score;
                             }
+                            if (player.scores[i] && player.scores[i].roundWon) {
+                                totalWins += 1; // Increment total wins if roundWon is true
+                            }
                         }
                         return {
                             ...player,
-                            totalScore: totalScore
+                            totalScore: totalScore,
+                            totalWins: totalWins
                         };
                     })
-                    .sort((a, b) => b.totalScore - a.totalScore); // Sort by total score descending
+                    .sort((a, b) => {
+                        // Sort by total wins descending, then by total score descending
+                        if (b.totalWins !== a.totalWins) {
+                            return b.totalWins - a.totalWins;
+                        }
+                        return b.totalScore - a.totalScore;
+                    });
 
                 this.femaleStandings = this.femaleStandings
                     .map(player => {
                         let totalScore = 0;
+                        let totalWins = 0;
                         for (let i = 0; i < player.scores.length; i++) {
                             if (player.scores[i] && player.scores[i].score) {
                                 totalScore += player.scores[i].score;
                             }
+                            if (player.scores[i] && player.scores[i].roundWon) {
+                                totalWins += 1; // Increment total wins if roundWon is true
+                            }
                         }
                         return {
                             ...player,
-                            totalScore: totalScore
+                            totalScore: totalScore,
+                            totalWins: totalWins
                         };
                     })
-                    .sort((a, b) => b.totalScore - a.totalScore); // Sort by total score descending
+                    .sort((a, b) => {
+                        // Sort by total wins descending, then by total score descending
+                        if (b.totalWins !== a.totalWins) {
+                            return b.totalWins - a.totalWins;
+                        }
+                        return b.totalScore - a.totalScore;
+                    });
+
 
                 // Generate standingsRounds array
                 this.standingsRounds = [];

@@ -423,7 +423,8 @@
                                                     <tr>
                                                         <th style="width: 20%; padding: 4px;">Player Name</th>
                                                         <th *ngFor="let round of standingsRounds" style="width: 10%; padding: 4px;">Round {{ round }}</th>
-                                                        <th style="width: 10%; padding: 4px;">Total</th>
+                                                        <th style="width: 10%; padding: 4px;">Total Points</th>
+                                                        <th style="width: 10%; padding: 4px;">Total Wins</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -431,6 +432,7 @@
                                                         <td style="padding: 2px;">{{ player.playerName }}</td>
                                                         <td *ngFor="let score of player.scores" style="padding: 2px;">{{ score.score }}</td>
                                                         <td style="padding: 2px;">{{ player.totalScore }}</td>
+                                                        <td style="padding: 2px;">{{ player.totalWins }}</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -448,7 +450,8 @@
                                                     <tr>
                                                         <th style="width: 20%; padding: 4px;">Player Name</th>
                                                         <th *ngFor="let round of standingsRounds" style="width: 10%; padding: 4px;">Round {{ round }}</th>
-                                                        <th style="width: 10%; padding: 4px;">Total</th>
+                                                        <th style="width: 10%; padding: 4px;">Total Points</th>
+                                                        <th style="width: 10%; padding: 4px;">Total Wins</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -456,6 +459,7 @@
                                                         <td style="padding: 2px;">{{ player.playerName }}</td>
                                                         <td *ngFor="let score of player.scores" style="padding: 2px;">{{ score.score }}</td>
                                                         <td style="padding: 2px;">{{ player.totalScore }}</td>
+                                                        <td style="padding: 2px;">{{ player.totalWins }}</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
