@@ -459,6 +459,94 @@ namespace Allport_s_League_Scrambler.Controllers
             };
         }
 
+        [HttpGet("GetByLeague/{leagueName}")]
+        public async Task<IActionResult> GetStandingsByLeague(string leagueName)
+        {
+            var context = new DataContext();
+
+            // Step 1: Get the LeagueID for the given leagueName
+            var leagueId = await context.Leagues
+                .Where(league => league.LeagueName == leagueName)
+                .Select(league => league.ID)
+                .FirstOrDefaultAsync();
+
+            if (leagueId == 0)
+            {
+                return BadRequest(new { message = "League not found." });
+            }
+
+            // Step 2: Retrieve KingQueenTeams for the league
+            var kingQueenTeams = await context.KingQueenTeam
+                .Where(team => team.LeagueID == leagueId)
+                .Include(team => team.KingQueenRoundScores) // Include round scores to validate rounds
+                .Include(team => team.KingQueenPlayers)
+                .ThenInclude(player => player.Player)
+                .ToListAsync();
+
+            if (!kingQueenTeams.Any())
+            {
+                return Ok(new { message = "No teams found in the league." });
+            }
+
+            // Step 3: Identify unique rounds using ScrambleNumber and RoundId
+            var validRounds = kingQueenTeams
+                .SelectMany(team => team.KingQueenRoundScores.Select(score => new
+                {
+                    ScrambleNumber = team.ScrambleNumber, // ScrambleNumber from KingQueenTeam
+                    RoundId = score.RoundId // RoundId from KingQueenRoundScores
+                }))
+                .Distinct() // Ensure unique ScrambleNumber + RoundId combinations
+                .OrderBy(round => round.ScrambleNumber)
+                .ThenBy(round => round.RoundId)
+                .ToList();
+
+            if (!validRounds.Any())
+            {
+                return Ok(new { message = "No valid rounds found in the league." });
+            }
+
+            // Step 4: Build player scores based on valid rounds
+            var playerScores = kingQueenTeams
+                .SelectMany(team => team.KingQueenPlayers, (team, player) => new
+                {
+                    PlayerId = player.PlayerId,
+                    PlayerName = player.Player.FirstName + " " + player.Player.LastName,
+                    IsMale = player.Player.IsMale,
+                    Scores = team.KingQueenRoundScores.Select(score => new
+                    {
+                        RoundId = score.RoundId,
+                        Score = score.RoundScore,
+                        ScrambleNumber = team.ScrambleNumber
+                    }).ToList()
+                })
+                .GroupBy(playerData => new { playerData.PlayerId, playerData.PlayerName, playerData.IsMale })
+                .Select(group => new
+                {
+                    PlayerId = group.Key.PlayerId,
+                    PlayerName = group.Key.PlayerName,
+                    IsMale = group.Key.IsMale,
+                    Scores = validRounds.Select(round => new
+                    {
+                        ScrambleNumber = round.ScrambleNumber,
+                        RoundId = round.RoundId,
+                        Score = group.SelectMany(player => player.Scores)
+                                     .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.Score ?? 0 // Assign 0 for missing scores
+                    })
+                    .OrderBy(score => score.ScrambleNumber)
+                    .ThenBy(score => score.RoundId)
+                    .ToList()
+                })
+                .ToList();
+
+            // Step 5: Calculate the total number of unique rounds
+            var maxRounds = validRounds.Count;
+
+            // Step 6: Return the result
+            return Ok(new { playerScores, maxRounds });
+        }
+
+
+
         [HttpPost("[action]/{leagueName}")]
         public KingQueenTeamsResponse GetKingQueenTeamsByScrambleNumbers(string leagueName, [FromBody] List<int> scrambleNumbers)
         {

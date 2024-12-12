@@ -61,7 +61,7 @@ export class FetchDataComponent implements OnInit {
             this.isMale1 = true;
         }
         let newplayer: Player = {
-            
+            id: 0,
             firstName: this.PlayerForm.controls["firstName"].value,
             lastName: this.PlayerForm.controls["lastName"].value,
             gender: this.PlayerForm.controls["isMale"].value,

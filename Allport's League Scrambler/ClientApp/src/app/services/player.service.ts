@@ -11,6 +11,7 @@ import { KingQueenTeamsResponse } from '../data-models/kingQueenTeamsResponse';
 import { KingQueenRoundScoresResponse } from '../data-models/kingQueenRoundScoresResponse';
 import { KingQueenRoundScore } from '../data-models/KingQueenRoundScore';
 import { KingQueenRoundScoresRequest } from '../data-models/kingQueenRoundScoresRequest';
+import { PlayerScoresResponse, PlayerScoreGroup, RoundScore } from '../data-models/playerScoresResponse';
 
 @Injectable({
     providedIn: 'root'
@@ -74,7 +75,11 @@ export class PlayerService {
         );
     }
 
-
+    getStandingsByLeague(leagueName: string): Observable<PlayerScoresResponse> {
+        return this.httpClient.get<PlayerScoresResponse>(
+            `${this.baseUrl}api/ScrambleData/GetByLeague/${leagueName}`
+        );
+    }
 
 
     // New method to retrieve KingQueenTeams by ScrambleNumber

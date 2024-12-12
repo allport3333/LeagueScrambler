@@ -4,14 +4,16 @@ using Allport_s_League_Scrambler.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Allport_s_League_Scrambler.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20241212030018_StandingsUpdate")]
+    partial class StandingsUpdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -333,7 +335,7 @@ namespace Allport_s_League_Scrambler.Migrations
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.KingQueenRoundScores", b =>
                 {
-                    b.HasOne("Allport_s_League_Scrambler.Models.KingQueenTeam")
+                    b.HasOne("Allport_s_League_Scrambler.Models.KingQueenTeam", "KingQueenTeam")
                         .WithMany("KingQueenRoundScores")
                         .HasForeignKey("KingQueenTeamId")
                         .OnDelete(DeleteBehavior.Cascade);

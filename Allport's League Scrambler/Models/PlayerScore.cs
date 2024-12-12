@@ -9,10 +9,11 @@ namespace Allport_s_League_Scrambler.Models
     {
         public int Id { get; set; }
         public int PlayersLeagueID { get; set; }
-        public int PlayersTotalRoundScore { get; set; }
+        public int PlayersTotalLeagueScore { get; set; }
         public DateTime Date { get; set; }
         public int? KingQueenPlayerId { get; set; }
         public KingQueenPlayer KingQueenPlayer { get; set; }
+        public PlayersLeague PlayersLeague { get; set; }
 
     }
 }

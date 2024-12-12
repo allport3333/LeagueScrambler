@@ -13,6 +13,5 @@ namespace Allport_s_League_Scrambler.Models
         public int RoundScore { get; set; }
         public bool? RoundWon { get; set; }
 
-
     }
 }

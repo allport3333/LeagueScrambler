@@ -16,6 +16,7 @@ import { LoginService } from '../services/login.service';
 import { KingQueenRoundScoresResponse } from '../data-models/kingQueenRoundScoresResponse';
 import { KingQueenRoundScore } from '../data-models/KingQueenRoundScore';
 import { KingQueenRoundScoresRequest } from '../data-models/kingQueenRoundScoresRequest';
+import { PlayerScoreGroup } from '../data-models/playerScoresResponse';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
@@ -25,7 +26,9 @@ export class ScramblerComponent implements OnInit {
     @ViewChild('matchupDiv') matchupDiv!: ElementRef;
     @ViewChild('saveTeamsDiv') saveTeamsDiv!: ElementRef;
     selectedRounds: number = 5; // Default to 5 rounds
+    processedStandings: { playerName: string; scores: { roundId: number; score: number | string }[] }[] = [];
     rounds: number[] = [];
+    standingsRounds: number[] = [];
     roundScores: { [teamId: number]: { RoundScore: number; RoundWon: boolean }[] } = {};
     kingQueenRoundScores: KingQueenRoundScore[] = [];
     selectedMatchupsPerPage: string = '2';
@@ -107,6 +110,9 @@ export class ScramblerComponent implements OnInit {
     playerLoading: boolean;
     leagueName: string;
     selectedLeague: string;
+    standings: PlayerScoreGroup[];
+    femaleStandings: PlayerScoreGroup[];
+    maleStandings: PlayerScoreGroup[];
     PlayerForm = new FormGroup({
         firstName: new FormControl(),
         lastName: new FormControl(),
@@ -133,6 +139,37 @@ export class ScramblerComponent implements OnInit {
 
     initializeRounds(): void {
         this.rounds = Array.from({ length: this.selectedRounds }, (_, index) => index + 1);
+    }
+
+    initializeStandingsRounds(): void {
+        // Flatten all scores manually and sort by roundId
+        const allScores: { roundId: number; score: number }[] = [];
+        this.standings.forEach(playerGroup => {
+            playerGroup.scores.forEach(score => {
+                allScores.push(score);
+            });
+        });
+        const sortedRounds = Array.from(new Set(allScores.map(score => score.roundId))).sort((a, b) => a - b);
+
+        // Determine the total rounds based on selectedRounds or maximum roundId
+        const totalRounds = this.selectedRounds || Math.max(...sortedRounds);
+        const rounds = [];
+        for (let i = 1; i <= totalRounds; i++) {
+            rounds.push(i);
+        }
+
+        // Process standings for each player
+        this.processedStandings = this.standings.map(playerGroup => {
+            const scores = [];
+            rounds.forEach(round => {
+                const matchingScore = playerGroup.scores.find(s => s.roundId === round);
+                scores.push({
+                    roundId: round,
+                    score: matchingScore ? matchingScore.score : '-' // Default to '-' if no score exists for the round
+                });
+            });
+            return { playerName: playerGroup.playerName, scores };
+        });
     }
 
 
@@ -250,6 +287,62 @@ export class ScramblerComponent implements OnInit {
 
             this.playerLoading = false;
         });
+
+        this.playerService.getStandingsByLeague(this.selectedLeague).subscribe(
+            result => {
+                this.standings = result.playerScores; // Save grouped scores
+
+                // Separate standings by gender
+                this.maleStandings = this.standings.filter(player => player.isMale);
+                this.femaleStandings = this.standings.filter(player => !player.isMale);
+                // Calculate total scores for each player (regardless of the number of rounds played)
+                this.maleStandings = this.maleStandings
+                    .map(player => {
+                        let totalScore = 0;
+                        for (let i = 0; i < player.scores.length; i++) {
+                            if (player.scores[i] && player.scores[i].score) {
+                                totalScore += player.scores[i].score;
+                            }
+                        }
+                        return {
+                            ...player,
+                            totalScore: totalScore
+                        };
+                    })
+                    .sort((a, b) => b.totalScore - a.totalScore); // Sort by total score descending
+
+                this.femaleStandings = this.femaleStandings
+                    .map(player => {
+                        let totalScore = 0;
+                        for (let i = 0; i < player.scores.length; i++) {
+                            if (player.scores[i] && player.scores[i].score) {
+                                totalScore += player.scores[i].score;
+                            }
+                        }
+                        return {
+                            ...player,
+                            totalScore: totalScore
+                        };
+                    })
+                    .sort((a, b) => b.totalScore - a.totalScore); // Sort by total score descending
+
+                // Generate standingsRounds array
+                this.standingsRounds = [];
+                for (let i = 0; i < result.maxRounds; i++) {
+                    this.standingsRounds.push(i + 1);
+                }
+
+                console.log("Standings Rounds:", this.standingsRounds); // Log the rounds array
+                this.initializeStandingsRounds(); // Initialize rounds for standings
+                this.playerLoading = false;
+            },
+            error => {
+                console.error("Error fetching standings:", error); // Log any errors
+                this.playerLoading = false; // Ensure loading state is reset
+            }
+        );
+
+
     }
 
     onRoundsChange(newRounds: number): void {
@@ -468,7 +561,7 @@ export class ScramblerComponent implements OnInit {
         }
 
         let deletingPlayer: Player = {
-
+            id: 0,
             firstName: firstNameToDelete,
             lastName: lastNameToDelete,
             gender: 'male',
@@ -541,6 +634,7 @@ export class ScramblerComponent implements OnInit {
             );
         } else {
             let newPlayer: Player = {
+                id: 0,
                 firstName: this.PlayerForm.controls["firstName"].value,
                 lastName: this.PlayerForm.controls["lastName"].value,
                 gender: selectedGenderValue,
