@@ -421,10 +421,25 @@
                                                    style="width: 100%; table-layout: fixed; font-size: 0.75rem;">
                                                 <thead>
                                                     <tr>
-                                                        <th style="width: 20%; padding: 4px;">Player Name</th>
+                                                        <th style="width: 20%; padding: 4px; cursor: pointer;" (click)="sortMaleStandings('playerName')">
+                                                            Player Name
+                                                            <mat-icon *ngIf="sortColumn === 'playerName'">
+                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                                            </mat-icon>
+                                                        </th>
                                                         <th *ngFor="let round of standingsRounds" style="width: 10%; padding: 4px;">Round {{ round }}</th>
-                                                        <th style="width: 10%; padding: 4px;">Total Points</th>
-                                                        <th style="width: 10%; padding: 4px;">Total Wins</th>
+                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortMaleStandings('totalScore')">
+                                                            Total Points
+                                                            <mat-icon *ngIf="sortColumn === 'totalScore'">
+                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                                            </mat-icon>
+                                                        </th>
+                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortMaleStandings('totalWins')">
+                                                            Total Wins
+                                                            <mat-icon *ngIf="sortColumn === 'totalWins'">
+                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                                            </mat-icon>
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -448,10 +463,25 @@
                                                    style="width: 100%; table-layout: fixed; font-size: 0.75rem;">
                                                 <thead>
                                                     <tr>
-                                                        <th style="width: 20%; padding: 4px;">Player Name</th>
+                                                        <th style="width: 20%; padding: 4px; cursor: pointer;" (click)="sortFemaleStandings('playerName')">
+                                                            Player Name
+                                                            <mat-icon *ngIf="sortColumn === 'playerName'">
+                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                                            </mat-icon>
+                                                        </th>
                                                         <th *ngFor="let round of standingsRounds" style="width: 10%; padding: 4px;">Round {{ round }}</th>
-                                                        <th style="width: 10%; padding: 4px;">Total Points</th>
-                                                        <th style="width: 10%; padding: 4px;">Total Wins</th>
+                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortFemaleStandings('totalScore')">
+                                                            Total Points
+                                                            <mat-icon *ngIf="sortColumn === 'totalScore'">
+                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                                            </mat-icon>
+                                                        </th>
+                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortFemaleStandings('totalWins')">
+                                                            Total Wins
+                                                            <mat-icon *ngIf="sortColumn === 'totalWins'">
+                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                                            </mat-icon>
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -468,6 +498,8 @@
                                 </div>
                             </div>
                         </mat-card>
+
+
                     </mat-tab>
 
 

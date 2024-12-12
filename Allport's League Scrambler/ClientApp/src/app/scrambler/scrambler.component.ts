@@ -368,6 +368,55 @@ export class ScramblerComponent implements OnInit {
 
     }
 
+    sortColumn: string = ''; // Currently sorted column
+    sortDirection: 'asc' | 'desc' = 'asc'; // Track sort direction
+
+    // Sorting for male standings
+    sortMaleStandings(column: string) {
+        if (this.sortColumn === column) {
+            // Toggle sort direction if the same column is clicked
+            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            // Set new column and default to ascending
+            this.sortColumn = column;
+            this.sortDirection = 'asc';
+        }
+
+        this.maleStandings = [...this.maleStandings].sort((a, b) => {
+            const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
+            const valueB = column === 'playerName' ? b[column].toLowerCase() : b[column];
+
+            if (this.sortDirection === 'asc') {
+                return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+            } else {
+                return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+            }
+        });
+    }
+
+    // Sorting for female standings
+    sortFemaleStandings(column: string) {
+        if (this.sortColumn === column) {
+            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.sortColumn = column;
+            this.sortDirection = 'asc';
+        }
+
+        this.femaleStandings = [...this.femaleStandings].sort((a, b) => {
+            const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
+            const valueB = column === 'playerName' ? b[column].toLowerCase() : b[column];
+
+            if (this.sortDirection === 'asc') {
+                return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+            } else {
+                return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+            }
+        });
+    }
+
+
+
     onRoundsChange(newRounds: number): void {
 
         this.selectedRounds = newRounds; // Update the selected number of rounds
