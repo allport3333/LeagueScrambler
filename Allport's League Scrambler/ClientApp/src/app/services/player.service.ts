@@ -81,6 +81,11 @@ export class PlayerService {
         );
     }
 
+    getStandingsByLeagueMatchup(leagueName: string): Observable<PlayerScoresResponse> {
+        return this.httpClient.get<PlayerScoresResponse>(
+            `${this.baseUrl}api/ScrambleData/GetByLeagueMatchup/${leagueName}`
+        );
+    }
 
     // New method to retrieve KingQueenTeams by ScrambleNumber
     getKingQueenTeamsByScrambleNumber(leagueName: string, scrambleNumber: number): Observable<KingQueenTeamsResponse> {

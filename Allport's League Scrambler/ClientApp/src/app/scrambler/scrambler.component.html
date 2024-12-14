@@ -409,9 +409,27 @@
                             <div class="tab-content d-flex flex-column align-items-center">
                                 <h5 class="mb-2">Player Standings</h5>
 
+                                <!-- Button -->
+                                <button mat-raised-button color="primary" (click)="toggleStandingsType()" style="margin-bottom: 16px;">
+                                    {{ standingsType === 'round' ? 'Show Standings by Matchup' : 'Show Standings by Round' }}
+                                </button>
+
+                                <!-- Dropdown -->
+                                <div style="margin-top: 5px;">
+                                    <mat-form-field appearance="outline" id="drop-scores-select" style="width: 200px;">
+                                        <mat-label>Drop Lowest Scores</mat-label>
+                                        <mat-select (selectionChange)="onDropLowestChange($event.value)">
+                                            <mat-option [value]="0">Don't Drop Any</mat-option>
+                                            <mat-option *ngFor="let i of [1, 2, 3, 4, 5, 6]" [value]="i">
+                                                Drop {{ i }} {{ i === 1 ? 'Score' : 'Scores' }}
+                                            </mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+
                                 <!-- Standings Tables -->
                                 <div class="d-flex flex-column flex-md-row justify-content-between w-100"
-                                     style="gap: 20px; margin-top: 20px; flex-wrap: wrap;">
+                                     style="gap: 20px; margin-top: 5px; flex-wrap: wrap;">
                                     <!-- Male Standings -->
                                     <div class="standings-table"
                                          style="width: 100%; flex: 1; min-width: 300px; padding: 10px;">
@@ -421,20 +439,20 @@
                                                    style="width: 100%; table-layout: fixed; font-size: 0.75rem;">
                                                 <thead>
                                                     <tr>
-                                                        <th style="width: 20%; padding: 4px; cursor: pointer;" (click)="sortMaleStandings('playerName')">
+                                                        <th style="width: 20%; padding: 4px; cursor: pointer;" (click)="sortStandings('playerName')">
                                                             Player Name
                                                             <mat-icon *ngIf="sortColumn === 'playerName'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                                             </mat-icon>
                                                         </th>
-                                                        <th *ngFor="let round of standingsRounds" style="width: 10%; padding: 4px;">Round {{ round }}</th>
-                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortMaleStandings('totalScore')">
+                                                        <th *ngFor="let round of standingsRounds" style="width: 10%; padding: 4px;"> {{ standingsType === 'matchup' ? 'Matchup' : 'Round' }} {{ round }}</th>
+                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScore')">
                                                             Total Points
                                                             <mat-icon *ngIf="sortColumn === 'totalScore'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                                             </mat-icon>
                                                         </th>
-                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortMaleStandings('totalWins')">
+                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortStandings('totalWins')">
                                                             Total Wins
                                                             <mat-icon *ngIf="sortColumn === 'totalWins'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
@@ -445,7 +463,12 @@
                                                 <tbody>
                                                     <tr *ngFor="let player of maleStandings">
                                                         <td style="padding: 2px;">{{ player.playerName }}</td>
-                                                        <td *ngFor="let score of player.scores" style="padding: 2px;">{{ score.score }}</td>
+                                                        <td *ngFor="let score of player.scores"
+                                                            [style.color]="score.isDropped ? 'red' : 'inherit'"
+                                                            [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
+                                                            style="padding: 2px;">
+                                                            {{ score.score }}
+                                                        </td>
                                                         <td style="padding: 2px;">{{ player.totalScore }}</td>
                                                         <td style="padding: 2px;">{{ player.totalWins }}</td>
                                                     </tr>
@@ -463,20 +486,20 @@
                                                    style="width: 100%; table-layout: fixed; font-size: 0.75rem;">
                                                 <thead>
                                                     <tr>
-                                                        <th style="width: 20%; padding: 4px; cursor: pointer;" (click)="sortFemaleStandings('playerName')">
+                                                        <th style="width: 20%; padding: 4px; cursor: pointer;" (click)="sortStandings('playerName')">
                                                             Player Name
                                                             <mat-icon *ngIf="sortColumn === 'playerName'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                                             </mat-icon>
                                                         </th>
-                                                        <th *ngFor="let round of standingsRounds" style="width: 10%; padding: 4px;">Round {{ round }}</th>
-                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortFemaleStandings('totalScore')">
+                                                        <th *ngFor="let round of standingsRounds" style="width: 10%; padding: 4px;"> {{ standingsType === 'matchup' ? 'Matchup' : 'Round' }} {{ round }}</th>
+                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScore')">
                                                             Total Points
                                                             <mat-icon *ngIf="sortColumn === 'totalScore'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                                             </mat-icon>
                                                         </th>
-                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortFemaleStandings('totalWins')">
+                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortStandings('totalWins')">
                                                             Total Wins
                                                             <mat-icon *ngIf="sortColumn === 'totalWins'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
@@ -487,7 +510,12 @@
                                                 <tbody>
                                                     <tr *ngFor="let player of femaleStandings">
                                                         <td style="padding: 2px;">{{ player.playerName }}</td>
-                                                        <td *ngFor="let score of player.scores" style="padding: 2px;">{{ score.score }}</td>
+                                                        <td *ngFor="let score of player.scores"
+                                                            [style.color]="score.isDropped ? 'red' : 'inherit'"
+                                                            [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
+                                                            style="padding: 2px;">
+                                                            {{ score.score }}
+                                                        </td>
                                                         <td style="padding: 2px;">{{ player.totalScore }}</td>
                                                         <td style="padding: 2px;">{{ player.totalWins }}</td>
                                                     </tr>
@@ -498,11 +526,7 @@
                                 </div>
                             </div>
                         </mat-card>
-
-
                     </mat-tab>
-
-
 
                     <mat-tab label="Add Player">
                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">

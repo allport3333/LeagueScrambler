@@ -108,6 +108,7 @@ export class ScramblerComponent implements OnInit {
     isMale1: boolean;
     completeRandom: false;
     playerLoading: boolean;
+    lastResult: any;
     leagueName: string;
     selectedLeague: string;
     standings: PlayerScoreGroup[];
@@ -288,84 +289,139 @@ export class ScramblerComponent implements OnInit {
             this.playerLoading = false;
         });
 
+        this.initializeStandings();
+
+
+    }
+
+    initializeStandings(): void {
         this.playerService.getStandingsByLeague(this.selectedLeague).subscribe(
             result => {
-                this.standings = result.playerScores; // Save grouped scores
-
-                // Separate standings by gender
-                this.maleStandings = this.standings.filter(player => player.isMale);
-                this.femaleStandings = this.standings.filter(player => !player.isMale);
-                // Calculate total scores for each player (regardless of the number of rounds played)
-                this.maleStandings = this.maleStandings
-                    .map(player => {
-                        let totalScore = 0;
-                        let totalWins = 0;
-                        for (let i = 0; i < player.scores.length; i++) {
-                            if (player.scores[i] && player.scores[i].score) {
-                                totalScore += player.scores[i].score;
-                            }
-                            if (player.scores[i] && player.scores[i].roundWon) {
-                                totalWins += 1; // Increment total wins if roundWon is true
-                            }
-                        }
-                        return {
-                            ...player,
-                            totalScore: totalScore,
-                            totalWins: totalWins
-                        };
-                    })
-                    .sort((a, b) => {
-                        // Sort by total wins descending, then by total score descending
-                        if (b.totalWins !== a.totalWins) {
-                            return b.totalWins - a.totalWins;
-                        }
-                        return b.totalScore - a.totalScore;
-                    });
-
-                this.femaleStandings = this.femaleStandings
-                    .map(player => {
-                        let totalScore = 0;
-                        let totalWins = 0;
-                        for (let i = 0; i < player.scores.length; i++) {
-                            if (player.scores[i] && player.scores[i].score) {
-                                totalScore += player.scores[i].score;
-                            }
-                            if (player.scores[i] && player.scores[i].roundWon) {
-                                totalWins += 1; // Increment total wins if roundWon is true
-                            }
-                        }
-                        return {
-                            ...player,
-                            totalScore: totalScore,
-                            totalWins: totalWins
-                        };
-                    })
-                    .sort((a, b) => {
-                        // Sort by total wins descending, then by total score descending
-                        if (b.totalWins !== a.totalWins) {
-                            return b.totalWins - a.totalWins;
-                        }
-                        return b.totalScore - a.totalScore;
-                    });
-
-
-                // Generate standingsRounds array
-                this.standingsRounds = [];
-                for (let i = 0; i < result.maxRounds; i++) {
-                    this.standingsRounds.push(i + 1);
-                }
-
-                console.log("Standings Rounds:", this.standingsRounds); // Log the rounds array
-                this.initializeStandingsRounds(); // Initialize rounds for standings
-                this.playerLoading = false;
+                this.lastResult = result;
+                this.processStandings(result);
             },
             error => {
                 console.error("Error fetching standings:", error); // Log any errors
                 this.playerLoading = false; // Ensure loading state is reset
             }
         );
+    }
 
+    standingsType: 'round' | 'matchup' = 'round'; // Default to 'round'
 
+    toggleStandingsType(): void {
+        if (this.standingsType === 'round') {
+            this.standingsType = 'matchup';
+            this.playerService.getStandingsByLeagueMatchup(this.selectedLeague).subscribe(
+                result => {
+                    this.lastResult = result;
+                    console.log('standings by amtchup', result);
+                    this.processStandings(result); // Reuse processStandings logic
+                },
+                error => {
+                    console.error("Error fetching matchup standings:", error);
+                    this.playerLoading = false;
+                }
+            );
+        } else {
+            this.standingsType = 'round';
+            this.playerService.getStandingsByLeague(this.selectedLeague).subscribe(
+                result => {
+                    this.lastResult = result;
+                    console.log('standings by league', result);
+                    this.processStandings(result); // Reuse processStandings logic
+                },
+                error => {
+                    console.error("Error fetching round standings:", error);
+                    this.playerLoading = false;
+                }
+            );
+        }
+    }
+
+    onDropLowestChange(selectedDrop: string): void {
+        const dropLowest = parseInt(selectedDrop, 10); // Convert the string to a number
+        this.processStandings(this.lastResult, dropLowest); // Pass the number of scores to drop
+        this.sortStandingsWithDropped('totalScore');
+    }
+    private processStandings(result: any, dropLowestNumber: number = 0): void {
+        this.standings = result.playerScores; // Save grouped scores
+
+        // Separate standings by gender
+        this.maleStandings = this.standings.filter(player => player.isMale);
+        this.femaleStandings = this.standings.filter(player => !player.isMale);
+
+        // Calculate total scores and wins for each player
+        const calculateStandings = (standings: any[]) => standings
+            .map(player => {
+                // Sort scores in ascending order (for dropping the lowest ones)
+                const sortedScores = player.scores
+                    .slice()
+                    .sort((a, b) => a.score - b.score); // Ascending order
+
+                // Mark the lowest scores to drop
+                const updatedScores = player.scores.map(score => ({
+                    ...score,
+                    isDropped: sortedScores.indexOf(score) < dropLowestNumber // Mark as dropped if in the lowest range
+                }));
+
+                // Calculate total scores and wins excluding the dropped scores
+                const totalScore = updatedScores
+                    .filter(score => !score.isDropped)
+                    .reduce((sum, score) => sum + score.score, 0);
+
+                const totalWins = updatedScores
+                    .filter(score => !score.isDropped)
+                    .reduce((sum, score) => sum + score.roundWon, 0);
+
+                return {
+                    ...player,
+                    scores: updatedScores, // Include updated scores with the isDropped property
+                    totalScore: totalScore,
+                    totalWins: totalWins
+                };
+            })
+            .sort((a, b) => {
+                // Sort by total wins descending, then by total score descending
+                if (b.totalWins !== a.totalWins) {
+                    return b.totalWins - a.totalWins;
+                }
+                return b.totalScore - a.totalScore;
+            });
+
+        this.maleStandings = calculateStandings(this.maleStandings);
+        this.femaleStandings = calculateStandings(this.femaleStandings);
+
+        // Generate standingsRounds array
+        this.standingsRounds = [];
+        for (let i = 0; i < result.maxRounds; i++) {
+            this.standingsRounds.push(i + 1);
+        }
+
+        console.log("Standings Rounds:", this.standingsRounds); // Log the rounds array
+        this.initializeStandingsRounds(); // Initialize rounds for standings
+        this.playerLoading = false;
+    }
+
+    sortStandings(column: string) {
+        if (this.sortColumn === column) {
+            // Toggle sort direction if the same column is clicked
+            this.sortDirection = this.sortDirection === 'desc' ? 'asc' : 'desc';
+        } else {
+            // Set new column and default to ascending
+            this.sortColumn = column;
+            this.sortDirection = 'desc';
+        }
+        this.sortMaleStandings(column);
+        this.sortFemaleStandings(column);
+    }
+
+    sortStandingsWithDropped(column: string) {
+
+        this.sortDirection = 'desc';
+        
+        this.sortMaleStandings(column);
+        this.sortFemaleStandings(column);
     }
 
     sortColumn: string = ''; // Currently sorted column
@@ -373,14 +429,7 @@ export class ScramblerComponent implements OnInit {
 
     // Sorting for male standings
     sortMaleStandings(column: string) {
-        if (this.sortColumn === column) {
-            // Toggle sort direction if the same column is clicked
-            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            // Set new column and default to ascending
-            this.sortColumn = column;
-            this.sortDirection = 'asc';
-        }
+
 
         this.maleStandings = [...this.maleStandings].sort((a, b) => {
             const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
@@ -396,13 +445,6 @@ export class ScramblerComponent implements OnInit {
 
     // Sorting for female standings
     sortFemaleStandings(column: string) {
-        if (this.sortColumn === column) {
-            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            this.sortColumn = column;
-            this.sortDirection = 'asc';
-        }
-
         this.femaleStandings = [...this.femaleStandings].sort((a, b) => {
             const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
             const valueB = column === 'playerName' ? b[column].toLowerCase() : b[column];
@@ -428,33 +470,60 @@ export class ScramblerComponent implements OnInit {
         // Update rounds array
         this.rounds = Array.from({ length: this.selectedRounds }, (_, index) => index + 1);
 
-        // Ensure `listOfTeams` is defined and has elements
-        if (!this.listOfTeams || this.listOfTeams.length === 0) {
-            console.warn('listOfTeams is not defined or empty.');
+        const team = (this.retrievedListOfTeams && this.retrievedListOfTeams.length > 0)
+            ? this.retrievedListOfTeams
+            : this.listOfTeams;
+
+        // Ensure `team` is defined and has elements
+        if (!team || team.length === 0) {
+            console.warn('No teams available to update round scores.');
             return;
         }
 
-        // Adjust scores for each team
-        this.listOfTeams.forEach(team => {
+        team.forEach(team => {
             // Ensure `roundScores[team.kingQueenTeamId]` is initialized
             if (!this.roundScores[team.kingQueenTeamId]) {
                 this.roundScores[team.kingQueenTeamId] = [];
+                console.log(`Initialized roundScores for Team ID: ${team.kingQueenTeamId}`);
             }
 
-            if (this.roundScores[team.kingQueenTeamId].length > this.selectedRounds) {
+            const existingScores = this.roundScores[team.kingQueenTeamId];
+            const existingRounds = existingScores.length;
+
+            if (existingRounds > this.selectedRounds) {
                 // Trim excess rounds
-                this.roundScores[team.kingQueenTeamId] = this.roundScores[team.kingQueenTeamId].slice(0, this.selectedRounds);
-            } else {
-                // Add additional rounds
-                while (this.roundScores[team.kingQueenTeamId].length < this.selectedRounds) {
+                console.log(
+                    `Trimming excess rounds for Team ID: ${team.kingQueenTeamId}. Original:`,
+                    existingScores
+                );
+                this.roundScores[team.kingQueenTeamId] = existingScores.slice(0, this.selectedRounds);
+                console.log(`After Trim:`, this.roundScores[team.kingQueenTeamId]);
+            } else if (existingRounds < this.selectedRounds) {
+                // Add missing rounds, preserving existing scores
+                console.log(
+                    `Adding missing rounds for Team ID: ${team.kingQueenTeamId}. Existing:`,
+                    existingScores
+                );
+                for (let i = existingRounds; i < this.selectedRounds; i++) {
                     this.roundScores[team.kingQueenTeamId].push({ RoundScore: 0, RoundWon: false });
                 }
+                console.log(
+                    `After Adding Rounds:`,
+                    this.roundScores[team.kingQueenTeamId]
+                );
+            } else {
+                // No changes needed if rounds match
+                console.log(
+                    `Rounds for Team ID: ${team.kingQueenTeamId} are already aligned.`
+                );
             }
         });
 
+        // Final debug outputs
         console.log('Updated Rounds:', this.rounds);
-        console.log('Updated Scores:', this.roundScores);
+        console.log('Final roundScores:', this.roundScores);
     }
+
 
 
 
@@ -788,9 +857,10 @@ export class ScramblerComponent implements OnInit {
         const config = new MatSnackBarConfig();
         config.verticalPosition = 'top'; // Set the vertical position to center
         config.horizontalPosition = 'center'; // Set the horizontal position to center
-
+        config.duration = 5000;
         if (error) {
             this.snackBar.open(message, 'Close', {
+                duration: 5000,
                 verticalPosition: 'top',
                 horizontalPosition: 'center',
                 panelClass: ['red-snackbar']
@@ -1108,26 +1178,53 @@ export class ScramblerComponent implements OnInit {
         this.totalLowPlayers = this.totalLowPlayers.filter(player => player.isLowPlayer);
     }
 
-    getRoundScore(teamId: number, roundIndex: number): { RoundScore: number; RoundWon: boolean } {
-        return (
-            (this.roundScores[teamId] && this.roundScores[teamId][roundIndex]) || { RoundScore: 0, RoundWon: false }
-        );
-    }
 
-    updateRoundScore(teamId: number, roundId: number, value: number): void {
-        const score = this.getScore(teamId, roundId);
+
+    updateRoundScore(teamId: number, roundIndex: number, value: number): void {
+        // Ensure `roundScores[teamId]` is initialized
+        if (!this.roundScores[teamId]) {
+            this.roundScores[teamId] = [];
+            console.log(`Initialized roundScores for Team ID: ${teamId}`);
+        }
+
+        // Ensure `roundScores[teamId]` has enough rounds
+        while (this.roundScores[teamId].length <= roundIndex) {
+            this.roundScores[teamId].push({ RoundScore: 0, RoundWon: false });
+        }
+
+        // Update the specified round score
+        this.roundScores[teamId][roundIndex].RoundScore = value;
+        console.log(`Updated RoundScores for Team ID ${teamId} at Round Index ${roundIndex}:`, this.roundScores[teamId][roundIndex]);
+
+        // Update the corresponding `kingQueenRoundScores` if it exists
+        const score = this.kingQueenRoundScores.find(
+            s => s.kingQueenTeamId === teamId && s.roundId === roundIndex // Assume roundId matches the round index + 1
+        );
+
         if (score) {
-            score.roundScore = value; // Update the round score
-            console.log(`Updated Round Score:`, {
-                id: score.id, // Include the KingQueenRoundScores.id in logs
+            score.roundScore = value;
+            console.log(`Updated KingQueenRoundScores:`, {
+                id: score.id,
                 teamId: teamId,
-                roundId: roundId,
+                roundId: roundIndex,
                 newScore: value
             });
         } else {
-            console.warn(`Score not found for teamId: ${teamId}, roundId: ${roundId}`);
+            // Add a new score to `kingQueenRoundScores` if not found
+            const newScore = {
+                id: 0, // Assuming ID is managed elsewhere
+                kingQueenTeamId: teamId,
+                roundId: roundIndex, // Match round index to roundId
+                roundScore: value,
+                roundWon: false // Default value
+            };
+            this.kingQueenRoundScores.push(newScore);
+            console.log(`Added New Score to KingQueenRoundScores:`, newScore);
         }
     }
+
+
+
 
     updateRoundWon(teamId: number, roundId: number, value: boolean): void {
         const score = this.getScore(teamId, roundId);
@@ -1186,8 +1283,17 @@ export class ScramblerComponent implements OnInit {
             this.selectedLeague        // Selected league name
         ).subscribe(
             result => {
-                // Handle success response
-                console.log('Round scores saved successfully:', result);
+                this.snackBar
+                    .open('Standings have been saved.', 'OK', {
+                        duration: 5000, // Optional: Auto-close after 5 seconds
+                        verticalPosition: 'top',
+                        horizontalPosition: 'center',
+                    })
+                    .onAction() // Wait for the user to click the "OK" button
+                    .subscribe(() => {
+                        // Run `this.initializeStandings()` after clicking "OK"
+                        this.initializeStandings();
+                    });
             },
             error => {
                 // Handle error response
