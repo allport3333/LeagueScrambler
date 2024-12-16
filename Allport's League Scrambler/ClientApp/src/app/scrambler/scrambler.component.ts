@@ -1240,6 +1240,7 @@ export class ScramblerComponent implements OnInit {
     retrieveScramble(scramble: KingQueenTeam) {
         this.showSaveRoundScores = true;
         this.retrievedListOfTeams = [];
+
         this.playerService.getKingQueenTeamsByScrambleNumber(this.selectedLeague, scramble.scrambleNumber).subscribe(
             (response) => {
                 // Initialize your list of teams
