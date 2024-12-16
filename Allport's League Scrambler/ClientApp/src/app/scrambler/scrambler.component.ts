@@ -1288,12 +1288,10 @@ export class ScramblerComponent implements OnInit {
                         duration: 5000, // Optional: Auto-close after 5 seconds
                         verticalPosition: 'top',
                         horizontalPosition: 'center',
-                    })
-                    .onAction() // Wait for the user to click the "OK" button
-                    .subscribe(() => {
-                        // Run `this.initializeStandings()` after clicking "OK"
-                        this.initializeStandings();
                     });
+
+                this.initializeStandings(); // This will run immediately after showing the snackbar
+
             },
             error => {
                 // Handle error response
@@ -1301,6 +1299,35 @@ export class ScramblerComponent implements OnInit {
             }
         );
     }
+
+    calculateTotalScore(teamId: number): number {
+        let total = 0;
+
+        // Iterate through all rounds and sum their scores for the given team
+        this.rounds.forEach(round => {
+            const score = this.getScore(teamId, round); // Use getScore to fetch the round data
+            if (score && score.roundScore) {
+                total += parseFloat(score.roundScore) || 0; // Ensure the score is treated as a number
+            }
+        });
+
+        return total; // Return the computed total score
+    }
+
+    calculateTotalWins(teamId: number): number {
+        let totalWins = 0;
+
+        // Iterate through all rounds and count wins for the given team
+        this.rounds.forEach(round => {
+            const score = this.getScore(teamId, round); // Use getScore to fetch the round data
+            if (score && score.roundWon) {
+                totalWins += 1; // Increment total wins if the round is won
+            }
+        });
+
+        return totalWins; // Return the computed total wins
+    }
+
 
 
     retrieveMultipleScrambles() {
