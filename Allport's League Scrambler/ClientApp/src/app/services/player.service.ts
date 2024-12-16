@@ -112,7 +112,6 @@ export class PlayerService {
             roundScores: roundScores
         };
 
-        console.log('request', request);
         // Send the request and expect a response of type KingQueenRoundScoresResponse
         return this.httpClient.post<KingQueenRoundScoresResponse>(
             `${this.baseUrl}api/ScrambleData/SaveKingQueenRoundScores/${leagueName}`,

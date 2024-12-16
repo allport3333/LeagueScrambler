@@ -162,8 +162,8 @@
         <div class="col-12">
             <mat-card class=" ml-3 mt-2 " style="background-color:lightgray; ">
 
-                <mat-tab-group mat-align-tabs="center">
-                    <mat-tab label="Select Players">
+                <mat-tab-group mat-align-tabs="center" #tabGroup>
+                    <mat-tab label="Select Players" *ngIf="selectedLeague">
                         <div class="container-fluid">
                             <div class="row">
 
@@ -366,7 +366,7 @@
 
                         </div>
                     </mat-tab>
-                    <mat-tab label="Retrieve Scramble">
+                    <mat-tab label="Retrieve Scramble" *ngIf="selectedLeague">
                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <div class="tab-content d-flex flex-column align-items-center">
                                 <h5 class="mb-2">Retrieve Previous Scramble</h5>
@@ -417,7 +417,7 @@
                         </mat-card>
                     </mat-tab>
                     <!-- New Dropdown Retrieve Scramble Tab -->
-                    <mat-tab label="Manage Scores">
+                    <mat-tab label="Manage Scores" *ngIf="selectedLeague">
                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <div class="tab-content d-flex flex-column align-items-center">
                                 <h5 class="mb-2">Select Scramble to Retrieve</h5>
@@ -584,7 +584,7 @@
 
                         </mat-card>
                     </mat-tab>
-                    <mat-tab label="Standings">
+                    <mat-tab label="Standings" *ngIf="selectedLeague">
                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <div class="tab-content d-flex flex-column align-items-center">
                                 <h5 class="mb-2">Player Standings</h5>
@@ -716,7 +716,7 @@
                             <!-- Nested Mat Tab Group -->
                             <mat-tab-group>
                                 <!-- Add Player Tab -->
-                                <mat-tab label="Add Player">
+                                <mat-tab label="Add Player" *ngIf="selectedLeague">
                                     <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                         <div class="tab-content d-flex flex-column align-items-center">
                                             <h5 class="mb-2">Enter New Player</h5>
@@ -766,7 +766,7 @@
                                 </mat-tab>
 
 
-                                <mat-tab label="Delete Player" class="mt-2">
+                                <mat-tab label="Delete Player" class="mt-2" *ngIf="selectedLeague">
                                     <div class="container-fluid">
                                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                             <h5 class="text-center">Delete Player</h5>
