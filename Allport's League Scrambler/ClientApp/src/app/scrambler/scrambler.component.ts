@@ -34,6 +34,8 @@ export class ScramblerComponent implements OnInit {
     kingQueenRoundScores: KingQueenRoundScore[] = [];
     selectedMatchupsPerPage: string = '2';
     showSaveRoundScores: boolean = false;
+    allowScrambleWithNoDuplicates: boolean = false;
+    retrievedPlayersBefore: boolean = false;
     hideEverything: boolean;
     totalPlayers: Player[];
     players: Player[];
@@ -76,6 +78,12 @@ export class ScramblerComponent implements OnInit {
     password: Password;
     passwordLeague: Password;
     passwordDelete: Password;
+    teamsNeededTwo: number = 0;
+    teamsNeededThree: number = 0;
+    teamsNeededFour: number = 0;
+    remainderTwo: number = 0;
+    remainderThree: number = 0;
+    remainderFour: number = 0;
     listOfScrambleNumbers: number[] = [];
     listOfRetrievedScrambleNumbers: number[] = [];
     listOfByePlayers: Player[] = [];
@@ -265,6 +273,7 @@ export class ScramblerComponent implements OnInit {
         this.standings = [];
         this.maleStandings = [];
         this.femaleStandings = [];
+        this.standingsRounds = [];
     }
 
     selectLeague() {
@@ -516,7 +525,20 @@ export class ScramblerComponent implements OnInit {
 
     }
 
+    // Method to calculate teams based on selected players
+    calculateTeamsNeeded(): void {
+        const totalPlayers = this.selectedList.length;
 
+        // Calculate the number of teams and remainder for each team size
+        this.teamsNeededTwo = Math.floor(totalPlayers / 2);
+        this.remainderTwo = totalPlayers % 2;
+
+        this.teamsNeededThree = Math.floor(totalPlayers / 3);
+        this.remainderThree = totalPlayers % 3;
+
+        this.teamsNeededFour = Math.floor(totalPlayers / 4);
+        this.remainderFour = totalPlayers % 4;
+    }
 
 
     addPlayer(player) {
@@ -534,6 +556,7 @@ export class ScramblerComponent implements OnInit {
 
         this.malePlayerCount = this.malePlayersDisplayCount.length;
         this.femalePlayerCount = this.femalePlayersDisplayCount.length;
+        this.calculateTeamsNeeded();
     }
 
     updateScrambleNumbers(selectedItems: any[]) {
@@ -656,6 +679,7 @@ export class ScramblerComponent implements OnInit {
 
     deselectAllPlayers() {
         this.selectedList = [];
+        this.calculateTeamsNeeded();
     }
     selectAllPlayers() {
         // Clear the selected list first
@@ -679,7 +703,7 @@ export class ScramblerComponent implements OnInit {
         this.malePlayerCount = this.malePlayers1.filter(player => !/open/i.test(player.firstName)).length;
         this.femalePlayerCount = this.femalePlayers1.filter(player => !/open/i.test(player.firstName)).length;
 
-
+        this.calculateTeamsNeeded();
     }
 
 
@@ -1055,6 +1079,15 @@ export class ScramblerComponent implements OnInit {
     //    }
     //}
 
+    updateNumberOfPlayersNeeded(): void {
+        const maxPlayers = Math.max(this.displayTopPlayers.length, this.displayLowPlayers.length);
+
+        this.numberOfPlayersNeededTwo = maxPlayers * 2;
+        this.numberOfPlayersNeededThree = maxPlayers * 3;
+        this.numberOfPlayersNeededFour = maxPlayers * 4;
+    }
+
+
     addPlayerToTopPlayerList(player: Player) {
 
         if (player.isLowPlayer) {
@@ -1075,9 +1108,7 @@ export class ScramblerComponent implements OnInit {
 
             // Update other variables as needed.
             this.displayTopPlayers = this.totalTopPlayers;
-            this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
-            this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
-            this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
+            this.updateNumberOfPlayersNeeded(); // Update counts
         }
         else {
             player.isTopPlayer = true;
@@ -1104,9 +1135,7 @@ export class ScramblerComponent implements OnInit {
             player.isTopPlayer = false;
 
             this.displayTopPlayers = this.totalTopPlayers;
-            this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
-            this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
-            this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
+            this.updateNumberOfPlayersNeeded(); // Update counts
 
         } else {
             player.isTopPlayer = false;
@@ -1132,9 +1161,7 @@ export class ScramblerComponent implements OnInit {
 
             // Update other variables as needed.
             this.displayLowPlayers = this.totalLowPlayers;
-            this.numberOfPlayersNeededTwo = this.displayLowPlayers.length * 2;
-            this.numberOfPlayersNeededThree = this.displayLowPlayers.length * 3;
-            this.numberOfPlayersNeededFour = this.displayLowPlayers.length * 4;
+            this.updateNumberOfPlayersNeeded(); // Update counts
         }
         else {
             player.isLowPlayer = true;
@@ -1160,9 +1187,7 @@ export class ScramblerComponent implements OnInit {
             player.isLowPlayer = false;
 
             this.displayLowPlayers = this.totalLowPlayers;
-            this.numberOfPlayersNeededTwo = this.displayLowPlayers.length * 2;
-            this.numberOfPlayersNeededThree = this.displayLowPlayers.length * 3;
-            this.numberOfPlayersNeededFour = this.displayLowPlayers.length * 4;
+            this.updateNumberOfPlayersNeeded(); // Update counts
 
         } else {
             player.isLowPlayer = false;
@@ -1220,6 +1245,8 @@ export class ScramblerComponent implements OnInit {
 
 
     retrieveScramble(scramble: KingQueenTeam) {
+        this.retrievedPlayersBefore = true;
+        this.allowScrambleWithNoDuplicates = true;
         this.showSaveRoundScores = true;
         this.retrievedListOfTeams = [];
 
@@ -1312,6 +1339,8 @@ export class ScramblerComponent implements OnInit {
 
 
     retrieveMultipleScrambles() {
+        this.retrievedPlayersBefore = true;
+        this.allowScrambleWithNoDuplicates = true;
         this.showSaveRoundScores = false;
         this.playerService.getMultipleKingQueenTeamsByScrambleNumbers(this.selectedLeague, this.listOfScrambleNumbers).subscribe(
             (response) => {
@@ -1603,9 +1632,10 @@ export class ScramblerComponent implements OnInit {
                 }
             }
 
-            // Step 3: If all teams are balanced, add the player to the smallest team
+            // Step 3: If all teams are balanced, add the player to the smallest teams at random
             if (bestTeam == null) {
-                bestTeam = smallestTeams[0];
+                const randomIndex = Math.floor(Math.random() * smallestTeams.length);
+                bestTeam = smallestTeams[randomIndex];
             }
             // Step 4: Add the player to the selected team
             if (nonDuplicates) {
@@ -1632,42 +1662,51 @@ export class ScramblerComponent implements OnInit {
         }
 
         // Step 5: Rebalance team sizes after all players are added
-        this.rebalanceTeams();
+        //this.rebalanceTeams();
 
         return true; // Return true if selection was successful
     }
 
+    //This will break my nonduplicate players scramble
+    //rebalanceTeams(): void {
+    //    const maxTeamSize = Math.max(...this.listOfTeams.map(team => team.players.length));
+    //    const minTeamSize = Math.min(...this.listOfTeams.map(team => team.players.length));
 
-    rebalanceTeams(): void {
-        const maxTeamSize = Math.max(...this.listOfTeams.map(team => team.players.length));
-        const minTeamSize = Math.min(...this.listOfTeams.map(team => team.players.length));
+    //    // Track already moved players to avoid duplicates
+    //    const movedPlayers = new Set<number>(); // Assume player has a unique `id` property
 
-        // While the difference between the largest and smallest teams is greater than 1
-        while (maxTeamSize - minTeamSize > 1) {
-            // Find the largest and smallest teams
-            const largestTeam = this.listOfTeams.find(team => team.players.length === maxTeamSize);
-            const smallestTeam = this.listOfTeams.find(team => team.players.length === minTeamSize);
+    //    // While the difference between the largest and smallest teams is greater than 1
+    //    while (maxTeamSize - minTeamSize > 1) {
+    //        // Find the largest and smallest teams
+    //        const largestTeam = this.listOfTeams.find(team => team.players.length === maxTeamSize);
+    //        const smallestTeam = this.listOfTeams.find(team => team.players.length === minTeamSize);
 
-            // If the largest team has more players than the smallest team
-            if (largestTeam && smallestTeam) {
-                // Remove a player from the largest team
-                const playerToMove = largestTeam.players.pop();
+    //        if (largestTeam && smallestTeam) {
+    //            // Find a player to move who hasn't been moved before
+    //            const playerToMove = largestTeam.players.find(player => !movedPlayers.has(player.id));
 
-                // Add the player to the smallest team
-                if (playerToMove) {
-                    smallestTeam.players.push(playerToMove);
-                }
-            }
+    //            // Add the player to the smallest team if it's not a duplicate
+    //            if (playerToMove) {
+    //                const isDuplicate = smallestTeam.players.some(player => player.id === playerToMove.id);
 
-            // Recalculate the max and min team sizes
-            const updatedMaxTeamSize = Math.max(...this.listOfTeams.map(team => team.players.length));
-            const updatedMinTeamSize = Math.min(...this.listOfTeams.map(team => team.players.length));
+    //                if (!isDuplicate) {
+    //                    smallestTeam.players.push(playerToMove);
+    //                    movedPlayers.add(playerToMove.id); // Mark the player as moved
+    //                    largestTeam.players = largestTeam.players.filter(player => player.id !== playerToMove.id);
+    //                }
+    //            }
+    //        }
 
-            if (updatedMaxTeamSize === maxTeamSize && updatedMinTeamSize === minTeamSize) {
-                break; // Break out of the loop if no changes were made
-            }
-        }
-    }
+    //        // Recalculate the max and min team sizes
+    //        const updatedMaxTeamSize = Math.max(...this.listOfTeams.map(team => team.players.length));
+    //        const updatedMinTeamSize = Math.min(...this.listOfTeams.map(team => team.players.length));
+
+    //        if (updatedMaxTeamSize === maxTeamSize && updatedMinTeamSize === minTeamSize) {
+    //            break; // Break out of the loop if no changes were made
+    //        }
+    //    }
+    //}
+
 
     reorderMatchups(): void {
         // Group teams by gender composition
@@ -1895,6 +1934,9 @@ export class ScramblerComponent implements OnInit {
     }
 
     async scramblePlayers(nonDuplicates: boolean = false) {
+        if (nonDuplicates) {
+            this.allowScrambleWithNoDuplicates = false;
+        }
         this.showSaveRoundScores = false;
         this.totalTopPlayers = this.displayTopPlayers;
         this.totalLowPlayers = this.displayLowPlayers;
