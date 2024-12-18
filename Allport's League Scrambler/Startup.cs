@@ -1,3 +1,4 @@
+using dotenv.net;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Net.Mail;
 using System.Text;
 
 namespace Allport_s_League_Scrambler
@@ -20,6 +22,8 @@ namespace Allport_s_League_Scrambler
     {
         public Startup(IConfiguration configuration)
         {
+            DotEnv.Load();
+
             Configuration = configuration;
         }
 
@@ -46,6 +50,19 @@ namespace Allport_s_League_Scrambler
                 });
 
             services.AddHttpContextAccessor();
+            string smtpServer = Environment.GetEnvironmentVariable("SMTP_SERVER");
+            string smtpPort = Environment.GetEnvironmentVariable("SMTP_PORT");
+            string smtpUsername = Environment.GetEnvironmentVariable("SMTP_USERNAME");
+            string smtpPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
+
+            services.AddSingleton(new SmtpClient(Environment.GetEnvironmentVariable("SMTP_SERVER"),
+                                                 int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587"))
+            {
+                Credentials = new System.Net.NetworkCredential(
+                    Environment.GetEnvironmentVariable("SMTP_USERNAME"),
+                    Environment.GetEnvironmentVariable("SMTP_PASSWORD")),
+                EnableSsl = true
+            });
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)

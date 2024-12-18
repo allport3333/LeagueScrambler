@@ -36,12 +36,15 @@ namespace Allport_s_League_Scrambler.Controllers
     [Route("api/[controller]")]
     public class LoginController : Controller
     {
-        private IConfiguration _config;
-        private IHttpContextAccessor _httpContextAccessor;
-        public LoginController(IConfiguration config, IHttpContextAccessor httpContextAccessor)
+        private readonly IConfiguration _config;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly SmtpClient _smtpClient;
+
+        public LoginController(IConfiguration config, IHttpContextAccessor httpContextAccessor, SmtpClient smtpClient)
         {
             _config = config;
             _httpContextAccessor = httpContextAccessor;
+            _smtpClient = smtpClient; // Injected SMTP Client
         }
 
         [HttpPost("register")]
@@ -347,40 +350,27 @@ namespace Allport_s_League_Scrambler.Controllers
 
         private async Task SendPasswordResetEmailAsync(string email, string resetToken)
         {
-            // Configure your email settings (SMTP server, port, credentials, etc.)
-            string smtpServer = "smtp.gmail.com";
-            int smtpPort = 587;
-            string smtpUsername = "Allport3333@gmail.com";
-            string smtpPassword = "bkhjsbsjktwdedyo";
-
-            using (var client = new SmtpClient(smtpServer))
+            var mail = new MailMessage
             {
-                client.Port = smtpPort;
-                client.Credentials = new NetworkCredential(smtpUsername, smtpPassword);
-                client.EnableSsl = true;
+                From = new MailAddress("LeagueScrambler@gmail.com"), // Replace with the sender's email
+                Subject = "Password Reset For League Scrambler",
+                Body = $"Click the following link to reset your password for your login to LeagueScrambler: http://leaguescrambler.hopto.org/resetpassword?token={resetToken}",
+                IsBodyHtml = false
+            };
 
-                var mail = new MailMessage
-                {
-                    From = new MailAddress("LeagueScrambler@gmail.com"),
-                    Subject = "Password Reset For League Scrambler",
-                    Body = $"Click the following link to reset your password for your login to LeagueScrambler: https://leaguescrambler.com/resetpassword?token={resetToken}",
-                    IsBodyHtml = false
-                };
+            mail.To.Add(email);
 
-                mail.To.Add(email);
-
-                try
-                {
-                    // Send the email asynchronously
-                    await client.SendMailAsync(mail);
-
-
-                }
-                catch (Exception ex)
-                {
-                    // Handle any exceptions, e.g., log the error
-                    Console.WriteLine("Error sending email: " + ex.Message);
-                }
+            try
+            {
+                // Send the email asynchronously using the injected SmtpClient
+                await _smtpClient.SendMailAsync(mail);
+                Console.WriteLine("Password reset email sent successfully.");
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions (e.g., logging)
+                Console.WriteLine("Error sending email: " + ex.Message);
+                throw; // Rethrow the exception for proper error handling
             }
         }
 
