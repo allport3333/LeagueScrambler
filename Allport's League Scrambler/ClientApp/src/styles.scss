@@ -47,6 +47,43 @@ mat-selection-list.list-horizontal {
     width: auto;
 }
 
+/* Not Selected Style */
+.not-selected {
+    background-color: gray;
+    color: white;
+    text-decoration: line-through;
+    opacity: 0.6;
+    padding-left: 5px;
+    padding-bottom: 5px;
+    padding-top: 5px;
+    padding-right: 80px;
+}
+
+/* Styles for non-selected players */
+.not-selected-blue {
+    background-color: rgba(173, 216, 230, 0.6); /* Dimmed blue */
+    color: gray;
+    text-decoration: line-through;
+    position: relative;
+    padding-left: 5px;
+    padding-bottom: 5px;
+    padding-top: 5px;
+    padding-right: 80px; /* Adjust the padding as needed */
+    opacity: 0.8;
+}
+
+.not-selected-pink {
+    background-color: rgba(255, 182, 193, 0.6); /* Dimmed pink */
+    color: gray;
+    text-decoration: line-through;
+    opacity: 0.8;
+    position: relative;
+    padding-left: 5px;
+    padding-bottom: 5px;
+    padding-top: 5px;
+    padding-right: 80px; /* Adjust the padding as needed */
+}
+
 /* Style for extended background */
 .extended-background-blue {
     position: relative;

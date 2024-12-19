@@ -251,32 +251,32 @@
 
                                                                     <div style="display: flex; align-items: center; gap: 3px;" *ngIf="!isSmallScreen">
                                                                         <!-- Top Player Button -->
-                                                                        <button *ngIf="!player1.isTopPlayer" mat-icon-button style="margin-left: -15px;" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
+                                                                        <button *ngIf="!player1.isTopPlayer" mat-icon-button style="margin-left: -12px;" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
                                                                             <mat-icon>star_border</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isTopPlayer" mat-icon-button style="margin-left: -15px;" (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
+                                                                        <button *ngIf="player1.isTopPlayer" mat-icon-button style="margin-left: -12px;" (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
                                                                             <mat-icon>star</mat-icon>
                                                                         </button>
 
 
                                                                         <!-- Low Player Button -->
-                                                                        <button *ngIf="!player1.isLowPlayer" mat-icon-button style="margin-left: -15px;" (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" matTooltip="Set Low Player">
+                                                                        <button *ngIf="!player1.isLowPlayer" mat-icon-button style="margin-left: -12px;" (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" matTooltip="Set Low Player">
                                                                             <mat-icon>signal_cellular_null</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isLowPlayer" mat-icon-button style="margin-left: -15px;" (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Low Player">
+                                                                        <button *ngIf="player1.isLowPlayer" mat-icon-button style="margin-left: -12px;" (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Low Player">
                                                                             <mat-icon>signal_cellular_4_bar</mat-icon>
                                                                         </button>
 
                                                                         <!-- Bye Player Button -->
-                                                                        <button *ngIf="!player1.isByePlayer" mat-icon-button style="margin-left: -15px;" (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
+                                                                        <button *ngIf="!player1.isByePlayer" mat-icon-button style="margin-left: -12px;" (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
                                                                             <mat-icon>radio_button_unchecked</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isByePlayer" mat-icon-button style="margin-left: -15px;" (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
+                                                                        <button *ngIf="player1.isByePlayer" mat-icon-button style="margin-left: -12px;" (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
                                                                             <mat-icon>cancel</mat-icon>
                                                                         </button>
 
                                                                         <!-- Female Player For a Day Button -->
-                                                                        <button mat-icon-button style="margin-left: -15px;"
+                                                                        <button mat-icon-button style="margin-left: -12px;"
                                                                                 (click)="swapGender(player1); $event.stopPropagation()"
                                                                                 [matTooltip]="player1.isMale ? 'Set Female Player' : 'Set Male Player'">
                                                                             <mat-icon>{{ player1.isMale ? 'male' : 'female' }}</mat-icon>
@@ -331,32 +331,32 @@
 
                                                                     <div style="display: flex; align-items: center; gap: 3px;" *ngIf="!isSmallScreen">
                                                                         <!-- Top Player Button -->
-                                                                        <button *ngIf="!player1.isTopPlayer" mat-icon-button style="margin-left: -15px;" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
+                                                                        <button *ngIf="!player1.isTopPlayer" mat-icon-button style="margin-left: -12px;" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
                                                                             <mat-icon>star_border</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isTopPlayer" mat-icon-button style="margin-left: -15px; " (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
+                                                                        <button *ngIf="player1.isTopPlayer" mat-icon-button style="margin-left: -12px; " (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
                                                                             <mat-icon>star</mat-icon>
                                                                         </button>
 
                                                                         <!-- Low Player Button -->
-                                                                        <button *ngIf="!player1.isLowPlayer" mat-icon-button style="margin-left: -15px; " (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" matTooltip="Set Low Player">
+                                                                        <button *ngIf="!player1.isLowPlayer" mat-icon-button style="margin-left: -12px; " (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" matTooltip="Set Low Player">
                                                                             <mat-icon>signal_cellular_null</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isLowPlayer" mat-icon-button style="margin-left: -15px; " (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Low Player">
+                                                                        <button *ngIf="player1.isLowPlayer" mat-icon-button style="margin-left: -12px; " (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Low Player">
                                                                             <mat-icon>signal_cellular_4_bar</mat-icon>
                                                                         </button>
 
                                                                         <!-- Bye Player Button -->
-                                                                        <button *ngIf="!player1.isByePlayer" mat-icon-button style="margin-left: -15px; " (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
+                                                                        <button *ngIf="!player1.isByePlayer" mat-icon-button style="margin-left: -12px; " (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
                                                                             <mat-icon>radio_button_unchecked</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isByePlayer" mat-icon-button style="margin-left: -15px; " (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
+                                                                        <button *ngIf="player1.isByePlayer" mat-icon-button style="margin-left: -12px; " (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
                                                                             <mat-icon>cancel</mat-icon>
                                                                         </button>
 
 
                                                                         <!-- Male Player For a Day Button -->
-                                                                        <button mat-icon-button style="margin-left: -15px;"
+                                                                        <button mat-icon-button style="margin-left: -12px;"
                                                                                 (click)="swapGender(player1); $event.stopPropagation()"
                                                                                 [matTooltip]="player1.isMale ? 'Set Female Player' : 'Set Male Player'">
                                                                             <mat-icon>{{ player1.isMale ? 'male' : 'female' }}</mat-icon>
@@ -407,54 +407,7 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div *ngIf="(displayTopPlayers.length > 0 || displayLowPlayers.length > 0) && hideInputOptions">
-                                <div class="d-flex flex-column align-items-center">
-                                    <!-- Top Players Section -->
-                                    <div *ngIf="displayTopPlayers.length > 0">
-                                        <h5>Top Players</h5>
-                                        <div class="player-list">
-                                            <ng-container *ngFor="let player of displayTopPlayers">
-                                                <div class="player-item" [ngClass]="{'male-bg': player.isMale, 'female-bg': !player.isMale}">
-                                                    {{ player.firstName }} {{ player.lastName }}
-                                                </div>
-                                            </ng-container>
-                                        </div>
-                                        <div class="text-center" style="font-size: 14px;">
-                                            <h5>Required Players For Top Players</h5>
-                                            <div class="d-flex">
-                                                <p class="mr-3">2 player teams - {{ numberOfPlayersNeededTwo }}</p>
-                                                <p class="mr-3">3 player teams - {{ numberOfPlayersNeededThree }}</p>
-                                                <p>4 player teams - {{ numberOfPlayersNeededFour }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Divider between Top Players and Low Players -->
-                                    <hr style="width: 100%; margin: 10px 0;" *ngIf="displayTopPlayers.length > 0 && displayLowPlayers.length > 0">
-
-                                    <!-- Low Players Section -->
-                                    <div *ngIf="displayLowPlayers.length > 0">
-                                        <h5>Low Players</h5>
-                                        <div class="player-list">
-                                            <ng-container *ngFor="let player of displayLowPlayers">
-                                                <div class="player-item" [ngClass]="{'male-bg': player.isMale, 'female-bg': !player.isMale}">
-                                                    {{ player.firstName }} {{ player.lastName }}
-                                                </div>
-                                            </ng-container>
-                                        </div>
-                                        <div class="text-center" style="font-size: 14px;">
-                                            <h5>Required Players For Low Players</h5>
-                                            <div class="d-flex">
-                                                <p class="mr-3">2 player teams - {{ numberOfPlayersNeededTwo }}</p>
-                                                <p class="mr-3">3 player teams - {{ numberOfPlayersNeededThree }}</p>
-                                                <p>4 player teams - {{ numberOfPlayersNeededFour }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            </div>                            
 
                         </div>
                     </mat-tab>
@@ -938,11 +891,17 @@
                         </h5>
 
                         <div class="player-list text-center">
+                            <!-- Top Players -->
                             <ng-container *ngFor="let player of displayTopPlayers">
-                                <div class="player-item" [ngClass]="{'male-bg': player.isMale, 'female-bg': !player.isMale}">
+                                <div [ngClass]="getPlayerClass(player)"
+                                     style="margin: 10px 10px; padding: 5px; border-radius: 5px;"
+                                     [matTooltip]="!isPlayerInSelectedList(player) ? 'Not Selected' : ''">
                                     {{ player.firstName }} {{ player.lastName }}
                                 </div>
                             </ng-container>
+
+
+
                         </div>
                     </div>
 
@@ -952,13 +911,16 @@
                     <!-- Low Players Section -->
                     <div class="low-players-section" *ngIf="displayLowPlayers.length > 0" style="width: 45%;">
                         <h5 class="text-center">
-                            Low Players
+                            Low Players 
                             <span *ngIf="totalLowPlayers.length > 0">({{ totalLowPlayers.length }})</span>
                         </h5>
 
                         <div class="player-list text-center">
+                            <!-- Low Players -->
                             <ng-container *ngFor="let player of displayLowPlayers">
-                                <div class="player-item" [ngClass]="{'male-bg': player.isMale, 'female-bg': !player.isMale}">
+                                <div [ngClass]="getPlayerClass(player)"
+                                     style="margin: 10px 10px; padding: 5px; border-radius: 5px;"
+                                     [matTooltip]="!isPlayerInSelectedList(player) ? 'Not Selected' : ''">
                                     {{ player.firstName }} {{ player.lastName }}
                                 </div>
                             </ng-container>

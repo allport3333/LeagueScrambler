@@ -90,7 +90,7 @@ export class ScramblerComponent implements OnInit {
     listOfRetrievedScrambleNumbers: number[] = [];
     listOfByePlayers: Player[] = [];
     teamSizePossible: number[] = [2, 3, 4, 5];
-    maxNumberOfTeams: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+    maxNumberOfTeams: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,21,22,23,24,25,26];
     femalePlayerCount: number;
     malePlayerCount: number;
     topPlayerCount: number;
@@ -183,7 +183,6 @@ export class ScramblerComponent implements OnInit {
                 break;
         }
     }
-
 
     initializeStandingsRounds(): void {
         // Flatten all scores manually and sort by roundId
@@ -571,7 +570,7 @@ export class ScramblerComponent implements OnInit {
 
     // Method to calculate teams based on selected players
     calculateTeamsNeeded(): void {
-        const totalPlayers = this.selectedList.length;
+        let totalPlayers = this.selectedList.length - this.byePlayers.length;
 
         // Calculate the number of teams and remainder for each team size
         this.teamsNeededTwo = Math.floor(totalPlayers / 2);
@@ -1032,34 +1031,73 @@ export class ScramblerComponent implements OnInit {
     }
 
     topPlayerScramble(bracketTeamPlayers) {
+        // Select a random top player
         this.randomTopPlayer = this.totalTopPlayers[Math.floor(Math.random() * this.totalTopPlayers.length)];
+
+        // Check if the randomTopPlayer exists in the malePlayers or femalePlayers list
+        const isMaleValid = this.malePlayers.includes(this.randomTopPlayer);
+        const isFemaleValid = this.femalePlayers.includes(this.randomTopPlayer);
+
+        // Only push the player if they are valid
+        if (!isMaleValid && !isFemaleValid) {
+            console.warn("Invalid Top Player! Player does not exist in malePlayers or femalePlayers.");
+            console.log("Invalid Player Details:", this.randomTopPlayer);
+            return; // Exit early without adding the player
+        }
+
+        // Push the player to the bracket team
         bracketTeamPlayers.push(this.randomTopPlayer);
+
+        // Remove the player from totalTopPlayers
         this.totalTopPlayers = this.totalTopPlayers.filter(x => x !== this.randomTopPlayer);
+
+        // Remove the player from malePlayers or femalePlayers and update counts
         if (this.randomTopPlayer.isMale) {
             this.malePlayers = this.malePlayers.filter(x => x !== this.randomTopPlayer);
             this.malePlayerCount = this.malePlayers.length;
-        }
-        if (!this.randomTopPlayer.isMale) {
+        } else {
             this.femalePlayers = this.femalePlayers.filter(x => x !== this.randomTopPlayer);
             this.femalePlayerCount = this.femalePlayers.length;
         }
+
+        // Remove the player from totalPlayers
         this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomTopPlayer);
+
     }
 
     lowPlayerScramble(bracketTeamPlayers) {
+        // Select a random low player
         this.randomLowPlayer = this.totalLowPlayers[Math.floor(Math.random() * this.totalLowPlayers.length)];
+
+        // Check if the randomLowPlayer exists in the malePlayers or femalePlayers list
+        const isMaleValid = this.malePlayers.includes(this.randomLowPlayer);
+        const isFemaleValid = this.femalePlayers.includes(this.randomLowPlayer);
+
+        // Only push the player if they are valid
+        if (!isMaleValid && !isFemaleValid) {
+            console.warn("Invalid Low Player! Player does not exist in malePlayers or femalePlayers.");
+            return; // Exit early without adding the player
+        }
+
+        // Push the player to the bracket team
         bracketTeamPlayers.push(this.randomLowPlayer);
+
+        // Remove the player from totalLowPlayers
         this.totalLowPlayers = this.totalLowPlayers.filter(x => x !== this.randomLowPlayer);
+
+        // Remove the player from malePlayers or femalePlayers and update counts
         if (this.randomLowPlayer.isMale) {
             this.malePlayers = this.malePlayers.filter(x => x !== this.randomLowPlayer);
             this.malePlayerCount = this.malePlayers.length;
-        }
-        if (!this.randomLowPlayer.isMale) {
+        } else {
             this.femalePlayers = this.femalePlayers.filter(x => x !== this.randomLowPlayer);
             this.femalePlayerCount = this.femalePlayers.length;
         }
+
+        // Remove the player from totalPlayers
         this.totalPlayers = this.totalPlayers.filter(x => x !== this.randomLowPlayer);
     }
+
 
 
     randomScramble(bracketTeamPlayers) {
@@ -1093,35 +1131,7 @@ export class ScramblerComponent implements OnInit {
         this.clearLowPlayers();
     }
 
-    //addTopPlayers() {
-    //    var c = confirm("Are you sure you want to add these players to top players?");
-    //    if (c) {
-    //        this.totalTopPlayers = new Array();
-    //        for (let player of this.selectedList) {
-    //            this.totalTopPlayers.push(player);
-    //        }
-    //        this.displayTopPlayers = this.totalTopPlayers;
 
-    //        this.numberOfPlayersNeededTwo = this.displayTopPlayers.length * 2;
-    //        this.numberOfPlayersNeededThree = this.displayTopPlayers.length * 3;
-    //        this.numberOfPlayersNeededFour = this.displayTopPlayers.length * 4;
-    //    }
-    //}
-
-    //addLowPlayers() {
-    //    var c = confirm("Are you sure you want to add these players to top players?");
-    //    if (c) {
-    //        this.totalLowPlayers = new Array();
-    //        for (let player of this.selectedList) {
-    //            this.totalLowPlayers.push(player);
-    //        }
-    //        this.displayLowPlayers = this.totalLowPlayers;
-
-    //        this.numberOfPlayersNeededTwo = this.displayLowPlayers.length * 2;
-    //        this.numberOfPlayersNeededThree = this.displayLowPlayers.length * 3;
-    //        this.numberOfPlayersNeededFour = this.displayLowPlayers.length * 4;
-    //    }
-    //}
 
     updateNumberOfPlayersNeeded(): void {
         const maxPlayers = Math.max(this.displayTopPlayers.length, this.displayLowPlayers.length);
@@ -1893,11 +1903,13 @@ export class ScramblerComponent implements OnInit {
     addPlayerToByeList(player: Player) {
         player.isByePlayer = true;
         this.byePlayers.push(player);
+        this.calculateTeamsNeeded();
     }
 
     removePlayerFromByeList(player: Player) {
         player.isByePlayer = false;
         this.byePlayers = this.byePlayers.filter(p => p !== player);
+        this.calculateTeamsNeeded();
     }
 
 
@@ -1935,47 +1947,67 @@ export class ScramblerComponent implements OnInit {
     }
 
     setTeamCount() {
+        let listLength = (this.selectedList.length - this.byePlayers.length);
         if (this.teamSize == 5) {
-            if ((this.selectedList.length / 10) % 1 == 0) {
-                this.teamCount = (Math.floor(this.selectedList.length / 10) * 2);
+            if ((listLength / 10) % 1 == 0) {
+                this.teamCount = (Math.floor(listLength / 10) * 2);
             }
             else {
 
-                this.teamCount = (Math.floor(this.selectedList.length / 10) * 2) + 2;
+                this.teamCount = (Math.floor(listLength / 10) * 2) + 2;
 
             }
         }
         else if (this.teamSize == 4) {
-            if ((this.selectedList.length / 8) % 1 == 0) {
-                this.teamCount = (Math.floor(this.selectedList.length / 8) * 2);
+            if ((listLength / 8) % 1 == 0) {
+                this.teamCount = (Math.floor(listLength / 8) * 2);
             }
             else {
 
-                this.teamCount = (Math.floor(this.selectedList.length / 8) * 2) + 2;
+                this.teamCount = (Math.floor(listLength / 8) * 2) + 2;
 
             }
         }
         else if (this.teamSize == 3) {
-            if ((this.selectedList.length / 6) % 1 == 0) {
-                this.teamCount = (Math.floor(this.selectedList.length / 6) * 2);
+            if ((listLength / 6) % 1 == 0) {
+                this.teamCount = (Math.floor(listLength / 6) * 2);
             }
             else {
 
-                this.teamCount = (Math.floor(this.selectedList.length / 6) * 2) + 2;
+                this.teamCount = (Math.floor(listLength / 6) * 2) + 2;
 
             }
         }
         else if (this.teamSize == 2) {
-            if ((this.selectedList.length / 4) % 1 == 0) {
-                this.teamCount = (Math.floor(this.selectedList.length / 4) * 2);
+            if ((listLength / 4) % 1 == 0) {
+                this.teamCount = (Math.floor(listLength / 4) * 2);
             }
             else {
 
-                this.teamCount = (Math.floor(this.selectedList.length / 4) * 2) + 2;
+                this.teamCount = (Math.floor(listLength / 4) * 2) + 2;
 
             }
         }
     }
+
+    getPlayerClass(player: Player): string {
+        const playerClass = this.isPlayerInSelectedList(player)
+            ? (player.isMale ? 'extended-background-blue' : 'extended-background-pink')
+            : (player.isMale ? 'not-selected-blue' : 'not-selected-pink');
+
+        return playerClass;
+    }
+
+
+    isPlayerInSelectedList(player: Player): boolean {
+        const result = this.selectedList.some(selectedPlayer => {
+            const match = selectedPlayer.id === player.id;
+            return match;
+        });
+
+        return result;
+    }
+
 
     async scramblePlayers(nonDuplicates: boolean = false) {
         if (nonDuplicates) {
@@ -2004,9 +2036,8 @@ export class ScramblerComponent implements OnInit {
                 this.teamCount = this.numberOfTeams;
             }
             else {
-                this.setTeamCount();
+                await this.setTeamCount();
             }
-
             for (var i = 0; i < this.teamCount; i++) {
                 let team = {
                     players: [],
