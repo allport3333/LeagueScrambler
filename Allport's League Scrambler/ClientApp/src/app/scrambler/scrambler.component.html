@@ -50,8 +50,12 @@
                             </div>
                             <!-- Teams Needed Section -->
                             <div class="text-center mt-3" style="font-size: 14px;">
-                                <h5>Teams That Can Be Formed</h5>
-                                <div class="d-flex justify-content-center align-items-center" style="gap: 20px;">
+                                <button mat-raised-button color="primary" (click)="toggleTeamFormationVisibility()">
+                                    Teams That Can Be Formed
+                                </button>
+
+                                <!-- Toggleable content -->
+                                <div *ngIf="showTeamFormation" class="d-flex justify-content-center align-items-center mt-3" style="gap: 20px;">
                                     <!-- 2 Player Teams -->
                                     <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
                                         <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">2 Player Teams</p>
@@ -84,9 +88,9 @@
                                             Add {{ 4 - remainderFour }} more player(s) for even teams.
                                         </p>
                                     </div>
-
                                 </div>
                             </div>
+
                         </mat-card>
 
                     </div>
@@ -100,7 +104,7 @@
                 </div>
 
             </mat-card>
-            
+
             <div class="row justify-content-center mt-3">
                 <div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
                     <button (click)="scramblePlayers(false)" mat-raised-button color="primary" class="w-100">Scramble Players</button>
@@ -155,26 +159,6 @@
                                         <mat-card id="playerListHidden" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                             <mat-card-title style="color: gray; margin: -10px -10px -5px -10px; display: flex; justify-content: center; align-items: center; flex-direction: column;">
                                                 <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap;">
-
-                                                    <!-- Player Selected Details -->
-                                                    <div *ngIf="!isSmallScreen" style="margin-right: 10px;font-size: 20px">
-                                                        Players Selected - {{ selectedList.length }}
-                                                    </div>
-                                                    <div *ngIf="isSmallScreen" style="margin-right: 10px;font-size: 12px">
-                                                        Players Selected - {{ selectedList.length }}
-                                                    </div>
-                                                    <div *ngIf="!isSmallScreen" style="margin-right: 10px;font-size: 20px">
-                                                        Total Male: {{ getTotalMaleSelectedPlayers() }}
-                                                    </div>
-                                                    <div *ngIf="!isSmallScreen" style="margin-right: 10px; font-size: 20px">
-                                                        Total Female: {{ getTotalFemaleSelectedPlayers() }}
-                                                    </div>
-                                                    <div *ngIf="isSmallScreen" style="margin-right: 10px; font-size: 12px">
-                                                        Total Males: {{ getTotalMaleSelectedPlayers() }}
-                                                    </div>
-                                                    <div *ngIf="isSmallScreen" style="margin-right: 10px;font-size: 12px">
-                                                        Total Females: {{ getTotalFemaleSelectedPlayers() }}
-                                                    </div>
                                                     <button mat-raised-button color="primary" (click)="selectAllPlayers()" style="font-size: 14px; padding: 5px; min-width: 80px;">
                                                         Select All
                                                     </button>
@@ -183,10 +167,39 @@
                                                         Deselect All
                                                     </button>
                                                 </div>
+                                                <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap;">
+                                                    <!-- Player Selected Details -->
+                                                    <div *ngIf="!isSmallScreen" style="margin-right: 10px; margin-top:10px; font-size: 20px;">
+                                                        Total Players Selected - {{ selectedList.length }}
+                                                    </div>
+                                                    <div *ngIf="isSmallScreen" style="margin-right: 10px; margin-top: 10px; font-size: 12px;">
+                                                        Total Players Selected - {{ selectedList.length }}
+                                                    </div>
+
+                                                    <!-- Male and Female Details on Next Line -->
+                                                    <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; width: 100%; margin-top: 10px;">
+                                                        <div *ngIf="!isSmallScreen" style="margin-right: 10px; font-size: 20px;">
+                                                            Male: {{ getTotalMaleSelectedPlayers() }}
+                                                        </div>
+                                                        <div *ngIf="!isSmallScreen" style="margin-right: 10px; font-size: 20px;">
+                                                            Female: {{ getTotalFemaleSelectedPlayers() }}
+                                                        </div>
+                                                        <div *ngIf="isSmallScreen" style="margin-right: 10px; font-size: 12px;">
+                                                            Male: {{ getTotalMaleSelectedPlayers() }}
+                                                        </div>
+                                                        <div *ngIf="isSmallScreen" style="margin-right: 10px; font-size: 12px;">
+                                                            Female: {{ getTotalFemaleSelectedPlayers() }}
+                                                        </div>
+                                                    </div>
+                                                </div>
 
                                                 <div class="text-center mt-2" style="font-size: 14px;">
-                                                    <h5>Required Players For Top/Low Players</h5>
-                                                    <div class="d-flex justify-content-center align-items-center" style="gap: 20px;">
+                                                    <button mat-raised-button color="primary" (click)="togglePlayersVisibility()">
+                                                        Required Players For Top/Low Players
+                                                    </button>
+
+                                                    <!-- Toggleable content -->
+                                                    <div *ngIf="showPlayerTeams" class="d-flex justify-content-center align-items-center mt-3" style="gap: 20px;">
                                                         <!-- 2 Player Teams -->
                                                         <div [style.background-color]="numberOfPlayersNeededTwo <= selectedList.length ? '#d4edda' : '#f8d7da'"
                                                              [style.color]="numberOfPlayersNeededTwo <= selectedList.length ? '#155724' : '#721c24'"
@@ -219,7 +232,6 @@
                                                     </div>
                                                 </div>
 
-
                                             </mat-card-title>
 
                                             <mat-selection-list dense [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
@@ -231,42 +243,70 @@
                                                             <mat-list style="display: flex; flex-wrap: wrap; justify-content: space-between;">
                                                                 <mat-list-option [style.width.%]="isSmallScreen ? 48 : 23"
                                                                                  [style.margin-bottom.px]="5"
-                                                                                 style="background-color: #DBFDFF; padding: 5px; border-radius: 5px;"
+                                                                                 style="background-color: #DBFDFF; padding: 3px 5px; border-radius: 5px;"
                                                                                  *ngFor="let player1 of malePlayers1; let i = index"
                                                                                  [value]="player1"
                                                                                  [disableRipple]="true"
                                                                                  checkboxPosition="before">
 
-                                                                    <div style="display: flex; align-items: center; gap: 3px;">
+                                                                    <div style="display: flex; align-items: center; gap: 3px;" *ngIf="!isSmallScreen">
                                                                         <!-- Top Player Button -->
-                                                                        <button *ngIf="!player1.isTopPlayer" mat-icon-button style="margin-left: -10px;" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
+                                                                        <button *ngIf="!player1.isTopPlayer" mat-icon-button style="margin-left: -15px;" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
                                                                             <mat-icon>star_border</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isTopPlayer" mat-icon-button style="margin-left: -10px;" (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
+                                                                        <button *ngIf="player1.isTopPlayer" mat-icon-button style="margin-left: -15px;" (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
                                                                             <mat-icon>star</mat-icon>
                                                                         </button>
 
 
                                                                         <!-- Low Player Button -->
-                                                                        <button *ngIf="!player1.isLowPlayer" mat-icon-button style="margin-left: -10px;" (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" matTooltip="Set Low Player">
+                                                                        <button *ngIf="!player1.isLowPlayer" mat-icon-button style="margin-left: -15px;" (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" matTooltip="Set Low Player">
                                                                             <mat-icon>signal_cellular_null</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isLowPlayer" mat-icon-button style="margin-left: -10px;" (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Low Player">
+                                                                        <button *ngIf="player1.isLowPlayer" mat-icon-button style="margin-left: -15px;" (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Low Player">
                                                                             <mat-icon>signal_cellular_4_bar</mat-icon>
                                                                         </button>
 
                                                                         <!-- Bye Player Button -->
-                                                                        <button *ngIf="!player1.isByePlayer" mat-icon-button style="margin-left: -10px;" (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
+                                                                        <button *ngIf="!player1.isByePlayer" mat-icon-button style="margin-left: -15px;" (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
                                                                             <mat-icon>radio_button_unchecked</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isByePlayer" mat-icon-button style="margin-left: -10px;" (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
+                                                                        <button *ngIf="player1.isByePlayer" mat-icon-button style="margin-left: -15px;" (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
                                                                             <mat-icon>cancel</mat-icon>
                                                                         </button>
 
+                                                                        <!-- Female Player For a Day Button -->
+                                                                        <button mat-icon-button style="margin-left: -15px;"
+                                                                                (click)="swapGender(player1); $event.stopPropagation()"
+                                                                                [matTooltip]="player1.isMale ? 'Set Female Player' : 'Set Male Player'">
+                                                                            <mat-icon>{{ player1.isMale ? 'male' : 'female' }}</mat-icon>
+                                                                        </button>
 
                                                                         <!-- Player Name -->
-                                                                        <span>{{ player1.firstName }} {{ player1.lastName }}</span>
+                                                                        <span style="font-size: .9rem;">{{ player1.firstName }} {{ player1.lastName }}</span>
+
                                                                     </div>
+                                                                    <div style="display: flex; align-items: center; gap: 8px;" *ngIf="isSmallScreen">
+                                                                        <!-- Player Name -->
+                                                                        <span style="flex-grow: 1; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                                            {{ player1.firstName }} {{ player1.lastName }}
+                                                                        </span>
+                                                                        <!-- Small Arrow Dropdown -->
+                                                                        <mat-select [(value)]="player1.action"
+                                                                                    (selectionChange)="handleDropdownChange(player1, $event)"
+                                                                                    (click)="$event.stopPropagation()"
+                                                                                    style="flex-shrink: 0; width: 32px; height: 32px; padding: 0;">
+                                                                            <mat-option *ngIf="!player1.isTopPlayer" [value]="'setTopPlayer'">Set Top Player</mat-option>
+                                                                            <mat-option *ngIf="player1.isTopPlayer" [value]="'removeTopPlayer'">Remove Top Player</mat-option>
+                                                                            <mat-option *ngIf="!player1.isLowPlayer" [value]="'setLowPlayer'">Set Low Player</mat-option>
+                                                                            <mat-option *ngIf="player1.isLowPlayer" [value]="'removeLowPlayer'">Remove Low Player</mat-option>
+                                                                            <mat-option *ngIf="!player1.isByePlayer" [value]="'setByePlayer'">Set Bye Player</mat-option>
+                                                                            <mat-option *ngIf="player1.isByePlayer" [value]="'removeByePlayer'">Remove Bye Player</mat-option>
+                                                                            <mat-option [value]="'swapGender'">{{ player1.isMale ? 'Set Female Player' : 'Set Male Player' }}</mat-option>
+                                                                        </mat-select>
+                                                                    </div>
+
+
                                                                 </mat-list-option>
                                                             </mat-list>
                                                         </div>
@@ -283,40 +323,70 @@
                                                             <mat-list style="display: flex; flex-wrap: wrap; justify-content: space-between;">
                                                                 <mat-list-option [style.width.%]="isSmallScreen ? 48 : 23"
                                                                                  [style.margin-bottom.px]="5"
-                                                                                 style="background-color: #FCE0FF; padding: 5px; border-radius: 5px;"
+                                                                                 style="background-color: #FCE0FF; padding: 3px 5px; border-radius: 5px;"
                                                                                  *ngFor="let player1 of femalePlayers1; let i = index"
                                                                                  [value]="player1"
                                                                                  [disableRipple]="true"
                                                                                  checkboxPosition="before">
 
-                                                                    <div style="display: flex; align-items: center; gap: 3px;">
+                                                                    <div style="display: flex; align-items: center; gap: 3px;" *ngIf="!isSmallScreen">
                                                                         <!-- Top Player Button -->
-                                                                        <button *ngIf="!player1.isTopPlayer" mat-icon-button style="margin-left: -10px;" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
+                                                                        <button *ngIf="!player1.isTopPlayer" mat-icon-button style="margin-left: -15px;" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
                                                                             <mat-icon>star_border</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isTopPlayer" mat-icon-button style="margin-left: -10px;" (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
+                                                                        <button *ngIf="player1.isTopPlayer" mat-icon-button style="margin-left: -15px; " (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
                                                                             <mat-icon>star</mat-icon>
                                                                         </button>
 
                                                                         <!-- Low Player Button -->
-                                                                        <button *ngIf="!player1.isLowPlayer" mat-icon-button style="margin-left: -10px;" (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" matTooltip="Set Low Player">
+                                                                        <button *ngIf="!player1.isLowPlayer" mat-icon-button style="margin-left: -15px; " (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" matTooltip="Set Low Player">
                                                                             <mat-icon>signal_cellular_null</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isLowPlayer" mat-icon-button style="margin-left: -10px;" (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Low Player">
+                                                                        <button *ngIf="player1.isLowPlayer" mat-icon-button style="margin-left: -15px; " (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Low Player">
                                                                             <mat-icon>signal_cellular_4_bar</mat-icon>
                                                                         </button>
 
                                                                         <!-- Bye Player Button -->
-                                                                        <button *ngIf="!player1.isByePlayer" mat-icon-button style="margin-left: -10px;" (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
+                                                                        <button *ngIf="!player1.isByePlayer" mat-icon-button style="margin-left: -15px; " (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
                                                                             <mat-icon>radio_button_unchecked</mat-icon>
                                                                         </button>
-                                                                        <button *ngIf="player1.isByePlayer" mat-icon-button style="margin-left: -10px;" (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
+                                                                        <button *ngIf="player1.isByePlayer" mat-icon-button style="margin-left: -15px; " (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
                                                                             <mat-icon>cancel</mat-icon>
                                                                         </button>
 
+
+                                                                        <!-- Male Player For a Day Button -->
+                                                                        <button mat-icon-button style="margin-left: -15px;"
+                                                                                (click)="swapGender(player1); $event.stopPropagation()"
+                                                                                [matTooltip]="player1.isMale ? 'Set Female Player' : 'Set Male Player'">
+                                                                            <mat-icon>{{ player1.isMale ? 'male' : 'female' }}</mat-icon>
+                                                                        </button>
+
+
                                                                         <!-- Player Name -->
-                                                                        <span>{{ player1.firstName }} {{ player1.lastName }}</span>
+                                                                        <span style="font-size: .9rem;">{{ player1.firstName }} {{ player1.lastName }}</span>
+
                                                                     </div>
+                                                                    <div style="display: flex; align-items: center; gap: 8px;" *ngIf="isSmallScreen">
+                                                                        <!-- Player Name -->
+                                                                        <span style="flex-grow: 1; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                                            {{ player1.firstName }} {{ player1.lastName }}
+                                                                        </span>
+                                                                        <!-- Small Arrow Dropdown -->
+                                                                        <mat-select [(value)]="player1.action"
+                                                                                    (selectionChange)="handleDropdownChange(player1, $event)"
+                                                                                    (click)="$event.stopPropagation()"
+                                                                                    style="flex-shrink: 0; width: 32px; height: 32px; padding: 0;">
+                                                                            <mat-option *ngIf="!player1.isTopPlayer" [value]="'setTopPlayer'">Set Top Player</mat-option>
+                                                                            <mat-option *ngIf="player1.isTopPlayer" [value]="'removeTopPlayer'">Remove Top Player</mat-option>
+                                                                            <mat-option *ngIf="!player1.isLowPlayer" [value]="'setLowPlayer'">Set Low Player</mat-option>
+                                                                            <mat-option *ngIf="player1.isLowPlayer" [value]="'removeLowPlayer'">Remove Low Player</mat-option>
+                                                                            <mat-option *ngIf="!player1.isByePlayer" [value]="'setByePlayer'">Set Bye Player</mat-option>
+                                                                            <mat-option *ngIf="player1.isByePlayer" [value]="'removeByePlayer'">Remove Bye Player</mat-option>
+                                                                            <mat-option [value]="'swapGender'">{{ player1.isMale ? 'Set Female Player' : 'Set Male Player' }}</mat-option>
+                                                                        </mat-select>
+                                                                    </div>
+
                                                                 </mat-list-option>
                                                             </mat-list>
                                                         </div>
@@ -898,7 +968,7 @@
 
                 </div>
             </mat-card>
-                
+
         </div>
     </div>
 </div>
@@ -1078,14 +1148,14 @@
         </button>
         <!-- Number of Rounds Selection -->
         <!--Commenting this out for now since i have the score input tab now
-    <mat-form-field appearance="fill" class="w-75">
-        <mat-label>Number of Rounds</mat-label>
-        <mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)">
-            <mat-option *ngFor="let round of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]" [value]="round">
-                {{ round }} Rounds
-            </mat-option>
-        </mat-select>
-    </mat-form-field>-->
+        <mat-form-field appearance="fill" class="w-75">
+            <mat-label>Number of Rounds</mat-label>
+            <mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)">
+                <mat-option *ngFor="let round of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]" [value]="round">
+                    {{ round }} Rounds
+                </mat-option>
+            </mat-select>
+        </mat-form-field>-->
     </div>
 </div>
 

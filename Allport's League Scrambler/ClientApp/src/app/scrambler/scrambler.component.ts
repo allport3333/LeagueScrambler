@@ -36,6 +36,8 @@ export class ScramblerComponent implements OnInit {
     showSaveRoundScores: boolean = false;
     allowScrambleWithNoDuplicates: boolean = false;
     retrievedPlayersBefore: boolean = false;
+    showPlayerTeams = false; // Controls the visibility of the player teams section
+    showTeamFormation = false; // Controls the visibility of the team formation section
     hideEverything: boolean;
     totalPlayers: Player[];
     players: Player[];
@@ -147,9 +149,41 @@ export class ScramblerComponent implements OnInit {
 
     }
 
+    swapGender(player: any): void {
+        player.isMale = !player.isMale; // Toggles the value
+    }
+
+
     initializeRounds(): void {
         this.rounds = Array.from({ length: this.selectedRounds }, (_, index) => index + 1);
     }
+
+    handleDropdownChange(player: any, event: any): void {
+        switch (event.value) {
+            case 'setTopPlayer':
+                this.addPlayerToTopPlayerList(player);
+                break;
+            case 'removeTopPlayer':
+                this.removePlayerFromTopPlayerList(player);
+                break;
+            case 'setLowPlayer':
+                this.addPlayerToLowPlayerList(player);
+                break;
+            case 'removeLowPlayer':
+                this.removePlayerFromLowPlayerList(player);
+                break;
+            case 'setByePlayer':
+                this.addPlayerToByeList(player);
+                break;
+            case 'removeByePlayer':
+                this.removePlayerFromByeList(player);
+                break;
+            case 'swapGender':
+                this.swapGender(player);
+                break;
+        }
+    }
+
 
     initializeStandingsRounds(): void {
         // Flatten all scores manually and sort by roundId
@@ -355,11 +389,21 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
+    // Method to toggle visibility
+    togglePlayersVisibility(): void {
+        this.showPlayerTeams = !this.showPlayerTeams;
+    }
+
+    toggleTeamFormationVisibility(): void {
+        this.showTeamFormation = !this.showTeamFormation;
+    }
+
     onDropLowestChange(selectedDrop: string): void {
         const dropLowest = parseInt(selectedDrop, 10); // Convert the string to a number
         this.processStandings(this.lastResult, dropLowest); // Pass the number of scores to drop
         this.sortStandingsWithDropped('totalScore');
     }
+
     private processStandings(result: any, dropLowestNumber: number = 0): void {
         this.standings = result.playerScores; // Save grouped scores
         if (this.standings && this.standings.length > 0) {
@@ -1600,7 +1644,7 @@ export class ScramblerComponent implements OnInit {
 
     // Check screen size and update isSmallScreen
     checkScreenSize() {
-        this.isSmallScreen = window.innerWidth <= 768; // Adjust the screen size threshold as needed
+        this.isSmallScreen = window.innerWidth <= 1200; // Adjust the screen size threshold as needed
     }
 
     selectPlayers(playerCount: number, isMale: boolean, nonDuplicates: boolean): boolean {
