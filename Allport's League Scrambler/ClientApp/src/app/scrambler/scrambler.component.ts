@@ -29,6 +29,12 @@ export class ScramblerComponent implements OnInit {
     selectedRounds: number = 5; // Default to 5 rounds
     processedStandings: { playerName: string; scores: { roundId: number; score: number | string }[] }[] = [];
     rounds: number[] = [];
+    searchTerm: string = '';
+    searchedPlayers: any[] = [];
+    selectedPlayer: any = null;
+    searchTermDelete: string = '';
+    searchedPlayersToDelete: any[] = [];
+    selectedPlayerToDelete: any = null;
     standingsRounds: number[] = [];
     roundScores: { [teamId: number]: { RoundScore: number; RoundWon: boolean }[] } = {};
     kingQueenRoundScores: KingQueenRoundScore[] = [];
@@ -77,6 +83,8 @@ export class ScramblerComponent implements OnInit {
     randomTopPlayer: Player;
     randomLowPlayer: Player;
     addedPlayer: Player;
+    isActionAllowed: boolean = false;
+    userInputPassword: string = '';
     password: Password;
     passwordLeague: Password;
     passwordDelete: Password;
@@ -112,6 +120,7 @@ export class ScramblerComponent implements OnInit {
     locked: boolean = false;
     hidePlayers: boolean = false;
     containsLeague: boolean = false;
+    showNewPlayerForm: boolean = false;
     isSmallScreen = false;
     hideListOptions: boolean;
     hideInputOptions: boolean;
@@ -151,6 +160,157 @@ export class ScramblerComponent implements OnInit {
 
     swapGender(player: any): void {
         player.isMale = !player.isMale; // Toggles the value
+    }
+
+    toggleNewPlayerForm(): void {
+        this.showNewPlayerForm = !this.showNewPlayerForm;
+    }
+
+    onPasswordInput(inputPassword: string): void {
+        this.userInputPassword = inputPassword;
+        if (
+            this.passwordLeague &&
+            this.userInputPassword === this.passwordLeague.password
+        ) {
+            this.isActionAllowed = true; // Enable button if password matches
+        } else if (!this.loggedIn) {
+            this.isActionAllowed = false; // Disable button if password is incorrect
+        }
+    }
+
+    onSearchPlayer(event: any) {
+        const value = event.target.value;
+        if (value.length > 2) {
+            this.playerService.searchPlayers(value).subscribe(
+                (results) => (this.searchedPlayers = results),
+                (error) => console.error(error)
+            );
+        } else {
+            this.searchedPlayers = [];
+        }
+    }
+
+    onPlayerSelected(player: any) {
+        this.selectedPlayer = player;
+    }
+
+    addExistingPlayer() {
+        if (this.selectedPlayer && this.selectedLeague) {
+            this.playerService
+                .AddPlayer(this.selectedPlayer, this.selectedLeague)
+                .subscribe(
+                    (result) => {
+                        this.player = result;
+                        this.containsFemale = false;
+                        this.containsMale = false;
+
+                        // Check if the player already exists
+                        for (var i = 0; i < this.malePlayers1.length; i++) {
+                            if (
+                                this.malePlayers1[i].firstName === result.firstName &&
+                                this.malePlayers1[i].lastName === result.lastName
+                            ) {
+                                this.containsMale = true;
+                                break;
+                            }
+                        }
+                        for (var i = 0; i < this.femalePlayers1.length; i++) {
+                            if (
+                                this.femalePlayers1[i].firstName === result.firstName &&
+                                this.femalePlayers1[i].lastName === result.lastName
+                            ) {
+                                this.containsFemale = true;
+                                break;
+                            }
+                        }
+
+                        if (this.containsMale || this.containsFemale) {
+                            this.showSnackBar("Player already in the list.");
+                        } else {
+                            if (result.isMale) {
+                                this.malePlayers1.push(result);
+                                this.malePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
+                            } else {
+                                this.femalePlayers1.push(result);
+                                this.femalePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
+                            }
+                            // Show success message
+                            this.showSnackBar("Player added successfully!");
+                        }
+                    },
+                    (error) => {
+                        console.error(error);
+                        this.showSnackBar("An error occurred while adding the player.");
+                    }
+                );
+        } else {
+            this.showSnackBar("Please select a player and a league.");
+        }
+    }
+
+    displayPlayer(player: any): string {
+        return player ? `${player.firstName} ${player.lastName}` : '';
+    }
+
+    onSearchPlayerToDelete(event: any) {
+        const value = event.target.value;
+        if (value.length > 2) {
+            this.playerService.searchPlayersInLeague(value, this.selectedLeague).subscribe(
+                (results) => (this.searchedPlayersToDelete = results),
+                (error) => console.error(error)
+            );
+        } else {
+            this.searchedPlayersToDelete = [];
+        }
+    }
+
+    // Set the selected player to delete
+    onDeletePlayerSelected(player: any) {
+        this.selectedPlayerToDelete = player;
+    }
+
+    // Delete the selected player from the league
+    deleteSelectedPlayer() {
+        if (this.selectedPlayerToDelete && this.selectedLeague) {
+            this.playerService
+                .DeletePlayer(this.selectedPlayerToDelete, this.selectedLeague)
+                .subscribe(
+                    (result) => {
+                        if (result) {
+                            // Remove player from the local lists
+                            const maleIndex = this.malePlayers1.findIndex(
+                                (p) =>
+                                    p.firstName === this.selectedPlayerToDelete.firstName &&
+                                    p.lastName === this.selectedPlayerToDelete.lastName
+                            );
+
+                            if (maleIndex !== -1) {
+                                this.malePlayers1.splice(maleIndex, 1);
+                            }
+
+                            const femaleIndex = this.femalePlayers1.findIndex(
+                                (p) =>
+                                    p.firstName === this.selectedPlayerToDelete.firstName &&
+                                    p.lastName === this.selectedPlayerToDelete.lastName
+                            );
+
+                            if (femaleIndex !== -1) {
+                                this.femalePlayers1.splice(femaleIndex, 1);
+                            }
+
+                            this.snackBar.open('Player deleted successfully!', 'Close', { duration: 3000 });
+                        } else {
+                            this.snackBar.open('Player not found in the league.', 'Close', { duration: 3000 });
+                        }
+                    },
+                    (error) => {
+                        console.error(error);
+                        this.snackBar.open('An error occurred while deleting the player.', 'Close', { duration: 3000 });
+                    }
+                );
+        } else {
+            this.snackBar.open('Please select a player to delete.', 'Close', { duration: 3000 });
+        }
     }
 
 
@@ -283,25 +443,30 @@ export class ScramblerComponent implements OnInit {
         this.playerService.GetPlayers().subscribe(result => {
             this.totalPlayers = result;
         }, error => console.error(error));
-        this.loginService.isLoggedIn().subscribe(result => {
+        this.loginService.isLoggedIn().subscribe((result) => {
             this.loggedIn = result;
+
             if (result) {
+                this.isActionAllowed = true; // Enable action for logged-in users
                 this.loginService.getUserLeagues().subscribe(result => {
                     this.leaguesAvailable = result;
                 });
-            }
-            else {
+            } else {
+                // Fetch password for non-logged-in users
+                this.playerService.GetPassword().subscribe((passwordResult) => {
+                    this.passwordLeague = passwordResult;
+                });
                 this.playerService.GetLeagues().subscribe(result => {
                     this.leaguesAvailable = result;
                 });
             }
         });
-
-
     }
+
     ngAfterViewInit() {
         // At this point, targetDiv is guaranteed to be initialized
     }
+
     clearStandings() {
         this.standings = [];
         this.maleStandings = [];

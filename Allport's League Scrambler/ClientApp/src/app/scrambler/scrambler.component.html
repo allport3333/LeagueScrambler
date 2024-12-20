@@ -407,7 +407,7 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>                            
+                            </div>
 
                         </div>
                     </mat-tab>
@@ -773,49 +773,89 @@
                                 <!-- Add Player Tab -->
                                 <mat-tab label="Add Player" *ngIf="selectedLeague">
                                     <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                                        <div class="tab-content d-flex flex-column align-items-center">
-                                            <h5 class="mb-2">Enter New Player</h5>
-                                            <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()" class="d-flex flex-column align-items-center">
-                                                <div class="row">
-                                                    <div class="col-12 col-lg-6">
-                                                        <mat-form-field style="max-width: 180px" appearance="outline">
-                                                            <mat-label>First Name:</mat-label>
-                                                            <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
-                                                        </mat-form-field>
-                                                        <br />
-                                                        <mat-form-field style="max-width: 180px" appearance="outline">
-                                                            <mat-label>Last Name:</mat-label>
-                                                            <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
-                                                        </mat-form-field>
-                                                        <br />
-                                                        <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!loggedIn">
-                                                            <mat-label>Password:</mat-label>
-                                                            <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
-                                                        </mat-form-field>
-                                                    </div>
-                                                    <div class="col-12 col-lg-6">
-                                                        <mat-form-field appearance="outline">
-                                                            <mat-select formControlName="isSub" placeholder="Sub/Flex">
-                                                                <mat-option [value]="true">Sub</mat-option>
-                                                                <mat-option [value]="false">Not a Sub</mat-option>
-                                                            </mat-select>
-                                                        </mat-form-field>
-                                                        <br />
-                                                        <mat-form-field appearance="outline">
-                                                            <mat-label>Gender:</mat-label>
-                                                            <mat-select [formControl]="PlayerForm.get('selectedGender')" placeholder="Gender">
-                                                                <mat-option *ngFor="let gender of gendersPossible" [value]="gender.value">
-                                                                    {{ gender.value }}
-                                                                </mat-option>
-                                                            </mat-select>
-                                                        </mat-form-field>
-                                                        <br />
-                                                        <div class="d-flex justify-content-center">
-                                                            <button mat-raised-button color="primary">Submit</button>
+                                        <div class="tab-content d-flex flex-column align-items-center" style="margin-bottom:20px">
+                                            <h5 class="mb-2">Search for Existing Player</h5>
+                                            <mat-form-field style="max-width: 300px" appearance="outline">
+                                                <mat-label>Search Player</mat-label>
+                                                <input matInput
+                                                       [matAutocomplete]="auto"
+                                                       (input)="onSearchPlayer($event)"
+                                                       [(ngModel)]="searchTerm" />
+                                                <mat-autocomplete #auto="matAutocomplete"
+                                                                  (optionSelected)="onPlayerSelected($event.option.value)"
+                                                                  [displayWith]="displayPlayer">
+                                                    <mat-option *ngFor="let player of searchedPlayers" [value]="player">
+                                                        {{ player.firstName }} {{ player.lastName }}
+                                                    </mat-option>
+                                                </mat-autocomplete>
+                                            </mat-form-field>
+                                            <button mat-raised-button
+                                                    style="margin-bottom:20px"
+                                                    color="primary"
+                                                    (click)="addExistingPlayer()"
+                                                    [disabled]="!isActionAllowed">
+                                                Add Existing Player
+                                            </button>
+                                            <mat-form-field style="max-width: 300px" appearance="outline" *ngIf="!loggedIn">
+                                                <mat-label>Enter Password</mat-label>
+                                                <input matInput
+                                                       type="password"
+                                                       (input)="onPasswordInput($event.target.value)"
+                                                       placeholder="Password">
+                                            </mat-form-field>
+                                        </div>
+                                        <div class="tab-content d-flex flex-column align-items-center" style="margin-bottom:20px">
+                                            <button mat-raised-button
+                                                    color="primary"
+                                                    (click)="toggleNewPlayerForm()"
+                                                    [class.active]="showNewPlayerForm">
+                                                Enter New Player
+                                            </button>
+
+                                            <!-- Form to Add New Player -->
+                                            <div *ngIf="showNewPlayerForm" class="mt-3">
+                                                <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()" class="d-flex flex-column align-items-center">
+                                                    <div class="row">
+                                                        <div class="col-12 col-lg-6">
+                                                            <mat-form-field style="max-width: 180px" appearance="outline">
+                                                                <mat-label>First Name:</mat-label>
+                                                                <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
+                                                            </mat-form-field>
+                                                            <br />
+                                                            <mat-form-field style="max-width: 180px" appearance="outline">
+                                                                <mat-label>Last Name:</mat-label>
+                                                                <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
+                                                            </mat-form-field>
+                                                            <br />
+                                                            <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!loggedIn">
+                                                                <mat-label>Password:</mat-label>
+                                                                <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
+                                                            </mat-form-field>
+                                                        </div>
+                                                        <div class="col-12 col-lg-6">
+                                                            <mat-form-field appearance="outline">
+                                                                <mat-select formControlName="isSub" placeholder="Sub/Flex">
+                                                                    <mat-option [value]="true">Sub</mat-option>
+                                                                    <mat-option [value]="false">Not a Sub</mat-option>
+                                                                </mat-select>
+                                                            </mat-form-field>
+                                                            <br />
+                                                            <mat-form-field appearance="outline">
+                                                                <mat-label>Gender:</mat-label>
+                                                                <mat-select [formControl]="PlayerForm.get('selectedGender')" placeholder="Gender">
+                                                                    <mat-option *ngFor="let gender of gendersPossible" [value]="gender.value">
+                                                                        {{ gender.value }}
+                                                                    </mat-option>
+                                                                </mat-select>
+                                                            </mat-form-field>
+                                                            <br />
+                                                            <div class="d-flex justify-content-center">
+                                                                <button mat-raised-button color="primary">Submit</button>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </form>
+                                                </form>
+                                            </div>
                                         </div>
                                     </mat-card>
                                 </mat-tab>
@@ -824,7 +864,42 @@
                                 <mat-tab label="Delete Player" class="mt-2" *ngIf="selectedLeague">
                                     <div class="container-fluid">
                                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                                            <h5 class="text-center">Delete Player</h5>
+                                            <h5 class="text-center">Delete Player from {{ selectedLeague }}</h5>
+                                            <br />
+                                            <div class="row" style="margin-bottom:20px">
+                                                <div class="col-12 d-flex flex-column align-items-center">
+                                                    <mat-form-field style="max-width: 300px" appearance="outline">
+                                                        <mat-label>Search Player</mat-label>
+                                                        <input matInput
+                                                               [matAutocomplete]="auto"
+                                                               (input)="onSearchPlayerToDelete($event)"
+                                                               [(ngModel)]="searchTermDelete" />
+                                                        <mat-autocomplete #auto="matAutocomplete"
+                                                                          (optionSelected)="onDeletePlayerSelected($event.option.value)"
+                                                                          [displayWith]="displayPlayer">
+                                                            <mat-option *ngFor="let player of searchedPlayersToDelete" [value]="player">
+                                                                {{ player.firstName }} {{ player.lastName }}
+                                                            </mat-option>
+                                                        </mat-autocomplete>
+                                                    </mat-form-field>
+                                                    <button mat-raised-button
+                                                            style="margin-bottom:20px"
+                                                            color="primary"
+                                                            (click)="deleteSelectedPlayer()"
+                                                            [disabled]="!isActionAllowed">
+                                                        Delete Player
+                                                    </button>
+                                                    <mat-form-field style="max-width: 300px" appearance="outline" *ngIf="!loggedIn">
+                                                        <mat-label>Enter Password</mat-label>
+                                                        <input matInput
+                                                               type="password"
+                                                               (input)="onPasswordInput($event.target.value)"
+                                                               placeholder="Password">
+                                                    </mat-form-field>
+                                                </div>
+                                            </div>
+                                            <!--Deprecated-->
+                                            <!--<h5 class="text-center">Delete Player</h5>
                                             <br />
                                             <div class="row">
                                                 <div class="col-12 d-flex flex-column align-items-center">
@@ -848,7 +923,7 @@
                                                         </div>
                                                     </form>
                                                 </div>
-                                            </div>
+                                            </div>-->
                                         </mat-card>
                                     </div>
                                 </mat-tab>
@@ -911,7 +986,7 @@
                     <!-- Low Players Section -->
                     <div class="low-players-section" *ngIf="displayLowPlayers.length > 0" style="width: 45%;">
                         <h5 class="text-center">
-                            Low Players 
+                            Low Players
                             <span *ngIf="totalLowPlayers.length > 0">({{ totalLowPlayers.length }})</span>
                         </h5>
 

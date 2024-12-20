@@ -54,6 +54,11 @@ export class PlayerService {
         return this.httpClient.get<number>(this.baseUrl + 'api/ScrambleData/GetNumberOfBrackets');
     }
 
+    public searchPlayers(searchTerm: string) {
+        return this.httpClient.get<any[]>(this.baseUrl + `api/ScrambleData/SearchPlayers?searchTerm=${searchTerm}`);
+    }
+
+
     public AddPlayer(player: Player, leagueName: string) {
         return this.httpClient.post<Player>(this.baseUrl + 'api/ScrambleData/AddPlayer/' + leagueName, player);
     }
@@ -119,7 +124,11 @@ export class PlayerService {
         );
     }
 
-
+    public searchPlayersInLeague(searchTerm: string, leagueName: string) {
+        return this.httpClient.get<any[]>(
+            this.baseUrl + `api/ScrambleData/SearchPlayersInLeague?searchTerm=${searchTerm}&leagueName=${leagueName}`
+        );
+    }
 
     public DeletePlayer(player: Player, leagueName: string) {
         return this.httpClient.post<Player>(this.baseUrl + 'api/ScrambleData/DeletePlayer/' + leagueName, player);

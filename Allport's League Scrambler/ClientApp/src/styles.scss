@@ -84,6 +84,13 @@ mat-selection-list.list-horizontal {
     padding-right: 80px; /* Adjust the padding as needed */
 }
 
+button.active {
+    background-color: #bdbdbd !important; /* Light grey */
+    color: #ffffff !important; /* White text */
+    box-shadow: none !important; /* Remove shadow to emphasize pressed look */
+    transform: scale(0.98); /* Slightly shrink button */
+}
+
 /* Style for extended background */
 .extended-background-blue {
     position: relative;

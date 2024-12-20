@@ -176,6 +176,18 @@ namespace Allport_s_League_Scrambler.Controllers
             return kingQueenTeamsDistinct;
         }
 
+        [HttpGet("SearchPlayers")]
+        public IActionResult SearchPlayers(string searchTerm)
+        {
+            var context = new DataContext();
+            var players = context.Players
+                .Where(p => p.FirstName.Contains(searchTerm) || p.LastName.Contains(searchTerm))
+                .Select(p => new { p.Id, p.FirstName, p.LastName })
+                .ToList();
+
+            return Ok(players);
+        }
+
         [HttpPost("[action]/{leagueName}")]
         public Player AddPlayer([FromBody] Player player, string leagueName)
         {
@@ -784,6 +796,25 @@ namespace Allport_s_League_Scrambler.Controllers
                 ByePlayers = byePlayers
             };
 
+        }
+
+        [HttpGet("SearchPlayersInLeague")]
+        public IActionResult SearchPlayersInLeague(string searchTerm, string leagueName)
+        {
+            var context = new DataContext();
+            var league = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
+
+            if (league == null)
+                return NotFound("League not found.");
+
+            var playersInLeague = context.PlayersLeagues
+                .Where(pl => pl.LeagueID == league.ID)
+                .Select(pl => pl.Player)
+                .Where(p => p.FirstName.Contains(searchTerm) || p.LastName.Contains(searchTerm))
+                .Select(p => new { p.Id, p.FirstName, p.LastName })
+                .ToList();
+
+            return Ok(playersInLeague);
         }
 
 
