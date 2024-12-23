@@ -18,6 +18,7 @@ export class LoginService {
     private userLeaguesUrl = this.baseUrl + 'api/Login/getuserleagues';
     private registerUrl = this.baseUrl + 'api/Login/register';
     private isauthenticated = this.baseUrl + 'api/Login/isauthenticated';
+    private getLeagueSettings = this.baseUrl + 'api/Login/GetSettingValue';
     private forgotPasswordUrl = this.baseUrl + 'api/Login/forgotpassword'; // Define your password recovery endpoint
     private resetPasswordUrl = this.baseUrl + 'api/Login/resetpassword'; // Define your password recovery endpoint
     login(username: string, password: string) {
@@ -59,6 +60,13 @@ export class LoginService {
     // Fetch user leagues
     getUserLeagues() {
         return this.httpClient.get<Leagues[]>(this.userLeaguesUrl, { withCredentials: true });
+    }
+
+    getSettingValue(settingName: string, leagueId: number) {
+        return this.httpClient.get<any>(this.getLeagueSettings, {
+            params: { settingName, leagueId },
+            withCredentials: true
+        });
     }
 
     forgotPassword(email: string) {

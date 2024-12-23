@@ -657,11 +657,11 @@
                                     {{ standingsType === 'round' ? 'Show Standings by Matchup' : 'Show Standings by Round' }}
                                 </button>
 
-                                <!-- Dropdown -->
+                                <!-- Dropdown for Drop Lowest Scores -->
                                 <div style="margin-top: 5px;">
                                     <mat-form-field appearance="outline" id="drop-scores-select" style="width: 200px;">
                                         <mat-label>Drop Lowest Scores</mat-label>
-                                        <mat-select (selectionChange)="onDropLowestChange($event.value)">
+                                        <mat-select [(value)]="dropLowest" (selectionChange)="onDropLowestChange($event.value)">
                                             <mat-option [value]="0">Don't Drop Any</mat-option>
                                             <mat-option *ngFor="let i of [1, 2, 3, 4, 5, 6]" [value]="i">
                                                 Drop {{ i }} {{ i === 1 ? 'Score' : 'Scores' }}
@@ -674,7 +674,7 @@
                                 <div>
                                     <mat-form-field appearance="outline" style="width: 200px;">
                                         <mat-label>Number of Subs Allowed</mat-label>
-                                        <mat-select (selectionChange)="onNumberOfSubsChange($event.value)">
+                                        <mat-select [(value)]="numberOfSubsAllowed" (selectionChange)="onNumberOfSubsChange($event.value)">
                                             <mat-option [value]="0">No Subs Allowed</mat-option>
                                             <mat-option *ngFor="let i of [1, 2, 3, 4, 5, 100]" [value]="i">
                                                 Allow {{ i }} {{ i === 1 ? 'Sub' : 'Subs' }}
@@ -687,7 +687,7 @@
                                 <div>
                                     <mat-form-field appearance="outline" style="width: 200px;">
                                         <mat-label>Percent of Score for Subs</mat-label>
-                                        <mat-select (selectionChange)="onSubScorePercentChange($event.value)">
+                                        <mat-select [(value)]="subScorePercent" (selectionChange)="onSubScorePercentChange($event.value)">
                                             <mat-option *ngFor="let percent of [100, 90, 80, 70, 60, 50]" [value]="percent">
                                                 {{ percent }}%
                                             </mat-option>
@@ -1234,8 +1234,7 @@
         <button color="primary" mat-raised-button (click)="printMatchups()" class="mb-3">
             Print Matchups
         </button>
-        <!-- Number of Rounds Selection -->
-        <!--Commenting this out for now since i have the score input tab now
+         <!--Number of Rounds Selection--> 
         <mat-form-field appearance="fill" class="w-75">
             <mat-label>Number of Rounds</mat-label>
             <mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)">
@@ -1243,7 +1242,7 @@
                     {{ round }} Rounds
                 </mat-option>
             </mat-select>
-        </mat-form-field>-->
+        </mat-form-field>
     </div>
 </div>
 

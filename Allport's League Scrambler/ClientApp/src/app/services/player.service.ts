@@ -80,26 +80,26 @@ export class PlayerService {
         );
     }
 
-    getStandingsByLeague(leagueName: string): Observable<PlayerScoresResponse> {
+    public getStandingsByLeague(leagueName: string): Observable<PlayerScoresResponse> {
         return this.httpClient.get<PlayerScoresResponse>(
             `${this.baseUrl}api/ScrambleData/GetByLeague/${leagueName}`
         );
     }
 
-    getStandingsByLeagueMatchup(leagueName: string): Observable<PlayerScoresResponse> {
+    public getStandingsByLeagueMatchup(leagueName: string): Observable<PlayerScoresResponse> {
         return this.httpClient.get<PlayerScoresResponse>(
             `${this.baseUrl}api/ScrambleData/GetByLeagueMatchup/${leagueName}`
         );
     }
 
     // New method to retrieve KingQueenTeams by ScrambleNumber
-    getKingQueenTeamsByScrambleNumber(leagueName: string, scrambleNumber: number): Observable<KingQueenTeamsResponse> {
+    public getKingQueenTeamsByScrambleNumber(leagueName: string, scrambleNumber: number): Observable<KingQueenTeamsResponse> {
         return this.httpClient.get<KingQueenTeamsResponse>(
             `${this.baseUrl}api/ScrambleData/GetKingQueenTeamsByScrambleNumber/${leagueName}/${scrambleNumber}`
         );
     }
 
-    getMultipleKingQueenTeamsByScrambleNumbers(leagueName: string, scrambleNumbers: number[]): Observable<KingQueenTeamsResponse> {
+    public getMultipleKingQueenTeamsByScrambleNumbers(leagueName: string, scrambleNumbers: number[]): Observable<KingQueenTeamsResponse> {
         const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
         const options = { headers: headers };
         return this.httpClient.post<KingQueenTeamsResponse>(
@@ -134,7 +134,7 @@ export class PlayerService {
         return this.httpClient.post<Player>(this.baseUrl + 'api/ScrambleData/DeletePlayer/' + leagueName, player);
     }
 
-    updateKingQueenPlayerSubStatus(
+    public updateKingQueenPlayerSubStatus(
         kingQueenTeamId: number,
         playerId: number,
         isSubScore: boolean
@@ -153,7 +153,7 @@ export class PlayerService {
         );
     }
 
-    getKingQueenTeamDetails(teamId: number, playerId: number): Observable<KingQueenTeam> {
+    public getKingQueenTeamDetails(teamId: number, playerId: number): Observable<KingQueenTeam> {
         return this.httpClient.get<KingQueenTeam>(`/api/kingqueenteam/${teamId}/player/${playerId}`);
     }
 

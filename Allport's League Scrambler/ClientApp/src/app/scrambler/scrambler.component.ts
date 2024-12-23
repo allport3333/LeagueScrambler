@@ -78,6 +78,7 @@ export class ScramblerComponent implements OnInit {
     queriedPlayers: Player[];
     queriedScrambles: KingQueenTeam[];
     leaguesAvailable: Leagues[] = [];
+    leagueId: number;
     gendersPossible: Gender[] = [{ value: 'Female', isMale: false }, { value: 'Male', isMale: true }];
     isSub: boolean;
     loggedIn: boolean = false;
@@ -163,6 +164,50 @@ export class ScramblerComponent implements OnInit {
         this.teamSize = 4;
 
     }
+
+
+    private async initializeSettings(): Promise<void> {
+        try {
+            console.log('Initializing settings for leagueId:', this.leagueId);
+
+            const numberOfSubsAllowedValue = await this.loginService.getSettingValue('numberOfSubsAllowed', this.leagueId).toPromise();
+            console.log('Fetched numberOfSubsAllowedValue:', numberOfSubsAllowedValue);
+            this.numberOfSubsAllowed = this.parseValueAsNumber(numberOfSubsAllowedValue, 100); // Default is 100
+            console.log('Parsed numberOfSubsAllowed:', this.numberOfSubsAllowed);
+
+            const dropLowestValue = await this.loginService.getSettingValue('dropLowest', this.leagueId).toPromise();
+            console.log('Fetched dropLowestValue:', dropLowestValue);
+            this.dropLowest = this.parseValueAsNumber(dropLowestValue, 0); // Default is 0
+            console.log('Parsed dropLowest:', this.dropLowest);
+
+            const subScorePercentValue = await this.loginService.getSettingValue('subScorePercent', this.leagueId).toPromise();
+            console.log('Fetched subScorePercentValue:', subScorePercentValue);
+            this.subScorePercent = this.parseValueAsNumber(subScorePercentValue, 100); // Default is 100
+            console.log('Parsed subScorePercent:', this.subScorePercent);
+
+            console.log('Settings initialization completed successfully.');
+        } catch (error) {
+            console.error('Error initializing settings:', error);
+        }
+    }
+
+
+    private parseValueAsNumber(value: any, defaultValue: number): number {
+        if (typeof value === 'number') {
+            return value; // Already a number
+        }
+        if (typeof value === 'string' && !isNaN(parseFloat(value))) {
+            return parseFloat(value); // Convert string to number
+        }
+        console.warn(`Value "${value}" could not be parsed as a number. Using default: ${defaultValue}`);
+        return defaultValue; // Fallback to default
+    }
+
+
+    private async awaitSettingsAndInitialize(): Promise<void> {
+        await this.initializeSettings();
+    }
+
 
     swapGender(player: any): void {
         player.isMale = !player.isMale; // Toggles the value
@@ -485,6 +530,12 @@ export class ScramblerComponent implements OnInit {
         this.playerLoading = true;
         this.clearStandings();
         this.reset();
+
+        const selectedLeague = this.leaguesAvailable.find(league => league.leagueName === this.selectedLeague);
+        if (selectedLeague) {
+            this.leagueId = selectedLeague.id; // Assuming 'id' is the property name for the league's ID
+        }
+
         this.playerService.SelectLeague(this.selectedLeague).subscribe(result => {
             this.queriedPlayers = result;
             this.malePlayerCount = result.length;
@@ -505,6 +556,7 @@ export class ScramblerComponent implements OnInit {
 
             this.playerLoading = false;
             this.tabGroup.selectedIndex = 0;
+            this.awaitSettingsAndInitialize();
         });
         this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe(result => {
             this.queriedScrambles = result;

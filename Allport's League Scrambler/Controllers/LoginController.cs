@@ -280,6 +280,26 @@ namespace Allport_s_League_Scrambler.Controllers
             }
         }
 
+        [HttpGet("GetSettingValue")]
+        public async Task<IActionResult> GetSettingValue(string settingName, int leagueId)
+        {
+            var context = new DataContext();
+            if (string.IsNullOrWhiteSpace(settingName))
+            {
+                return BadRequest("SettingName is required.");
+            }
+
+            var setting = await context.LeagueSettings
+                .FirstOrDefaultAsync(s => s.SettingName == settingName && s.LeagueId == leagueId);
+
+            if (setting == null)
+            {
+                return NotFound($"Setting with name '{settingName}' not found.");
+            }
+
+            return Ok(setting.SettingValue);
+        }
+
 
         [HttpPost("forgotpassword")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
