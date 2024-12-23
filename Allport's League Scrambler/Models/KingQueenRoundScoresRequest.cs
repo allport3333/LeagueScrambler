@@ -7,5 +7,6 @@ namespace Allport_s_League_Scrambler.Models
     public class KingQueenRoundScoresRequest
     {
         public List<KingQueenRoundScores> RoundScores { get; set; }
+        public List<KingQueenPlayer> KingQueenPlayers { get; set; }
     }
 }

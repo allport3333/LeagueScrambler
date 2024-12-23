@@ -1,6 +1,8 @@
 import { Component, Inject, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatSelectionListChange, MatTabGroup } from '@angular/material';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatChipsModule } from '@angular/material';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 import { FormGroup, FormControl } from '@angular/forms';
@@ -16,7 +18,7 @@ import { LoginService } from '../services/login.service';
 import { KingQueenRoundScoresResponse } from '../data-models/kingQueenRoundScoresResponse';
 import { KingQueenRoundScore } from '../data-models/KingQueenRoundScore';
 import { KingQueenRoundScoresRequest } from '../data-models/kingQueenRoundScoresRequest';
-import { PlayerScoreGroup } from '../data-models/playerScoresResponse';
+import { PlayerScoreGroup, PlayerScoresResponse } from '../data-models/playerScoresResponse';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
@@ -35,6 +37,7 @@ export class ScramblerComponent implements OnInit {
     searchTermDelete: string = '';
     searchedPlayersToDelete: any[] = [];
     selectedPlayerToDelete: any = null;
+    private originalStandings: PlayerScoreGroup[] | null = null;
     standingsRounds: number[] = [];
     roundScores: { [teamId: number]: { RoundScore: number; RoundWon: boolean }[] } = {};
     kingQueenRoundScores: KingQueenRoundScore[] = [];
@@ -45,6 +48,9 @@ export class ScramblerComponent implements OnInit {
     showPlayerTeams = false; // Controls the visibility of the player teams section
     showTeamFormation = false; // Controls the visibility of the team formation section
     hideEverything: boolean;
+    numberOfSubsAllowed: number = 100; // Default value
+    dropLowest: number = 0; // Default value
+    subScorePercent: number = 100; // Default value
     totalPlayers: Player[];
     players: Player[];
     selectedMalePlayers: Player[];
@@ -98,7 +104,7 @@ export class ScramblerComponent implements OnInit {
     listOfRetrievedScrambleNumbers: number[] = [];
     listOfByePlayers: Player[] = [];
     teamSizePossible: number[] = [2, 3, 4, 5];
-    maxNumberOfTeams: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,21,22,23,24,25,26];
+    maxNumberOfTeams: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26];
     femalePlayerCount: number;
     malePlayerCount: number;
     topPlayerCount: number;
@@ -128,7 +134,7 @@ export class ScramblerComponent implements OnInit {
     isMale1: boolean;
     completeRandom: false;
     playerLoading: boolean;
-    lastResult: any;
+    lastResult: PlayerScoresResponse;
     leagueName: string;
     selectedLeague: string;
     standings: PlayerScoreGroup[];
@@ -373,6 +379,7 @@ export class ScramblerComponent implements OnInit {
             });
             return { playerName: playerGroup.playerName, scores };
         });
+        this.sortStandingsWithUpdates('totalScore');
     }
 
 
@@ -514,7 +521,7 @@ export class ScramblerComponent implements OnInit {
         this.playerService.getStandingsByLeague(this.selectedLeague).subscribe(
             result => {
                 this.lastResult = result;
-                this.processStandings(result);
+                this.processStandings(result, this.getCurrentOptions());
             },
             error => {
                 console.error("Error fetching standings:", error); // Log any errors
@@ -531,7 +538,7 @@ export class ScramblerComponent implements OnInit {
             this.playerService.getStandingsByLeagueMatchup(this.selectedLeague).subscribe(
                 result => {
                     this.lastResult = result;
-                    this.processStandings(result); // Reuse processStandings logic
+                    this.processStandings(result, this.getCurrentOptions()); // Reuse processStandings logic
                 },
                 error => {
                     console.error("Error fetching matchup standings:", error);
@@ -543,7 +550,7 @@ export class ScramblerComponent implements OnInit {
             this.playerService.getStandingsByLeague(this.selectedLeague).subscribe(
                 result => {
                     this.lastResult = result;
-                    this.processStandings(result); // Reuse processStandings logic
+                    this.processStandings(result, this.getCurrentOptions()); // Reuse processStandings logic
                 },
                 error => {
                     console.error("Error fetching round standings:", error);
@@ -562,56 +569,129 @@ export class ScramblerComponent implements OnInit {
         this.showTeamFormation = !this.showTeamFormation;
     }
 
-    onDropLowestChange(selectedDrop: string): void {
-        const dropLowest = parseInt(selectedDrop, 10); // Convert the string to a number
-        this.processStandings(this.lastResult, dropLowest); // Pass the number of scores to drop
-        this.sortStandingsWithDropped('totalScore');
+    // Helper method to get the current options
+    private getCurrentOptions(): { dropLowestNumber: number; numberOfSubsAllowed: number; subScorePercent: number } {
+        return {
+            dropLowestNumber: this.dropLowest,
+            numberOfSubsAllowed: this.numberOfSubsAllowed,
+            subScorePercent: this.subScorePercent
+        };
     }
 
-    private processStandings(result: any, dropLowestNumber: number = 0): void {
-        this.standings = result.playerScores; // Save grouped scores
+    // Handle Drop Lowest Scores change
+    onDropLowestChange(selectedDrop: string): void {
+        this.dropLowest = parseInt(selectedDrop, 10); // Convert the string to a number
+        console.log('Drop Lowest changed:', this.dropLowest);
+        this.processStandings(this.lastResult, this.getCurrentOptions());
+        this.sortStandingsWithUpdates('totalScore');
+    }
+
+    // Handle Number of Subs Allowed change
+    onNumberOfSubsChange(value: number): void {
+        this.numberOfSubsAllowed = value;
+        console.log('Number of Subs Allowed changed:', this.numberOfSubsAllowed);
+        this.processStandings(this.lastResult, this.getCurrentOptions());
+        this.sortStandingsWithUpdates('totalScore');
+    }
+
+    // Handle Percent of Score for Subs change
+    onSubScorePercentChange(value: number): void {
+        this.subScorePercent = value;
+        console.log('Sub Score Percent changed:', this.subScorePercent);
+        this.processStandings(this.lastResult, this.getCurrentOptions());
+        this.sortStandingsWithUpdates('totalScore');
+    }
+
+
+    private processStandings(
+        result: any,
+        options: { dropLowestNumber?: number; numberOfSubsAllowed?: number; subScorePercent?: number } = {}
+    ): void {
+        // Save the original scores only once
+        if (!this.originalStandings) {
+            this.originalStandings = JSON.parse(JSON.stringify(result.playerScores)); // Deep copy to preserve original data
+        }
+
+
+        // Reset standings to the original scores
+        if (this.lastResult == null) {
+            this.standings = JSON.parse(JSON.stringify(this.originalStandings));
+        }
+        else {
+            this.standings = this.lastResult.playerScores;
+        }
+
         if (this.standings && this.standings.length > 0) {
             // Separate standings by gender
             this.maleStandings = this.standings.filter(player => player.isMale);
             this.femaleStandings = this.standings.filter(player => !player.isMale);
 
-            // Calculate total scores and wins for each player
-            const calculateStandings = (standings: any[]) => standings
-                .map(player => {
-                    // Sort scores in ascending order (for dropping the lowest ones)
-                    const sortedScores = player.scores
-                        .slice()
-                        .sort((a, b) => a.score - b.score); // Ascending order
+            const calculateStandings = (standings: PlayerScoreGroup[]) =>
+                standings.map(player => {
+                    // Create a copy of the original scores for modification
+                    const updatedScores = player.scores.map(score => ({ ...score, isDropped: false, isReduced: false }));
+
+                    // Filter sub-scores from the updated scores
+                    const subScores = updatedScores.filter(score => score.isSubScore);
+
+                    // Sort sub-scores in descending order by score
+                    const sortedSubScores = subScores.slice().sort((a, b) => b.score - a.score);
+
+                    // Adjust sub-scores beyond the allowed limit
+                    sortedSubScores.forEach((subScore, subIndex) => {
+                        const isReduced = subIndex >= options.numberOfSubsAllowed;
+                        // Find and update the matching score in updatedScores
+                        const matchingScoreIndex = updatedScores.findIndex(score => score === subScore);
+                        if (matchingScoreIndex !== -1) {
+                            updatedScores[matchingScoreIndex] = {
+                                ...updatedScores[matchingScoreIndex],
+                                score: isReduced
+                                    ? (updatedScores[matchingScoreIndex].score * options.subScorePercent) / 100
+                                    : updatedScores[matchingScoreIndex].score,
+                                isReduced: isReduced
+                            };
+                        }
+                    });
+
+                    // Sort scores in ascending order (after reduction) for dropping the lowest ones
+                    const sortedScores = updatedScores.slice().sort((a, b) => a.score - b.score);
 
                     // Mark the lowest scores to drop
-                    const updatedScores = player.scores.map(score => ({
-                        ...score,
-                        isDropped: sortedScores.indexOf(score) < dropLowestNumber // Mark as dropped if in the lowest range
-                    }));
+                    sortedScores.slice(0, options.dropLowestNumber).forEach(droppedScore => {
+                        const matchingScoreIndex = updatedScores.findIndex(score => score === droppedScore);
+                        if (matchingScoreIndex !== -1) {
+                            updatedScores[matchingScoreIndex] = {
+                                ...updatedScores[matchingScoreIndex],
+                                isDropped: true
+                            };
+                        }
+                    });
 
-                    // Calculate total scores and wins excluding the dropped scores
+                    // Calculate total score
                     const totalScore = updatedScores
                         .filter(score => !score.isDropped)
                         .reduce((sum, score) => sum + score.score, 0);
 
+                    // Calculate total wins
                     const totalWins = updatedScores
                         .filter(score => !score.isDropped)
                         .reduce((sum, score) => sum + score.roundWon, 0);
 
+                    // Return updated player
                     return {
                         ...player,
-                        scores: updatedScores, // Include updated scores with the isDropped property
+                        scores: updatedScores, // Include updated scores with `isDropped` and `isReduced`
                         totalScore: totalScore,
                         totalWins: totalWins
                     };
-                })
-                .sort((a, b) => {
+                }).sort((a, b) => {
                     // Sort by total wins descending, then by total score descending
                     if (b.totalWins !== a.totalWins) {
                         return b.totalWins - a.totalWins;
                     }
                     return b.totalScore - a.totalScore;
                 });
+
 
             this.maleStandings = calculateStandings(this.maleStandings);
             this.femaleStandings = calculateStandings(this.femaleStandings);
@@ -622,10 +702,15 @@ export class ScramblerComponent implements OnInit {
                 this.standingsRounds.push(i + 1);
             }
 
-            this.initializeStandingsRounds();// Initialize rounds for standings
-
+            this.initializeStandingsRounds(); // Initialize rounds for standings
         }
         this.playerLoading = false;
+    }
+
+    // This method should be called whenever a new `result` is received
+    setNewStandings(result: any): void {
+        this.originalStandings = JSON.parse(JSON.stringify(result.playerScores)); // Deep copy of initial standings
+        this.processStandings(result, this.getCurrentOptions());
     }
 
     sortStandings(column: string) {
@@ -641,7 +726,7 @@ export class ScramblerComponent implements OnInit {
         this.sortFemaleStandings(column);
     }
 
-    sortStandingsWithDropped(column: string) {
+    sortStandingsWithUpdates(column: string) {
 
         this.sortDirection = 'desc';
 
@@ -1387,6 +1472,16 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
+    updateIsSubScore(kingQueenTeamId: number, playerId: number, isSub: boolean): void {
+
+        // Call the API to persist the change
+        this.playerService.updateKingQueenPlayerSubStatus(kingQueenTeamId, playerId, isSub).subscribe({
+            next: () => console.log('Sub status updated successfully'),
+            error: (err) => console.error('Error updating sub status:', err)
+        });
+    }
+
+
     removePlayerFromLowPlayerList(player: Player) {
         // Find all indices of the player in the totalLowPlayers array
         const playerIndices = this.totalLowPlayers.reduce((indices, current, index) => {
@@ -1659,6 +1754,7 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
+
     async saveKingQueenTeams() {
         // Transform Team[] into KingQueenTeamWithPlayers[]
         const kingQueenTeamsWithPlayers: KingQueenTeamWithPlayers[] = this.listOfTeams.map(team => {
@@ -1668,7 +1764,7 @@ export class ScramblerComponent implements OnInit {
                     leagueID: 0, // Assign a default value for leagueID or adjust it as needed
                     dateOfTeam: new Date(), // Assign the current date or adjust it as needed
                     scrambleNumber: 0, // Assign a default value for scrambleNumber or adjust it as needed
-                    kingQueenPlayers: team.players, // You can initialize this as an empty array
+                    kingQueenPlayers: [], // You can initialize this as an empty array
                     kingQueenRoundScores: []
                 },
                 players: team.players,

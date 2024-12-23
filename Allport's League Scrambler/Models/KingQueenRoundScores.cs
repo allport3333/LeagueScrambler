@@ -12,6 +12,5 @@ namespace Allport_s_League_Scrambler.Models
         public int KingQueenTeamId { get; set; }
         public int RoundScore { get; set; }
         public bool? RoundWon { get; set; }
-
     }
 }

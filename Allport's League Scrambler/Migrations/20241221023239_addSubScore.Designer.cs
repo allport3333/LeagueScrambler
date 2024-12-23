@@ -4,14 +4,16 @@ using Allport_s_League_Scrambler.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Allport_s_League_Scrambler.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20241221023239_addSubScore")]
+    partial class addSubScore
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -67,8 +69,6 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.Property<int>("PlayerId");
 
-                    b.Property<bool?>("isSubScore");
-
                     b.HasKey("Id");
 
                     b.HasIndex("KingQueenTeamId");
@@ -91,6 +91,8 @@ namespace Allport_s_League_Scrambler.Migrations
                     b.Property<int>("RoundScore");
 
                     b.Property<bool?>("RoundWon");
+
+                    b.Property<bool?>("isSubScore");
 
                     b.HasKey("Id");
 

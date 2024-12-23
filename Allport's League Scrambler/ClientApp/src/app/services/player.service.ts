@@ -134,6 +134,29 @@ export class PlayerService {
         return this.httpClient.post<Player>(this.baseUrl + 'api/ScrambleData/DeletePlayer/' + leagueName, player);
     }
 
+    updateKingQueenPlayerSubStatus(
+        kingQueenTeamId: number,
+        playerId: number,
+        isSubScore: boolean
+    ): Observable<void> {
+        // Prepare the request payload
+        const payload = {
+            kingQueenTeamId: kingQueenTeamId,
+            playerId: playerId,
+            isSubScore: isSubScore
+        };
+
+        // Send the request and expect no return data
+        return this.httpClient.post<void>(
+            `${this.baseUrl}api/ScrambleData/UpdateKingQueenPlayerSubStatus`,
+            payload
+        );
+    }
+
+    getKingQueenTeamDetails(teamId: number, playerId: number): Observable<KingQueenTeam> {
+        return this.httpClient.get<KingQueenTeam>(`/api/kingqueenteam/${teamId}/player/${playerId}`);
+    }
+
 
     public AddNewLeague(leagueName: string) {
         return this.httpClient.post<Leagues>(this.baseUrl + 'api/ScrambleData/AddNewLeague/' + leagueName, []);

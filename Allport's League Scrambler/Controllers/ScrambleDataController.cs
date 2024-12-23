@@ -300,6 +300,62 @@ namespace Allport_s_League_Scrambler.Controllers
             }
         }
 
+        [HttpPost("[action]")]
+        public async Task<IActionResult> UpdateKingQueenPlayerSubStatus([FromBody] UpdateSubStatusDto dto)
+        {
+            var context = new DataContext();
+            if (dto == null)
+            {
+                return BadRequest("Invalid data");
+            }
+
+            var kingQueenPlayer = await context.KingQueenPlayer
+                .FirstOrDefaultAsync(p => p.KingQueenTeamId == dto.KingQueenTeamId && p.PlayerId == dto.PlayerId);
+
+            if (kingQueenPlayer == null)
+            {
+                return NotFound("KingQueenPlayer not found");
+            }
+
+            kingQueenPlayer.isSubScore = dto.IsSubScore;
+
+            try
+            {
+                await context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return StatusCode(500, "Error updating sub status");
+            }
+
+            return NoContent();
+        }
+
+        [HttpGet("{teamId}/player/{playerId}")]
+        public IActionResult GetKingQueenTeamDetails(int teamId, int playerId)
+        {
+            var context = new DataContext();
+            // Fetch the KingQueenTeam and include its players
+            var team = context.KingQueenTeam
+                .Include(t => t.KingQueenPlayers) // Ensure players are included in the result
+                .FirstOrDefault(t => t.Id == teamId);
+
+            if (team == null)
+            {
+                return NotFound(); // Return 404 if the team does not exist
+            }
+
+            // Ensure the requested player is part of the team
+            var player = team.KingQueenPlayers.FirstOrDefault(p => p.PlayerId == playerId);
+            if (player == null)
+            {
+                return NotFound($"Player with ID {playerId} is not part of Team {teamId}");
+            }
+
+            return Ok(team); // Return the team details
+        }
+
+
         [HttpPost("[action]/{leagueName}")]
         public KingQueenTeamsResponse SaveKingQueenTeams([FromBody] KingQueenTeamsResponse request, string leagueName)
         {
@@ -330,7 +386,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 {
                     LeagueID = leagueId,
                     DateOfTeam = currentDate,
-                    ScrambleNumber = scrambleNumber
+                    ScrambleNumber = scrambleNumber,
+                    KingQueenPlayers = new List<KingQueenPlayer>() // Ensure it is not null
                 };
 
                 context.KingQueenTeam.Add(newTeam);
@@ -341,8 +398,10 @@ namespace Allport_s_League_Scrambler.Controllers
                     var newKingQueenPlayer = new KingQueenPlayer
                     {
                         KingQueenTeamId = newTeam.Id,
-                        PlayerId = player.Id
-                    };
+                        PlayerId = player.Id,
+                        isSubScore = newTeam.KingQueenPlayers?.Where(x => x.PlayerId == player.Id)
+                      .FirstOrDefault()?.isSubScore ?? false
+                };
                     context.KingQueenPlayer.Add(newKingQueenPlayer);
                 }
                 context.SaveChanges();
@@ -505,7 +564,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 .SelectMany(team => team.KingQueenRoundScores.Select(score => new
                 {
                     ScrambleNumber = team.ScrambleNumber, // ScrambleNumber from KingQueenTeam
-                    RoundId = score.RoundId // RoundId from KingQueenRoundScores
+                    RoundId = score.RoundId,// RoundId from KingQueenRoundScores
                 }))
                 .Distinct() // Ensure unique ScrambleNumber + RoundId combinations
                 .OrderBy(round => round.ScrambleNumber)
@@ -519,45 +578,50 @@ namespace Allport_s_League_Scrambler.Controllers
 
             // Step 4: Build player scores based on valid rounds
             var playerScores = kingQueenTeams
-                .SelectMany(team => team.KingQueenPlayers, (team, player) => new
+            .SelectMany(team => team.KingQueenPlayers, (team, player) => new
+            {
+                PlayerId = player.PlayerId,
+                PlayerName = player.Player.FirstName + " " + player.Player.LastName,
+                IsMale = player.Player.IsMale,
+                Scores = team.KingQueenRoundScores.Select(score => new
                 {
-                    PlayerId = player.PlayerId,
-                    PlayerName = player.Player.FirstName + " " + player.Player.LastName,
-                    IsMale = player.Player.IsMale,
-                    Scores = team.KingQueenRoundScores.Select(score => new
-                    {
-                        RoundId = score.RoundId,
-                        Score = score.RoundScore,
-                        ScrambleNumber = team.ScrambleNumber,
-                        RoundWon = (bool)score.RoundWon ? 1 : 0 
-                    }).ToList()
-                })
-                .GroupBy(playerData => new { playerData.PlayerId, playerData.PlayerName, playerData.IsMale })
-                .Select(group => new
+                    RoundId = score.RoundId,
+                    Score = score.RoundScore,
+                    ScrambleNumber = team.ScrambleNumber,
+                    RoundWon = (bool)score.RoundWon ? 1 : 0,
+                    IsSubScore = player.isSubScore // Assign IsSubScore here per score
+                }).ToList()
+            })
+            .GroupBy(playerData => new { playerData.PlayerId, playerData.PlayerName, playerData.IsMale })
+            .Select(group => new
+            {
+                PlayerId = group.Key.PlayerId,
+                PlayerName = group.Key.PlayerName,
+                IsMale = group.Key.IsMale,
+                Scores = validRounds.Select(round => new
                 {
-                    PlayerId = group.Key.PlayerId,
-                    PlayerName = group.Key.PlayerName,
-                    IsMale = group.Key.IsMale,
-                    Scores = validRounds.Select(round => new
-                    {
-                        ScrambleNumber = round.ScrambleNumber,
-                        RoundId = round.RoundId,
-                        Score = group.SelectMany(player => player.Scores)
-                                     .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.Score ?? 0, // Assign 0 for missing scores,
-                        RoundWon = group.SelectMany(player => player.Scores)
-                                .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.RoundWon ?? 0 // Assign false if missing
-                    })
-                    .OrderBy(score => score.ScrambleNumber)
-                    .ThenBy(score => score.RoundId)
-                    .ToList()
+                    RoundId = round.RoundId,
+                    ScrambleNumber = round.ScrambleNumber,
+                    IsSubScore = group
+                        .SelectMany(player => player.Scores)
+                        .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.IsSubScore ?? false, // Use per-score IsSubScore
+                    Score = group.SelectMany(player => player.Scores)
+                                 .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.Score ?? 0, // Assign 0 for missing scores
+                    RoundWon = group.SelectMany(player => player.Scores)
+                                    .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.RoundWon ?? 0 // Assign 0 if missing
                 })
-                .ToList();
+                .OrderBy(score => score.ScrambleNumber)
+                .ThenBy(score => score.RoundId)
+                .ToList()
+            })
+            .ToList();
 
             // Step 5: Calculate the total number of unique rounds
             var maxRounds = validRounds.Count;
 
             // Step 6: Return the result
             return Ok(new { playerScores, maxRounds });
+
         }
 
         [HttpGet("GetByLeagueMatchup/{leagueName}")]
@@ -593,10 +657,10 @@ namespace Allport_s_League_Scrambler.Controllers
             var validRounds = kingQueenTeams
                 .SelectMany(team => team.KingQueenRoundScores.Select(score => new
                 {
-                    ScrambleNumber = team.ScrambleNumber, // ScrambleNumber from KingQueenTeam
-                    RoundId = score.RoundId // RoundId from KingQueenRoundScores
+                    ScrambleNumber = team.ScrambleNumber,
+                    RoundId = score.RoundId
                 }))
-                .Distinct() // Ensure unique ScrambleNumber + RoundId combinations
+                .Distinct()
                 .OrderBy(round => round.ScrambleNumber)
                 .ThenBy(round => round.RoundId)
                 .ToList();
@@ -608,54 +672,57 @@ namespace Allport_s_League_Scrambler.Controllers
 
             // Step 4: Build player scores aggregated by scramble
             var unfilteredPlayerScores = kingQueenTeams
-                    .SelectMany(team => team.KingQueenPlayers, (team, player) => new
-                    {
-                        PlayerId = player.PlayerId,
-                        PlayerName = player.Player.FirstName + " " + player.Player.LastName,
-                        IsMale = player.Player.IsMale,
-                        Scores = team.KingQueenRoundScores
-                            .GroupBy(score => team.ScrambleNumber) // Group by ScrambleNumber from the team
-                            .Select(scrambleGroup => new
-                            {
-                                roundId= scrambleGroup.FirstOrDefault().RoundId,
-                                ScrambleNumber = scrambleGroup.Key,
-                                Score = scrambleGroup.Sum(roundScore => roundScore.RoundScore), // Sum scores for all rounds in the scramble
-                                RoundWon = scrambleGroup.Where(roundScore => (bool)roundScore.RoundWon).Count() // At least one round won in the scramble
-                            })
-                            .OrderBy(scramble => scramble.ScrambleNumber)
-                            .ToList()
-                    })
-                    .GroupBy(playerData => new { playerData.PlayerId, playerData.PlayerName, playerData.IsMale })
-                    .Select(group => new
-                    {
-                        PlayerId = group.Key.PlayerId,
-                        PlayerName = group.Key.PlayerName,
-                        IsMale = group.Key.IsMale,
-                        Scores = group.SelectMany(player => player.Scores).ToList()
-                    })
-                    .ToList();
+                .SelectMany(team => team.KingQueenPlayers, (team, player) => new
+                {
+                    PlayerId = player.PlayerId,
+                    PlayerName = player.Player.FirstName + " " + player.Player.LastName,
+                    IsMale = player.Player.IsMale,
+                    Scores = team.KingQueenRoundScores
+                        .GroupBy(score => team.ScrambleNumber)
+                        .Select(scrambleGroup => new
+                        {
+                            roundId = scrambleGroup.FirstOrDefault().RoundId,
+                            ScrambleNumber = scrambleGroup.Key,
+                            Score = scrambleGroup.Sum(roundScore => roundScore.RoundScore),
+                            RoundWon = scrambleGroup.Count(roundScore => (bool)roundScore.RoundWon),
+                            IsSubScore = player.isSubScore // Include IsSubScore
+                        })
+                        .OrderBy(scramble => scramble.ScrambleNumber)
+                        .ToList()
+                })
+                .GroupBy(playerData => new { playerData.PlayerId, playerData.PlayerName, playerData.IsMale })
+                .Select(group => new
+                {
+                    PlayerId = group.Key.PlayerId,
+                    PlayerName = group.Key.PlayerName,
+                    IsMale = group.Key.IsMale,
+                    Scores = group.SelectMany(player => player.Scores).ToList()
+                })
+                .ToList();
 
-            // Step 6.1: Get all unique ScrambleNumbers across all teams
+            // Step 5: Get all unique ScrambleNumbers across all teams and assign sequential RoundIds
             var allScrambleNumbers = kingQueenTeams
-                .Where(team => team.KingQueenRoundScores.Any()) // Only include teams with scores
+                .Where(team => team.KingQueenRoundScores.Any())
                 .Select(team => team.ScrambleNumber)
                 .Distinct()
                 .OrderBy(scramble => scramble)
                 .ToList();
 
-            // Step 6.1: Get all unique ScrambleNumbers across all teams and assign sequential RoundIds
             var scrambleWithRoundIds = allScrambleNumbers
                 .Select((scrambleNumber, index) => new
                 {
                     ScrambleNumber = scrambleNumber,
-                    RoundId = index + 1 // Sequential RoundId starting at 1
+                    RoundId = index + 1
                 })
                 .ToList();
 
-            // Step 6.2: Normalize each player's scores by creating a new list
+            try
+            {
+
+
+            // Step 6: Normalize each player's scores
             var playerScores = unfilteredPlayerScores.Select(player =>
             {
-                // Create a dictionary of scores grouped by ScrambleNumber for the player
                 var summedScoresByScramble = player.Scores
                     .GroupBy(score => score.ScrambleNumber)
                     .ToDictionary(
@@ -663,42 +730,41 @@ namespace Allport_s_League_Scrambler.Controllers
                         group => new
                         {
                             ScrambleNumber = group.Key,
-                            Score = group.Sum(s => s.Score), // Sum scores for the scramble
-                            RoundWon = group.Sum(s => s.RoundWon) // At least one round won in the scramble
+                            Score = group.Sum(s => s.Score),
+                            RoundWon = group.Sum(s => s.RoundWon),
+                            IsSubScore = group.Any(s => s.IsSubScore ?? false)
                         }
                     );
 
-                // Add missing scramble numbers with default values
                 var normalizedScores = scrambleWithRoundIds
                     .Select(scramble =>
                     {
                         if (summedScoresByScramble.TryGetValue(scramble.ScrambleNumber, out var existingScore))
                         {
-                            // Use the existing summed score and add RoundId
                             return new
                             {
                                 ScrambleNumber = scramble.ScrambleNumber,
                                 RoundId = scramble.RoundId,
                                 Score = existingScore.Score,
-                                RoundWon = existingScore.RoundWon
+                                RoundWon = existingScore.RoundWon,
+                                IsSubScore = existingScore.IsSubScore
                             };
                         }
                         else
                         {
-                            // Add a default score for the missing scramble with RoundId
                             return new
                             {
                                 ScrambleNumber = scramble.ScrambleNumber,
                                 RoundId = scramble.RoundId,
-                                Score = 0,       // Default score
-                                RoundWon = 0 // Default round won status
+                                Score = 0,
+                                RoundWon = 0,
+                                IsSubScore = false
                             };
                         }
                     })
-                    .OrderBy(score => score.ScrambleNumber) // Ensure scores are sorted by ScrambleNumber
+                    .OrderBy(score => score.ScrambleNumber)
                     .ToList();
 
-                // Return a new player object with normalized summed scores
                 return new
                 {
                     PlayerId = player.PlayerId,
@@ -708,10 +774,13 @@ namespace Allport_s_League_Scrambler.Controllers
                 };
             }).ToList();
 
+                return Ok(new { playerScores, maxRounds = validRounds.Select(round => round.ScrambleNumber).Distinct().Count() });
+            }
+            catch (Exception ex)
+            {
 
-
-            // Step 5: Return the result
-            return Ok(new { playerScores, maxRounds = validRounds.Select(round => round.ScrambleNumber).Distinct().Count() });
+                throw;
+            }
         }
 
 

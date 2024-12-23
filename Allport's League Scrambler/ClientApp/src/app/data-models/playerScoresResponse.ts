@@ -8,11 +8,14 @@ export interface PlayerScoreGroup {
     isMale: boolean;
     playerName: string;
     scores: RoundScore[];
+    totalScore: number;
 }
 
 export interface RoundScore {
     roundId: number;
     score: number;
     date: Date;
-    roundsWon: number;
+    roundWon: number;
+    isReduced: boolean;
+    isSubScore: number;
 }

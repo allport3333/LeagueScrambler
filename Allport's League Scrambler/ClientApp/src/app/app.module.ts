@@ -13,7 +13,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {
     MatCardModule, MatButtonModule, MatMenuModule, MatToolbarModule, MatInputModule, MatIconModule, MatTableModule, MatPaginatorModule, MatSortModule, MatSidenavModule,
     MatTabsModule, MatTooltipModule, MatCheckboxModule, MatGridListModule, MatSelectModule, MatListModule, MatFormFieldModule, MatOptionModule, MatAutocompleteModule, MatExpansionModule, MatDialogModule,
-    MatStepperModule, MatDatepickerModule, MatNativeDateModule, MatTreeModule, MatProgressSpinnerModule, MatSnackBar, MatSnackBarContainer, MatSnackBarModule
+    MatStepperModule, MatDatepickerModule, MatNativeDateModule, MatTreeModule, MatProgressSpinnerModule, MatSnackBar, MatSnackBarContainer, MatSnackBarModule, MatSlideToggleModule, MatChipsModule
 } from '@angular/material';
 import { TeamScoresComponent } from './team-scores/team-scores.component';
 import { PlayerScoresComponent } from './player-scores/player-scores.component';
@@ -41,8 +41,10 @@ import { ResetPasswordComponent } from './reset-password/reset-password.componen
         HttpClientModule,
         FormsModule,
         MatInputModule,
+        MatChipsModule,
         MatCardModule,
         MatButtonModule,
+        MatSlideToggleModule,
         MatMenuModule,
         MatProgressSpinnerModule,
         MatToolbarModule,
