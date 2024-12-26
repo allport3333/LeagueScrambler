@@ -103,6 +103,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="ClientApp\src\app\detailed-player-stats\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
 

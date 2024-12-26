@@ -79,8 +79,6 @@ export class TeamScoresComponent implements OnInit {
             }
             else {
                 this.newTeamScoreLoading = true;
-                console.log(this.TeamScoresForm.controls["team1Score"].value);
-                console.log(this.TeamScoresForm.controls["team2Score"].value);
 
                 if (this.TeamScoresForm.controls["team1Score"].value === null || this.TeamScoresForm.controls["team2Score"].value === null || this.selectedTeam1 == null || this.selectedTeam2 == null
                     || this.TeamScoresForm.controls["date"].value == "" || this.TeamScoresForm == null) {

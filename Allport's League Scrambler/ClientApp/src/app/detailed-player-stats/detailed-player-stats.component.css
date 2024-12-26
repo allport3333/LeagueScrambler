@@ -1,0 +1,54 @@
+/* Responsive container for side-by-side layout */
+.responsive-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-between;
+}
+
+/* Cards for individual sections */
+.responsive-card {
+    flex: 1 1 calc(50% - 20px); /* Take half width minus gap on larger screens */
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .responsive-container {
+        flex-direction: column;
+    }
+
+    .responsive-card {
+        flex: 1 1 100%; /* Full width on smaller screens */
+    }
+}
+
+mat-cell:hover {
+    background-color: #d3d3d3; /* Light gray hover effect */
+    transition: background-color 0.2s ease;
+}
+
+.team-dropdown {
+    background-color: #f9f9f9;
+}
+
+.team-dropdown mat-card {
+    margin: 0;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Hover effect for matchup scores rows */
+.hover-effect:hover {
+    background-color: #f5f5f5; /* Light gray for hover effect */
+    cursor: pointer; /* Show pointer cursor */
+}
+
+/* Gender-based row highlighting for team table */
+.male-row {
+    background-color: #cce5ff; /* Light blue for male */
+}
+
+.female-row {
+    background-color: #ffe5e5; /* Light pink for female */
+}

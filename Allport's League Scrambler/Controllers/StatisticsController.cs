@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
 namespace Allport_s_League_Scrambler.Controllers
 {
@@ -88,8 +90,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 context.SaveChanges();
             }
 
-            var updatedTeams =  GetTeams(league.LeagueName);
-            
+            var updatedTeams = GetTeams(league.LeagueName);
+
             context.SaveChanges();
             return updatedTeams;
         }
@@ -184,7 +186,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             foreach (var team in teams)
             {
-                List<TeamScore> teamScores = context.TeamScore.Where(x => x.Team1ID == team.Id && x.Date == newDate ).ToList();
+                List<TeamScore> teamScores = context.TeamScore.Where(x => x.Team1ID == team.Id && x.Date == newDate).ToList();
                 foreach (var teamScoreSingle in teamScores)
                 {
                     LeagueTeamScore leagueTeamScore = new LeagueTeamScore();
@@ -207,10 +209,203 @@ namespace Allport_s_League_Scrambler.Controllers
                     }
                     leagueTeamScores1.Add(leagueTeamScore);
                 }
-                
-            }            
-            
+
+            }
+
             return leagueTeamScores1.OrderBy(x => x.Team1Name).ToList();
         }
+
+        [HttpGet("GetLeagues")]
+        public async Task<IActionResult> GetLeagues()
+        {
+
+            var _context = new DataContext();
+            var leagues = await _context.Leagues
+                .Select(l => new { l.ID, l.LeagueName })
+                .ToListAsync();
+
+            return Ok(leagues);
+        }
+
+        [HttpGet("GetLeaguesForPlayer")]
+        public async Task<IActionResult> GetLeaguesForPlayer(int playerId)
+        {
+            if (playerId <= 0)
+            {
+                return BadRequest("Invalid playerId.");
+            }
+
+            var _context = new DataContext();
+
+            var leagues = await (from pl in _context.PlayersLeagues
+                                 join l in _context.Leagues on pl.LeagueID equals l.ID
+                                 where pl.PlayerID == playerId
+                                 select new
+                                 {
+                                     l.ID,
+                                     l.LeagueName
+                                 }).ToListAsync();
+
+            if (leagues == null || !leagues.Any())
+            {
+                return NotFound($"No leagues found for playerId {playerId}.");
+            }
+
+            return Ok(leagues);
+        }
+
+
+        [HttpGet("GetProfile")]
+        public async Task<IActionResult> GetProfile(int playerId)
+        {
+            var _context = new DataContext();
+            var player = await _context.Players.FirstOrDefaultAsync(p => p.Id == playerId);
+            if (player == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(player);
+        }
+
+        [HttpGet("GetPlayerLeagues")]
+        public async Task<IActionResult> GetPlayerLeagues(int playerId)
+        {
+            var _context = new DataContext();
+            var leagues = await (from pl in _context.PlayersLeagues
+                                 join l in _context.Leagues on pl.LeagueID equals l.ID
+                                 where pl.PlayerID == playerId
+                                 select new
+                                 {
+                                     l.LeagueName,
+                                     pl.IsSub
+                                 }).ToListAsync();
+
+            return Ok(leagues);
+        }
+
+        [HttpGet("GetPerformanceStats")]
+        public async Task<IActionResult> GetPerformanceStats(int playerId)
+        {
+            var _context = new DataContext();
+            var stats = await (from kqrs in _context.KingQueenRoundScores
+                               join kqt in _context.KingQueenTeam on kqrs.KingQueenTeamId equals kqt.Id
+                               where (from kqp in _context.KingQueenPlayer
+                                      where kqp.PlayerId == playerId && kqp.KingQueenTeamId == kqt.Id
+                                      select kqp.Id).Any()
+                               select new
+                               {
+                                   kqrs.RoundScore,
+                                   kqrs.RoundWon
+                               }).ToListAsync();
+
+            return Ok(new
+            {
+                TotalRounds = stats.Count,
+                TotalScores = stats.Sum(s => s.RoundScore),
+                TotalWins = stats.Count(s => (bool)s.RoundWon)
+            });
+        }
+
+        [HttpGet("GetByeRounds")]
+        public async Task<IActionResult> GetByeRounds(int playerId)
+        {
+            var _context = new DataContext();
+            var byeRounds = await (from bp in _context.ByePlayer
+                                   join br in _context.ByeRounds on bp.ByeRoundId equals br.Id
+                                   where bp.PlayerId == playerId
+                                   select new
+                                   {
+                                       br.DateOfRound
+                                   }).ToListAsync();
+
+            return Ok(byeRounds);
+        }
+
+        [HttpGet("GetDetailedPerformanceStats")]
+        public async Task<IActionResult> GetDetailedPerformanceStats(int playerId, int leagueId)
+        {
+            var _context = new DataContext();
+
+            // Fetch individual round scores and wins
+            var individualRounds = await (from kqrs in _context.KingQueenRoundScores
+                                          join kqt in _context.KingQueenTeam on kqrs.KingQueenTeamId equals kqt.Id
+                                          where kqt.LeagueID == leagueId &&
+                                                (from kqp in _context.KingQueenPlayer
+                                                 where kqp.PlayerId == playerId && kqp.KingQueenTeamId == kqt.Id
+                                                 select kqp.Id).Any()
+                                          select new
+                                          {
+                                              RoundNumber = kqrs.RoundId,
+                                              kqrs.RoundScore,
+                                              kqrs.RoundWon,
+                                              kqt.ScrambleNumber,
+                                              kqt.DateOfTeam,
+                                              kqt.Id // Include KingQueenTeamId for filtering teammates
+                                          }).ToListAsync();
+
+            // Fetch team members for the player's teams
+            var playerTeamIds = individualRounds.Select(r => r.Id).Distinct();
+
+            var teamData = await (from kqp in _context.KingQueenPlayer
+                                  join kqt in _context.KingQueenTeam on kqp.KingQueenTeamId equals kqt.Id
+                                  where playerTeamIds.Contains(kqt.Id) // Filter only teams the player is on
+                                  select new
+                                  {
+                                      kqt.ScrambleNumber,
+                                      kqp.PlayerId,
+                                      PlayerName = _context.Players
+                                          .Where(p => p.Id == kqp.PlayerId)
+                                          .Select(p => p.FirstName + " " + p.LastName)
+                                          .FirstOrDefault(),
+                                          isMale = _context.Players
+                                          .Where(p => p.Id == kqp.PlayerId)
+                                          .Select(p => p.IsMale)
+                                          .FirstOrDefault(),
+                                  }).ToListAsync();
+
+            // Group team members by scramble number
+            var teamsGrouped = teamData
+                .GroupBy(t => t.ScrambleNumber)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(t => new TeamMember
+                    {
+                        PlayerId = t.PlayerId,
+                        PlayerName = t.PlayerName,
+                        IsMale = t.isMale
+                    }).ToList()
+                );
+
+            // Calculate scramble totals
+            var scrambleTotals = individualRounds
+                .GroupBy(r => r.ScrambleNumber)
+                .Select(g => new
+                {
+                    ScrambleNumber = g.Key,
+                    TotalScore = g.Sum(r => r.RoundScore),
+                    Wins = g.Count(r => (bool)r.RoundWon),
+                    Team = teamsGrouped.TryGetValue(g.Key, out var team) ? team : new List<TeamMember>()
+                })
+                .ToList();
+
+            // Calculate overall totals
+            var totalScores = individualRounds.Sum(r => r.RoundScore);
+            var totalWins = individualRounds.Count(r => (bool)r.RoundWon);
+
+            return Ok(new
+            {
+                IndividualRounds = individualRounds,
+                ScrambleTotals = scrambleTotals,
+                TotalScores = totalScores,
+                TotalWins = totalWins
+            });
+        }
+    }
+    public class TeamMember
+    {
+        public int PlayerId { get; set; }
+        public string PlayerName { get; set; }
+        public bool IsMale { get; set;}
     }
 }

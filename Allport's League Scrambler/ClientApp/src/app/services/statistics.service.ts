@@ -44,6 +44,36 @@ export class StatisticsService {
         return this.httpClient.post<LeagueTeams>(this.baseUrl + 'api/Statistics/AddTeam/', team);
     }
 
+    getLeagues() {
+        return this.httpClient.get<any[]>(`${this.baseUrl}api/Statistics/GetLeagues`);
+    }
+
+    getPlayerProfile(playerId: number) {
+        return this.httpClient.get<any>(`${this.baseUrl}api/Statistics/GetProfile?playerId=${playerId}`);
+    }
+
+    getPlayerLeagues(playerId: number) {
+        return this.httpClient.get<any[]>(`${this.baseUrl}api/Statistics/GetPlayerLeagues?playerId=${playerId}`);
+    }
+
+    getLeaguesForPlayer(playerId: number) {
+        return this.httpClient.get<any[]>(`${this.baseUrl}api/Statistics/GetLeaguesForPlayer?playerId=${playerId}`);
+    }
+
+
+    getPerformanceStats(playerId: number) {
+        return this.httpClient.get<any>(`${this.baseUrl}api/Statistics/GetPerformanceStats?playerId=${playerId}`);
+    }
+
+    getByeRounds(playerId: number) {
+        return this.httpClient.get<any[]>(`${this.baseUrl}api/Statistics/GetByeRounds?playerId=${playerId}`);
+    }
+
+    getDetailedPerformanceStats(playerId: number, leagueId: number) {
+        return this.httpClient.get<any>(
+            `${this.baseUrl}api/Statistics/GetDetailedPerformanceStats?playerId=${playerId}&leagueId=${leagueId}`
+        );
+    }
 }
 
 

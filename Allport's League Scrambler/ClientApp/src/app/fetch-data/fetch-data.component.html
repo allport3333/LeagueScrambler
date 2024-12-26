@@ -1,78 +1,49 @@
-<div *ngIf="loading;  else elseBlock" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; margin-top: -200px;">
-    <h2 class="ml-4">Loading...</h2>
-    <mat-spinner diameter="200"></mat-spinner>
+<div *ngIf="loading; else elseBlock" style="height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+    <h2>Loading...</h2>
+    <mat-spinner diameter="80"></mat-spinner>
 </div>
+
 <ng-template #elseBlock>
-<h1>Player List</h1>
+    <div style="display: flex; flex-direction: column; align-items: center; margin: 20px;">
+        <h1 style="margin-bottom: 10px;">Player List</h1>
+        <p style="margin-bottom: 20px;">List of All Players</p>
 
-<p>List of All Players</p>
-<!--<form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()">
-    <mat-form-field appearance="outline" style="border-width:2px;">
-        <mat-label>First Name:</mat-label>
-        <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
-    </mat-form-field>
+        <mat-form-field style="width: 50%; max-width: 400px; margin-bottom: 20px;" appearance="outline">
+            <mat-label>Search Players</mat-label>
+            <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter">
+        </mat-form-field>
 
-    <mat-form-field appearance="outline" style="border-width:2px;">
-        <mat-label>Last Name:</mat-label>
-        <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
-    </mat-form-field>
+        <div style="width: 90%; max-width: 800px;">
+            <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8" style="width: 100%;">
+                <!-- First Name Column -->
+                <ng-container matColumnDef="firstName">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header> First Name </th>
+                    <td mat-cell *matCellDef="let element"> {{ element.firstName }} </td>
+                </ng-container>
 
-    <mat-form-field appearance="outline" style="border-width:2px;">
-        <mat-label>Male or Female:</mat-label>
-        <input matInput placeholder="Is Player Male or Female" formControlName="isMale" value="{{addedPlayer?.isMale}}" type="text" required />
-    </mat-form-field>
-    <mat-form-field appearance="outline" style="border-width:2px;">
-        <mat-label>League Name</mat-label>
-        <input matInput placeholder="League name?" formControlName="leagueName" value="{{leagueName}}" type="text" required />
-    </mat-form-field>
-    <button mat-raised-button color="primary">Submit</button><br /><br />
-</form>-->
+                <!-- Last Name Column -->
+                <ng-container matColumnDef="lastName">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header> Last Name </th>
+                    <td mat-cell *matCellDef="let element"> {{ element.lastName }} </td>
+                </ng-container>
 
-<mat-form-field>
-    <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter">
-</mat-form-field>
+                <!-- Gender Column -->
+                <ng-container matColumnDef="gender">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header> Gender </th>
+                    <td mat-cell *matCellDef="let element"> {{ element.gender }} </td>
+                </ng-container>
 
+                <!-- Is Sub Column -->
+                <ng-container matColumnDef="isSub">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header> Sub </th>
+                    <td mat-cell *matCellDef="let element"> {{ element.isSub ? 'Yes' : 'No' }} </td>
+                </ng-container>
 
-
-<table *ngIf="dataSource !=null" mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8 w-50">
-    <!-- First Name Column -->
-    <ng-container matColumnDef="firstName">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header> First Name </th>
-        <td mat-cell *matCellDef="let element"> {{element.firstName}} </td>
-    </ng-container>
-
-    <!-- Last Name Column -->
-    <ng-container matColumnDef="lastName">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header> Last Name </th>
-        <td mat-cell *matCellDef="let element"> {{element.lastName}} </td>
-    </ng-container>
-
-    <!-- Gender Column -->
-    <ng-container matColumnDef="gender">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header> Gender </th>
-        <td mat-cell *matCellDef="let element"> {{element.gender}} </td>
-    </ng-container>
-    <!-- Gender Column -->
-    <ng-container matColumnDef="isSub">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header> Sub </th>
-        <td mat-cell *matCellDef="let element"> {{element.isSub}} </td>
-    </ng-container>
-    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-
-    <!--<thead>
-        <tr>
-            <th>First Name</th>
-            <th>Last Name </th>
-            <th>Male or Female</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr *ngFor="let player1 of players">
-            <td>{{ player1.lastName }}</td>
-            <td>{{ player1.firstName }}</td>
-            <td>{{ player1.gender }}</td>
-        </tr>
-    </tbody>-->
-</table>
-    </ng-template>
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="goToPlayerStats(row.id)"
+                    class="row-hover" style="cursor: pointer;">
+                </tr>
+            </table>
+        </div>
+    </div>
+</ng-template>

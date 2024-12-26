@@ -1,0 +1,137 @@
+<div style="padding: 20px;">
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h2>{{ player?.firstName }} {{ player?.lastName }}</h2>
+        <p>Gender: {{ player?.gender }}</p>
+        <p>Is Substitute: {{ player?.isSub ? 'Yes' : 'No' }}</p>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h3 style="margin-bottom: 10px;">Leagues</h3>
+        <mat-form-field appearance="outline" style="width: 30%; margin: 0 auto 20px;">
+            <mat-label>Select League</mat-label>
+            <mat-select [(ngModel)]="selectedLeagueId" (selectionChange)="onLeagueChange($event.value)">
+                <mat-option *ngFor="let league of leagues" [value]="league.id">
+                    {{ league.leagueName }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h3 style="margin-bottom: 10px;">Performance Stats</h3>
+        <div style="display: inline-block; border: 1px solid #ddd; padding: 15px; border-radius: 8px; width: 30%;">
+            <div>
+                <p><strong>Total Scores:</strong> {{ performanceStats.totalScores }}</p>
+            </div>
+            <div>
+                <p><strong>Total Wins:</strong> {{ performanceStats.totalWins }}</p>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="responsive-container">
+        <mat-card class="responsive-card">
+            <h3 style="margin-bottom: 10px;">Individual Rounds</h3>
+            <mat-table [dataSource]="performanceStats.individualRoundsWithDividers" class="mat-elevation-z8">
+                <ng-container matColumnDef="matchupNumber">
+                    <mat-header-cell *matHeaderCellDef> Matchup Number </mat-header-cell>
+                    <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? row.scrambleNumber : '' }} </mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="roundNumber">
+                    <mat-header-cell *matHeaderCellDef> Round Number </mat-header-cell>
+                    <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? row.roundNumber : '' }} </mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="date">
+                    <mat-header-cell *matHeaderCellDef> Date </mat-header-cell>
+                    <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? (row.dateOfTeam | date) : '' }} </mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="score">
+                    <mat-header-cell *matHeaderCellDef> Round Score </mat-header-cell>
+                    <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? row.roundScore : '' }} </mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="won">
+                    <mat-header-cell *matHeaderCellDef> Won </mat-header-cell>
+                    <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? (row.roundWon ? 'Yes' : 'No') : '' }} </mat-cell>
+                </ng-container>
+
+                <mat-header-row *matHeaderRowDef="['roundNumber', 'date', 'matchupNumber', 'score', 'won']"></mat-header-row>
+
+                <!-- Data Row -->
+                <mat-row *matRowDef="let row; columns: ['roundNumber', 'date', 'matchupNumber', 'score', 'won']"
+                         [style.height]="row.type === 'divider' ? '0px' : ''"
+                         [style.padding]="row.type === 'divider' ? '0' : ''"
+                         [style.marginBottom]="row.type === 'divider' ? '-25px' : ''"
+                         [style.backgroundColor]="row.type === 'divider' ? '#f5f5f5' : ''"
+                         [style.borderTop]="row.type === 'divider' ? '1px solid #ccc' : ''"
+                         [style.fontSize]="row.type === 'divider' ? '0' : ''"
+                         [style.lineHeight]="row.type === 'divider' ? '0' : ''">
+                </mat-row>
+            </mat-table>
+        </mat-card>
+
+        <mat-card class="responsive-card">
+            <h3 style="margin-bottom: 10px;">Matchup Totals</h3>
+            <mat-table [dataSource]="performanceStats.scrambleTotals" class="mat-elevation-z8">
+                <!-- Matchup Number Column -->
+                <ng-container matColumnDef="matchupNumber">
+                    <mat-header-cell *matHeaderCellDef> Matchup Number </mat-header-cell>
+                    <mat-cell *matCellDef="let matchup">
+                        {{ matchup.scrambleNumber }}
+                    </mat-cell>
+                </ng-container>
+
+                <!-- Total Score Column -->
+                <ng-container matColumnDef="totalScore">
+                    <mat-header-cell *matHeaderCellDef> Total Score </mat-header-cell>
+                    <mat-cell *matCellDef="let matchup">
+                        {{ matchup.totalScore }}
+                    </mat-cell>
+                </ng-container>
+
+                <!-- Wins Column -->
+                <ng-container matColumnDef="wins">
+                    <mat-header-cell *matHeaderCellDef> Wins </mat-header-cell>
+                    <mat-cell *matCellDef="let matchup">
+                        {{ matchup.wins }}
+                    </mat-cell>
+                </ng-container>
+
+                <!-- Header Row -->
+                <mat-header-row *matHeaderRowDef="['matchupNumber', 'totalScore', 'wins']"></mat-header-row>
+
+                <!-- Data Row with Hover Effect -->
+                <mat-row *matRowDef="let matchup; columns: ['matchupNumber', 'totalScore', 'wins']"
+                         class="hover-effect"
+                         (click)="toggleTeam(matchup.scrambleNumber)">
+                </mat-row>
+            </mat-table>
+            <!-- Conditional Team Table -->
+            <div *ngIf="expandedMatchup" style="margin-top: 20px;">
+                <h3 style="text-align: center;">Team for Matchup {{ expandedMatchup }}</h3>
+                <mat-table [dataSource]="getTeamForMatchup(expandedMatchup)" class="mat-elevation-z8">
+                    <!-- Player Name Column -->
+                    <ng-container matColumnDef="playerName">
+                        <mat-header-cell *matHeaderCellDef style="text-align: center;"> Player Name </mat-header-cell>
+                        <mat-cell *matCellDef="let player" [ngClass]="{'male-row': player.isMale, 'female-row': !player.isMale}" style="text-align: center;">
+                            <!-- Make player name clickable -->
+                            <a [routerLink]="['/player-stats', player.playerId]" style="cursor: pointer; text-decoration: underline; color: inherit;">
+                                {{ player.playerName }}
+                            </a>
+                        </mat-cell>
+                    </ng-container>
+
+                    <!-- Header Row -->
+                    <mat-header-row *matHeaderRowDef="['playerName']"></mat-header-row>
+
+                    <!-- Data Row with Gender-Based Highlighting -->
+                    <mat-row *matRowDef="let player; columns: ['playerName']"></mat-row>
+                </mat-table>
+            </div>
+        </mat-card>
+    </div>
+</div>

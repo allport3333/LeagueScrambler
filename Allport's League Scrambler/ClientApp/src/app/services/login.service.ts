@@ -64,7 +64,6 @@ export class LoginService {
     }
 
     updateSetting(settingName: string, settingValue: string, leagueId: number) {
-        console.log(settingName, settingValue, leagueId);
         return this.httpClient.post(this.updateSettingUrl, {
             settingName,
             settingValue,
@@ -104,7 +103,6 @@ export class LoginService {
             password: password,
             token: token
         };
-        console.log('recoveryData', recoveryData);
         return this.httpClient.post(this.resetPasswordUrl, recoveryData, { withCredentials: true });
     }
 }

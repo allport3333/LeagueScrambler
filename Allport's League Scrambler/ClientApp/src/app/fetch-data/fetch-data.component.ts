@@ -1,12 +1,13 @@
 import { Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatTableDataSource, MatSort, MatProgressSpinnerModule } from '@angular/material';
+import { MatTableDataSource, MatSort } from '@angular/material';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
+import { Router } from '@angular/router';
 import { FormGroup, FormControl } from '@angular/forms';
 
 @Component({
-  selector: 'app-fetch-data',
+    selector: 'app-fetch-data',
     templateUrl: './fetch-data.component.html',
     styleUrls: ['./fetch-data.component.less']
 })
@@ -18,7 +19,7 @@ export class FetchDataComponent implements OnInit {
     isMale1: boolean;
     leagueName: string;
     dataSource = new MatTableDataSource();
-    displayedColumns: string[] = ['firstName', 'lastName', 'gender', 'isSub']
+    displayedColumns: string[] = ['firstName', 'lastName', 'gender', 'isSub'];
     PlayerForm = new FormGroup({
         firstName: new FormControl(),
         lastName: new FormControl(),
@@ -26,26 +27,26 @@ export class FetchDataComponent implements OnInit {
         leagueName: new FormControl(),
         isSub: new FormControl()
     });
-    @ViewChild(MatSort) sort: MatSort;
-    @ViewChild(MatSort) set matSort(ms: MatSort) {
-        this.sort = ms;
-        this.setDataSourceAttributes();
-    }
-    constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService) {
 
-    }
-    setDataSourceAttributes() {
-        this.dataSource.sort = this.sort;
-    }
+    @ViewChild(MatSort) sort: MatSort;
+
+    constructor(
+        private http: HttpClient,
+        private router: Router, // Added router
+        public playerService: PlayerService
+    ) { }
+
     ngOnInit() {
         this.loading = true;
-        this.dataSource.sort = this.sort;
-        this.playerService.GetPlayers().subscribe(result => {
-            this.players = result;
-            this.dataSource = new MatTableDataSource(result);;
-            this.loading = false;
-        }, error => console.error(error));
-
+        this.playerService.GetPlayers().subscribe(
+            (result) => {
+                this.players = result;
+                this.dataSource = new MatTableDataSource(result);
+                this.dataSource.sort = this.sort;
+                this.loading = false;
+            },
+            (error) => console.error(error)
+        );
     }
 
     applyFilter(filterValue: string) {
@@ -53,31 +54,31 @@ export class FetchDataComponent implements OnInit {
     }
 
     onSubmitClick() {
-        
-        if (this.PlayerForm.controls["isMale"].value == "Female") {
+        if (this.PlayerForm.controls['isMale'].value === 'Female') {
             this.isMale1 = false;
-        }
-        else if (this.PlayerForm.controls["isMale"].value == "Male") {
+        } else if (this.PlayerForm.controls['isMale'].value === 'Male') {
             this.isMale1 = true;
         }
-        let newplayer: Player = {
+        const newplayer: Player = {
             id: 0,
-            firstName: this.PlayerForm.controls["firstName"].value,
-            lastName: this.PlayerForm.controls["lastName"].value,
-            gender: this.PlayerForm.controls["isMale"].value,
+            firstName: this.PlayerForm.controls['firstName'].value,
+            lastName: this.PlayerForm.controls['lastName'].value,
+            gender: this.PlayerForm.controls['isMale'].value,
             isMale: this.isMale1,
-            isSub: this.PlayerForm.controls["isSub"].value
+            isSub: this.PlayerForm.controls['isSub'].value
         };
-        
 
-        this.playerService.AddPlayer(newplayer, this.PlayerForm.controls["leagueName"].value).subscribe(result => {
-            this.player = result;
-            this.players.push(newplayer);
-        }, error => console.error(error));
+        this.playerService.AddPlayer(newplayer, this.PlayerForm.controls['leagueName'].value).subscribe(
+            (result) => {
+                this.player = result;
+                this.players.push(newplayer);
+            },
+            (error) => console.error(error)
+        );
     }
 
-
-
+    // Navigate to the player's stats page
+    goToPlayerStats(playerId: number) {
+        this.router.navigate(['/player-stats', playerId]); // Update route as needed
+    }
 }
-
-

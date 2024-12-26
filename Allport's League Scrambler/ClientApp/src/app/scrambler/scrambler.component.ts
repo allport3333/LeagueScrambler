@@ -168,20 +168,15 @@ export class ScramblerComponent implements OnInit {
 
     private async initializeSettings(): Promise<void> {
         try {
-            console.log('Initializing settings for leagueId:', this.leagueId);
-
             const numberOfSubsAllowedValue = await this.loginService.getSettingValue('numberOfSubsAllowed', this.leagueId).toPromise();
             this.numberOfSubsAllowed = this.parseValueAsNumber(numberOfSubsAllowedValue, 100); // Default is 100
-            console.log('Parsed numberOfSubsAllowed:', this.numberOfSubsAllowed);
 
             const dropLowestValue = await this.loginService.getSettingValue('dropLowest', this.leagueId).toPromise();
             this.dropLowest = this.parseValueAsNumber(dropLowestValue, 0); // Default is 0
-            console.log('Parsed dropLowest:', this.dropLowest);
 
             const subScorePercentValue = await this.loginService.getSettingValue('subScorePercent', this.leagueId).toPromise();
             this.subScorePercent = this.parseValueAsNumber(subScorePercentValue, 100); // Default is 100
 
-            console.log('Settings initialization completed successfully.');
         } catch (error) {
             console.error('Error initializing settings:', error);
         }
@@ -569,6 +564,7 @@ export class ScramblerComponent implements OnInit {
         this.playerService.getStandingsByLeague(this.selectedLeague).subscribe(
             result => {
                 this.lastResult = result;
+
                 this.processStandings(result, this.getCurrentOptions());
             },
             error => {
@@ -648,129 +644,135 @@ export class ScramblerComponent implements OnInit {
     }
 
     saveSettings(): void {
-        console.log('Saving settings for leagueId:', this.leagueId);
-        console.log('Drop Lowest:', this.dropLowest);
-        console.log('Number of Subs Allowed:', this.numberOfSubsAllowed);
-        console.log('Sub Score Percent:', this.subScorePercent);
-
         const settings = [
             { settingName: 'dropLowest', settingValue: this.dropLowest },
             { settingName: 'numberOfSubsAllowed', settingValue: this.numberOfSubsAllowed },
             { settingName: 'subScorePercent', settingValue: this.subScorePercent },
         ];
 
-        settings.forEach(setting => {
-            this.loginService.updateSetting(setting.settingName, setting.settingValue.toString(), this.leagueId).subscribe({
-                next: () => {
-                    console.log(`Setting "${setting.settingName}" updated successfully.`);
-                },
-                error: (err) => {
-                    console.error(`Error updating setting "${setting.settingName}":`, err);
-                }
+        // Create an array of promises for each setting update
+        const updatePromises = settings.map(setting =>
+            this.loginService.updateSetting(setting.settingName, setting.settingValue.toString(), this.leagueId).toPromise()
+        );
+
+        // Wait for all updates to complete
+        Promise.all(updatePromises)
+            .then(() => {
+                this.snackBar.open('Standings have been saved.', 'OK', {
+                    duration: 5000, // Optional: Auto-close after 5 seconds
+                    verticalPosition: 'top',
+                    horizontalPosition: 'center',
+                });
+            })
+            .catch(error => {
+                console.error('Error saving settings:', error);
             });
-        });
     }
+
 
 
     private processStandings(
         result: any,
         options: { dropLowestNumber?: number; numberOfSubsAllowed?: number; subScorePercent?: number } = {}
     ): void {
-        // Save the original scores only once
-        if (!this.originalStandings) {
-            this.originalStandings = JSON.parse(JSON.stringify(result.playerScores)); // Deep copy to preserve original data
-        }
-
-        // Reset standings to the original scores
-        if (this.lastResult == null) {
-            this.standings = JSON.parse(JSON.stringify(this.originalStandings));
-        }
-        else {
-            this.standings = this.lastResult.playerScores;
-        }
-
-        if (this.standings && this.standings.length > 0) {
-            // Separate standings by gender
-            this.maleStandings = this.standings.filter(player => player.isMale);
-            this.femaleStandings = this.standings.filter(player => !player.isMale);
-
-            const calculateStandings = (standings: PlayerScoreGroup[]) =>
-                standings.map(player => {
-                    // Create a copy of the original scores for modification
-                    const updatedScores = player.scores.map(score => ({ ...score, isDropped: false, isReduced: false }));
-
-                    // Filter sub-scores from the updated scores
-                    const subScores = updatedScores.filter(score => score.isSubScore);
-
-                    // Sort sub-scores in descending order by score
-                    const sortedSubScores = subScores.slice().sort((a, b) => b.score - a.score);
-
-                    // Adjust sub-scores beyond the allowed limit
-                    sortedSubScores.forEach((subScore, subIndex) => {
-                        const isReduced = subIndex >= options.numberOfSubsAllowed;
-                        // Find and update the matching score in updatedScores
-                        const matchingScoreIndex = updatedScores.findIndex(score => score === subScore);
-                        if (matchingScoreIndex !== -1) {
-                            updatedScores[matchingScoreIndex] = {
-                                ...updatedScores[matchingScoreIndex],
-                                score: isReduced
-                                    ? (updatedScores[matchingScoreIndex].score * options.subScorePercent) / 100
-                                    : updatedScores[matchingScoreIndex].score,
-                                isReduced: isReduced
-                            };
-                        }
-                    });
-
-                    // Sort scores in ascending order (after reduction) for dropping the lowest ones
-                    const sortedScores = updatedScores.slice().sort((a, b) => a.score - b.score);
-
-                    // Mark the lowest scores to drop
-                    sortedScores.slice(0, options.dropLowestNumber).forEach(droppedScore => {
-                        const matchingScoreIndex = updatedScores.findIndex(score => score === droppedScore);
-                        if (matchingScoreIndex !== -1) {
-                            updatedScores[matchingScoreIndex] = {
-                                ...updatedScores[matchingScoreIndex],
-                                isDropped: true
-                            };
-                        }
-                    });
-
-                    // Calculate total score
-                    const totalScore = updatedScores
-                        .filter(score => !score.isDropped)
-                        .reduce((sum, score) => sum + score.score, 0);
-
-                    // Calculate total wins
-                    const totalWins = updatedScores
-                        .filter(score => !score.isDropped)
-                        .reduce((sum, score) => sum + score.roundWon, 0);
-
-                    // Return updated player
-                    return {
-                        ...player,
-                        scores: updatedScores, // Include updated scores with `isDropped` and `isReduced`
-                        totalScore: totalScore,
-                        totalWins: totalWins
-                    };
-                }).sort((a, b) => {
-                    // Sort by total wins descending, then by total score descending
-                    if (b.totalWins !== a.totalWins) {
-                        return b.totalWins - a.totalWins;
-                    }
-                    return b.totalScore - a.totalScore;
-                });
-
-
-            this.maleStandings = calculateStandings(this.maleStandings);
-            this.femaleStandings = calculateStandings(this.femaleStandings);
-
-            // Generate standingsRounds array
-            this.standingsRounds = [];
-            for (let i = 0; i < result.maxRounds; i++) {
-                this.standingsRounds.push(i + 1);
+        if (result != null && result.message != 'No valid rounds found in the league.') {
+            console.log('result', result);
+            // Save the original scores only once
+            if (!this.originalStandings) {
+                this.originalStandings = JSON.parse(JSON.stringify(result.playerScores)); // Deep copy to preserve original data
             }
 
-            this.initializeStandingsRounds(); // Initialize rounds for standings
+            // Reset standings to the original scores
+            if (this.lastResult == null) {
+                this.standings = JSON.parse(JSON.stringify(this.originalStandings));
+            }
+            else {
+                this.standings = this.lastResult.playerScores;
+            }
+
+            if (this.standings && this.standings.length > 0) {
+                // Separate standings by gender
+                this.maleStandings = this.standings.filter(player => player.isMale);
+                this.femaleStandings = this.standings.filter(player => !player.isMale);
+
+                const calculateStandings = (standings: PlayerScoreGroup[]) =>
+                    standings.map(player => {
+                        // Create a copy of the original scores for modification
+                        const updatedScores = player.scores.map(score => ({ ...score, isDropped: false, isReduced: false }));
+
+                        // Filter sub-scores from the updated scores
+                        const subScores = updatedScores.filter(score => score.isSubScore);
+
+                        // Sort sub-scores in descending order by score
+                        const sortedSubScores = subScores.slice().sort((a, b) => b.score - a.score);
+
+                        // Adjust sub-scores beyond the allowed limit
+                        sortedSubScores.forEach((subScore, subIndex) => {
+                            const isReduced = subIndex >= options.numberOfSubsAllowed;
+                            // Find and update the matching score in updatedScores
+                            const matchingScoreIndex = updatedScores.findIndex(score => score === subScore);
+                            if (matchingScoreIndex !== -1) {
+                                updatedScores[matchingScoreIndex] = {
+                                    ...updatedScores[matchingScoreIndex],
+                                    score: isReduced
+                                        ? (updatedScores[matchingScoreIndex].score * options.subScorePercent) / 100
+                                        : updatedScores[matchingScoreIndex].score,
+                                    isReduced: isReduced
+                                };
+                            }
+                        });
+
+                        // Sort scores in ascending order (after reduction) for dropping the lowest ones
+                        const sortedScores = updatedScores.slice().sort((a, b) => a.score - b.score);
+
+                        // Mark the lowest scores to drop
+                        sortedScores.slice(0, options.dropLowestNumber).forEach(droppedScore => {
+                            const matchingScoreIndex = updatedScores.findIndex(score => score === droppedScore);
+                            if (matchingScoreIndex !== -1) {
+                                updatedScores[matchingScoreIndex] = {
+                                    ...updatedScores[matchingScoreIndex],
+                                    isDropped: true
+                                };
+                            }
+                        });
+
+                        // Calculate total score
+                        const totalScore = updatedScores
+                            .filter(score => !score.isDropped)
+                            .reduce((sum, score) => sum + score.score, 0);
+
+                        // Calculate total wins
+                        const totalWins = updatedScores
+                            .filter(score => !score.isDropped)
+                            .reduce((sum, score) => sum + score.roundWon, 0);
+
+                        // Return updated player
+                        return {
+                            ...player,
+                            scores: updatedScores, // Include updated scores with `isDropped` and `isReduced`
+                            totalScore: totalScore,
+                            totalWins: totalWins
+                        };
+                    }).sort((a, b) => {
+                        // Sort by total wins descending, then by total score descending
+                        if (b.totalWins !== a.totalWins) {
+                            return b.totalWins - a.totalWins;
+                        }
+                        return b.totalScore - a.totalScore;
+                    });
+
+
+                this.maleStandings = calculateStandings(this.maleStandings);
+                this.femaleStandings = calculateStandings(this.femaleStandings);
+
+                // Generate standingsRounds array
+                this.standingsRounds = [];
+                for (let i = 0; i < result.maxRounds; i++) {
+                    this.standingsRounds.push(i + 1);
+                }
+
+                this.initializeStandingsRounds(); // Initialize rounds for standings
+            }
         }
         this.playerLoading = false;
     }
@@ -1359,7 +1361,6 @@ export class ScramblerComponent implements OnInit {
         // Only push the player if they are valid
         if (!isMaleValid && !isFemaleValid) {
             console.warn("Invalid Top Player! Player does not exist in malePlayers or femalePlayers.");
-            console.log("Invalid Player Details:", this.randomTopPlayer);
             return; // Exit early without adding the player
         }
 
