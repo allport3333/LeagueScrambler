@@ -821,6 +821,52 @@
 
                             <!-- Nested Mat Tab Group -->
                             <mat-tab-group>
+                                <mat-tab label="Modify Settings" *ngIf="selectedLeague">
+                                    <div class="container-fluid">
+                                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                                            <div style="margin: 20px;" class="tab-content d-flex flex-column align-items-center" >
+                                                <h2>Modify League Settings</h2>
+
+                                                <!-- Modify Drop Lowest Scores -->
+                                                <mat-form-field appearance="outline" style="width: 300px; margin-bottom: 20px;">
+                                                    <mat-label>Drop Lowest Scores</mat-label>
+                                                    <mat-select [(value)]="dropLowest" (selectionChange)="onDropLowestChange($event.value)">
+                                                        <mat-option [value]="0">Don't Drop Any</mat-option>
+                                                        <mat-option *ngFor="let i of [1, 2, 3, 4, 5, 6]" [value]="i">
+                                                            Drop {{ i }} {{ i === 1 ? 'Score' : 'Scores' }}
+                                                        </mat-option>
+                                                    </mat-select>
+                                                </mat-form-field>
+
+                                                <!-- Modify Number of Subs Allowed -->
+                                                <mat-form-field appearance="outline" style="width: 300px; margin-bottom: 20px;">
+                                                    <mat-label>Number of Subs Allowed</mat-label>
+                                                    <mat-select [(value)]="numberOfSubsAllowed" (selectionChange)="onNumberOfSubsChange($event.value)">
+                                                        <mat-option [value]="0">No Subs Allowed</mat-option>
+                                                        <mat-option *ngFor="let i of [1, 2, 3, 4, 5, 100]" [value]="i">
+                                                            Allow {{ i }} {{ i === 1 ? 'Sub' : 'Subs' }}
+                                                        </mat-option>
+                                                    </mat-select>
+                                                </mat-form-field>
+
+                                                <!-- Modify Percent of Score for Subs -->
+                                                <mat-form-field appearance="outline" style="width: 300px; margin-bottom: 20px;">
+                                                    <mat-label>Percent of Score for Subs</mat-label>
+                                                    <mat-select [(value)]="subScorePercent" (selectionChange)="onSubScorePercentChange($event.value)">
+                                                        <mat-option *ngFor="let percent of [100, 90, 80, 70, 60, 50]" [value]="percent">
+                                                            {{ percent }}%
+                                                        </mat-option>
+                                                    </mat-select>
+                                                </mat-form-field>
+
+                                                <!-- Save Button -->
+                                                <div>
+                                                    <button mat-raised-button color="primary" (click)="saveSettings()">Save Settings</button>
+                                                </div>
+                                            </div>
+                                        </mat-card>
+                                    </div>
+                                </mat-tab>
                                 <!-- Add Player Tab -->
                                 <mat-tab label="Add Player" *ngIf="selectedLeague">
                                     <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
@@ -1234,7 +1280,7 @@
         <button color="primary" mat-raised-button (click)="printMatchups()" class="mb-3">
             Print Matchups
         </button>
-         <!--Number of Rounds Selection--> 
+        <!--Number of Rounds Selection-->
         <mat-form-field appearance="fill" class="w-75">
             <mat-label>Number of Rounds</mat-label>
             <mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)">

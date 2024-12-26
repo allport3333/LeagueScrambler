@@ -280,6 +280,61 @@ namespace Allport_s_League_Scrambler.Controllers
             }
         }
 
+        [HttpPost("updatesetting")]
+        public async Task<bool> UpdateSettingAsync([FromBody] UpdateSettingRequest request)
+        {
+            var context = new DataContext();
+
+            if (request == null || string.IsNullOrWhiteSpace(request.SettingName))
+            {
+                return false;
+            }
+
+            // Check if the setting exists
+            var setting = await context.LeagueSettings
+                .FirstOrDefaultAsync(s => s.SettingName == request.SettingName && s.LeagueId == request.LeagueId);
+
+            if (setting == null)
+            {
+                // Create a new setting if none exists
+                setting = new LeagueSettings
+                {
+                    SettingName = request.SettingName,
+                    SettingValue = request.SettingValue,
+                    LeagueId = request.LeagueId
+                };
+
+                await context.LeagueSettings.AddAsync(setting);
+            }
+            else
+            {
+                // Update the existing setting
+                setting.SettingValue = request.SettingValue;
+                context.LeagueSettings.Update(setting);
+            }
+
+            // Save changes to the database
+            await context.SaveChangesAsync();
+
+            return true;
+        }
+
+
+        private static string GetDefaultSettingValue(string settingName)
+        {
+            switch (settingName)
+            {
+                case "numberOfSubsAllowed":
+                    return "100"; // Default for number of subs allowed
+                case "dropLowest":
+                    return "0";   // Default for drop lowest
+                case "subScorePercent":
+                    return "100"; // Default for sub score percent
+                default:
+                    return null;  // No default for unrecognized settings
+            }
+        }
+
         [HttpGet("GetSettingValue")]
         public async Task<IActionResult> GetSettingValue(string settingName, int leagueId)
         {
@@ -289,14 +344,23 @@ namespace Allport_s_League_Scrambler.Controllers
                 return BadRequest("SettingName is required.");
             }
 
+            // Attempt to find the setting in the database
             var setting = await context.LeagueSettings
                 .FirstOrDefaultAsync(s => s.SettingName == settingName && s.LeagueId == leagueId);
 
+            // If the setting is not found, return a default value based on the setting name
             if (setting == null)
             {
-                return NotFound($"Setting with name '{settingName}' not found.");
+                var defaultValue = GetDefaultSettingValue(settingName);
+                if (defaultValue == null)
+                {
+                    return NotFound($"Setting with name '{settingName}' not found, and no default value is defined.");
+                }
+
+                return Ok(defaultValue);
             }
 
+            // Return the found setting value
             return Ok(setting.SettingValue);
         }
 

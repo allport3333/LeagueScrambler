@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { TokenResponse } from '../data-models/tokenResponse.model';
 import { Leagues } from '../data-models/leagues.model';
 import { tap, catchError } from 'rxjs/operators';
@@ -18,6 +18,7 @@ export class LoginService {
     private userLeaguesUrl = this.baseUrl + 'api/Login/getuserleagues';
     private registerUrl = this.baseUrl + 'api/Login/register';
     private isauthenticated = this.baseUrl + 'api/Login/isauthenticated';
+    private updateSettingUrl = this.baseUrl + 'api/Login/updatesetting';
     private getLeagueSettings = this.baseUrl + 'api/Login/GetSettingValue';
     private forgotPasswordUrl = this.baseUrl + 'api/Login/forgotpassword'; // Define your password recovery endpoint
     private resetPasswordUrl = this.baseUrl + 'api/Login/resetpassword'; // Define your password recovery endpoint
@@ -62,9 +63,22 @@ export class LoginService {
         return this.httpClient.get<Leagues[]>(this.userLeaguesUrl, { withCredentials: true });
     }
 
+    updateSetting(settingName: string, settingValue: string, leagueId: number) {
+        console.log(settingName, settingValue, leagueId);
+        return this.httpClient.post(this.updateSettingUrl, {
+            settingName,
+            settingValue,
+            leagueId
+        }, { withCredentials: true });
+    }
+
     getSettingValue(settingName: string, leagueId: number) {
+        const params = new HttpParams()
+            .set('settingName', settingName)
+            .set('leagueId', leagueId.toString());
+
         return this.httpClient.get<any>(this.getLeagueSettings, {
-            params: { settingName, leagueId },
+            params: params,
             withCredentials: true
         });
     }

@@ -171,19 +171,15 @@ export class ScramblerComponent implements OnInit {
             console.log('Initializing settings for leagueId:', this.leagueId);
 
             const numberOfSubsAllowedValue = await this.loginService.getSettingValue('numberOfSubsAllowed', this.leagueId).toPromise();
-            console.log('Fetched numberOfSubsAllowedValue:', numberOfSubsAllowedValue);
             this.numberOfSubsAllowed = this.parseValueAsNumber(numberOfSubsAllowedValue, 100); // Default is 100
             console.log('Parsed numberOfSubsAllowed:', this.numberOfSubsAllowed);
 
             const dropLowestValue = await this.loginService.getSettingValue('dropLowest', this.leagueId).toPromise();
-            console.log('Fetched dropLowestValue:', dropLowestValue);
             this.dropLowest = this.parseValueAsNumber(dropLowestValue, 0); // Default is 0
             console.log('Parsed dropLowest:', this.dropLowest);
 
             const subScorePercentValue = await this.loginService.getSettingValue('subScorePercent', this.leagueId).toPromise();
-            console.log('Fetched subScorePercentValue:', subScorePercentValue);
             this.subScorePercent = this.parseValueAsNumber(subScorePercentValue, 100); // Default is 100
-            console.log('Parsed subScorePercent:', this.subScorePercent);
 
             console.log('Settings initialization completed successfully.');
         } catch (error) {
@@ -633,7 +629,6 @@ export class ScramblerComponent implements OnInit {
     // Handle Drop Lowest Scores change
     onDropLowestChange(selectedDrop: string): void {
         this.dropLowest = parseInt(selectedDrop, 10); // Convert the string to a number
-        console.log('Drop Lowest changed:', this.dropLowest);
         this.processStandings(this.lastResult, this.getCurrentOptions());
         this.sortStandingsWithUpdates('totalScore');
     }
@@ -641,7 +636,6 @@ export class ScramblerComponent implements OnInit {
     // Handle Number of Subs Allowed change
     onNumberOfSubsChange(value: number): void {
         this.numberOfSubsAllowed = value;
-        console.log('Number of Subs Allowed changed:', this.numberOfSubsAllowed);
         this.processStandings(this.lastResult, this.getCurrentOptions());
         this.sortStandingsWithUpdates('totalScore');
     }
@@ -649,9 +643,32 @@ export class ScramblerComponent implements OnInit {
     // Handle Percent of Score for Subs change
     onSubScorePercentChange(value: number): void {
         this.subScorePercent = value;
-        console.log('Sub Score Percent changed:', this.subScorePercent);
         this.processStandings(this.lastResult, this.getCurrentOptions());
         this.sortStandingsWithUpdates('totalScore');
+    }
+
+    saveSettings(): void {
+        console.log('Saving settings for leagueId:', this.leagueId);
+        console.log('Drop Lowest:', this.dropLowest);
+        console.log('Number of Subs Allowed:', this.numberOfSubsAllowed);
+        console.log('Sub Score Percent:', this.subScorePercent);
+
+        const settings = [
+            { settingName: 'dropLowest', settingValue: this.dropLowest },
+            { settingName: 'numberOfSubsAllowed', settingValue: this.numberOfSubsAllowed },
+            { settingName: 'subScorePercent', settingValue: this.subScorePercent },
+        ];
+
+        settings.forEach(setting => {
+            this.loginService.updateSetting(setting.settingName, setting.settingValue.toString(), this.leagueId).subscribe({
+                next: () => {
+                    console.log(`Setting "${setting.settingName}" updated successfully.`);
+                },
+                error: (err) => {
+                    console.error(`Error updating setting "${setting.settingName}":`, err);
+                }
+            });
+        });
     }
 
 
@@ -663,7 +680,6 @@ export class ScramblerComponent implements OnInit {
         if (!this.originalStandings) {
             this.originalStandings = JSON.parse(JSON.stringify(result.playerScores)); // Deep copy to preserve original data
         }
-
 
         // Reset standings to the original scores
         if (this.lastResult == null) {
