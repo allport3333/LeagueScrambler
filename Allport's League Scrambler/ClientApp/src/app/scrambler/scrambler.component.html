@@ -829,7 +829,7 @@
                                 <mat-tab label="Modify Settings" *ngIf="selectedLeague">
                                     <div class="container-fluid">
                                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                                            <div style="margin: 20px;" class="tab-content d-flex flex-column align-items-center" >
+                                            <div style="margin: 20px;" class="tab-content d-flex flex-column align-items-center">
                                                 <h2>Modify League Settings</h2>
 
                                                 <!-- Modify Drop Lowest Scores -->
@@ -1111,6 +1111,11 @@
         </div>
     </div>
 </div>
+<div class="toggle-button-container" style="text-align: center; margin-top: 8px; ">
+    <button mat-raised-button color="primary" class="mb-1" (click)="toggleTeamSorting()">
+        {{ showTeamSorting ? 'Hide Modify Teams' : 'Show Modify Teams' }}
+    </button>
+</div>
 <div>
     <div class="row justify-content-center align-items-center" #matchupDiv>
 
@@ -1124,83 +1129,85 @@
                 <h4 style="font-size: 20px; margin-top: 8px; padding:25px">vs</h4>
             </div>
             <div class="row col-3">
-                <table class="table" style="pointer-events: none;">
+                <table class="table" >
                     <thead>
-                        <h2 *ngIf="isSmallScreen" style="text-align:center; float:none; margin-left:-50px; margin-right:auto; font-size:18px"> {{"Team " + (i + 1)}}</h2>
-                        <h2 *ngIf="!isSmallScreen" style="text-align:center; float:none; margin-left:-50px; margin-right:auto; font-size:28px"> {{"Team " + (i + 1)}}</h2>
+                        <h2 *ngIf="isSmallScreen" style="text-align: center; float: none; margin-left: -50px; margin-right: auto; font-size: 18px">
+                            Team {{ team.sortingId }}
+                        </h2>
+                        <h2 *ngIf="!isSmallScreen" style="text-align: center; float: none; margin-left: -50px; margin-right: auto; font-size: 28px">
+                            Team {{ team.sortingId }}
+                        </h2>
                         <tr class="d-flex">
-                            <th *ngIf="!isSmallScreen" class="col-5">First Name</th>
-                            <th *ngIf="!isSmallScreen" class="col-5">Last Name</th>
-                            <th *ngIf="isSmallScreen" class="col-5" style="font-size:12px">Name</th>
+                            <th *ngIf="!isSmallScreen" class="col-4">First Name</th>
+                            <th *ngIf="!isSmallScreen" class="col-4">Last Name</th>
+                            <th *ngIf="!isSmallScreen && showTeamSorting" class="col-3">Team</th>
+                            <th *ngIf="isSmallScreen" class="col-4" style="font-size:12px">Name</th>
+                            <th *ngIf="isSmallScreen && showTeamSorting" class="col-3">Team</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        <tr *ngFor="let player of team.players" class="d-flex flex-column flex-sm-row">
-                            <td *ngIf="player.isMale == true && !isSmallScreen" class="col-5 extended-background-blue">
+                        <tr *ngFor="let player of team.players" class="d-flex align-items-center">
+                            <!-- Player Details -->
+                            <td *ngIf="player.isMale && !isSmallScreen" class="col-4 extended-background-blue">
                                 {{ player.firstName }}
                             </td>
-                            <td *ngIf="player.isMale == true && !player.isSub && isSmallScreen" class="col-5 extended-background-blue-lastName">
+                            <td *ngIf="player.isMale && !player.isSub && isSmallScreen" class="col-4 extended-background-blue-lastName">
                                 {{ player.firstName[0] }}.{{ player.lastName }}
                             </td>
-                            <td *ngIf="player.isMale == true && !player.isSub && !isSmallScreen" class="col-5 extended-background-blue-lastName">
+                            <td *ngIf="player.isMale && !player.isSub && !isSmallScreen" class="col-4 extended-background-blue-lastName">
                                 {{ player.lastName }}
                             </td>
-                            <td *ngIf="player.isMale == true && player.isSub" class="col-5 extended-background-blue-lastName">
+                            <td *ngIf="player.isMale && player.isSub" class="col-4 extended-background-blue-lastName">
                                 {{ player.lastName }} - Sub
                             </td>
-                            <td *ngIf="player.isMale == false && !isSmallScreen" class="col-5 extended-background-pink">
+                            <td *ngIf="!player.isMale && !isSmallScreen" class="col-4 extended-background-pink">
                                 {{ player.firstName }}
                             </td>
-                            <td *ngIf="player.isMale == false && !player.isSub && isSmallScreen" class="col-5 extended-background-pink-lastName">
+                            <td *ngIf="!player.isMale && !player.isSub && isSmallScreen" class="col-4 extended-background-pink-lastName">
                                 {{ player.firstName[0] }}.{{ player.lastName }}
                             </td>
-                            <td *ngIf="player.isMale == false && !player.isSub && !isSmallScreen" class="col-5 extended-background-pink-lastName">
+                            <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen" class="col-4 extended-background-pink-lastName">
                                 {{ player.lastName }}
                             </td>
-                            <td *ngIf="player.isMale == false && player.isSub" class="col-5 extended-background-pink-lastName">
+                            <td *ngIf="!player.isMale && player.isSub" class="col-4 extended-background-pink-lastName">
                                 {{ player.lastName }} - Sub
                             </td>
-                        </tr>
 
+                            <!-- Dropdown for Team Selection -->
+                            <td class="col-3" *ngIf="showTeamSorting">
+                                <!-- For Larger Screens -->
+                                <div *ngIf="!isSmallScreen">
+                                    <select class="form-select"
+                                            style="width: 80%; min-height: 35px;"
+                                            [value]="team.sortingId"
+                                            (change)="switchPlayerTeam(player, $event.target.value, team.sortingId)">
+                                        <option *ngFor="let otherTeam of listOfTeams"
+                                                [value]="otherTeam.sortingId"
+                                                [disabled]="otherTeam.sortingId === team.sortingId">
+                                            {{ otherTeam.sortingId }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <!-- For Smaller Screens -->
+                                <div *ngIf="isSmallScreen">
+                                    <select class="form-select"
+                                            style="width: 100%; min-height: 35px;"
+                                            [value]="team.sortingId"
+                                            (change)="switchPlayerTeam(player, $event.target.value, team.sortingId)">
+                                        <option *ngFor="let otherTeam of listOfTeams"
+                                                [value]="otherTeam.sortingId"
+                                                [disabled]="otherTeam.sortingId === team.sortingId">
+                                             {{ otherTeam.sortingId }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </td>
+
+                        </tr>
                     </tbody>
                 </table>
-                <!--Commenting this out for now since i have the enter scores page
-                <div *ngIf="showSaveRoundScores" class="score-table">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th colspan="3" style="text-align: center;">Team {{ i + 1 }}</th>
-                            </tr>
-                            <tr>
-                                <th style="text-align: center;">Round</th>
-                                <th style="text-align: center;">Score</th>
-                                <th style="text-align: center;">Win</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            <tr *ngFor="let round of rounds; let roundIndex = index;">
-                                <td style="text-align: center;">{{ roundIndex + 1 }}</td>
-                                <td>
-                                    <input type="number"
-                                           [value]="getScore(listOfTeams[i]?.kingQueenTeamId, round)?.roundScore || ''"
-                                           (input)="updateRoundScore(listOfTeams[i]?.kingQueenTeamId, round, $event.target.value)"
-                                           class="form-control" />
-                                </td>
-                                <td>
-                                    <input type="checkbox"
-                                           [checked]="getScore(listOfTeams[i]?.kingQueenTeamId, round)?.roundWon || false"
-                                           (change)="updateRoundWon(listOfTeams[i]?.kingQueenTeamId, round, $event.target.checked)" />
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>-->
-
-
-
-
 
             </div>
         </ng-container>
@@ -1212,7 +1219,7 @@
             <h2 *ngIf="!isSmallScreen" style="text-align:center; float:none; margin-left:-50px; font-size:28px;">
                 Bye Players
             </h2>
-            <table class="table mt-3" style="pointer-events: none; width: 100%;">
+            <table class="table mt-3" style="width: 100%;">
                 <thead>
                     <tr class="d-flex">
                         <th *ngIf="!isSmallScreen" class="col-5">First Name</th>

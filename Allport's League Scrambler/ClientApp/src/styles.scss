@@ -250,3 +250,7 @@ input {
         justify-content: space-between;
     }
 }
+
+.mat-select-panel {
+    z-index: 1000 !important; /* Ensure dropdown appears above everything else */
+}

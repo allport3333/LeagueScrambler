@@ -9,5 +9,6 @@ export interface Team {
     femaleCount: number;
     kingQueenTeamId: number;
     kingQueenRoundScores: KingQueenRoundScore[];
+    sortingId: number;
 }
 

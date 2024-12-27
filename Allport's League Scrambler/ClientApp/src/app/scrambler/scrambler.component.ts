@@ -141,6 +141,8 @@ export class ScramblerComponent implements OnInit {
     standings: PlayerScoreGroup[];
     femaleStandings: PlayerScoreGroup[];
     maleStandings: PlayerScoreGroup[];
+
+    showTeamSorting: boolean = false;
     PlayerForm = new FormGroup({
         firstName: new FormControl(),
         lastName: new FormControl(),
@@ -163,6 +165,27 @@ export class ScramblerComponent implements OnInit {
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, public loginService: LoginService, private snackBar: MatSnackBar) {
         this.teamSize = 4;
 
+    }
+
+
+    toggleTeamSorting(): void {
+        this.showTeamSorting = !this.showTeamSorting;
+    }
+
+    switchPlayerTeam(player: any, selectedSortingId: string, currentSortingId: number): void {
+        console.log(`Switching player ${player.firstName} ${player.lastName} from team ${currentSortingId} to team ${selectedSortingId}`);
+
+        const currentTeam = this.listOfTeams.find(team => team.sortingId === currentSortingId);
+        if (currentTeam) {
+            currentTeam.players = currentTeam.players.filter(p => p.id !== player.id);
+        }
+
+        const newTeam = this.listOfTeams.find(team => team.sortingId === Number(selectedSortingId));
+        if (newTeam) {
+            newTeam.players.push(player);
+        }
+
+        console.log('Updated listOfTeams:', this.listOfTeams);
     }
 
     private initializeSettings(): void {
@@ -2158,6 +2181,10 @@ export class ScramblerComponent implements OnInit {
         }
 
         this.listOfTeams = reorderedTeams;
+        this.listOfTeams = this.listOfTeams.map((team, index) => ({
+            ...team,
+            sortingId: index + 1, // Sorting ID based on order
+        }));
     }
 
 

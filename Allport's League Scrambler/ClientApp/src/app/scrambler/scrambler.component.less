@@ -8,3 +8,34 @@
     padding: 0px 0px 0px 0px;
     margin: 0;
 }
+
+.dropdown-wrapper {
+    position: relative; /* Ensure stacking context */
+    z-index: 10; /* Elevate dropdown above other elements */
+}
+
+table {
+    position: relative; /* Ensure the table doesn't interfere with dropdown stacking */
+    z-index: 1;
+}
+
+tr {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 5px; /* Add spacing between rows */
+}
+.dropdown-wrapper select {
+    position: absolute; /* Detach from table flow */
+    top: 0; /* Adjust as needed */
+    left: 0;
+    width: 150px;
+    z-index: 1000; /* Ensure it's on top */
+}
+
+table {
+    overflow: visible; /* Allow dropdown to extend outside table bounds */
+}
+
+td {
+    overflow: visible; /* Ensure dropdown in table cell is not clipped */
+}
