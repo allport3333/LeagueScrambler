@@ -165,23 +165,40 @@ export class ScramblerComponent implements OnInit {
 
     }
 
+    private initializeSettings(): void {
+        this.loginService.getSettingValue('numberOfSubsAllowed', this.leagueId).subscribe(
+            (numberOfSubsAllowedValue) => {
+                this.numberOfSubsAllowed = this.parseValueAsNumber(numberOfSubsAllowedValue, 100); // Default is 100
 
-    private async initializeSettings(): Promise<void> {
-        try {
-            const numberOfSubsAllowedValue = await this.loginService.getSettingValue('numberOfSubsAllowed', this.leagueId).toPromise();
-            this.numberOfSubsAllowed = this.parseValueAsNumber(numberOfSubsAllowedValue, 100); // Default is 100
+                this.loginService.getSettingValue('dropLowest', this.leagueId).subscribe(
+                    (dropLowestValue) => {
+                        this.dropLowest = this.parseValueAsNumber(dropLowestValue, 0); // Default is 0
 
-            const dropLowestValue = await this.loginService.getSettingValue('dropLowest', this.leagueId).toPromise();
-            this.dropLowest = this.parseValueAsNumber(dropLowestValue, 0); // Default is 0
+                        this.loginService.getSettingValue('subScorePercent', this.leagueId).subscribe(
+                            (subScorePercentValue) => {
+                                this.subScorePercent = this.parseValueAsNumber(subScorePercentValue, 100); // Default is 100
 
-            const subScorePercentValue = await this.loginService.getSettingValue('subScorePercent', this.leagueId).toPromise();
-            this.subScorePercent = this.parseValueAsNumber(subScorePercentValue, 100); // Default is 100
-            this.processStandings(this.lastResult, this.getCurrentOptions());
-        } catch (error) {
-            console.error('Error initializing settings:', error);
-        }
+                                this.loginService.getSettingValue('standingsType', this.leagueId).subscribe(
+                                    (newStandingsType) => {
+
+                                        if (newStandingsType !== this.standingsType) {
+                                            this.toggleStandingsType(); // Call toggleStandingsType if it changed
+                                        } else {
+                                            this.processStandings(this.lastResult, this.getCurrentOptions()); // Call processStandings otherwise
+                                        }
+                                    },
+                                    (error) => console.error('Error fetching standingsType:', error)
+                                );
+                            },
+                            (error) => console.error('Error fetching subScorePercent:', error)
+                        );
+                    },
+                    (error) => console.error('Error fetching dropLowest:', error)
+                );
+            },
+            (error) => console.error('Error fetching numberOfSubsAllowed:', error)
+        );
     }
-
 
     private parseValueAsNumber(value: any, defaultValue: number): number {
         if (typeof value === 'number') {
@@ -689,7 +706,6 @@ export class ScramblerComponent implements OnInit {
         options: { dropLowestNumber?: number; numberOfSubsAllowed?: number; subScorePercent?: number } = {}
     ): void {
         if (result != null && result.message != 'No valid rounds found in the league.') {
-            console.log('result', result);
             // Save the original scores only once
             if (!this.originalStandings) {
                 this.originalStandings = JSON.parse(JSON.stringify(result.playerScores)); // Deep copy to preserve original data
@@ -717,7 +733,7 @@ export class ScramblerComponent implements OnInit {
                         const subScores = updatedScores.filter(score => score.isSubScore);
 
                         const sortedSubScores = subScores;//subScores.slice().sort((a, b) => b.roundId - a.roundId);
-                        console.log('sortedSubScores', sortedSubScores);
+
                         // Adjust sub-scores beyond the allowed limit
                         sortedSubScores.forEach((subScore, subIndex) => {
                             const isReduced = subIndex >= options.numberOfSubsAllowed;

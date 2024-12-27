@@ -330,6 +330,8 @@ namespace Allport_s_League_Scrambler.Controllers
                     return "0";   // Default for drop lowest
                 case "subScorePercent":
                     return "100"; // Default for sub score percent
+                case "standingsType":
+                    return "round"; // Default for sub score percent
                 default:
                     return null;  // No default for unrecognized settings
             }
@@ -348,7 +350,6 @@ namespace Allport_s_League_Scrambler.Controllers
             var setting = await context.LeagueSettings
                 .FirstOrDefaultAsync(s => s.SettingName == settingName && s.LeagueId == leagueId);
 
-            // If the setting is not found, return a default value based on the setting name
             if (setting == null)
             {
                 var defaultValue = GetDefaultSettingValue(settingName);
@@ -357,13 +358,13 @@ namespace Allport_s_League_Scrambler.Controllers
                     return NotFound($"Setting with name '{settingName}' not found, and no default value is defined.");
                 }
 
-                return Ok(defaultValue);
+                Console.WriteLine($"Returning default value: {defaultValue}");
+                return Ok(new { SettingValue = defaultValue.ToString() }); // Ensure it's a string
             }
 
-            // Return the found setting value
-            return Ok(setting.SettingValue);
+            Console.WriteLine($"Returning database value: {setting.SettingValue}");
+            return Ok(new { SettingValue = setting.SettingValue.ToString() }); // Ensure it's a string
         }
-
 
         [HttpPost("forgotpassword")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)

@@ -4,6 +4,7 @@ import { TokenResponse } from '../data-models/tokenResponse.model';
 import { Leagues } from '../data-models/leagues.model';
 import { tap, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
+import { Observable } from 'rxjs';
 
 @Injectable({
     providedIn: 'root'
@@ -71,16 +72,32 @@ export class LoginService {
         }, { withCredentials: true });
     }
 
-    getSettingValue(settingName: string, leagueId: number) {
+    getSettingValue(settingName: string, leagueId: number): Observable<string> {
         const params = new HttpParams()
             .set('settingName', settingName)
             .set('leagueId', leagueId.toString());
 
-        return this.httpClient.get<any>(this.getLeagueSettings, {
-            params: params,
-            withCredentials: true
+        return new Observable((observer) => {
+            this.httpClient
+                .get(this.getLeagueSettings, {
+                    params: params,
+                    withCredentials: true,
+                })
+                .subscribe(
+                    (response: any) => {
+                        const settingValue = response.settingValue || ''; // Default to an empty string if undefined
+                        observer.next(settingValue);
+                        observer.complete();
+                    },
+                    (error) => {
+                        observer.error(error);
+                    }
+                );
         });
     }
+
+
+
 
     forgotPassword(email: string) {
         const recoveryData = {
