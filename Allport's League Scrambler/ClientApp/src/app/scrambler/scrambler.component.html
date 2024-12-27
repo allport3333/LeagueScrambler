@@ -107,7 +107,15 @@
 
             <div class="row justify-content-center mt-3">
                 <div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <button (click)="scramblePlayers(false)" mat-raised-button color="primary" class="w-100">Scramble Players</button>
+                    <button (click)="scramblePlayers(false)"
+                            mat-raised-button
+                            color="primary"
+                            class="w-100"
+                            matTooltip="Button is disabled because no players are selected."
+                            [matTooltipDisabled]="selectedList && selectedList.length > 0"
+                            [disabled]="!selectedList || selectedList.length === 0">
+                        Scramble Players
+                    </button>
                 </div>
                 <div class="d-flex align-items-center justify-content-center mb-3">
                     <button mat-raised-button color="primary" [matMenuTriggerFor]="resetMenu" class="w-100">
@@ -454,19 +462,16 @@
                                     </div>
                                 </div>
 
-
-
                                 <br />
                                 <button mat-raised-button
                                         color="primary"
-                                        [disabled]="!allowScrambleWithNoDuplicates"
+                                        [disabled]="!allowScrambleWithNoDuplicates && (!selectedList || selectedList.length === 0)"
                                         [ngStyle]="{'opacity': allowScrambleWithNoDuplicates ? '1' : '0.5'}"
-                                        matTooltip="{{ retrievedPlayersBefore ? 'Retrieve players again to re-enable this action.' : 'Retrieve players first to enable this action.' }}"
+                                        matTooltip="{{ getTooltipText() }}"
                                         [matTooltipDisabled]="allowScrambleWithNoDuplicates"
                                         (click)="scramblePlayers(true)">
                                     Scramble With No Duplicate Teams
                                 </button>
-
 
                             </div>
                         </mat-card>

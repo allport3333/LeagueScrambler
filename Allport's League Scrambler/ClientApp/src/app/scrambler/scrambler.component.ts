@@ -176,7 +176,7 @@ export class ScramblerComponent implements OnInit {
 
             const subScorePercentValue = await this.loginService.getSettingValue('subScorePercent', this.leagueId).toPromise();
             this.subScorePercent = this.parseValueAsNumber(subScorePercentValue, 100); // Default is 100
-
+            this.processStandings(this.lastResult, this.getCurrentOptions());
         } catch (error) {
             console.error('Error initializing settings:', error);
         }
@@ -560,6 +560,19 @@ export class ScramblerComponent implements OnInit {
 
     }
 
+    getTooltipText(): string {
+        if (this.allowScrambleWithNoDuplicates) {
+            return ''; // Tooltip disabled when scrambling with no duplicates is allowed
+        }
+        if (!this.selectedList || this.selectedList.length === 0) {
+            return 'Button is disabled because no players are selected.';
+        }
+        if (!this.retrievedPlayersBefore) {
+            return 'Retrieve players first to enable this action.';
+        }
+        return 'Retrieve players again to re-enable this action.'; // Tooltip for re-enable state
+    }
+
     initializeStandings(): void {
         this.playerService.getStandingsByLeague(this.selectedLeague).subscribe(
             result => {
@@ -703,9 +716,8 @@ export class ScramblerComponent implements OnInit {
                         // Filter sub-scores from the updated scores
                         const subScores = updatedScores.filter(score => score.isSubScore);
 
-                        // Sort sub-scores in descending order by score
-                        const sortedSubScores = subScores.slice().sort((a, b) => b.score - a.score);
-
+                        const sortedSubScores = subScores;//subScores.slice().sort((a, b) => b.roundId - a.roundId);
+                        console.log('sortedSubScores', sortedSubScores);
                         // Adjust sub-scores beyond the allowed limit
                         sortedSubScores.forEach((subScore, subIndex) => {
                             const isReduced = subIndex >= options.numberOfSubsAllowed;
