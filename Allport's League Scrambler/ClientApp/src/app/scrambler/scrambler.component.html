@@ -1111,7 +1111,7 @@
         </div>
     </div>
 </div>
-<div class="toggle-button-container" style="text-align: center; margin-top: 8px; ">
+<div *ngIf="!allowScrambleWithNoDuplicates" class="toggle-button-container" style="text-align: center; margin-top: 8px; ">
     <button mat-raised-button color="primary" class="mb-1" (click)="toggleTeamSorting()">
         {{ showTeamSorting ? 'Hide Modify Teams' : 'Show Modify Teams' }}
     </button>
@@ -1175,7 +1175,7 @@
                             </td>
 
                             <!-- Dropdown for Team Selection -->
-                            <td class="col-3" *ngIf="showTeamSorting">
+                            <td class="col-3" *ngIf="showTeamSorting && !allowScrambleWithNoDuplicates">
                                 <!-- For Larger Screens -->
                                 <div *ngIf="!isSmallScreen">
                                     <select class="form-select"

@@ -1700,7 +1700,8 @@ export class ScramblerComponent implements OnInit {
                         maleCount: matchup.players.filter(player => player.isMale).length,
                         femaleCount: matchup.players.filter(player => !player.isMale).length,
                         kingQueenRoundScores: matchup.kingQueenTeam.kingQueenRoundScores,
-                        kingQueenTeamId: matchup.kingQueenTeam.id
+                        kingQueenTeamId: matchup.kingQueenTeam.id,
+                        sortingId: null
                     };
                     this.listOfTeams.push(team);
                     this.retrievedListOfTeams.push(team);
@@ -1790,7 +1791,8 @@ export class ScramblerComponent implements OnInit {
                         maleCount: matchup.players.filter(player => player.isMale).length,
                         femaleCount: matchup.players.filter(player => !player.isMale).length,
                         kingQueenTeamId: matchup.kingQueenTeam.id,
-                        kingQueenRoundScores: matchup.kingQueenTeam.kingQueenRoundScores
+                        kingQueenRoundScores: matchup.kingQueenTeam.kingQueenRoundScores,
+                        sortingId: null
                     };
                     this.listOfTeams.push(team);
                     this.retrievedListOfTeams.push(team);
@@ -2324,7 +2326,8 @@ export class ScramblerComponent implements OnInit {
                 femaleCount: 0,
                 maleCount: 0,
                 kingQueenTeamId: 0,
-                kingQueenRoundScores: []
+                kingQueenRoundScores: [],
+                sortingId: null
             };
             this.listOfTeams.push(team);
         }
@@ -2429,7 +2432,8 @@ export class ScramblerComponent implements OnInit {
                     femaleCount: 0,
                     maleCount: 0,
                     kingQueenTeamId: 0,
-                    kingQueenRoundScores: []
+                    kingQueenRoundScores: [],
+                    sortingId: null
                 }
                 this.listOfTeams.push(team)
             }
