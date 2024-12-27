@@ -132,6 +132,62 @@
                     <mat-row *matRowDef="let player; columns: ['playerName']"></mat-row>
                 </mat-table>
             </div>
+
+            <button style="margin-top: 15px; text-align: center;"
+                    mat-raised-button
+                    color="primary"
+                    (click)="toggleTeammates()"
+                    *ngIf="performanceStats.teammateCounts && performanceStats.teammateCounts.length > 0">
+                {{ showTeammates ? 'Hide Teammate Counts' : 'Show Teammate Counts' }}
+            </button>
+
+            <!-- Teammate Table -->
+            <div *ngIf="showTeammates" style="margin-top: 20px;">
+                <h3>Teammate Statistics</h3>
+                <mat-table [dataSource]="dataSource">
+                    <!-- Player Name Column -->
+                    <ng-container matColumnDef="playerName">
+                        <mat-header-cell *matHeaderCellDef (click)="sortData('playerName')">
+                            Player Name
+                            <mat-icon *ngIf="activeSort === 'playerName'">
+                                {{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
+                            </mat-icon>
+                        </mat-header-cell>
+                        <mat-cell *matCellDef="let teammate">{{ teammate.playerName }}</mat-cell>
+                    </ng-container>
+
+                    <!-- Wins Together Column -->
+                    <ng-container matColumnDef="winsTogether">
+                        <mat-header-cell *matHeaderCellDef (click)="sortData('winsTogether')">
+                            Wins Together
+                            <mat-icon *ngIf="activeSort === 'winsTogether'">
+                                {{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
+                            </mat-icon>
+                        </mat-header-cell>
+                        <mat-cell *matCellDef="let teammate">{{ teammate.winsTogether }}</mat-cell>
+                    </ng-container>
+
+                    <!-- Count Column -->
+                    <ng-container matColumnDef="count">
+                        <mat-header-cell *matHeaderCellDef (click)="sortData('count')">
+                            Times Teammate
+                            <mat-icon *ngIf="activeSort === 'count'">
+                                {{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
+                            </mat-icon>
+                        </mat-header-cell>
+                        <mat-cell *matCellDef="let teammate">{{ teammate.count }}</mat-cell>
+                    </ng-container>
+
+                    <!-- Header Row -->
+                    <mat-header-row *matHeaderRowDef="['playerName', 'winsTogether', 'count']"></mat-header-row>
+
+                    <!-- Data Row -->
+                    <mat-row *matRowDef="let teammate; columns: ['playerName', 'winsTogether', 'count']"></mat-row>
+                </mat-table>
+
+
+
+            </div>
         </mat-card>
     </div>
 </div>

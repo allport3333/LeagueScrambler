@@ -350,6 +350,7 @@ namespace Allport_s_League_Scrambler.Controllers
             var teamData = await (from kqp in _context.KingQueenPlayer
                                   join kqt in _context.KingQueenTeam on kqp.KingQueenTeamId equals kqt.Id
                                   where playerTeamIds.Contains(kqt.Id) // Filter only teams the player is on
+                                        && kqp.PlayerId != playerId    // Exclude the player themselves
                                   select new
                                   {
                                       kqt.ScrambleNumber,
@@ -358,11 +359,34 @@ namespace Allport_s_League_Scrambler.Controllers
                                           .Where(p => p.Id == kqp.PlayerId)
                                           .Select(p => p.FirstName + " " + p.LastName)
                                           .FirstOrDefault(),
-                                          isMale = _context.Players
+                                      IsMale = _context.Players
                                           .Where(p => p.Id == kqp.PlayerId)
                                           .Select(p => p.IsMale)
                                           .FirstOrDefault(),
-                                  }).ToListAsync();
+                                      kqt.Id // Include KingQueenTeamId for filtering teammates
+                                  }).Distinct().ToListAsync();
+
+            var winsTogether = await (from kqrs in _context.KingQueenRoundScores
+                                      join kqt in _context.KingQueenTeam on kqrs.KingQueenTeamId equals kqt.Id
+                                      join kqp in _context.KingQueenPlayer on kqt.Id equals kqp.KingQueenTeamId
+                                      where playerTeamIds.Contains(kqt.Id) // Filter only teams the player is on
+                                            && kqrs.RoundWon == true       // Count only rounds won
+                                            && kqp.PlayerId != playerId    // Exclude the player themselves
+                                      group new { kqp.PlayerId, kqrs.RoundId, kqrs.KingQueenTeamId }
+                                      by new { kqp.PlayerId, kqrs.RoundId, kqrs.KingQueenTeamId } into uniqueWins
+                                      select new
+                                      {
+                                          PlayerId = uniqueWins.Key.PlayerId,
+                                          RoundId = uniqueWins.Key.RoundId,
+                                          TeamId = uniqueWins.Key.KingQueenTeamId
+                                      })
+                                      .GroupBy(win => win.PlayerId)
+                                      .Select(group => new
+                                      {
+                                          PlayerId = group.Key,
+                                          WinsTogether = group.Count() // Count all unique combinations of RoundId and TeamId
+                                      }).ToListAsync();
+
 
             // Group team members by scramble number
             var teamsGrouped = teamData
@@ -373,24 +397,41 @@ namespace Allport_s_League_Scrambler.Controllers
                     {
                         PlayerId = t.PlayerId,
                         PlayerName = t.PlayerName,
-                        IsMale = t.isMale
+                        IsMale = t.IsMale
                     }).ToList()
                 );
 
-            // Calculate scramble totals
+            // Calculate scramble totals, handling duplicate players correctly
             var scrambleTotals = individualRounds
                 .GroupBy(r => r.ScrambleNumber)
                 .Select(g => new
                 {
                     ScrambleNumber = g.Key,
-                    TotalScore = g.Sum(r => r.RoundScore),
+                    TotalScore = g.GroupBy(r => r.Id).Sum(teamGroup => teamGroup.Sum(r => r.RoundScore)), // Avoid double-counting
                     Wins = g.Count(r => (bool)r.RoundWon),
                     Team = teamsGrouped.TryGetValue(g.Key, out var team) ? team : new List<TeamMember>()
                 })
                 .ToList();
 
+            var teammateCounts = (from teammate in teamData
+                                  join win in winsTogether on teammate.PlayerId equals win.PlayerId into winData
+                                  from win in winData.DefaultIfEmpty() // Handle left join
+                                  group new { teammate, win } by new { teammate.PlayerId, teammate.PlayerName } into grouped
+                                  select new
+                                  {
+                                      PlayerId = grouped.Key.PlayerId,
+                                      PlayerName = grouped.Key.PlayerName,
+                                      Count = grouped.Select(g => g.teammate.ScrambleNumber).Distinct().Count(), // Count unique scrambles
+                                      WinsTogether = grouped.FirstOrDefault()?.win?.WinsTogether ?? 0 // Use WinsTogether directly from win
+                                  })
+                               .OrderByDescending(t => t.Count)
+                               .ToList();
+
+
+
+
             // Calculate overall totals
-            var totalScores = individualRounds.Sum(r => r.RoundScore);
+            var totalScores = individualRounds.GroupBy(r => r.Id).Sum(teamGroup => teamGroup.Sum(r => r.RoundScore)); // Avoid double-counting
             var totalWins = individualRounds.Count(r => (bool)r.RoundWon);
 
             return Ok(new
@@ -398,7 +439,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 IndividualRounds = individualRounds,
                 ScrambleTotals = scrambleTotals,
                 TotalScores = totalScores,
-                TotalWins = totalWins
+                TotalWins = totalWins,
+                TeammateCounts = teammateCounts
             });
         }
     }
@@ -406,6 +448,6 @@ namespace Allport_s_League_Scrambler.Controllers
     {
         public int PlayerId { get; set; }
         public string PlayerName { get; set; }
-        public bool IsMale { get; set;}
+        public bool IsMale { get; set; }
     }
 }

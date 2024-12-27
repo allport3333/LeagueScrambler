@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { StatisticsService } from '../services/statistics.service';
 import { ActivatedRoute } from '@angular/router';
+import { MatTableDataSource, MatSort } from '@angular/material';
 
 @Component({
   selector: 'app-detailed-player-stats',
@@ -9,7 +10,9 @@ import { ActivatedRoute } from '@angular/router';
 })
 export class DetailedPlayerStatsComponent implements OnInit {
     playerId: number;
+    showTeammates = false;
     playerStats: any;
+    displayedColumns: string[] = ['playerName', 'winsTogether', 'count'];
     expandedMatchup: number | null = null;
     player: any;
     playerLeagues: any[] = [];
@@ -17,12 +20,29 @@ export class DetailedPlayerStatsComponent implements OnInit {
         individualRounds: [],
         scrambleTotals: [],
         totalScores: 0,
-        totalWins: 0
+        totalWins: 0,
+        teammateCounts: []
     };
+    sortDirection: 'asc' | 'desc' = 'asc'; // Track current sort direction
+    activeSort: string = ''; // Track active column being sorted
     leagues: any[] = [];
     selectedLeagueId: number | null = null;
+    dataSource = new MatTableDataSource([]);
 
+    @ViewChild(MatSort) sort!: MatSort;
     constructor(private statisticsService: StatisticsService, private route: ActivatedRoute) { }
+
+    onSortDebug(event: any) {
+        console.log('Sort triggered:', event);
+        console.log('Current data:', this.dataSource.data);
+    }
+
+    ngAfterViewInit() {
+        this.dataSource.sort = this.sort;
+
+        console.log('Sort applied:', this.dataSource.sort);
+        console.log('Teammate counts:', this.dataSource.data);
+    }
 
     ngOnInit() {
         this.playerId = +this.route.snapshot.paramMap.get('id'); // Get 'id' from the route
@@ -36,6 +56,28 @@ export class DetailedPlayerStatsComponent implements OnInit {
         this.loadPlayerStats(this.playerId);
 
         this.processRoundsWithDividers();
+    }
+
+    sortData(column: string) {
+        // Toggle sort direction
+        if (this.activeSort === column) {
+            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.activeSort = column;
+            this.sortDirection = 'asc'; // Default to ascending when changing column
+        }
+
+        // Perform the sorting
+        const sortedData = [...this.dataSource.data].sort((a, b) => {
+            const valueA = a[column];
+            const valueB = b[column];
+
+            if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
+            if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        this.dataSource.data = sortedData; // Update the data source
     }
 
     getLeagues() {
@@ -66,12 +108,17 @@ export class DetailedPlayerStatsComponent implements OnInit {
         return next && current.scrambleNumber !== next.scrambleNumber;
     };
 
+    toggleTeammates(): void {
+        this.showTeammates = !this.showTeammates;
+    }
+
     loadDetailedPerformanceStats(leagueId: number) {
         if (!this.selectedLeagueId) return;
 
         this.statisticsService.getDetailedPerformanceStats(this.playerId, leagueId).subscribe(data => {
             this.performanceStats = data;
-            this.processRoundsWithDividers();
+            this.dataSource.data = this.performanceStats.teammateCounts; // Update dataSource with teammateCounts
+            this.processRoundsWithDividers(); // Keep your existing logic
         });
     }
 
