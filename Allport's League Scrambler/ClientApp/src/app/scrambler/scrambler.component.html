@@ -877,16 +877,18 @@
                                     <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                         <div class="tab-content d-flex flex-column align-items-center" style="margin-bottom:20px">
                                             <h5 class="mb-2">Search for Existing Player</h5>
-                                            <mat-form-field style="max-width: 300px" appearance="outline">
+                                            <mat-form-field appearance="fill">
                                                 <mat-label>Search Player</mat-label>
                                                 <input matInput
                                                        [matAutocomplete]="auto"
+                                                       [(ngModel)]="searchTerm"
                                                        (input)="onSearchPlayer($event)"
-                                                       [(ngModel)]="searchTerm" />
+                                                       (blur)="onBlurPlayerInput()"/>
                                                 <mat-autocomplete #auto="matAutocomplete"
                                                                   (optionSelected)="onPlayerSelected($event.option.value)"
                                                                   [displayWith]="displayPlayer">
-                                                    <mat-option *ngFor="let player of searchedPlayers" [value]="player">
+                                                    <mat-option *ngFor="let player of searchedPlayers"
+                                                                [value]="player">
                                                         {{ player.firstName }} {{ player.lastName }}
                                                     </mat-option>
                                                 </mat-autocomplete>
@@ -975,11 +977,13 @@
                                                         <input matInput
                                                                [matAutocomplete]="auto"
                                                                (input)="onSearchPlayerToDelete($event)"
-                                                               [(ngModel)]="searchTermDelete" />
+                                                               (blur)="onBlurDeletePlayerInput()"
+                                                               [(ngModel)]="searchTermDelete"/>
                                                         <mat-autocomplete #auto="matAutocomplete"
                                                                           (optionSelected)="onDeletePlayerSelected($event.option.value)"
                                                                           [displayWith]="displayPlayer">
-                                                            <mat-option *ngFor="let player of searchedPlayersToDelete" [value]="player">
+                                                            <mat-option *ngFor="let player of searchedPlayersToDelete"
+                                                                        [value]="player">
                                                                 {{ player.firstName }} {{ player.lastName }}
                                                             </mat-option>
                                                         </mat-autocomplete>

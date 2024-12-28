@@ -179,9 +179,22 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpGet("SearchPlayers")]
         public IActionResult SearchPlayers(string searchTerm)
         {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return BadRequest("Search term cannot be empty.");
+
             var context = new DataContext();
+            var searchTerms = searchTerm.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
             var players = context.Players
-                .Where(p => p.FirstName.Contains(searchTerm) || p.LastName.Contains(searchTerm))
+                .Where(p =>
+                    // If there's only one search term, match against either FirstName or LastName
+                    (searchTerms.Length == 1 &&
+                        (p.FirstName.StartsWith(searchTerms[0], StringComparison.OrdinalIgnoreCase) ||
+                         p.LastName.StartsWith(searchTerms[0], StringComparison.OrdinalIgnoreCase))) ||
+                    // If there are multiple search terms, match them in sequence
+                    (searchTerms.Length == 2 &&
+                        p.FirstName.StartsWith(searchTerms[0], StringComparison.OrdinalIgnoreCase) &&
+                        p.LastName.StartsWith(searchTerms[1], StringComparison.OrdinalIgnoreCase)))
                 .Select(p => new { p.Id, p.FirstName, p.LastName })
                 .ToList();
 
@@ -467,6 +480,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             // Retrieve KingQueenTeams based on the provided ScrambleNumber
             var kingQueenTeams = context.KingQueenTeam
+                .Include(t => t.KingQueenPlayers)
                 .Where(t =>
                     t.LeagueID == leagueId &&
                     t.ScrambleNumber == scrambleNumber)
@@ -876,16 +890,26 @@ namespace Allport_s_League_Scrambler.Controllers
             if (league == null)
                 return NotFound("League not found.");
 
+            // Split the search term into words
+            var searchTerms = searchTerm.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
             var playersInLeague = context.PlayersLeagues
                 .Where(pl => pl.LeagueID == league.ID)
                 .Select(pl => pl.Player)
-                .Where(p => p.FirstName.Contains(searchTerm) || p.LastName.Contains(searchTerm))
+                .Where(p =>
+                    // If there is only one term, match either first or last name
+                    (searchTerms.Length == 1 &&
+                        (p.FirstName.StartsWith(searchTerms[0], StringComparison.OrdinalIgnoreCase) ||
+                         p.LastName.StartsWith(searchTerms[0], StringComparison.OrdinalIgnoreCase))) ||
+                    // If there are two terms, match first and last name in sequence
+                    (searchTerms.Length == 2 &&
+                        p.FirstName.StartsWith(searchTerms[0], StringComparison.OrdinalIgnoreCase) &&
+                        p.LastName.StartsWith(searchTerms[1], StringComparison.OrdinalIgnoreCase)))
                 .Select(p => new { p.Id, p.FirstName, p.LastName })
                 .ToList();
 
             return Ok(playersInLeague);
         }
-
 
         [HttpPost("[action]/{leagueName}")]
         public Player DeletePlayer([FromBody] Player player, string leagueName)

@@ -10,4 +10,5 @@ export interface Player {
     isTopPlayer?: boolean;
     isByePlayer?: boolean;
     isLowPlayer?: boolean;
+    isSubScore?: boolean;
 }

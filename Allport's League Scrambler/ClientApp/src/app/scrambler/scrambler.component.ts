@@ -19,6 +19,7 @@ import { KingQueenRoundScoresResponse } from '../data-models/kingQueenRoundScore
 import { KingQueenRoundScore } from '../data-models/KingQueenRoundScore';
 import { KingQueenRoundScoresRequest } from '../data-models/kingQueenRoundScoresRequest';
 import { PlayerScoreGroup, PlayerScoresResponse } from '../data-models/playerScoresResponse';
+import { KingQueenPlayer } from '../data-models/kingQueenPlayer.model';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
@@ -276,7 +277,50 @@ export class ScramblerComponent implements OnInit {
         this.selectedPlayer = player;
     }
 
+    onBlurPlayerInput(): void {
+        if (!this.searchTerm || !this.searchedPlayers || this.searchedPlayers.length === 0) {
+            this.selectedPlayer = null;
+            return;
+        }
+
+        const typedText = this.searchTerm.trim().toLowerCase();
+
+        // Find exact match in the searchedPlayers
+        const matchedPlayer = this.searchedPlayers.find(player => {
+            const fullName = (player.firstName + ' ' + player.lastName).toLowerCase();
+            return fullName === typedText;
+        });
+
+        if (matchedPlayer) {
+            this.selectedPlayer = matchedPlayer;
+        } else {
+            // No exact match
+            this.selectedPlayer = null;
+        }
+    }
+
+    onBlurDeletePlayerInput(): void {
+        if (!this.searchTermDelete || !this.searchedPlayersToDelete || this.searchedPlayersToDelete.length === 0) {
+            this.selectedPlayerToDelete = null;
+            return;
+        }
+
+        const typedText = this.searchTermDelete.trim().toLowerCase();
+
+        const matchedPlayer = this.searchedPlayersToDelete.find(player => {
+            const fullName = (player.firstName + ' ' + player.lastName).toLowerCase();
+            return fullName === typedText;
+        });
+
+        if (matchedPlayer) {
+            this.selectedPlayerToDelete = matchedPlayer;
+        } else {
+            this.selectedPlayerToDelete = null;
+        }
+    }
+
     addExistingPlayer() {
+        console.log('selectedplayer', this.selectedPlayer);
         if (this.selectedPlayer && this.selectedLeague) {
             this.playerService
                 .AddPlayer(this.selectedPlayer, this.selectedLeague)
@@ -1690,19 +1734,40 @@ export class ScramblerComponent implements OnInit {
                 this.listOfTeams = [];
                 this.listOfRetrievedScrambleNumbers = [];
                 let matchups = response.kingQueenTeams;
+                console.log('matchups', matchups);
                 if (matchups.length > 0 && matchups[0].kingQueenTeam.kingQueenRoundScores) {
                     this.selectedRounds = matchups[0].kingQueenTeam.kingQueenRoundScores.length;
                 }
                 // Map the retrieved matchups into listOfTeams
                 matchups.forEach((matchup) => {
+                    matchup.players.forEach((player) => {
+                        // kingQueenPlayers might be null/undefined, so default to empty array
+                        const kqPlayers = matchup.kingQueenTeam.kingQueenPlayers || [];
+
+                        let matchingKQPlayer: KingQueenPlayer | null = null;
+                        for (const kqp of kqPlayers) {
+                            if (kqp.playerId === player.id) {
+                                matchingKQPlayer = kqp;
+                                break; // Stop once we find the match
+                            }
+                        }
+
+                        if (matchingKQPlayer) {
+                            player.isSubScore = matchingKQPlayer.isSubScore;
+                        }
+                    });
+
+                    // 2. Build your Team object now that each Player is updated
                     const team: Team = {
                         players: matchup.players,
-                        maleCount: matchup.players.filter(player => player.isMale).length,
-                        femaleCount: matchup.players.filter(player => !player.isMale).length,
+                        maleCount: matchup.players.filter((player) => player.isMale).length,
+                        femaleCount: matchup.players.filter((player) => !player.isMale).length,
                         kingQueenRoundScores: matchup.kingQueenTeam.kingQueenRoundScores,
                         kingQueenTeamId: matchup.kingQueenTeam.id,
                         sortingId: null
                     };
+
+                    // 3. Push the team into your list
                     this.listOfTeams.push(team);
                     this.retrievedListOfTeams.push(team);
                 });
