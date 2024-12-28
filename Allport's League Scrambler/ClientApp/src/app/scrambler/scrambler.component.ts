@@ -176,8 +176,6 @@ export class ScramblerComponent implements OnInit {
     }
 
     switchPlayerTeam(player: any, selectedSortingId: string, currentSortingId: number): void {
-        console.log(`Switching player ${player.firstName} ${player.lastName} from team ${currentSortingId} to team ${selectedSortingId}`);
-
         const currentTeam = this.listOfTeams.find(team => team.sortingId === currentSortingId);
         if (currentTeam) {
             currentTeam.players = currentTeam.players.filter(p => p.id !== player.id);
@@ -187,8 +185,6 @@ export class ScramblerComponent implements OnInit {
         if (newTeam) {
             newTeam.players.push(player);
         }
-
-        console.log('Updated listOfTeams:', this.listOfTeams);
     }
 
     private initializeSettings(): void {
@@ -322,7 +318,6 @@ export class ScramblerComponent implements OnInit {
     }
 
     addExistingPlayer() {
-        console.log('selectedplayer', this.selectedPlayer);
         if (this.selectedPlayer && this.selectedLeague) {
             this.playerService
                 .AddPlayer(this.selectedPlayer, this.selectedLeague)
@@ -1154,10 +1149,8 @@ export class ScramblerComponent implements OnInit {
 
         this.playerService.getSelectedPlayersAsPlayers(this.leagueId, today).subscribe(
             (fetchedPlayers: Player[]) => {
-                console.log('Fetched Players from API:', fetchedPlayers);
 
                 fetchedPlayers.forEach(fetchedPlayer => {
-                    console.log('Processing Fetched Player:', fetchedPlayer);
 
                     let isAdded = false;
 
@@ -1165,7 +1158,6 @@ export class ScramblerComponent implements OnInit {
                     for (let i = 0; i < this.malePlayers1.length; i++) {
                         const player = this.malePlayers1[i];
                         if (player.id === fetchedPlayer.id) {
-                            console.log('Found in malePlayers1:', player);
                             this.selectedList.push(player);
                             this.addPlayer(player);
                             isAdded = true;
@@ -1173,36 +1165,24 @@ export class ScramblerComponent implements OnInit {
                         }
                     }
 
-                    if (!isAdded) {
-                        console.log('Not found in malePlayers1:', fetchedPlayer);
-                    }
-
                     // Check in femalePlayers1
                     if (!isAdded) {
                         for (let i = 0; i < this.femalePlayers1.length; i++) {
                             const player = this.femalePlayers1[i];
                             if (player.id === fetchedPlayer.id) {
-                                console.log('Found in femalePlayers1:', player);
                                 this.selectedList.push(player);
                                 this.addPlayer(player);
                                 isAdded = true;
                                 break; // Stop further checks in femalePlayers1
                             }
                         }
-
-                        if (!isAdded) {
-                            console.log('Not found in femalePlayers1:', fetchedPlayer);
-                        }
                     }
 
                     // If not found in either list, add directly to `selectedList`
                     if (!isAdded) {
-                        console.log('Adding player directly to selectedList:', fetchedPlayer);
                         this.selectedList.push(fetchedPlayer);
                     }
                 });
-
-                console.log('Final Selected List:', this.selectedList);
 
                 // Trigger Angular change detection to refresh UI
                 this.selectedList = [...this.selectedList];
@@ -1810,7 +1790,6 @@ export class ScramblerComponent implements OnInit {
                 this.listOfTeams = [];
                 this.listOfRetrievedScrambleNumbers = [];
                 let matchups = response.kingQueenTeams;
-                console.log('matchups', matchups);
                 if (matchups.length > 0 && matchups[0].kingQueenTeam.kingQueenRoundScores) {
                     this.selectedRounds = matchups[0].kingQueenTeam.kingQueenRoundScores.length;
                 }
