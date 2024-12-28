@@ -582,6 +582,43 @@ namespace Allport_s_League_Scrambler.Controllers
             return Ok(result);
         }
 
+        [HttpGet("GetSignedInPlayersAsPlayers")]
+        public async Task<IActionResult> GetSignedInPlayersAsPlayers(int leagueId, string date)
+        {
+            var context = new DataContext();
+
+            // Fetch PlayerSignIn records for the given leagueId and date
+            var signedInPlayers = await context.PlayerSignIn
+                .Where(x => x.LeagueId == leagueId && x.DateTime.Date == DateTime.Parse(date).Date)
+                .ToListAsync();
+
+            if (!signedInPlayers.Any())
+            {
+                return Ok(new List<Player>()); // Return empty list if no records found
+            }
+
+            // Fetch the corresponding Player objects
+            var playerIds = signedInPlayers.Select(x => x.PlayerId).Distinct().ToList();
+            var players = await context.Players
+                .Where(p => playerIds.Contains(p.Id))
+                .OrderBy(p => p.FirstName)
+                .ThenBy(p => p.LastName)
+                .ToListAsync();
+
+            // Map and enrich the data for the frontend
+            var playerList = players.Select(player => new Player
+            {
+                Id = player.Id,
+                FirstName = player.FirstName,
+                LastName = player.LastName,
+                IsMale = player.IsMale,
+                Gender = player.IsMale ? "Male" : "Female",
+                IsSub = player.IsSub
+            }).ToList();
+
+            return Ok(playerList);
+        }
+
         [HttpGet("GetSignedInPlayers")]
         public async Task<IActionResult> GetSignedInPlayers(int leagueId, DateTime date)
         {

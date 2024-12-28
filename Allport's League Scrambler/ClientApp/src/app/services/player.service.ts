@@ -102,6 +102,12 @@ export class PlayerService {
         return this.httpClient.get<PlayerSignInResult[]>(this.baseUrl + 'api/ScrambleData/GetSignedInPlayers', { params });
     }
 
+    public getSelectedPlayersAsPlayers(leagueId: number, date: string): Observable<Player[]> {
+        const url = `${this.baseUrl}api/ScrambleData/GetSignedInPlayersAsPlayers?leagueId=${leagueId}&date=${date}`;
+        return this.httpClient.get<Player[]>(url);
+    }
+
+
     public GetPlayersByLeague(leagueID: number) {
         return this.httpClient.get<any[]>(this.baseUrl + 'api/ScrambleData/GetPlayers/' + leagueID);
     }

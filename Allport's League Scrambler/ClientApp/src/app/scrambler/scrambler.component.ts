@@ -168,6 +168,8 @@ export class ScramblerComponent implements OnInit {
 
     }
 
+    
+
 
     toggleTeamSorting(): void {
         this.showTeamSorting = !this.showTeamSorting;
@@ -1139,6 +1141,80 @@ export class ScramblerComponent implements OnInit {
         this.selectedList = [];
         this.calculateTeamsNeeded();
     }
+
+    fetchSelectedList(): void {
+        if (!this.selectedLeague) {
+            console.error('No league selected. Cannot fetch selected players.');
+            return;
+        }
+
+        this.selectedList = [];
+
+        const today = new Date().toISOString().split('T')[0]; // Get current date without time
+
+        this.playerService.getSelectedPlayersAsPlayers(this.leagueId, today).subscribe(
+            (fetchedPlayers: Player[]) => {
+                console.log('Fetched Players from API:', fetchedPlayers);
+
+                fetchedPlayers.forEach(fetchedPlayer => {
+                    console.log('Processing Fetched Player:', fetchedPlayer);
+
+                    let isAdded = false;
+
+                    // Check in malePlayers1
+                    for (let i = 0; i < this.malePlayers1.length; i++) {
+                        const player = this.malePlayers1[i];
+                        if (player.id === fetchedPlayer.id) {
+                            console.log('Found in malePlayers1:', player);
+                            this.selectedList.push(player);
+                            this.addPlayer(player);
+                            isAdded = true;
+                            break; // Stop further checks in malePlayers1
+                        }
+                    }
+
+                    if (!isAdded) {
+                        console.log('Not found in malePlayers1:', fetchedPlayer);
+                    }
+
+                    // Check in femalePlayers1
+                    if (!isAdded) {
+                        for (let i = 0; i < this.femalePlayers1.length; i++) {
+                            const player = this.femalePlayers1[i];
+                            if (player.id === fetchedPlayer.id) {
+                                console.log('Found in femalePlayers1:', player);
+                                this.selectedList.push(player);
+                                this.addPlayer(player);
+                                isAdded = true;
+                                break; // Stop further checks in femalePlayers1
+                            }
+                        }
+
+                        if (!isAdded) {
+                            console.log('Not found in femalePlayers1:', fetchedPlayer);
+                        }
+                    }
+
+                    // If not found in either list, add directly to `selectedList`
+                    if (!isAdded) {
+                        console.log('Adding player directly to selectedList:', fetchedPlayer);
+                        this.selectedList.push(fetchedPlayer);
+                    }
+                });
+
+                console.log('Final Selected List:', this.selectedList);
+
+                // Trigger Angular change detection to refresh UI
+                this.selectedList = [...this.selectedList];
+            },
+            (error) => {
+                console.error('Error fetching selected players:', error);
+            }
+        );
+    }
+
+
+
     selectAllPlayers() {
         // Clear the selected list first
         this.selectedList = [];
