@@ -31,9 +31,9 @@
                         <span class='fas fa-database'></span> League Schedule
                     </a>
                 </li>
-                <li class="nav-item" [routerLinkActive]='["link-active"]'>
-                    <a [routerLink]='["/player-scores"]' class="nav-link" (click)='collapse()'>
-                        <span class='fas fa-database'></span> Player Scores
+                <li class="nav-item" [routerLinkActive]="['link-active']">
+                    <a [routerLink]="['/sign-in']" class="nav-link" (click)="collapse()">
+                        <span class="fas fa-sign-in-alt"></span> Sign In
                     </a>
                 </li>
                 <li *ngIf="loggedIn"  class="nav-item" [routerLinkActive]='["link-active"]'>

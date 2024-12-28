@@ -27,7 +27,7 @@ namespace Allport_s_League_Scrambler.Controllers
     {
         public string Email { get; set; }
     }
-
+    
     public class ResetPasswordRequest
     {
         public string Password { get; set; }

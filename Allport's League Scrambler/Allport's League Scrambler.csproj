@@ -104,6 +104,7 @@
 
   <ItemGroup>
     <Folder Include="ClientApp\src\app\detailed-player-stats\" />
+    <Folder Include="ClientApp\src\app\sign-in\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
 

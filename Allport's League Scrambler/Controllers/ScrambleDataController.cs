@@ -544,6 +544,84 @@ namespace Allport_s_League_Scrambler.Controllers
             };
         }
 
+        [HttpPost("SignInPlayer")]
+        public async Task<IActionResult> SignInPlayer([FromBody] PlayerSignIn playerSignIn)
+        {
+            var context = new DataContext();
+            if (playerSignIn == null)
+            {
+                return BadRequest("Invalid data.");
+            }
+
+            // Ensure the DateTime only includes the date
+            playerSignIn.DateTime = playerSignIn.DateTime.Date;
+
+            // Add the player sign-in record to the database
+            context.PlayerSignIn.Add(playerSignIn);
+            await context.SaveChangesAsync();
+
+            var player = await context.Players.FindAsync(playerSignIn.PlayerId);
+
+            if (player == null)
+            {
+                return NotFound("Player not found.");
+            }
+
+            // Return the custom result
+            var result = new PlayerSignInResult
+            {
+                PlayerSignInId = playerSignIn.PlayerSignInId,
+                DateTime = playerSignIn.DateTime,
+                LeagueId = playerSignIn.LeagueId,
+                PlayerId = playerSignIn.PlayerId,
+                FirstName = player.FirstName,
+                LastName = player.LastName,
+                Gender = player.IsMale ? "Male" : "Female"
+            };
+
+            return Ok(result);
+        }
+
+        [HttpGet("GetSignedInPlayers")]
+        public async Task<IActionResult> GetSignedInPlayers(int leagueId, DateTime date)
+        {
+            var context = new DataContext();
+            var signedInPlayers = await context.PlayerSignIn
+                .Where(signIn => signIn.LeagueId == leagueId && signIn.DateTime.Date == date.Date)
+                .Select(signIn => new PlayerSignInResult
+                {
+                    PlayerSignInId = signIn.PlayerSignInId,
+                    DateTime = signIn.DateTime,
+                    LeagueId = signIn.LeagueId,
+                    PlayerId = signIn.PlayerId,
+                    FirstName = signIn.Player.FirstName,
+                    LastName = signIn.Player.LastName,
+                    Gender = signIn.Player.Gender
+                })
+                .ToListAsync();
+
+            return Ok(signedInPlayers);
+        }
+
+        [HttpDelete("SignInPlayer/{playerSignInId}")]
+        public async Task<IActionResult> DeleteSignInPlayer(int playerSignInId)
+        {
+            var context = new DataContext();
+
+            var signInRecord = await context.PlayerSignIn.FindAsync(playerSignInId);
+
+            if (signInRecord == null)
+            {
+                return NotFound($"PlayerSignIn record with ID {playerSignInId} not found.");
+            }
+
+            context.PlayerSignIn.Remove(signInRecord);
+            await context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+
         [HttpGet("GetByLeague/{leagueName}")]
         public async Task<IActionResult> GetStandingsByLeague(string leagueName)
         {
@@ -797,6 +875,30 @@ namespace Allport_s_League_Scrambler.Controllers
             }
         }
 
+        [HttpGet("[action]/{leagueID}")]
+        public List<Player> GetPlayers(int leagueID)
+        {
+            var context = new DataContext();
+
+            // Retrieve players associated with the given league
+            var players = context.PlayersLeagues
+                .Where(pl => pl.LeagueID == leagueID)
+                .Select(pl => pl.Player) // Get the associated Player object
+                .OrderBy(x => x.FirstName == "Open" ? 1 : 0) // Order "Open" to the end
+                .ThenBy(x => x.FirstName) // Then alphabetically by FirstName
+                .ToList();
+
+            // Assign gender values
+            foreach (var player in players)
+            {
+                player.Gender = player.IsMale ? "Male" : "Female";
+            }
+
+            // Save changes if needed (e.g., if Gender is stored in the database)
+            context.SaveChanges();
+
+            return players;
+        }
 
 
         [HttpPost("[action]/{leagueName}")]

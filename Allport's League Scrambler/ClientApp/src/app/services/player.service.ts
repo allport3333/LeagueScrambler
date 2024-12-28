@@ -12,6 +12,8 @@ import { KingQueenRoundScoresResponse } from '../data-models/kingQueenRoundScore
 import { KingQueenRoundScore } from '../data-models/KingQueenRoundScore';
 import { KingQueenRoundScoresRequest } from '../data-models/kingQueenRoundScoresRequest';
 import { PlayerScoresResponse, PlayerScoreGroup, RoundScore } from '../data-models/playerScoresResponse';
+import { PlayerSignIn } from '../data-models/playerSignIn.model';
+import { PlayerSignInResult } from '../data-models/playerSignInResult.model';
 
 @Injectable({
     providedIn: 'root'
@@ -92,6 +94,18 @@ export class PlayerService {
         );
     }
 
+    public getSignedInPlayers(leagueId: number, date: string): Observable<PlayerSignInResult[]> {
+        const params = new HttpParams()
+            .set('leagueId', leagueId.toString())
+            .set('date', date);
+
+        return this.httpClient.get<PlayerSignInResult[]>(this.baseUrl + 'api/ScrambleData/GetSignedInPlayers', { params });
+    }
+
+    public GetPlayersByLeague(leagueID: number) {
+        return this.httpClient.get<any[]>(this.baseUrl + 'api/ScrambleData/GetPlayers/' + leagueID);
+    }
+
     // New method to retrieve KingQueenTeams by ScrambleNumber
     public getKingQueenTeamsByScrambleNumber(leagueName: string, scrambleNumber: number): Observable<KingQueenTeamsResponse> {
         return this.httpClient.get<KingQueenTeamsResponse>(
@@ -162,6 +176,14 @@ export class PlayerService {
         return this.httpClient.post<Leagues>(this.baseUrl + 'api/ScrambleData/AddNewLeague/' + leagueName, []);
     }
 
+    public signInPlayer(playerSignIn: PlayerSignIn): Observable<any> {
+        console.log('playersignin', playerSignIn);
+        return this.httpClient.post<PlayerSignIn>(this.baseUrl + 'api/ScrambleData/SignInPlayer', playerSignIn);
+    }
+
+    public deleteSignInPlayer(playerSignInId: number): Observable<void> {
+        return this.httpClient.delete<void>(this.baseUrl + `api/ScrambleData/SignInPlayer/${playerSignInId}`);
+}
 }
 
 

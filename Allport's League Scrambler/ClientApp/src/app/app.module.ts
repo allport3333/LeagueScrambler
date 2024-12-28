@@ -22,6 +22,7 @@ import { AuthService } from './auth.service';
 import { ForgotPasswordDialogComponent } from './forgot-password-dialog/forgot-password-dialog.component';
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { DetailedPlayerStatsComponent } from './detailed-player-stats/detailed-player-stats.component';
+import { SignInComponent } from './sign-in/sign-in.component';
 
 @NgModule({
     declarations: [
@@ -35,7 +36,8 @@ import { DetailedPlayerStatsComponent } from './detailed-player-stats/detailed-p
         ScheduleComponent,
         ForgotPasswordDialogComponent,
         ResetPasswordComponent,
-        DetailedPlayerStatsComponent
+        DetailedPlayerStatsComponent,
+        SignInComponent
 
     ],
     imports: [
@@ -79,7 +81,8 @@ import { DetailedPlayerStatsComponent } from './detailed-player-stats/detailed-p
             { path: 'player-scores', component: PlayerScoresComponent },
             { path: 'schedule', component: ScheduleComponent },
             { path: 'resetpassword', component: ResetPasswordComponent },
-            { path: 'player-stats/:id', component: DetailedPlayerStatsComponent } 
+            { path: 'player-stats/:id', component: DetailedPlayerStatsComponent },
+            { path: 'sign-in', component: SignInComponent }
         ]),
         BrowserAnimationsModule
     ],
