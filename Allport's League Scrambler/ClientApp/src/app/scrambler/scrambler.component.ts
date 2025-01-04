@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatSelectionListChange, MatTabGroup } from '@angular/material';
+import { MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatSelectionListChange, MatTabGroup, MatTabChangeEvent } from '@angular/material';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatChipsModule } from '@angular/material';
 import { Player } from '../data-models/player.model';
@@ -20,6 +20,7 @@ import { KingQueenRoundScore } from '../data-models/KingQueenRoundScore';
 import { KingQueenRoundScoresRequest } from '../data-models/kingQueenRoundScoresRequest';
 import { PlayerScoreGroup, PlayerScoresResponse } from '../data-models/playerScoresResponse';
 import { KingQueenPlayer } from '../data-models/kingQueenPlayer.model';
+import { LeagueService } from '../services/league.service';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
@@ -49,6 +50,7 @@ export class ScramblerComponent implements OnInit {
     showPlayerTeams = false; // Controls the visibility of the player teams section
     showTeamFormation = false; // Controls the visibility of the team formation section
     hideEverything: boolean;
+    userRole: string;
     numberOfSubsAllowed: number = 100; // Default value
     dropLowest: number = 0; // Default value
     subScorePercent: number = 100; // Default value
@@ -74,12 +76,13 @@ export class ScramblerComponent implements OnInit {
     matchups: Team[] = new Array();
     selectedList: Player[] = new Array();
     selectedRetrieveScrambleList: KingQueenTeam[] = new Array();
-    malePlayers1: Player[];
-    femalePlayers1: Player[];
-    queriedPlayers: Player[];
-    queriedScrambles: KingQueenTeam[];
+    malePlayers1: Player[] = new Array();
+    femalePlayers1: Player[] = new Array();;
+    queriedPlayers: Player[] = new Array();;
+    queriedScrambles: KingQueenTeam[] = new Array();;
     leaguesAvailable: Leagues[] = [];
     leagueId: number;
+    selectedLeagueDto: Leagues;
     gendersPossible: Gender[] = [{ value: 'Female', isMale: false }, { value: 'Male', isMale: true }];
     isSub: boolean;
     loggedIn: boolean = false;
@@ -119,6 +122,7 @@ export class ScramblerComponent implements OnInit {
     teamCount: number;
     teamSize: number;
     numberOfTeams: number;
+    innerTabIndex: number = 0;
     scrambleNumber: number;
     containsMale: boolean = false;
     numberOfTeamsSelected: boolean = false;
@@ -142,7 +146,7 @@ export class ScramblerComponent implements OnInit {
     standings: PlayerScoreGroup[];
     femaleStandings: PlayerScoreGroup[];
     maleStandings: PlayerScoreGroup[];
-
+    retrievedStandingsType: string;
     showTeamSorting: boolean = false;
     PlayerForm = new FormGroup({
         firstName: new FormControl(),
@@ -163,7 +167,7 @@ export class ScramblerComponent implements OnInit {
         passwordLeague: new FormControl()
     });
 
-    constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, public loginService: LoginService, private snackBar: MatSnackBar) {
+    constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, public leagueService: LeagueService, public loginService: LoginService, private snackBar: MatSnackBar) {
         this.teamSize = 4;
 
     }
@@ -202,8 +206,8 @@ export class ScramblerComponent implements OnInit {
 
                                 this.loginService.getSettingValue('standingsType', this.leagueId).subscribe(
                                     (newStandingsType) => {
-
-                                        if (newStandingsType !== this.standingsType) {
+                                        this.retrievedStandingsType = newStandingsType;
+                                        if (this.retrievedStandingsType !== this.standingsType) {
                                             this.toggleStandingsType(); // Call toggleStandingsType if it changed
                                         } else {
                                             this.processStandings(this.lastResult, this.getCurrentOptions()); // Call processStandings otherwise
@@ -504,6 +508,7 @@ export class ScramblerComponent implements OnInit {
         this.kingQueenRoundScores = []; // Reset the array
 
         for (const team of this.retrievedListOfTeams) {
+
             if (team.kingQueenRoundScores && team.kingQueenRoundScores.length > 0) {
                 // Use existing scores if they exist
                 for (let kingQueenRoundScore of team.kingQueenRoundScores) {
@@ -537,54 +542,111 @@ export class ScramblerComponent implements OnInit {
     }
 
 
-
     ngOnInit() {
         this.completeRandom = false;
-        this.displayTopPlayers = new Array();
-        this.displayLowPlayers = new Array();
+        this.displayTopPlayers = [];
+        this.displayLowPlayers = [];
         this.hideInputOptions = false;
         this.hideListOptions = false;
         this.hideEverything = false;
         this.checkScreenSize();
+
         // Subscribe to window resize events to update isSmallScreen
         window.addEventListener('resize', () => {
             this.checkScreenSize();
         });
+
         this.playerLoading = false;
-        this.playerService.GetAllMalePlayers().subscribe(result => {
-            this.malePlayers1 = result;
-            this.malePlayerCount = result.length;
-        }, error => console.error(error));
 
-        this.playerService.GetAllFemalePlayers().subscribe(result => {
-            this.femalePlayers1 = result;
-            this.femalePlayerCount = result.length;
-        }, error => console.error(error));
+        this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
+            if (selectedLeague.leagueId !== null && selectedLeague.leagueName !== null) {
+                this.leagueId = selectedLeague.leagueId;
+                this.selectedLeague = selectedLeague.leagueName; // Use leagueName as needed
+                this.onLeagueChanged();
+            }
+        });
 
-        this.playerService.GetNumberOfBrackets().subscribe(result => {
-            this.brackets = result;
-        }, error => console.error(error));
-        this.playerService.GetPlayers().subscribe(result => {
-            this.totalPlayers = result;
-        }, error => console.error(error));
+        // Fetch all male players
+        this.playerService.GetAllMalePlayers().subscribe(
+            (result) => {
+                this.malePlayers1 = result;
+                this.malePlayerCount = result.length;
+            },
+            (error) => console.error(error)
+        );
+
+        // Fetch all female players
+        this.playerService.GetAllFemalePlayers().subscribe(
+            (result) => {
+                this.femalePlayers1 = result;
+                this.femalePlayerCount = result.length;
+            },
+            (error) => console.error(error)
+        );
+
+        // Fetch number of brackets
+        this.playerService.GetNumberOfBrackets().subscribe(
+            (result) => {
+                this.brackets = result;
+            },
+            (error) => console.error(error)
+        );
+
+        // Fetch all players
+        this.playerService.GetPlayers().subscribe(
+            (result) => {
+                this.totalPlayers = result;
+            },
+            (error) => console.error(error)
+        );
+
+        // Check login status
         this.loginService.isLoggedIn().subscribe((result) => {
             this.loggedIn = result;
 
             if (result) {
+                // User is logged in
                 this.isActionAllowed = true; // Enable action for logged-in users
-                this.loginService.getUserLeagues().subscribe(result => {
-                    this.leaguesAvailable = result;
+
+                // Fetch user role
+                this.loginService.getUsersRole().subscribe((roleResult) => {
+                    this.userRole = roleResult.role; // Assuming the API returns { role: 'Admin' }
+
+                    // Perform actions based on role
+                    if (this.userRole === 'Admin') {
+                        // Admin-specific logic
+                    } else if (this.userRole === 'Manager') {
+                        // Manager-specific logic
+                    } else if (this.userRole === 'Player') {
+                        // Player-specific logic
+                    }
+                });
+
+                // Fetch user leagues
+                this.leagueService.getLeagues().subscribe((leagueResult) => {
+                    this.leaguesAvailable = leagueResult;
                 });
             } else {
+                // User is not logged in
+
                 // Fetch password for non-logged-in users
-                this.playerService.GetPassword().subscribe((passwordResult) => {
-                    this.passwordLeague = passwordResult;
-                });
-                this.playerService.GetLeagues().subscribe(result => {
-                    this.leaguesAvailable = result;
-                });
+                this.playerService.GetPassword().subscribe(
+                    (passwordResult) => {
+                        this.passwordLeague = passwordResult;
+                    },
+                    (error) => console.error(error)
+                );
+
+                // Fetch leagues for non-logged-in users
+                this.playerService.GetLeagues().subscribe(
+                    (leagueResult) => {
+                        this.leaguesAvailable = leagueResult;
+                    },
+                    (error) => console.error(error)
+                );
             }
         });
+
     }
 
     ngAfterViewInit() {
@@ -598,47 +660,79 @@ export class ScramblerComponent implements OnInit {
         this.standingsRounds = [];
     }
 
-    selectLeague() {
+    onLeagueChanged() {
+        if (!this.selectedLeague) {
+            return;
+        }
+
         this.playerLoading = true;
+
+        // Clear and reset relevant properties
         this.clearStandings();
         this.reset();
 
-        const selectedLeague = this.leaguesAvailable.find(league => league.leagueName === this.selectedLeague);
+        const selectedLeague = this.leaguesAvailable.find((league) => league.leagueName === this.selectedLeague);
+
         if (selectedLeague) {
-            this.leagueId = selectedLeague.id; // Assuming 'id' is the property name for the league's ID
+            this.selectedLeagueDto = selectedLeague;
+            this.leagueId = selectedLeague.id;
         }
 
-        this.playerService.SelectLeague(this.selectedLeague).subscribe(result => {
+        // Fetch players for the selected league
+        this.playerService.SelectLeague(this.selectedLeague).subscribe((result) => {
             this.queriedPlayers = result;
-            this.malePlayerCount = result.length;
-            this.femalePlayerCount = result.length;
-            this.malePlayers1 = [];
-            this.femalePlayers1 = [];
-            for (let player of this.queriedPlayers) {
-
-                if (player.isMale) {
-                    this.malePlayers1.push(player);
-                }
-                else {
-                    this.femalePlayers1.push(player);
-                }
-            }
+            this.malePlayers1 = result.filter((player) => player.isMale);
+            this.femalePlayers1 = result.filter((player) => !player.isMale);
             this.malePlayerCount = this.malePlayers1.length;
             this.femalePlayerCount = this.femalePlayers1.length;
 
             this.playerLoading = false;
-            this.tabGroup.selectedIndex = 0;
             this.awaitSettingsAndInitialize();
         });
-        this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe(result => {
-            this.queriedScrambles = result;
 
+        // Fetch scrambles for the selected league
+        this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe((result) => {
+            this.queriedScrambles = result;
+            this.playerLoading = false;
+        });
+
+        // Initialize standings
+        this.initializeStandings();
+    }
+
+    selectLeague() {
+        if (!this.selectedLeague) {
+            return;
+        }
+
+        this.playerLoading = true;
+        this.clearStandings();
+        this.reset();
+
+        const selectedLeague = this.leaguesAvailable.find((league) => league.leagueName === this.selectedLeague);
+
+        if (selectedLeague) {
+            this.selectedLeagueDto = selectedLeague;
+            this.leagueId = selectedLeague.id;
+        }
+
+        this.playerService.SelectLeague(this.selectedLeague).subscribe((result) => {
+            this.queriedPlayers = result;
+            this.malePlayers1 = result.filter((player) => player.isMale);
+            this.femalePlayers1 = result.filter((player) => !player.isMale);
+            this.malePlayerCount = this.malePlayers1.length;
+            this.femalePlayerCount = this.femalePlayers1.length;
+
+            this.playerLoading = false;
+            this.awaitSettingsAndInitialize();
+        });
+
+        this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe((result) => {
+            this.queriedScrambles = result;
             this.playerLoading = false;
         });
 
         this.initializeStandings();
-
-
     }
 
     getTooltipText(): string {
@@ -666,6 +760,25 @@ export class ScramblerComponent implements OnInit {
                 this.playerLoading = false; // Ensure loading state is reset
             }
         );
+    }
+
+    onTabChange(event: MatTabChangeEvent): void {
+        // Check which tab was selected
+        if (event.tab.textLabel === 'Manage Scores') {
+            // Fetch data for Manage Scores
+            this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe(result => {
+                this.queriedScrambles = result;
+                this.playerLoading = false;
+            });
+        } else if (event.tab.textLabel === 'Standings') {
+            // Initialize standings for the Standings tab
+            this.innerTabIndex = 0;
+            if (this.retrievedStandingsType !== this.standingsType) {
+                this.toggleStandingsType(); // Call toggleStandingsType if it changed
+            } else {
+                this.processStandings(this.lastResult, this.getCurrentOptions()); // Call processStandings otherwise
+            }
+        }
     }
 
     standingsType: 'round' | 'matchup' = 'round'; // Default to 'round'
@@ -793,6 +906,11 @@ export class ScramblerComponent implements OnInit {
                         // Create a copy of the original scores for modification
                         const updatedScores = player.scores.map(score => ({ ...score, isDropped: false, isReduced: false }));
 
+                        const totalScoreBeforeReduction = updatedScores
+                            .filter(score => !score.isDropped) // Exclude dropped scores
+                            .reduce((sum, score) => sum + score.score, 0);
+
+
                         // Filter sub-scores from the updated scores
                         const subScores = updatedScores.filter(score => score.isSubScore);
 
@@ -843,7 +961,8 @@ export class ScramblerComponent implements OnInit {
                             ...player,
                             scores: updatedScores, // Include updated scores with `isDropped` and `isReduced`
                             totalScore: totalScore,
-                            totalWins: totalWins
+                            totalWins: totalWins,
+                            totalScoreBeforeReduction: totalScoreBeforeReduction
                         };
                     }).sort((a, b) => {
                         // Sort by total wins descending, then by total score descending
@@ -1819,6 +1938,7 @@ export class ScramblerComponent implements OnInit {
                         femaleCount: matchup.players.filter((player) => !player.isMale).length,
                         kingQueenRoundScores: matchup.kingQueenTeam.kingQueenRoundScores,
                         kingQueenTeamId: matchup.kingQueenTeam.id,
+                        scrambleNumber: null,
                         sortingId: null
                     };
 
@@ -1912,7 +2032,8 @@ export class ScramblerComponent implements OnInit {
                         femaleCount: matchup.players.filter(player => !player.isMale).length,
                         kingQueenTeamId: matchup.kingQueenTeam.id,
                         kingQueenRoundScores: matchup.kingQueenTeam.kingQueenRoundScores,
-                        sortingId: null
+                        sortingId: null,
+                        scrambleNumber: null
                     };
                     this.listOfTeams.push(team);
                     this.retrievedListOfTeams.push(team);
@@ -2447,6 +2568,7 @@ export class ScramblerComponent implements OnInit {
                 maleCount: 0,
                 kingQueenTeamId: 0,
                 kingQueenRoundScores: [],
+                scrambleNumber: null,
                 sortingId: null
             };
             this.listOfTeams.push(team);
@@ -2553,6 +2675,7 @@ export class ScramblerComponent implements OnInit {
                     maleCount: 0,
                     kingQueenTeamId: 0,
                     kingQueenRoundScores: [],
+                    scrambleNumber: null,
                     sortingId: null
                 }
                 this.listOfTeams.push(team)

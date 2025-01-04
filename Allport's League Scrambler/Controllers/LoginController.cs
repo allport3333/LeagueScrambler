@@ -83,6 +83,80 @@ namespace Allport_s_League_Scrambler.Controllers
             }
         }
 
+        [HttpGet("GetUsersRole")]
+        public IActionResult GetUsersRole()
+        {
+            // Check if the user is authenticated
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                // Retrieve the user's role from the claims
+                var roleClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role);
+
+                if (roleClaim != null)
+                {
+                    return Ok(new { isAuthenticated = true, role = roleClaim.Value }); // Return the role
+                }
+                else
+                {
+                    return Ok(new { isAuthenticated = true, role = "Unknown" }); // Default if no role claim exists
+                }
+            }
+            else
+            {
+                return Unauthorized(new { isAuthenticated = false, role = "None" }); // Not authenticated
+            }
+        }
+
+
+        [HttpGet("GetUsersPlayer")]
+        public IActionResult GetUsersPlayer()
+        {
+            try
+            {
+                // Get the current user's ID from the claims
+                var userId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "User not authenticated." });
+                }
+
+                // Convert userId to integer
+                if (!int.TryParse(userId, out int parsedUserId))
+                {
+                    return BadRequest(new { message = "Invalid user ID." });
+                }
+
+                using (var _context = new DataContext())
+                {
+                    // Fetch the UsersPlayer entry for the logged-in user
+                    var usersPlayer = _context.UsersPlayer
+                                              .Where(up => up.UserId == parsedUserId)
+                                              .Select(up => new
+                                              {
+                                                  up.UsersPlayerId,
+                                                  up.UserId,
+                                                  up.PlayerId
+                                              })
+                                              .FirstOrDefault();
+
+                    if (usersPlayer == null)
+                    {
+                        return NotFound(new { message = "No UsersPlayer record found for the user." });
+                    }
+
+                    // Return the found UsersPlayer record
+                    return Ok(usersPlayer);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception and return an error response
+                return StatusCode(500, new { message = "An error occurred.", error = ex.Message });
+            }
+        }
+
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
@@ -100,6 +174,24 @@ namespace Allport_s_League_Scrambler.Controllers
                 {
                     return BadRequest(new { message = "Invalid password." });
                 }
+                string roleName;
+
+                switch (userInfo.UserRoleId)
+                {
+                    case 1:
+                        roleName = "Admin";
+                        break;
+                    case 2:
+                        roleName = "Manager";
+                        break;
+                    case 3:
+                        roleName = "Player";
+                        break;
+                    default:
+                        roleName = "Unknown";
+                        break;
+                }
+
 
                 userInfo.LastLogin = DateTime.Now;
                 _context.Users.Update(userInfo);
@@ -112,7 +204,7 @@ namespace Allport_s_League_Scrambler.Controllers
                      new Claim(ClaimTypes.Email, userInfo.Email), // User's email address
                      new Claim("FirstName", userInfo.FirstName), // User's first name
                      new Claim("LastName", userInfo.LastName), // User's last name
-                     new Claim(ClaimTypes.Role, userInfo.IsAdmin ? "Admin" : "User"), // User's role (admin or user)
+                     new Claim(ClaimTypes.Role, roleName), // User's role based on UserRoleId
                      new Claim("CreatedAt", userInfo.CreatedAt.ToString()), // User account creation date
                      new Claim("LastLogin", userInfo.LastLogin.ToString()) // Date of the user's last login
                  };
@@ -212,22 +304,54 @@ namespace Allport_s_League_Scrambler.Controllers
                 {
                     u.UserId,
                     u.LoginName,
-                    u.IsAdmin
+                    u.IsAdmin,
+                    u.UserRoleId
                     // Include other user-related properties
                     // You can also include linked leagues data in this projection
                 })
                 .FirstOrDefaultAsync();
             var userLeagues = new List<LeagueType>();
-            if (userData.IsAdmin)
+            if (userData.UserRoleId == 1)
             {
                 userLeagues = _context.Leagues.ToList();
             }
-            else
+            else if (userData.UserRoleId == 3)
+            {
+                var player = await _context.UsersPlayer
+                    .Where(x => x.UserId == userData.UserId)
+                    .FirstOrDefaultAsync();
+
+                if (player == null)
+                {
+                    throw new Exception("Player not found for the given UserId.");
+                }
+
+                var playerLeagues = await _context.PlayersLeagues
+                    .Where(u => u.PlayerID == player.PlayerId)
+                    .ToListAsync();
+
+
+                foreach (var playerLeague in playerLeagues)
+                {
+                    var league = await _context.Leagues
+                        .FirstOrDefaultAsync(l => l.ID == playerLeague.LeagueID);
+
+                    if (league != null)
+                    {
+                        userLeagues.Add(league);
+                    }
+                }
+            }
+            else if (userData.UserRoleId == 2)
             {
                 userLeagues = await _context.UserLeagues
                 .Where(u => u.UserId == userData.UserId)
                 .Select(u => u.LeagueType)
                 .ToListAsync();
+            }
+            else
+            {
+                return NotFound(new { message = "No linked leagues found for this user." });
             }
 
             if (userLeagues == null || !userLeagues.Any())

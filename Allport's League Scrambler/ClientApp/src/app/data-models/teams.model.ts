@@ -10,5 +10,6 @@ export interface Team {
     kingQueenTeamId: number;
     kingQueenRoundScores: KingQueenRoundScore[];
     sortingId: number;
+    scrambleNumber: number;
 }
 

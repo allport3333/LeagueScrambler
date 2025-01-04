@@ -4,14 +4,16 @@ using Allport_s_League_Scrambler.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Allport_s_League_Scrambler.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250103025042_AddUserRoles")]
+    partial class AddUserRoles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -356,25 +358,6 @@ namespace Allport_s_League_Scrambler.Migrations
                     b.ToTable("UserRoles","dbo");
                 });
 
-            modelBuilder.Entity("Allport_s_League_Scrambler.Models.UsersPlayer", b =>
-                {
-                    b.Property<int>("UsersPlayerId")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<int>("PlayerId");
-
-                    b.Property<int>("UserId");
-
-                    b.HasKey("UsersPlayerId");
-
-                    b.HasIndex("PlayerId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UsersPlayer","dbo");
-                });
-
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.ByePlayer", b =>
                 {
                     b.HasOne("Allport_s_League_Scrambler.Models.ByeRounds", "ByeRound")
@@ -474,19 +457,6 @@ namespace Allport_s_League_Scrambler.Migrations
                     b.HasOne("Allport_s_League_Scrambler.Models.LeagueType", "LeagueType")
                         .WithMany()
                         .HasForeignKey("LeagueTypeId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("Allport_s_League_Scrambler.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Allport_s_League_Scrambler.Models.UsersPlayer", b =>
-                {
-                    b.HasOne("Allport_s_League_Scrambler.Models.Player", "Player")
-                        .WithMany()
-                        .HasForeignKey("PlayerId")
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Allport_s_League_Scrambler.Models.User", "User")

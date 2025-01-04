@@ -21,6 +21,8 @@ export class LoginService {
     private isauthenticated = this.baseUrl + 'api/Login/isauthenticated';
     private updateSettingUrl = this.baseUrl + 'api/Login/updatesetting';
     private getLeagueSettings = this.baseUrl + 'api/Login/GetSettingValue';
+    private getUsersRoleUrl = this.baseUrl + 'api/Login/GetUsersRole';
+    private getUsersPlayerUrl = this.baseUrl + 'api/Login/GetUsersPlayer';
     private forgotPasswordUrl = this.baseUrl + 'api/Login/forgotpassword'; // Define your password recovery endpoint
     private resetPasswordUrl = this.baseUrl + 'api/Login/resetpassword'; // Define your password recovery endpoint
     login(username: string, password: string) {
@@ -30,6 +32,14 @@ export class LoginService {
         };
 
         return this.httpClient.post(this.loginUrl, loginData, { withCredentials: true });
+    }
+
+    getUsersRole(): Observable<any> {
+        return this.httpClient.get(this.getUsersRoleUrl);
+    }
+
+    getUsersPlayer(): Observable<any> {
+        return this.httpClient.get(this.getUsersPlayerUrl);
     }
 
     logout() {
@@ -61,7 +71,7 @@ export class LoginService {
 
     // Fetch user leagues
     getUserLeagues() {
-        return this.httpClient.get<Leagues[]>(this.userLeaguesUrl, { withCredentials: true });
+        return this.httpClient.get<Leagues[]>(this.userLeaguesUrl, { withCredentials: false });
     }
 
     updateSetting(settingName: string, settingValue: string, leagueId: number) {

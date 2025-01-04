@@ -3,7 +3,7 @@
         <div class="col-12">
             <mat-card style="background-color:lightgray; " class="ml-1 mt-2">
                 <div class="row">
-                    <div class="col">
+                    <!--<div class="col">
                         <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
                             <h4>Select League</h4>
                             <div class="mt-1">
@@ -17,7 +17,7 @@
                                 </mat-form-field>
                             </div>
                         </mat-card>
-                    </div>
+                    </div>-->
                     <div class="col text-center">
                         <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
                             <h4>Max Team Size</h4>
@@ -157,7 +157,7 @@
         <div class="col-12">
             <mat-card class=" ml-3 mt-2 " style="background-color:lightgray; ">
 
-                <mat-tab-group mat-align-tabs="center" #tabGroup>
+                <mat-tab-group mat-align-tabs="center" #tabGroup (selectedTabChange)="onTabChange($event)">
                     <mat-tab label="Select Players" *ngIf="selectedLeague">
                         <div class="container-fluid">
                             <div class="row">
@@ -549,7 +549,7 @@
                                                                 <ng-container *ngFor="let round of rounds">
                                                                     <td style="text-align: center; vertical-align: middle;">
                                                                         <input type="number"
-                                                                               [value]="getScore(team.kingQueenTeamId, round)?.roundScore || ''"
+                                                                               [value]="getScore(team.kingQueenTeamId, round) ? getScore(team.kingQueenTeamId, round).roundScore : ''"
                                                                                (input)="updateRoundScore(team.kingQueenTeamId, round, $event.target.value)"
                                                                                class="form-control form-control-sm"
                                                                                style="text-align: center; width: 60px; margin: 0 auto;" />
@@ -657,6 +657,9 @@
 
                         </mat-card>
                     </mat-tab>
+                    <mat-tab label="Create Teams and Scores" *ngIf="selectedLeague">
+                        <app-create-teams [selectedLeagueDto]="selectedLeagueDto"></app-create-teams>
+                    </mat-tab>
                     <mat-tab label="Standings" *ngIf="selectedLeague">
                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <div class="tab-content d-flex flex-column align-items-center">
@@ -667,8 +670,30 @@
                                     {{ standingsType === 'round' ? 'Show Standings by Matchup' : 'Show Standings by Round' }}
                                 </button>
 
-                                <!-- Dropdown for Drop Lowest Scores -->
-                                <div style="margin-top: 5px;">
+                                <!-- Dropdown Container -->
+                                <div class="dropdown-container">
+                                    <!-- Dropdown for Number of Subs Allowed -->
+                                    <mat-form-field appearance="outline" style="width: 200px;">
+                                        <mat-label>Number of Subs Allowed</mat-label>
+                                        <mat-select [(value)]="numberOfSubsAllowed" (selectionChange)="onNumberOfSubsChange($event.value)">
+                                            <mat-option [value]="0">No Subs Allowed</mat-option>
+                                            <mat-option *ngFor="let i of [1, 2, 3, 4, 5, 100]" [value]="i">
+                                                Allow {{ i }} {{ i === 1 ? 'Sub' : 'Subs' }}
+                                            </mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+
+                                    <!-- Percent of Score for Subs -->
+                                    <mat-form-field appearance="outline" style="width: 200px;">
+                                        <mat-label>Percent of Score for Subs</mat-label>
+                                        <mat-select [(value)]="subScorePercent" (selectionChange)="onSubScorePercentChange($event.value)">
+                                            <mat-option *ngFor="let percent of [100, 90, 80, 70, 60, 50]" [value]="percent">
+                                                {{ percent }}%
+                                            </mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+
+                                    <!-- Drop Lowest Scores -->
                                     <mat-form-field appearance="outline" id="drop-scores-select" style="width: 200px;">
                                         <mat-label>Drop Lowest Scores</mat-label>
                                         <mat-select [(value)]="dropLowest" (selectionChange)="onDropLowestChange($event.value)">
@@ -680,149 +705,143 @@
                                     </mat-form-field>
                                 </div>
 
-                                <!-- Dropdown for Number of Subs Allowed -->
-                                <div>
-                                    <mat-form-field appearance="outline" style="width: 200px;">
-                                        <mat-label>Number of Subs Allowed</mat-label>
-                                        <mat-select [(value)]="numberOfSubsAllowed" (selectionChange)="onNumberOfSubsChange($event.value)">
-                                            <mat-option [value]="0">No Subs Allowed</mat-option>
-                                            <mat-option *ngFor="let i of [1, 2, 3, 4, 5, 100]" [value]="i">
-                                                Allow {{ i }} {{ i === 1 ? 'Sub' : 'Subs' }}
-                                            </mat-option>
-                                        </mat-select>
-                                    </mat-form-field>
+                                <div style="margin-bottom: 10px; text-align: center;">
+                                    <div style="font-weight: bold; margin-bottom: 5px;">Key:</div>
+                                    <div>
+                                        <span style="color: red; font-weight: bold;">Dropped Score</span> |
+                                        <span style="color: red;">Reduced Score from Subs</span> |
+                                        <span style="background-color: #D8BFD8;">Sub Score</span>
+                                    </div>
                                 </div>
 
-                                <!-- Dropdown for Percent of Score for Subs -->
-                                <div>
-                                    <mat-form-field appearance="outline" style="width: 200px;">
-                                        <mat-label>Percent of Score for Subs</mat-label>
-                                        <mat-select [(value)]="subScorePercent" (selectionChange)="onSubScorePercentChange($event.value)">
-                                            <mat-option *ngFor="let percent of [100, 90, 80, 70, 60, 50]" [value]="percent">
-                                                {{ percent }}%
-                                            </mat-option>
-                                        </mat-select>
-                                    </mat-form-field>
-                                </div>
-
-                                <!-- Standings Tables -->
-                                <div class="d-flex flex-column flex-md-row justify-content-between w-100"
-                                     style="gap: 20px; margin-top: 5px; flex-wrap: wrap;" *ngIf="maleStandings.length > 0">
-                                    <!-- Male Standings -->
-                                    <div class="standings-table"
-                                         style="width: 100%; flex: 1; min-width: 300px; padding: 10px;">
-                                        <h6 class="text-center" style="font-size: 0.9rem; margin-bottom: 5px;">Men's Standings</h6>
-                                        <div style="max-height: 700px; overflow-y: auto;">
+                                <!-- Standings Card -->
+                                <div class="card" style="margin: 20px; padding: 20px; max-width: 100%; overflow-x: auto;">
+                                    <mat-tab-group [(selectedIndex)]="innerTabIndex">
+                                        <!-- Male Standings Tab -->
+                                        <mat-tab label="Men's Standings">
                                             <table class="table table-bordered table-striped compact-table"
-                                                   style="width: 100%; table-layout: fixed; font-size: 0.75rem;">
+                                                   style="width: 100%; table-layout: auto; font-size: 0.75rem;">
                                                 <thead>
                                                     <tr>
-                                                        <th style="width: 20%; padding: 4px; cursor: pointer;" (click)="sortStandings('playerName')">
+                                                        <th style="min-width: 50px; padding: 4px; cursor: pointer;">
+                                                            Place
+                                                        </th>
+                                                        <th style="min-width: 135px; padding: 4px; cursor: pointer;" (click)="sortStandings('playerName')">
                                                             Player Name
                                                             <mat-icon *ngIf="sortColumn === 'playerName'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                                             </mat-icon>
                                                         </th>
-                                                        <th *ngFor="let round of standingsRounds" style="width: 10%; padding: 4px;"> {{ standingsType === 'matchup' ? 'Matchup' : 'Round' }} {{ round }}</th>
-                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScore')">
+                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScoreBeforeReduction')">
+                                                            King Queen Score
+                                                            <mat-icon *ngIf="sortColumn === 'totalScoreBeforeReduction'">
+                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                                            </mat-icon>
+                                                        </th>
+                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScore')">
                                                             Total Points
                                                             <mat-icon *ngIf="sortColumn === 'totalScore'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                                             </mat-icon>
                                                         </th>
-                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortStandings('totalWins')">
+                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalWins')">
                                                             Total Wins
                                                             <mat-icon *ngIf="sortColumn === 'totalWins'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                                             </mat-icon>
                                                         </th>
+                                                        <th *ngFor="let round of standingsRounds.slice().reverse()" style="min-width: 70px; padding: 4px; text-align: center;">
+                                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
+                                                            <span>{{ round }}</span>
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <tr *ngFor="let player of maleStandings">
-                                                        <td style="padding: 2px;">{{ player.playerName }}</td>
-                                                        <td *ngFor="let score of player.scores"
+                                                    <tr *ngFor="let player of maleStandings; let i = index">
+                                                        <td style="padding: 2px; min-width: 50px; text-align: center; font-weight: bold;">
+                                                            {{ i + 1 }} <!-- Display place as 1-based index -->
+                                                        </td>
+                                                        <td style="padding: 2px; min-width: 135px;">{{ player.playerName }}</td>
+                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalScoreBeforeReduction }}</td>
+                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalScore }}</td>
+                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalWins }}</td>
+                                                        <td *ngFor="let score of player.scores.slice().reverse()"
                                                             [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
                                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
                                                             [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
-                                                            [attr.title]="score.isDropped
-                                                                        ? (score.isReduced && score.isSubScore
-                                                                            ? 'This score is dropped and reduced because it is over the number of allowed subs.'
-                                                                            : 'This score is dropped.')
-                                                                        : (score.isReduced && score.isSubScore
-                                                                            ? 'This score is reduced because it is over the number of allowed subs.'
-                                                                            : null)"
-                                                            style="padding: 2px;">
+                                                            style="padding: 2px; min-width: 70px;">
                                                             {{ score.score }}
                                                         </td>
-
-                                                        <td style="padding: 2px;">{{ player.totalScore }}</td>
-                                                        <td style="padding: 2px;">{{ player.totalWins }}</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
-                                        </div>
-                                    </div>
+                                        </mat-tab>
 
-                                    <!-- Female Standings -->
-                                    <div class="standings-table"
-                                         style="width: 100%; flex: 1; min-width: 300px; padding: 10px;" *ngIf="femaleStandings.length > 0">
-                                        <h6 class="text-center" style="font-size: 0.9rem; margin-bottom: 5px;">Women's Standings</h6>
-                                        <div style="max-height: 700px; overflow-y: auto;">
+                                        <!-- Female Standings Tab -->
+                                        <mat-tab label="Women's Standings">
                                             <table class="table table-bordered table-striped compact-table"
-                                                   style="width: 100%; table-layout: fixed; font-size: 0.75rem;">
+                                                   style="width: 100%; table-layout: auto; font-size: 0.75rem;">
                                                 <thead>
                                                     <tr>
-                                                        <th style="width: 20%; padding: 4px; cursor: pointer;" (click)="sortStandings('playerName')">
+                                                        <th style="min-width: 50px; padding: 4px; cursor: pointer;">
+                                                            Place
+                                                        </th>
+                                                        <th style="min-width: 135px; padding: 4px; cursor: pointer;" (click)="sortStandings('playerName')">
                                                             Player Name
                                                             <mat-icon *ngIf="sortColumn === 'playerName'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                                             </mat-icon>
                                                         </th>
-                                                        <th *ngFor="let round of standingsRounds" style="width: 10%; padding: 4px;"> {{ standingsType === 'matchup' ? 'Matchup' : 'Round' }} {{ round }}</th>
-                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScore')">
+                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScoreBeforeReduction')">
+                                                            King Queen Score
+                                                            <mat-icon *ngIf="sortColumn === 'totalScoreBeforeReduction'">
+                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                                            </mat-icon>
+                                                        </th>
+                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScore')">
                                                             Total Points
                                                             <mat-icon *ngIf="sortColumn === 'totalScore'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                                             </mat-icon>
                                                         </th>
-                                                        <th style="width: 10%; padding: 4px; cursor: pointer;" (click)="sortStandings('totalWins')">
+                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalWins')">
                                                             Total Wins
                                                             <mat-icon *ngIf="sortColumn === 'totalWins'">
                                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                                             </mat-icon>
                                                         </th>
+                                                        <th *ngFor="let round of standingsRounds.slice().reverse()" style="min-width: 70px; padding: 4px; text-align: center;">
+                                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
+                                                            <span>{{ round }}</span>
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <tr *ngFor="let player of femaleStandings">
-                                                        <td style="padding: 2px;">{{ player.playerName }}</td>
-                                                        <td *ngFor="let score of player.scores"
+                                                    <tr *ngFor="let player of femaleStandings; let i = index">
+                                                        <td style="padding: 2px; min-width: 50px; text-align: center; font-weight: bold;">
+                                                            {{ i + 1 }} <!-- Display place as 1-based index -->
+                                                        </td>
+                                                        <td style="padding: 2px; min-width: 135px;">{{ player.playerName }}</td>
+                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalScoreBeforeReduction }}</td>
+                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalScore }}</td>
+                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalWins }}</td>
+                                                        <td *ngFor="let score of player.scores.slice().reverse()"
                                                             [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
                                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
                                                             [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
-                                                            [attr.title]="score.isDropped
-                                                                ? (score.isReduced && score.isSubScore
-                                                                    ? 'This score is dropped and reduced because it is over the number of allowed subs.'
-                                                                    : 'This score is dropped.')
-                                                                : (score.isReduced && score.isSubScore
-                                                                    ? 'This score is reduced because it is over the number of allowed subs.'
-                                                                    : null)"
-                                                            style="padding: 2px;">
+                                                            style="padding: 2px; min-width: 70px;">
                                                             {{ score.score }}
                                                         </td>
-
-                                                        <td style="padding: 2px;">{{ player.totalScore }}</td>
-                                                        <td style="padding: 2px;">{{ player.totalWins }}</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
-                                        </div>
-                                    </div>
+                                        </mat-tab>
+                                    </mat-tab-group>
                                 </div>
                             </div>
                         </mat-card>
                     </mat-tab>
+
 
                     <!-- Parent Tab -->
                     <mat-tab label="League Management">
@@ -888,7 +907,7 @@
                                                        [matAutocomplete]="auto"
                                                        [(ngModel)]="searchTerm"
                                                        (input)="onSearchPlayer($event)"
-                                                       (blur)="onBlurPlayerInput()"/>
+                                                       (blur)="onBlurPlayerInput()" />
                                                 <mat-autocomplete #auto="matAutocomplete"
                                                                   (optionSelected)="onPlayerSelected($event.option.value)"
                                                                   [displayWith]="displayPlayer">
@@ -983,7 +1002,7 @@
                                                                [matAutocomplete]="auto"
                                                                (input)="onSearchPlayerToDelete($event)"
                                                                (blur)="onBlurDeletePlayerInput()"
-                                                               [(ngModel)]="searchTermDelete"/>
+                                                               [(ngModel)]="searchTermDelete" />
                                                         <mat-autocomplete #auto="matAutocomplete"
                                                                           (optionSelected)="onDeletePlayerSelected($event.option.value)"
                                                                           [displayWith]="displayPlayer">
@@ -1011,30 +1030,30 @@
                                             </div>
                                             <!--Deprecated-->
                                             <!--<h5 class="text-center">Delete Player</h5>
-                                            <br />
-                                            <div class="row">
-                                                <div class="col-12 d-flex flex-column align-items-center">
-                                                    <form [formGroup]="deletePlayerForm" (ngSubmit)="onDeletePlayerClick()">
-                                                        <div class="d-flex flex-column align-items-center">
-                                                            <mat-form-field style="max-width: 180px" appearance="outline">
-                                                                <mat-label>First Name:</mat-label>
-                                                                <input matInput formControlName="firstName" placeholder="Player First Name" required />
-                                                            </mat-form-field>
-                                                            <mat-form-field style="max-width: 180px" appearance="outline">
-                                                                <mat-label>Last Name:</mat-label>
-                                                                <input matInput formControlName="lastName" placeholder="Player Last Name" required />
-                                                            </mat-form-field>
-                                                            <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!loggedIn">
-                                                                <mat-label>Password</mat-label>
-                                                                <input matInput placeholder="Password" type="password" formControlName="passwordDelete" required />
-                                                            </mat-form-field>
-                                                        </div>
-                                                        <div class="d-flex justify-content-center">
-                                                            <button mat-raised-button color="warn" class="text-center">Delete Player</button><br /><br />
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>-->
+                            <br />
+                            <div class="row">
+                                <div class="col-12 d-flex flex-column align-items-center">
+                                    <form [formGroup]="deletePlayerForm" (ngSubmit)="onDeletePlayerClick()">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <mat-form-field style="max-width: 180px" appearance="outline">
+                                                <mat-label>First Name:</mat-label>
+                                                <input matInput formControlName="firstName" placeholder="Player First Name" required />
+                                            </mat-form-field>
+                                            <mat-form-field style="max-width: 180px" appearance="outline">
+                                                <mat-label>Last Name:</mat-label>
+                                                <input matInput formControlName="lastName" placeholder="Player Last Name" required />
+                                            </mat-form-field>
+                                            <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!loggedIn">
+                                                <mat-label>Password</mat-label>
+                                                <input matInput placeholder="Password" type="password" formControlName="passwordDelete" required />
+                                            </mat-form-field>
+                                        </div>
+                                        <div class="d-flex justify-content-center">
+                                            <button mat-raised-button color="warn" class="text-center">Delete Player</button><br /><br />
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>-->
                                         </mat-card>
                                     </div>
                                 </mat-tab>

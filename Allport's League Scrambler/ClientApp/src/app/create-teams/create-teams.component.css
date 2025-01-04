@@ -1,0 +1,64 @@
+.line-through {
+    text-decoration: line-through;
+}
+
+.player-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.team-container {
+    margin-bottom: 20px;
+}
+
+table input {
+    width: 50px;
+    text-align: center;
+}
+
+
+.table-bordered td,
+.table-bordered th {
+    text-align: center;
+    vertical-align: middle;
+    padding: 8px;
+}
+
+.player-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 columns */
+    gap: 10px; /* Space between items */
+}
+
+.player-item {
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin: 5px 0;
+}
+
+    .player-item:hover {
+        background-color: #e0e0e0; /* Slight hover effect */
+        transform: scale(1.05);
+    }
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    li span {
+        flex: 1; /* Ensures the name and toggle align */
+    }
+
+mat-slide-toggle {
+    margin: 0;
+}

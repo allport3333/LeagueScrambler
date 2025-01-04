@@ -5,6 +5,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { ForgotPasswordDialogComponent } from '../forgot-password-dialog/forgot-password-dialog.component';
 import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { LeagueService } from '../services/league.service';
 @Component({
     selector: 'app-home',
     templateUrl: './home.component.html',
@@ -24,7 +25,7 @@ export class HomeComponent implements OnInit {
     isLoggedIn: boolean = false;
     registerForm: FormGroup; 
     dialogRef: MatDialogRef<ForgotPasswordDialogComponent>;
-    constructor(private loginService: LoginService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: FormBuilder) {
+    constructor(private loginService: LoginService, private leagueService: LeagueService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: FormBuilder) {
         this.route.queryParams.subscribe((queryParams) => {
             if (queryParams.toggleLoginForm === 'true') {
                 this.toggleLoginForm();
@@ -85,20 +86,56 @@ export class HomeComponent implements OnInit {
         });
     }
 
-
     login() {
         this.loginService.login(this.loginUsername, this.loginPassword).subscribe(
             (response) => {
                 this.authService.setLoggedIn(true);
-                // The server will handle setting the session cookie upon successful login.
-                // You can simply navigate to a protected route if the server returns a success response.
-                this.router.navigate(['/scrambler']);
+
+                // Fetch user's role
+                this.loginService.getUsersRole().subscribe((roleResult) => {
+                    const userRole = roleResult.role; // Assuming the API returns { role: 'Player' | 'Admin' | 'Manager' }
+
+                    // Fetch user's leagues
+                    this.loginService.getUserLeagues().subscribe((leagues) => {
+                        if (leagues && leagues.length > 0) {
+                            // Select the first league
+                            const firstLeague = leagues[0];
+                            this.leagueService.setSelectedLeague(firstLeague.id);
+                            console.log('First league selected:', firstLeague.leagueName);
+
+                            // Navigate based on the role
+                            if (userRole === 'Player') {
+                                // Fetch the player's ID for the user
+                                this.loginService.getUsersPlayer().subscribe((playerData) => {
+                                    if (playerData && playerData.playerId) {
+                                        const playerProfileUrl = `/player-stats/${playerData.playerId}`;
+                                        this.router.navigate([playerProfileUrl]);
+                                    } else {
+                                        console.error('Player ID not found for the user.');
+                                        this.showSnackBar('Player ID not found. Please contact support.', true);
+                                    }
+                                }, error => {
+                                    console.error('Error fetching player data:', error);
+                                    this.showSnackBar('Error fetching player data. Please contact support.', true);
+                                });
+                            } else {
+                                // Navigate to scrambler for Admin or Manager
+                                this.router.navigate(['/scrambler']);
+                            }
+                        } else {
+                            console.error('No leagues available for the user.');
+                            this.showSnackBar('No leagues available. Please contact support.', true);
+                        }
+                    });
+                });
             },
             (error) => {
                 this.showSnackBar('Login Failed', true); // Show fail message
             }
         );
     }
+
+
 
 
     toggleRegistrationForm() {

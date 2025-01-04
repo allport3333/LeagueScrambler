@@ -1,32 +1,60 @@
 <div class='main-nav text-center'>
     <nav class='navbar navbar-expand-lg navbar-dark bg-dark d-flex justify-content-center mx-auto'>
+
+        <!-- Left Section: League Dropdown -->
+        <div class="navbar-brand dropdown" style="margin-right: auto;" *ngIf="loggedIn">
+            <a class="nav-link dropdown-toggle"
+               href="#"
+               id="leagueDropdown"
+               role="button"
+               data-toggle="dropdown"
+               aria-haspopup="true"
+               aria-expanded="false"
+               style="background-color: #f0f8ff; color: #000; border-radius: 5px; padding: 10px;">
+                {{ selectedLeagueName || 'Select League' }}
+            </a>
+            <div class="dropdown-menu" aria-labelledby="leagueDropdown" style="border: 2px solid #007bff; padding: 10px;">
+                <a class="dropdown-item"
+                   *ngFor="let league of leagues"
+                   [class.active]="league.id === selectedLeagueId"
+                   (click)="onLeagueChange(league.id)">
+                    {{ league.leagueName }}
+                </a>
+            </div>
+
+
+        </div>
+
         <button type='button' class='navbar-toggler' data-toggle='collapse' data-target='#navbarNav' [attr.aria-expanded]='isExpanded' (click)='toggle()'>
             <span class='sr-only'>Toggle navigation</span>
             <span class='navbar-toggler-icon'></span>
         </button>
-        <div id="navbarNav" class='navbar-collapse collapse text-center  justify-content-center' [ngClass]='{ "in": isExpanded }'>
+
+        <div id="navbarNav" class='navbar-collapse collapse text-center justify-content-center' [ngClass]='{ "in": isExpanded }'>
             <ul class='nav navbar-nav justify-content-center'>
+                <!-- Common navigation items -->
                 <li class="nav-item" [routerLinkActive]='["link-active"]' [routerLinkActiveOptions]='{ exact: true }'>
                     <a [routerLink]='["/"]' class="nav-link" (click)='collapse()'>
                         <span class='fas fa-home'></span> Home
                     </a>
                 </li>
-                <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                <li *ngIf="userRole === 'Admin' || userRole === 'Manager'" class="nav-item" [routerLinkActive]='["link-active"]'>
                     <a [routerLink]='["/scrambler"]' class="nav-link" (click)='collapse()'>
                         <span class='fas fa-sort-amount-up'></span> Scrambler
                     </a>
                 </li>
-                <li class="nav-item" [routerLinkActive]='["link-active"]'>
+
+                <li *ngIf="userRole === 'Admin' || userRole === 'Manager'" class="nav-item" [routerLinkActive]='["link-active"]'>
                     <a [routerLink]='["/fetch-data"]' class="nav-link" (click)='collapse()'>
                         <span class='fas fa-database'></span> Players
                     </a>
                 </li>
-                <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                <li *ngIf="userRole === 'Admin' || userRole === 'Manager'" class="nav-item" [routerLinkActive]='["link-active"]'>
                     <a [routerLink]='["/team-scores"]' class="nav-link" (click)='collapse()'>
                         <span class='fas fa-database'></span> Team Scores
                     </a>
                 </li>
-                <li class="nav-item" [routerLinkActive]='["link-active"]'>
+                <li *ngIf="userRole === 'Admin' || userRole === 'Manager'" class="nav-item" [routerLinkActive]='["link-active"]'>
                     <a [routerLink]='["/schedule"]' class="nav-link" (click)='collapse()'>
                         <span class='fas fa-database'></span> League Schedule
                     </a>
@@ -36,12 +64,22 @@
                         <span class="fas fa-sign-in-alt"></span> Sign In Sheet
                     </a>
                 </li>
-                <li *ngIf="loggedIn"  class="nav-item" [routerLinkActive]='["link-active"]'>
+
+            </ul>
+        </div>
+
+        <div class="d-flex">
+            <ul class='nav navbar-nav'>
+                <li *ngIf="loggedIn && playerId" class="nav-item" [routerLinkActive]="['link-active']">
+                    <a [routerLink]="['/player-stats', playerId]" class="nav-link" (click)="collapse()">
+                        <span class="fas fa-user"></span> Profile
+                    </a>
+                </li>
+                <li *ngIf="loggedIn" class="nav-item" [routerLinkActive]='["link-active"]'>
                     <a [routerLink]='["/"]' class="nav-link" (click)="logoutAndNavigate()">
                         <span class="fas fa-database"></span> Logout
                     </a>
                 </li>
-
             </ul>
         </div>
     </nav>

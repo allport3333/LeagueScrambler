@@ -23,6 +23,7 @@ import { ForgotPasswordDialogComponent } from './forgot-password-dialog/forgot-p
 import { ResetPasswordComponent } from './reset-password/reset-password.component';
 import { DetailedPlayerStatsComponent } from './detailed-player-stats/detailed-player-stats.component';
 import { SignInComponent } from './sign-in/sign-in.component';
+import { CreateTeamsComponent } from './create-teams/create-teams.component';
 
 @NgModule({
     declarations: [
@@ -37,7 +38,8 @@ import { SignInComponent } from './sign-in/sign-in.component';
         ForgotPasswordDialogComponent,
         ResetPasswordComponent,
         DetailedPlayerStatsComponent,
-        SignInComponent
+        SignInComponent,
+        CreateTeamsComponent
 
     ],
     imports: [

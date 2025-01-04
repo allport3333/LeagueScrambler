@@ -14,6 +14,7 @@ import { KingQueenRoundScoresRequest } from '../data-models/kingQueenRoundScores
 import { PlayerScoresResponse, PlayerScoreGroup, RoundScore } from '../data-models/playerScoresResponse';
 import { PlayerSignIn } from '../data-models/playerSignIn.model';
 import { PlayerSignInResult } from '../data-models/playerSignInResult.model';
+import { Team } from '../data-models/teams.model';
 
 @Injectable({
     providedIn: 'root'
@@ -42,6 +43,18 @@ export class PlayerService {
 
     public SelectLeague(leagueName: string) {
         return this.httpClient.get<Player[]>(this.baseUrl + 'api/ScrambleData/SelectLeague/' + leagueName);
+    }
+
+    getScrambleNumbers(leagueId: number): Observable<number[]> {
+        return this.httpClient.get<number[]>(this.baseUrl + `api/ScrambleData/GetScrambleNumbers?leagueId=${leagueId}`);
+    }
+
+    public saveTeamScores(scores: any[]): Observable<any> {
+        return this.httpClient.post(`${this.baseUrl}api/ScrambleData/SaveCreatedTeamScores`, scores);
+    }
+
+    getTeamsByScrambleNumber(leagueId: number, scrambleNumber: number): Observable<Team[]> {
+        return this.httpClient.get<Team[]>(`${this.baseUrl}api/ScrambleData/GetTeamsByScrambleNumber?leagueId=${leagueId}&scrambleNumber=${scrambleNumber}`);
     }
 
     public SelectedLeagueScrambles(leagueName: string) {

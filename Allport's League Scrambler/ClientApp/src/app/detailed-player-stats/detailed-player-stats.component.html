@@ -1,20 +1,8 @@
 <div style="padding: 20px;">
     <div style="text-align: center; margin-bottom: 20px;">
         <h2>{{ player?.firstName }} {{ player?.lastName }}</h2>
+        <h4>Stats for: {{ selectedLeagueName }}</h4>
         <p>Gender: {{ player?.gender }}</p>
-        <p>Is Substitute: {{ player?.isSub ? 'Yes' : 'No' }}</p>
-    </div>
-
-    <div style="text-align: center; margin-bottom: 20px;">
-        <h3 style="margin-bottom: 10px;">Leagues</h3>
-        <mat-form-field appearance="outline" style="width: 30%; margin: 0 auto 20px;">
-            <mat-label>Select League</mat-label>
-            <mat-select [(ngModel)]="selectedLeagueId" (selectionChange)="onLeagueChange($event.value)">
-                <mat-option *ngFor="let league of leagues" [value]="league.id">
-                    {{ league.leagueName }}
-                </mat-option>
-            </mat-select>
-        </mat-form-field>
     </div>
 
     <div style="text-align: center; margin-bottom: 20px;">

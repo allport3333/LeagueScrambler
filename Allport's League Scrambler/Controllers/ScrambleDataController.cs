@@ -582,6 +582,186 @@ namespace Allport_s_League_Scrambler.Controllers
             return Ok(result);
         }
 
+        [HttpPost("SaveCreatedTeamScores")]
+        public async Task<IActionResult> SaveCreatedTeamScores([FromBody] List<TeamScoreDto> scores)
+        {
+            var context = new DataContext();
+            if (scores == null || !scores.Any())
+            {
+                return BadRequest("No scores provided.");
+            }
+
+            try
+            {
+                List<KingQueenTeam> updatedTeams = new List<KingQueenTeam>();
+
+                // Retrieve the latest scramble number for the league
+                var leagueId = scores.First().LeagueId;
+                var latestScrambleNumber = await context.KingQueenTeam
+                    .Where(t => t.LeagueID == leagueId)
+                    .OrderByDescending(t => t.ScrambleNumber)
+                    .Select(t => t.ScrambleNumber)
+                    .FirstOrDefaultAsync();
+
+                foreach (var teamScore in scores)
+                {
+                    // If scramble number is 0, assign a new scramble number
+                    if (teamScore.ScrambleNumber == 0)
+                    {
+                        teamScore.ScrambleNumber = latestScrambleNumber + 1;
+                        latestScrambleNumber = teamScore.ScrambleNumber; // Update for subsequent teams
+                    }
+
+                    // Get or create KingQueenTeam
+                    var team = await context.KingQueenTeam
+                        .Include(t => t.KingQueenPlayers)
+                        .Include(t => t.KingQueenRoundScores)
+                        .FirstOrDefaultAsync(t => t.Id == teamScore.KingQueenTeamId);
+
+                    if (team == null)
+                    {
+                        team = new KingQueenTeam
+                        {
+                            LeagueID = teamScore.LeagueId,
+                            DateOfTeam = DateTime.Parse(teamScore.Date),
+                            ScrambleNumber = teamScore.ScrambleNumber,
+                            KingQueenPlayers = new List<KingQueenPlayer>(),
+                            KingQueenRoundScores = new List<KingQueenRoundScores>()
+                        };
+                        await context.KingQueenTeam.AddAsync(team);
+                    }
+
+                    await context.SaveChangesAsync(); // Save to generate the KingQueenTeam ID
+
+                    // Refresh the team from the database to ensure it's up-to-date
+                    team = await context.KingQueenTeam
+                        .Include(t => t.KingQueenPlayers)
+                        .Include(t => t.KingQueenRoundScores)
+                        .FirstOrDefaultAsync(t => t.Id == team.Id);
+
+                    // Add or update KingQueenPlayers
+                    foreach (var player in teamScore.Players)
+                    {
+                        var existingPlayer = team.KingQueenPlayers.FirstOrDefault(p => p.PlayerId == player.PlayerId);
+                        if (existingPlayer == null)
+                        {
+                            team.KingQueenPlayers.Add(new KingQueenPlayer
+                            {
+                                PlayerId = player.PlayerId,
+                                isSubScore = player.isSubScore
+                            });
+                        }
+                    }
+
+                    await context.SaveChangesAsync(); // Save after updating players
+
+                    // Refresh the team again
+                    team = await context.KingQueenTeam
+                        .Include(t => t.KingQueenPlayers)
+                        .Include(t => t.KingQueenRoundScores)
+                        .FirstOrDefaultAsync(t => t.Id == team.Id);
+
+                    // Add or update KingQueenRoundScores
+                    foreach (var roundScore in teamScore.RoundScores)
+                    {
+                        var existingScore = team.KingQueenRoundScores.FirstOrDefault(r => r.RoundId == roundScore.RoundId);
+                        if (existingScore != null)
+                        {
+                            existingScore.RoundScore = roundScore.RoundScore;
+                            existingScore.RoundWon = roundScore.RoundWon;
+                        }
+                        else
+                        {
+                            team.KingQueenRoundScores.Add(new KingQueenRoundScores
+                            {
+                                RoundId = roundScore.RoundId,
+                                RoundScore = roundScore.RoundScore,
+                                RoundWon = roundScore.RoundWon
+                            });
+                        }
+                    }
+
+                    await context.SaveChangesAsync(); // Save after updating round scores
+
+                    updatedTeams.Add(team);
+                }
+
+                // Prepare the response
+                var response = updatedTeams.Select(t => new
+                {
+                    t.Id,
+                    t.LeagueID,
+                    t.DateOfTeam,
+                    t.ScrambleNumber,
+                    Players = t.KingQueenPlayers.Select(p => new
+                    {
+                        p.PlayerId,
+                        p.isSubScore,
+                        PlayerDetails = context.Players.FirstOrDefault(player => player.Id == p.PlayerId)
+                    }).ToList(),
+                    RoundScores = t.KingQueenRoundScores.Select(rs => new
+                    {
+                        rs.RoundId,
+                        rs.RoundScore,
+                        rs.RoundWon
+                    }).ToList()
+                });
+
+                return Ok(new
+                {
+                    LatestScrambleNumber = latestScrambleNumber,
+                    UpdatedTeams = response
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while saving scores: {ex.Message}");
+            }
+        }
+        [HttpGet("GetTeamsByScrambleNumber")]
+        public async Task<IActionResult> GetTeamsByScrambleNumber(int leagueId, int scrambleNumber)
+        {
+            var context = new DataContext();
+
+            var teams = await context.KingQueenTeam
+                .Where(t => t.LeagueID == leagueId && t.ScrambleNumber == scrambleNumber)
+                .Include(t => t.KingQueenPlayers)
+                .ThenInclude(p => p.Player)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.LeagueID,
+                    t.ScrambleNumber,
+                    Players = t.KingQueenPlayers.Select(p => new
+                    {
+                        Id = p.Player.Id, // Use "Id" for consistency
+                        p.Player.FirstName,
+                        p.Player.LastName,
+                        p.Player.IsMale
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(teams);
+        }
+
+
+
+        [HttpGet("[action]")]
+        public IActionResult GetScrambleNumbers(int leagueId)
+        {
+            var context = new DataContext();
+            var scrambleNumbers = context.KingQueenTeam
+                .Where(t => t.LeagueID == leagueId)
+                .Select(t => t.ScrambleNumber)
+                .Distinct()
+                .OrderBy(n => n)
+                .ToList();
+
+            return Ok(scrambleNumbers);
+        }
+
+
         [HttpGet("GetSignedInPlayersAsPlayers")]
         public async Task<IActionResult> GetSignedInPlayersAsPlayers(int leagueId, string date)
         {

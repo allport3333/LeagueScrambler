@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { LoginService } from '../services/login.service';
 import { Router } from '@angular/router';
-import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { AuthService } from '../auth.service';
+import { LeagueService } from '../services/league.service';
+import { Leagues } from '../data-models/leagues.model';
 
 @Component({
     selector: 'app-nav-menu',
@@ -11,47 +12,94 @@ import { AuthService } from '../auth.service';
 })
 export class NavMenuComponent implements OnInit {
     isExpanded = false;
-    loggedIn = false; 
-    constructor(private loginService: LoginService, private router: Router, private snackBar: MatSnackBar, private authService: AuthService) { }
+    loggedIn = false;
+    userRole: string = '';
+    playerId: number | null = null;
+    leagues: Leagues[] = []; // List of available leagues
+    selectedLeagueId: number | null = null; // Selected league ID
+    selectedLeagueName: string | null = null;
+
+    constructor(
+        private loginService: LoginService,
+        private router: Router,
+        private authService: AuthService,
+        private leagueService: LeagueService
+    ) { }
+
     collapse() {
         this.isExpanded = false;
-    }
-
-    ngOnInit() {
-        // Check if the user is logged in
-        this.authService.isLoggedIn$.subscribe((loggedIn) => {
-            this.loggedIn = loggedIn;
-        });
     }
 
     toggle() {
         this.isExpanded = !this.isExpanded;
     }
 
-    showSnackBar(message: string, error: boolean = false) {
-        const config = new MatSnackBarConfig();
-        config.verticalPosition = 'top'; // Set the vertical position to center
-        config.horizontalPosition = 'center'; // Set the horizontal position to center
+    ngOnInit() {
+        // Check if the user is logged in
+        this.authService.isLoggedIn$.subscribe((loggedIn) => {
+            this.loggedIn = loggedIn;
 
-        if (error) {
-            this.snackBar.open(message, 'Close', {
-                verticalPosition: 'top',
-                horizontalPosition: 'center',
-                panelClass: ['red-snackbar'] // Apply custom CSS class for styling (for errors)
-            });
-        }
-        else {
-            this.snackBar.open(message, 'Close', config);
-        }
+            if (this.loggedIn) {
+                // Fetch user role
+                this.loginService.getUsersRole().subscribe((result) => {
+                    this.userRole = result.role; // Example: 'Admin', 'Manager', 'Player'
+                });
+
+                // Fetch user player ID
+                this.loginService.getUsersPlayer().subscribe((result) => {
+                    this.playerId = result.playerId; // Associated player ID
+                });
+
+                // Fetch available leagues
+                this.leagueService.getLeagues().subscribe((leagues) => {
+                    this.leagues = leagues;
+
+                    if (this.leagues.length > 0) {
+                        // Set the default selected league to the first league
+                        const defaultLeague = this.leagues[0];
+                        this.selectedLeagueId = defaultLeague.id;
+
+                        // Notify the app of the default league
+                        this.leagueService.setSelectedLeague(defaultLeague.id);
+                    }
+                });
+
+                // Subscribe to selectedLeague$ to update the dropdown label
+                this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
+                    if (selectedLeague) {
+                        this.selectedLeagueId = selectedLeague.leagueId;
+                        this.selectedLeagueName = selectedLeague.leagueName;
+                    }
+                });
+            }
+        });
     }
 
 
+    onLeagueChange(leagueId: number) {
+        const selectedLeague = this.leagues.find((league) => league.id === leagueId);
+        if (selectedLeague) {
+            this.selectedLeagueId = leagueId; // Update the selected league ID
+            this.selectedLeagueName = selectedLeague.leagueName; // Update the name to display
+            this.leagueService.setSelectedLeague(leagueId); // Update globally
+            console.log('Selected league updated:', this.selectedLeagueName);
+        } else {
+            console.error('League not found with ID:', leagueId);
+        }
+    }
+
+    propagateSelectedLeague() {
+        if (this.selectedLeagueId !== null) {
+            this.leagueService.setSelectedLeague(this.selectedLeagueId);
+        }
+    }
+
     logoutAndNavigate() {
-        // Call the logout method from your service
         this.loginService.logout().subscribe(() => {
-            this.showSnackBar('Logout Successful', false);
+            this.playerId = null;
+            this.leagues = null;
+            this.userRole = null;
             this.authService.setLoggedIn(false);
-            // After a successful logout, navigate to the home page
             this.router.navigate(['/']);
         });
     }

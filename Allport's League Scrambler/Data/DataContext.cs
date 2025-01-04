@@ -27,6 +27,8 @@ namespace Allport_s_League_Scrambler.Data
         public virtual DbSet<LeagueSettings> LeagueSettings { get; set; }       
         public virtual DbSet<PlayerSignIn> PlayerSignIn { get; set; }
         public virtual DbSet<KingQueenRoundScores> KingQueenRoundScores { get; set; }
+        public virtual DbSet<UserRoles> UserRoles { get; set; }
+        public virtual DbSet<UsersPlayer> UsersPlayer { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -58,6 +60,8 @@ namespace Allport_s_League_Scrambler.Data
             modelBuilder.Entity<ByePlayer>().ToTable("ByePlayer", "dbo");
             modelBuilder.Entity<LeagueSettings>().ToTable("LeagueSettings", "dbo");
             modelBuilder.Entity<PlayerSignIn>().ToTable("PlayerSignIn", "dbo");
+            modelBuilder.Entity<UserRoles>().ToTable("UserRoles", "dbo");
+            modelBuilder.Entity<UsersPlayer>().ToTable("UsersPlayer", "dbo");
         }
 
     }

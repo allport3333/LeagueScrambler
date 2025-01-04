@@ -1,0 +1,145 @@
+<div *ngIf="!selectedLeagueDto" style="text-align: center; margin-top: 20px;">
+    <h4>Select a League to Begin</h4>
+    <mat-form-field appearance="outline" style="width: 300px; margin: 10px auto;">
+        <mat-label>Select League</mat-label>
+        <mat-select (selectionChange)="onLeagueSelect($event.value)">
+            <mat-option *ngFor="let league of leaguesAvailable" [value]="league">
+                {{ league.leagueName }}
+            </mat-option>
+        </mat-select>
+    </mat-form-field>
+</div>
+
+<div *ngIf="selectedLeagueDto" class="container-fluid mt-4">
+    <div class="row">
+        <!-- Left Section: Players -->
+        <div class="col-lg-6 col-md-12">
+            <h3>Players</h3>
+            <div class="row">
+                <!-- Male Players -->
+                <div class="col-lg-6 col-md-6 col-sm-12">
+                    <h4>Male Players ({{ malePlayerCount }})</h4>
+                    <div class="player-grid">
+                        <div *ngFor="let player of malePlayers1"
+                             class="player-item"
+                             (click)="addPlayerToTeam(player)"
+                             [style.background-color]="'#ADD8E6'"
+                             style="padding: 5px; margin: 5px 0; border-radius: 5px; cursor: pointer;">
+                            <span [style.text-decoration]="player.isUsed ? 'line-through' : 'none'">
+                                {{ player.firstName }} {{ player.lastName }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Female Players -->
+                <div class="col-lg-6 col-md-6 col-sm-12">
+                    <h4>Female Players ({{ femalePlayerCount }})</h4>
+                    <div class="player-grid">
+                        <div *ngFor="let player of femalePlayers1"
+                             class="player-item"
+                             (click)="addPlayerToTeam(player)"
+                             [style.background-color]="'#FFC0CB'"
+                             style="padding: 5px; margin: 5px 0; border-radius: 5px; cursor: pointer;">
+                            <span [style.text-decoration]="player.isUsed ? 'line-through' : 'none'">
+                                {{ player.firstName }} {{ player.lastName }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Section: Teams -->
+        <div class="col-lg-6 col-md-12">
+            <h3 style="text-align: center;">Teams</h3>
+            <div class="row">
+                <div class="col-12 d-flex flex-wrap justify-content-center mb-4">
+                    <!-- Container for both sections -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+                        <!-- Number of Rounds -->
+                        <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: #f9f9f9; min-width: 120px;">
+                            <label for="roundDropdown" style="display: block; font-weight: bold; margin-bottom: 8px;">Number of Rounds:</label>
+                            <mat-form-field appearance="outline" style="width: 100%;">
+                                <mat-select [(value)]="selectedRounds" (selectionChange)="setNumberOfRounds($event.value)">
+                                    <mat-option *ngFor="let num of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]" [value]="num">
+                                        {{ num }}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Scramble Number -->
+                        <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: #f9f9f9; min-width: 150px;">
+                            <label for="scrambleNumber" style="display: block; font-weight: bold; margin-bottom: 8px;">Scramble Number:</label>
+                            <mat-form-field appearance="outline" style="width: 100%;">
+                                <mat-select [(value)]="selectedScrambleNumber" (selectionChange)="onScrambleNumberChange($event.value)">
+                                    <mat-option *ngFor="let number of scrambleNumbers" [value]="number">
+                                        Scramble {{ number }}
+                                    </mat-option>
+                                    <mat-option value="new">New Scramble</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teams Section -->
+            <div *ngIf="listOfTeams.length === 0" style="text-align: center; margin: 20px;">
+                <p>No teams created. Add players to start creating teams!</p>
+            </div>
+
+            <ng-container *ngFor="let team of listOfTeams; let i = index">
+                <div style="text-align: center; width: 100%;">
+                    <h4>Team {{ i + 1 }}</h4>
+                </div>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                    <li *ngFor="let player of team.players" style="display: flex; align-items: center; gap: 10px; width: 300px; border-radius: 5px;"
+                        [ngStyle]="{'background-color': player.gender === 'Male' ? '#ADD8E6' : '#FFC0CB', 'padding': '5px'}">
+                        <span style="flex: 1; text-align: left;">{{ player.firstName }} {{ player.lastName }}</span>
+                        <mat-slide-toggle matTooltip="Mark as Sub"
+                                          [(ngModel)]="player.isSubScore"
+                                          (change)="updateIsSubScore(team.kingQueenTeamId, player.id, player.isSubScore)"
+                                          style="margin: 0;">
+                        </mat-slide-toggle>
+                    </li>
+                </ul>
+
+                <table class="table table-bordered" style="margin-top: 20px;"> 
+                    <thead>
+                        <tr>
+                            <th>Round</th>
+                            <th>Score</th>
+                            <th>Won</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let round of rounds">
+                            <td>{{ round }}</td>
+                            <td>
+                                <input type="number"
+                                       [(ngModel)]="team.kingQueenRoundScores[round - 1].roundScore"
+                                       class="form-control form-control-sm" />
+                            </td>
+                            <td>
+                                <input type="checkbox"
+                                       [(ngModel)]="team.kingQueenRoundScores[round - 1].roundWon" />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div>
+                    <strong>Total Score:</strong> {{ calculateTotalScore(team.kingQueenTeamId) }}
+                    <br />
+                    <strong>Total Wins:</strong> {{ calculateTotalWins(team.kingQueenTeamId) }}
+                </div>
+            </ng-container>
+
+            <div class="text-center">
+                <button mat-raised-button color="primary" (click)="saveTeamScores()">Save Team Scores</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { StatisticsService } from '../services/statistics.service';
 import { ActivatedRoute } from '@angular/router';
 import { MatTableDataSource, MatSort } from '@angular/material';
+import { LeagueService } from '../services/league.service';
 
 @Component({
   selector: 'app-detailed-player-stats',
@@ -27,10 +28,11 @@ export class DetailedPlayerStatsComponent implements OnInit {
     activeSort: string = ''; // Track active column being sorted
     leagues: any[] = [];
     selectedLeagueId: number | null = null;
+    selectedLeagueName: string | null = null;
     dataSource = new MatTableDataSource([]);
 
     @ViewChild(MatSort) sort!: MatSort;
-    constructor(private statisticsService: StatisticsService, private route: ActivatedRoute) { }
+    constructor(private statisticsService: StatisticsService, public leagueService: LeagueService, private route: ActivatedRoute) { }
 
     onSortDebug(event: any) {
         console.log('Sort triggered:', event);
@@ -45,18 +47,26 @@ export class DetailedPlayerStatsComponent implements OnInit {
     }
 
     ngOnInit() {
-        this.playerId = +this.route.snapshot.paramMap.get('id'); // Get 'id' from the route
-        this.route.params.subscribe(params => {            
-            this.playerId = params['id'];
-            this.getLeagues();
+        // Subscribe to route parameters to handle changes in playerId
+        this.route.params.subscribe(params => {
+            this.playerId = +params['id']; // Get 'id' from the route
             this.loadPlayerStats(this.playerId); // Load data for the new playerId
-            this.loadDetailedPerformanceStats(this.selectedLeagueId);
+            this.processRoundsWithDividers(); // Process rounds after updating playerId
         });
-        this.getLeagues();
-        this.loadPlayerStats(this.playerId);
 
-        this.processRoundsWithDividers();
+        // Subscribe to selectedLeague$ to update stats when the league changes
+        this.leagueService.selectedLeague$.subscribe(selectedLeague => {
+            if (selectedLeague) {
+                this.selectedLeagueId = selectedLeague.leagueId;
+                this.selectedLeagueName = selectedLeague.leagueName;
+                this.loadDetailedPerformanceStats(this.selectedLeagueId); // Load data for the selected league
+            }
+        });
+
+        // Initial call to loadPlayerStats for the playerId in the route
+        this.loadPlayerStats(this.playerId);
     }
+
 
     sortData(column: string) {
         // Toggle sort direction
@@ -80,11 +90,11 @@ export class DetailedPlayerStatsComponent implements OnInit {
         this.dataSource.data = sortedData; // Update the data source
     }
 
-    getLeagues() {
-        this.statisticsService.getLeaguesForPlayer(this.playerId).subscribe(data => {
-            this.leagues = data;
-        });
-    }
+    //getLeagues() {
+    //    this.statisticsService.getLeaguesForPlayer(this.playerId).subscribe(data => {
+    //        this.leagues = data;
+    //    });
+    //}
 
     loadPlayerStats(playerId: number) {
         this.statisticsService.getPlayerProfile(playerId).subscribe(data => {

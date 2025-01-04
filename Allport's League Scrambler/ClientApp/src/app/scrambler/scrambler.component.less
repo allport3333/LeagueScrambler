@@ -31,6 +31,30 @@ tr {
     width: 150px;
     z-index: 1000; /* Ensure it's on top */
 }
+.dropdown-container {
+    display: flex;
+    flex-wrap: wrap; /* Allows wrapping on smaller screens */
+    gap: 20px; /* Adds fixed spacing between dropdowns */
+    justify-content: center; /* Centers items on larger screens */
+    align-items: center; /* Vertically centers items */
+    margin-top: 20px; /* Optional: Adds spacing above */
+    width: 100%; /* Ensures the container spans full width */
+    text-align: center; /* Ensures dropdown content is centered */
+}
+
+.dropdown-container mat-form-field {
+    flex: 0 1 200px; /* Keeps consistent sizing while allowing wrapping */
+    max-width: 200px; /* Optional: Limits the width of each dropdown */
+    min-width: 150px; /* Optional: Sets a minimum width */
+}
+
+
+@media (max-width: 768px) {
+    .dropdown-container {
+        justify-content: center; /* Centers items on smaller screens */
+    }
+}
+
 
 table {
     overflow: visible; /* Allow dropdown to extend outside table bounds */
