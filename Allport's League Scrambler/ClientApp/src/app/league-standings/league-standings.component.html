@@ -104,11 +104,12 @@
                         </thead>
                         <tbody>
                             <tr *ngFor="let player of maleStandings; let i = index">
-                                <td style="padding: 2px; text-align: center; font-weight: bold;">
+                                <td [ngStyle]="{ 'background-color': 'lightblue' }"
+                                    style="padding: 2px; text-align: center; font-weight: bold;">
                                     {{ i + 1 }}
                                 </td>
                                 <td style="padding: 2px;">{{ player.playerName }}</td>
-                                <td style="padding: 2px;">{{ player.totalScore }}</td>
+                                <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                 <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                 <td style="padding: 2px;">{{ player.totalWins }}</td>
                                 <td *ngFor="let score of player.scores.slice().reverse()"
@@ -167,11 +168,12 @@
                         </thead>
                         <tbody>
                             <tr *ngFor="let player of femaleStandings; let i = index">
-                                <td style="padding: 2px; text-align: center; font-weight: bold;">
+                                <td [ngStyle]="{ 'background-color': 'lightblue' }"
+                                    style="padding: 2px; text-align: center; font-weight: bold;">
                                     {{ i + 1 }}
                                 </td>
                                 <td style="padding: 2px;">{{ player.playerName }}</td>
-                                <td style="padding: 2px;">{{ player.totalScore }}</td>
+                                <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                 <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                 <td style="padding: 2px;">{{ player.totalWins }}</td>
                                 <td *ngFor="let score of player.scores.slice().reverse()"

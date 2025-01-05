@@ -72,17 +72,28 @@ namespace Allport_s_League_Scrambler.Controllers
         public IActionResult GetPlayerByFirstLastName(string firstName, string lastName)
         {
             var context = new DataContext();
+
+            // Search by first name and last name
             var players = context.Players
                 .Where(p => p.FirstName == firstName && p.LastName == lastName)
                 .ToList();
 
+            // If no players found, search by last name only
             if (!players.Any())
             {
-                return NotFound("No players found with the given name.");
+                players = context.Players
+                    .Where(p => p.LastName == lastName)
+                    .ToList();
+
+                if (!players.Any())
+                {
+                    return NotFound("No players found with the given name or last name.");
+                }
             }
 
             return Ok(players);
         }
+
 
 
         public class ClaimPlayerRequest

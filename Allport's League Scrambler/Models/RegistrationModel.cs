@@ -12,6 +12,7 @@ namespace Allport_s_League_Scrambler.Models
         public string Password { get; set; } // Plain text password
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public int UserRoleId { get; set; }
         // Other registration-related properties
 
         public User ToUser()
@@ -28,8 +29,8 @@ namespace Allport_s_League_Scrambler.Models
                 PasswordSalt = salt,
                 FirstName = FirstName,
                 LastName = LastName,
-                CreatedAt = DateTime.Now
-                // Other user properties
+                CreatedAt = DateTime.Now,
+                UserRoleId = UserRoleId
             };
         }
 

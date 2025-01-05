@@ -391,7 +391,8 @@ namespace Allport_s_League_Scrambler.Controllers
                     FirstName = userData.FirstName,
                     LastName = userData.LastName,
                     LoginName = userData.LoginName,
-                    Password = request.Password
+                    Password = request.Password,
+                    UserRoleId = 3
                 };
                 var user = userModel.ToUser();
                 userData.PasswordHash = user.PasswordHash;
