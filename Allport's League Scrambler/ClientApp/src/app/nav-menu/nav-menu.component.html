@@ -59,6 +59,11 @@
                         <span class='fas fa-database'></span> League Schedule
                     </a>
                 </li>
+                <li *ngIf="userRole === 'Admin' || userRole === 'Manager' || userRole === 'Player'" class="nav-item" [routerLinkActive]='["link-active"]'>
+                    <a [routerLink]='["/standings"]' class="nav-link" (click)='collapse()'>
+                        <span class='fas fa-trophy'></span> Standings
+                    </a>
+                </li>
                 <li class="nav-item" [routerLinkActive]="['link-active']">
                     <a [routerLink]="['/sign-in']" class="nav-link" (click)="collapse()">
                         <span class="fas fa-sign-in-alt"></span> Sign In Sheet

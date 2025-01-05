@@ -1,0 +1,17 @@
+/* Example minimal styles */
+.table {
+    width: 100%;
+}
+
+.compact-table th,
+.compact-table td {
+    padding: 4px !important;
+    text-align: center;
+}
+
+.dropdown-container {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    justify-content: center;
+}

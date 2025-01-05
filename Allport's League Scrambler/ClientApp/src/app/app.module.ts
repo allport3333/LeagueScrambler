@@ -24,6 +24,7 @@ import { ResetPasswordComponent } from './reset-password/reset-password.componen
 import { DetailedPlayerStatsComponent } from './detailed-player-stats/detailed-player-stats.component';
 import { SignInComponent } from './sign-in/sign-in.component';
 import { CreateTeamsComponent } from './create-teams/create-teams.component';
+import { LeagueStandingsComponent } from './league-standings/league-standings.component';
 
 @NgModule({
     declarations: [
@@ -39,7 +40,8 @@ import { CreateTeamsComponent } from './create-teams/create-teams.component';
         ResetPasswordComponent,
         DetailedPlayerStatsComponent,
         SignInComponent,
-        CreateTeamsComponent
+        CreateTeamsComponent,
+        LeagueStandingsComponent
 
     ],
     imports: [
@@ -85,7 +87,8 @@ import { CreateTeamsComponent } from './create-teams/create-teams.component';
             { path: 'schedule', component: ScheduleComponent },
             { path: 'resetpassword', component: ResetPasswordComponent },
             { path: 'player-stats/:id', component: DetailedPlayerStatsComponent },
-            { path: 'sign-in', component: SignInComponent }
+            { path: 'sign-in', component: SignInComponent },
+            { path: 'standings', component: LeagueStandingsComponent }
         ]),
         BrowserAnimationsModule
     ],
