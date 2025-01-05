@@ -52,6 +52,45 @@ namespace Allport_s_League_Scrambler.Controllers
             return players;
         }
 
+        [HttpPost("claimPlayer")]
+        public IActionResult ClaimPlayer([FromBody] ClaimPlayerRequest request)
+        {
+            var context = new DataContext();
+            var userPlayer = new UsersPlayer
+            {
+                UserId = request.UserId,
+                PlayerId = request.PlayerId
+            };
+
+            context.UsersPlayer.Add(userPlayer);
+            context.SaveChanges();
+
+            return Ok(new { message = "Player claimed successfully" });
+        }
+
+        [HttpGet("GetPlayerByFirstLastName")]
+        public IActionResult GetPlayerByFirstLastName(string firstName, string lastName)
+        {
+            var context = new DataContext();
+            var players = context.Players
+                .Where(p => p.FirstName == firstName && p.LastName == lastName)
+                .ToList();
+
+            if (!players.Any())
+            {
+                return NotFound("No players found with the given name.");
+            }
+
+            return Ok(players);
+        }
+
+
+        public class ClaimPlayerRequest
+        {
+            public int UserId { get; set; }
+            public int PlayerId { get; set; }
+        }
+
         [HttpGet("[action]")]
         public IEnumerable<Player> GetAllMalePlayers()
         {
@@ -258,6 +297,39 @@ namespace Allport_s_League_Scrambler.Controllers
             return player;
 
         }
+
+        [HttpPost("[action]")]
+        public IActionResult AddPlayerWithoutLeague([FromBody] Player player)
+        {
+            var context = new DataContext();
+
+            // Check if the player already exists
+            var playerExists = context.Players
+                .FirstOrDefault(x => x.FirstName == player.FirstName && x.LastName == player.LastName);
+
+            if (playerExists != null)
+            {
+                // Return existing player if found
+                return Ok(playerExists);
+            }
+
+            // Create a new player
+            var newPlayer = new Player
+            {
+                FirstName = player.FirstName,
+                LastName = player.LastName,
+                IsMale = player.IsMale,
+                Gender = player.Gender,
+                IsSub = player.IsSub
+            };
+
+            context.Players.Add(newPlayer);
+            context.SaveChanges();
+
+            // Return the newly created player
+            return Ok(newPlayer);
+        }
+
 
         [HttpPost("SaveKingQueenRoundScores/{leagueName}")]
         public async Task<IActionResult> SaveKingQueenRoundScores(

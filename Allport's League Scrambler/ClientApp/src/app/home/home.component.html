@@ -84,3 +84,98 @@
     </div>
 
 </div>
+
+<div *ngIf="showPlayerClaimModal" class="modal">
+    <div class="modal-content">
+        <h2>Claim a Player</h2>
+
+        <!-- Search Player Section -->
+        <div *ngIf="!showAddPlayerForm">
+            <mat-form-field appearance="fill" style="width: 100%;">
+                <mat-label>Search for a Player</mat-label>
+                <input matInput
+                       placeholder="Start typing to search"
+                       [(ngModel)]="searchTerm"
+                       (input)="filterPlayers()" />
+                <div *ngIf="filteredPlayers.length > 0" class="typeahead-options">
+                    <mat-option *ngFor="let player of filteredPlayers"
+                                (click)="selectPlayer(player)">
+                        {{ player.firstName }} {{ player.lastName }}
+                    </mat-option>
+                </div>
+            </mat-form-field>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons" style="display: flex; justify-content: space-between; margin-top: 16px;">
+                <button mat-button color="primary" (click)="showAddPlayerForm = true">Create New Player</button>
+                <button mat-button color="warn" (click)="closeModal()">Close</button>
+            </div>
+        </div>
+
+        <!-- Add New Player Section -->
+        <div *ngIf="showAddPlayerForm">
+            <h3>Create a New Player</h3>
+            <form [formGroup]="addPlayerForm" (ngSubmit)="addPlayer()">
+                <!-- First Name -->
+                <mat-form-field appearance="fill" style="width: 100%;">
+                    <mat-label>First Name</mat-label>
+                    <input matInput formControlName="firstName" required />
+                </mat-form-field>
+
+                <!-- Last Name -->
+                <mat-form-field appearance="fill" style="width: 100%;">
+                    <mat-label>Last Name</mat-label>
+                    <input matInput formControlName="lastName" required />
+                </mat-form-field>
+
+                <!-- Gender -->
+                <mat-form-field appearance="fill" style="width: 100%;">
+                    <mat-label>Gender</mat-label>
+                    <mat-select formControlName="gender" required>
+                        <mat-option value="Male">Male</mat-option>
+                        <mat-option value="Female">Female</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <!-- Is Sub -->
+                <div style="margin-top: 16px;">
+                    <mat-checkbox formControlName="isSub">Is Sub</mat-checkbox>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="margin-top: 16px; display: flex; justify-content: space-between;">
+                    <button mat-button type="submit" color="primary">Save Player</button>
+                    <button mat-button
+                            type="button"
+                            color="warn"
+                            (click)="showAddPlayerForm = false">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<div *ngIf="showSpecificPlayerClaimModal" class="modal">
+    <div class="modal-content">
+        <h2>We Found Matching Players</h2>
+
+        <div *ngIf="filteredPlayers.length > 0">
+            <p>Select a player to claim or choose to proceed without claiming:</p>
+            <ul>
+                <li *ngFor="let player of filteredPlayers">
+                    {{ player.firstName }} {{ player.lastName }}
+                    <button mat-button (click)="confirmClaimPlayer(player)">Claim</button>
+                </li>
+            </ul>
+        </div>
+
+        <div *ngIf="filteredPlayers.length === 0">
+            <p>No matching players were found.</p>
+        </div>
+
+        <button mat-button color="warn" (click)="openClaimModal()">Search or Add New Player To Claim</button>
+    </div>
+</div>

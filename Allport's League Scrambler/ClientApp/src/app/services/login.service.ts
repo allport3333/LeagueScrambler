@@ -61,8 +61,9 @@ export class LoginService {
             lastName: lastName
         };
 
-        return this.httpClient.post(this.registerUrl, registerData, { withCredentials: true });
+        return this.httpClient.post<{ message: string; userId: number }>(this.registerUrl, registerData, { withCredentials: true });
     }
+
 
     // Fetch user information
     getUserInfo() {

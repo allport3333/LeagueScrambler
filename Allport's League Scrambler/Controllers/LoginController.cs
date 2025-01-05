@@ -53,6 +53,7 @@ namespace Allport_s_League_Scrambler.Controllers
             if (ModelState.IsValid)
             {
                 var _context = new DataContext();
+
                 // Check if the username or email is already taken
                 if (await _context.Users.AnyAsync(u => u.LoginName == registrationModel.LoginName || u.Email == registrationModel.Email))
                 {
@@ -61,13 +62,15 @@ namespace Allport_s_League_Scrambler.Controllers
 
                 var user = registrationModel.ToUser(); // Convert RegistrationModel to User
                 _context.Users.Add(user);
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(); // Save changes to generate the UserId
 
-                return Ok(new { message = "Registration successful." });
+                // Return a success response with the generated UserId
+                return Ok(new { message = "Registration successful.", userId = user.UserId });
             }
 
             return BadRequest(new { message = "Invalid registration data." });
         }
+
 
         [HttpGet("isauthenticated")]
         public IActionResult IsAuthenticated()

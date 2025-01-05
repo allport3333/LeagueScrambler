@@ -4,3 +4,65 @@
     margin-right: auto;
     width: 50%;
 }
+.modal {
+    display: block; /* Ensure it's visible */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000; /* Keep this below the dropdown overlay */
+}
+
+.modal-content {
+    background: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 50%;
+    position: relative; /* To keep its layout intact */
+    z-index: 1010; /* Slightly higher than modal background */
+}
+
+.cdk-overlay-container {
+    z-index: 1050; /* Ensure it is above the modal */
+}
+
+.custom-dropdown-panel {
+    transform: translateY(10px) !important; /* Adjust the dropdown position relative to the input */
+    max-height: 300px; /* Ensure dropdown height doesn't block the screen */
+    overflow-y: auto; /* Enable scrolling if the list is long */
+}
+
+.typeahead-options {
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    position: absolute;
+    z-index: 1050;
+    width: 100%;
+}
+
+.typeahead-options mat-option {
+    padding: 8px;
+    cursor: pointer;
+}
+
+.typeahead-options mat-option:hover {
+    background-color: #f1f1f1;
+}
+
+.custom-snackbar {
+    background-color: #333; /* Custom background color */
+    color: #fff; /* Text color */
+    text-align: center;
+    font-size: 16px; /* Adjust font size */
+}
+
+/* Optional: adjust position further if necessary */
+.mat-snack-bar-container {
+    justify-content: center; /* Ensures text is centered */
+}

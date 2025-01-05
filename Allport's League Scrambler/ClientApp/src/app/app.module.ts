@@ -65,6 +65,7 @@ import { CreateTeamsComponent } from './create-teams/create-teams.component';
         ReactiveFormsModule,
         MatGridListModule,
         MatSelectModule,
+        MatFormFieldModule,
         MatListModule,
         MatOptionModule,
         MatAutocompleteModule,

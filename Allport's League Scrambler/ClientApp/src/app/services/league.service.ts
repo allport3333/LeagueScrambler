@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { LoginService } from './login.service';
 import { Leagues } from '../data-models/leagues.model';
+import { Router } from '@angular/router';
 
 @Injectable({
     providedIn: 'root',
@@ -15,19 +16,50 @@ export class LeagueService {
 
     leaguesAvailable: Leagues[] = []; // Store fetched leagues
 
-    constructor(private loginService: LoginService) { }
+    constructor(private loginService: LoginService, private router: Router) { }
 
     // Fetch leagues for the logged-in user
     getLeagues(): Observable<{ id: number; leagueName: string }[]> {
         return new Observable((observer) => {
-            this.loginService.getUserLeagues().subscribe((leagueResult) => {
-                this.leaguesAvailable = leagueResult.map((league) => ({
-                    id: league.id,
-                    leagueName: league.leagueName,
-                })); // Map leagues to the required structure
-                observer.next(this.leaguesAvailable); // Pass the mapped leagues to the subscriber
-                observer.complete();
-            });
+            this.loginService.getUsersPlayer().subscribe(
+                (playerResult) => {
+                    let playerId: number | null = null;
+
+                    if (playerResult != null) {
+                        playerId = playerResult.playerId;
+                    }
+
+                    // Fetch user leagues after player is resolved
+                    this.loginService.getUserLeagues().subscribe(
+                        (leagueResult) => {
+                            if (!leagueResult || leagueResult.length === 0) {
+                                console.warn('No leagues found. Redirecting to player stats.');
+                                this.router.navigate(['/player-stats', playerId]);
+                                observer.complete();
+                                return;
+                            }
+
+                            // Map leagues to the required structure
+                            this.leaguesAvailable = leagueResult.map((league) => ({
+                                id: league.id,
+                                leagueName: league.leagueName,
+                            }));
+                            observer.next(this.leaguesAvailable); // Pass the mapped leagues to the subscriber
+                            observer.complete();
+                        },
+                        (error) => {
+                            console.error('Error fetching leagues:', error);
+                            this.router.navigate(['/player-stats', playerId]);
+                            observer.complete();
+                        }
+                    );
+                },
+                (error) => {
+                    console.error('Error fetching player:', error);
+                    this.router.navigate(['/profile']); // Navigate to profile on player fetch error
+                    observer.complete();
+                }
+            );
         });
     }
 

@@ -29,6 +29,12 @@ export class PlayerService {
         return this.httpClient.get<Player[]>(this.baseUrl + 'api/ScrambleData/GetPlayers');
     }
 
+    public GetPlayerByFirstLastName(firstName: string, lastName: string): Observable<Player[]> {
+        const params = new HttpParams().set('firstName', firstName).set('lastName', lastName);
+        return this.httpClient.get<Player[]>(`${this.baseUrl}api/ScrambleData/GetPlayerByFirstLastName`, { params });
+    }
+
+
     public GetLeagues() {
         return this.httpClient.get<Leagues[]>(this.baseUrl + 'api/ScrambleData/GetLeagues');
     }
@@ -73,6 +79,13 @@ export class PlayerService {
         return this.httpClient.get<any[]>(this.baseUrl + `api/ScrambleData/SearchPlayers?searchTerm=${searchTerm}`);
     }
 
+    public claimPlayer(data: { userId: number; playerId: number }): Observable<any> {
+        return this.httpClient.post(this.baseUrl + `api/ScrambleData/claimPlayer`, data);
+    }
+
+    public addPlayerWithoutLeague(player: any): Observable<any> {
+        return this.httpClient.post(this.baseUrl + '/api/ScrambleData/AddPlayerWithoutLeague', player);
+    }
 
     public AddPlayer(player: Player, leagueName: string) {
         return this.httpClient.post<Player>(this.baseUrl + 'api/ScrambleData/AddPlayer/' + leagueName, player);

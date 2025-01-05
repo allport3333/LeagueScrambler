@@ -1,11 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { LoginService } from '../services/login.service';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+
 import { MatSnackBarConfig, MatSnackBar, MatDialog, MatDialogRef } from '@angular/material';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { ForgotPasswordDialogComponent } from '../forgot-password-dialog/forgot-password-dialog.component';
 import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { LeagueService } from '../services/league.service';
+import { PlayerService } from '../services/player.service';
 @Component({
     selector: 'app-home',
     templateUrl: './home.component.html',
@@ -22,10 +27,19 @@ export class HomeComponent implements OnInit {
     registerLastName: string = '';
     showRegistrationForm: boolean = false;
     showLoginForm: boolean = false;
+    userId: number;
     isLoggedIn: boolean = false;
     registerForm: FormGroup; 
-    dialogRef: MatDialogRef<ForgotPasswordDialogComponent>;
-    constructor(private loginService: LoginService, private leagueService: LeagueService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: FormBuilder) {
+    dialogRef: MatDialogRef<ForgotPasswordDialogComponent>; 
+    showPlayerClaimModal = false;
+    showSpecificPlayerClaimModal = false;
+    players = [];
+    filteredPlayers = [];
+    searchTerm = '';
+    selectedPlayer: any;
+    showAddPlayerForm = false;
+
+    constructor(private loginService: LoginService, private leagueService: LeagueService, public playerService: PlayerService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: FormBuilder) {
         this.route.queryParams.subscribe((queryParams) => {
             if (queryParams.toggleLoginForm === 'true') {
                 this.toggleLoginForm();
@@ -178,9 +192,12 @@ export class HomeComponent implements OnInit {
                 // After a successful registration, show the snackbar.
                 const username = this.registerForm.get('registerUsername').value;
                 const snackbarMessage = `Registration successful for ${username}`;
+                this.userId = response.userId;
                 this.showLoginForm = true;
                 this.showRegistrationForm = false;
                 this.showSnackBar(snackbarMessage, false); // Show success message
+
+                this.openSpecificPlayerClaimModal();
             },
             (error) => {
                 // Handle registration error
@@ -199,6 +216,158 @@ export class HomeComponent implements OnInit {
     }
 
 
+    addPlayerForm = this.fb.group({
+        firstName: ['', Validators.required],
+        lastName: ['', Validators.required],
+        gender: ['', Validators.required],
+        isSub: [false] // Default value for the checkbox
+    });
+
+    openAddPlayerForm() {
+        this.showAddPlayerForm = true;
+    }
+
+    closeAddPlayerForm() {
+        this.showAddPlayerForm = false;
+    }
+
+    addPlayer() {
+        if (this.addPlayerForm.invalid) {
+            this.showSnackBar('Please fill out all required fields.', true);
+            return;
+        }
+
+        const playerData = this.addPlayerForm.value;
+        this.playerService.addPlayerWithoutLeague(playerData).subscribe(
+            (newPlayer) => {
+                this.showSnackBar(`Player ${newPlayer.firstName} ${newPlayer.lastName} created successfully!`, false);
+                this.filteredPlayers.push(newPlayer); // Add the new player to the dropdown
+                this.selectedPlayer = newPlayer; // Auto-select the new player
+                this.claimPlayer(newPlayer); // Claim the newly created player
+                this.closeAddPlayerForm();
+            },
+            () => {
+                this.showSnackBar('Failed to create player. Try again.', true);
+            }
+        );
+    }
+
+    openSpecificPlayerClaimModal() {
+        const firstName = this.registerForm.get('registerFirstName').value;
+        const lastName = this.registerForm.get('registerLastName').value;
+
+        this.playerService.GetPlayerByFirstLastName(firstName, lastName).subscribe(
+            (players) => {
+                this.players = players || []; // Handle null or empty response
+                this.filteredPlayers = this.players;
+                this.showSpecificPlayerClaimModal = true; // Always show the specific claim modal
+            },
+            (error) => {
+                console.error('Error fetching players:', error);
+                this.showSnackBar('Failed to fetch players. Please try again.', true);
+                this.openClaimModal(); // Fallback to generic claim modal on error
+            }
+        );
+    }
+
+
+
+    confirmClaimPlayer(player: any) {
+        const snackBarRef = this.snackBar.open(
+            `Claim ${player.firstName} ${player.lastName}?`,
+            'Confirm',
+            {
+                horizontalPosition: 'center',
+                verticalPosition: 'top',
+                panelClass: ['custom-snackbar'],
+            }
+        );
+
+        // Handle "Confirm" action
+        snackBarRef.onAction().subscribe(() => {
+            this.claimPlayer(player); // If the user clicks "Confirm," claim the player
+        });
+
+        // Handle snackbar dismissal
+        snackBarRef.afterDismissed().subscribe((event) => {
+            if (!event.dismissedByAction) {
+                // If dismissed without clicking "Confirm," open the generic claim modal
+                this.openClaimModal();
+            }
+        });
+    }
+
+
+
+
+    openClaimModal() {
+        this.showSpecificPlayerClaimModal = false;
+        this.showPlayerClaimModal = true;
+
+        this.playerService.GetPlayers().subscribe(
+            (players) => {
+                this.players = players;
+            },
+            (error) => {
+                console.error('Error fetching players:', error);
+                this.showSnackBar('Unable to fetch players. Please try again later.', true);
+            }
+        );
+    }
+
+    filterPlayers() {
+        if (!this.searchTerm) {
+            this.filteredPlayers = [...this.players];
+            return;
+        }
+
+        const lowerCaseSearch = this.searchTerm.toLowerCase();
+        this.filteredPlayers = this.players.filter(player =>
+            `${player.firstName} ${player.lastName}`.toLowerCase().includes(lowerCaseSearch)
+        );
+    }
+
+    @HostListener('document:click', ['$event'])
+    onClickOutside(event: MouseEvent) {
+        const targetElement = event.target as HTMLElement;
+        const isInsideInput = targetElement.closest('.typeahead-options') || targetElement.closest('mat-form-field');
+        if (!isInsideInput) {
+            this.filteredPlayers = []; // Clear dropdown if clicked outside
+        }
+    }
+
+    closeDropdown() {
+        this.filteredPlayers = []; // Clear the dropdown
+    }
+
+
+
+    claimPlayer(player: any) {
+        this.playerService.claimPlayer({ userId: this.userId, playerId: player.id }).subscribe(
+            () => {
+                this.showSnackBar(`${player.firstName} ${player.lastName} has been claimed successfully!`, false);
+                this.closeModal();
+            },
+            () => {
+                this.showSnackBar('Failed to claim player. Try again.', true);
+            }
+        );
+    }
+
+
+
+    closeModal() {
+        this.showPlayerClaimModal = false;
+        this.selectedPlayer = null;
+    }
+
+    selectPlayer(player: any) {
+        this.selectedPlayer = player;
+        this.searchTerm = `${player.firstName} ${player.lastName}`; // Display the selected player in the input
+        this.filteredPlayers = []; // Clear the dropdown
+        console.log('Selected player:', player);
+        this.claimPlayer(player);
+    }
 
     cancel() {
         this.showLoginForm = false;
