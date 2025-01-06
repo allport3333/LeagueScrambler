@@ -1167,8 +1167,10 @@
                                         </th>
                                     </tr>
                                     <tr class="d-flex">
-                                        <th *ngIf="!isSmallScreen" class="col-4">First Name</th>
-                                        <th *ngIf="!isSmallScreen" class="col-4">Last Name</th>
+                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">First Name</th>
+                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">Last Name</th>
+                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">First Name</th>
+                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">Last Name</th>
                                         <th *ngIf="!isSmallScreen && showTeamSorting" class="col-3">Team</th>
                                         <th *ngIf="isSmallScreen" class="col-4" style="font-size:12px">Name</th>
                                         <th *ngIf="isSmallScreen && showTeamSorting" class="col-3">Team</th>
@@ -1177,15 +1179,22 @@
                                 <tbody>
                                     <tr *ngFor="let player of listOfTeams[i].players" class="d-flex align-items-center">
                                         <!-- Male / Female / Sub logic -->
-                                        <td *ngIf="player.isMale && !isSmallScreen" class="col-4 extended-background-blue">
+                                        <td *ngIf="player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-blue">
                                             {{ player.firstName }}
                                         </td>
                                         <td *ngIf="player.isMale && !player.isSub && isSmallScreen"
                                             class="col-4 extended-background-blue-lastName">
                                             {{ player.firstName[0] }}.{{ player.lastName }}
                                         </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen"
+                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
                                             class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
+                                            class="col-6 extended-background-blue-lastName">
                                             {{ player.lastName }}
                                         </td>
                                         <td *ngIf="player.isMale && player.isSub"
@@ -1193,15 +1202,22 @@
                                             {{ player.lastName }} - Sub
                                         </td>
 
-                                        <td *ngIf="!player.isMale && !isSmallScreen" class="col-4 extended-background-pink">
+                                        <td *ngIf="!player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-pink">
                                             {{ player.firstName }}
                                         </td>
                                         <td *ngIf="!player.isMale && !player.isSub && isSmallScreen"
                                             class="col-4 extended-background-pink-lastName">
                                             {{ player.firstName[0] }}.{{ player.lastName }}
                                         </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen"
+                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
                                             class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
+                                            class="col-6 extended-background-pink-lastName">
                                             {{ player.lastName }}
                                         </td>
                                         <td *ngIf="!player.isMale && player.isSub"
@@ -1212,7 +1228,7 @@
                                         <!-- Team-switch dropdown -->
                                         <td class="col-3" *ngIf="showTeamSorting && !allowScrambleWithNoDuplicates">
                                             <select class="form-select"
-                                                    style="width: 80%; min-height: 35px;"
+                                                    style="width: 100%; min-height: 35px;"
                                                     [value]="listOfTeams[i].sortingId"
                                                     (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i].sortingId)">
                                                 <option *ngFor="let otherTeam of listOfTeams"
@@ -1244,8 +1260,10 @@
                                         </th>
                                     </tr>
                                     <tr class="d-flex">
-                                        <th *ngIf="!isSmallScreen" class="col-4">First Name</th>
-                                        <th *ngIf="!isSmallScreen" class="col-4">Last Name</th>
+                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">First Name</th>
+                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">Last Name</th>
+                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">First Name</th>
+                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">Last Name</th>
                                         <th *ngIf="!isSmallScreen && showTeamSorting" class="col-3">Team</th>
                                         <th *ngIf="isSmallScreen" class="col-4" style="font-size:12px">Name</th>
                                         <th *ngIf="isSmallScreen && showTeamSorting" class="col-3">Team</th>
@@ -1254,15 +1272,22 @@
                                 <tbody>
                                     <tr *ngFor="let player of listOfTeams[i+1].players" class="d-flex align-items-center">
                                         <!-- same male/female logic -->
-                                        <td *ngIf="player.isMale && !isSmallScreen" class="col-4 extended-background-blue">
+                                        <td *ngIf="player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-blue">
                                             {{ player.firstName }}
                                         </td>
                                         <td *ngIf="player.isMale && !player.isSub && isSmallScreen"
                                             class="col-4 extended-background-blue-lastName">
                                             {{ player.firstName[0] }}.{{ player.lastName }}
                                         </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen"
+                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
                                             class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
+                                            class="col-6 extended-background-blue-lastName">
                                             {{ player.lastName }}
                                         </td>
                                         <td *ngIf="player.isMale && player.isSub"
@@ -1270,15 +1295,22 @@
                                             {{ player.lastName }} - Sub
                                         </td>
 
-                                        <td *ngIf="!player.isMale && !isSmallScreen" class="col-4 extended-background-pink">
+                                        <td *ngIf="!player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-pink">
                                             {{ player.firstName }}
                                         </td>
                                         <td *ngIf="!player.isMale && !player.isSub && isSmallScreen"
                                             class="col-4 extended-background-pink-lastName">
                                             {{ player.firstName[0] }}.{{ player.lastName }}
                                         </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen"
+                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
                                             class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
+                                            class="col-6 extended-background-pink-lastName">
                                             {{ player.lastName }}
                                         </td>
                                         <td *ngIf="!player.isMale && player.isSub"
@@ -1289,7 +1321,7 @@
                                         <!-- Team-switch dropdown -->
                                         <td class="col-3" *ngIf="showTeamSorting && !allowScrambleWithNoDuplicates">
                                             <select class="form-select"
-                                                    style="width: 80%; min-height: 35px;"
+                                                    style="width: 100%; min-height: 35px;"
                                                     [value]="listOfTeams[i+1].sortingId"
                                                     (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i+1].sortingId)">
                                                 <option *ngFor="let otherTeam of listOfTeams"
@@ -1324,8 +1356,10 @@
                                         </th>
                                     </tr>
                                     <tr class="d-flex">
-                                        <th *ngIf="!isSmallScreen" class="col-4">First Name</th>
-                                        <th *ngIf="!isSmallScreen" class="col-4">Last Name</th>
+                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">First Name</th>
+                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">Last Name</th>
+                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">First Name</th>
+                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">Last Name</th>
                                         <th *ngIf="!isSmallScreen && showTeamSorting" class="col-3">Team</th>
                                         <th *ngIf="isSmallScreen" class="col-4" style="font-size:12px">Name</th>
                                         <th *ngIf="isSmallScreen && showTeamSorting" class="col-3">Team</th>
@@ -1334,15 +1368,22 @@
                                 <tbody>
                                     <tr *ngFor="let player of listOfTeams[i+2].players" class="d-flex align-items-center">
                                         <!-- male/female logic again -->
-                                        <td *ngIf="player.isMale && !isSmallScreen" class="col-4 extended-background-blue">
+                                        <td *ngIf="player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-blue">
                                             {{ player.firstName }}
                                         </td>
                                         <td *ngIf="player.isMale && !player.isSub && isSmallScreen"
                                             class="col-4 extended-background-blue-lastName">
                                             {{ player.firstName[0] }}.{{ player.lastName }}
                                         </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen"
+                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
                                             class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
+                                            class="col-6 extended-background-blue-lastName">
                                             {{ player.lastName }}
                                         </td>
                                         <td *ngIf="player.isMale && player.isSub"
@@ -1350,15 +1391,22 @@
                                             {{ player.lastName }} - Sub
                                         </td>
 
-                                        <td *ngIf="!player.isMale && !isSmallScreen" class="col-4 extended-background-pink">
+                                        <td *ngIf="!player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-pink">
                                             {{ player.firstName }}
                                         </td>
                                         <td *ngIf="!player.isMale && !player.isSub && isSmallScreen"
                                             class="col-4 extended-background-pink-lastName">
                                             {{ player.firstName[0] }}.{{ player.lastName }}
                                         </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen"
+                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
                                             class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
+                                            class="col-6 extended-background-pink-lastName">
                                             {{ player.lastName }}
                                         </td>
                                         <td *ngIf="!player.isMale && player.isSub"
@@ -1369,7 +1417,7 @@
                                         <!-- Team-switch dropdown -->
                                         <td class="col-3" *ngIf="showTeamSorting && !allowScrambleWithNoDuplicates">
                                             <select class="form-select"
-                                                    style="width: 80%; min-height: 35px;"
+                                                    style="width: 100%; min-height: 35px;"
                                                     [value]="listOfTeams[i+2].sortingId"
                                                     (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i+2].sortingId)">
                                                 <option *ngFor="let otherTeam of listOfTeams"
@@ -1401,8 +1449,10 @@
                                         </th>
                                     </tr>
                                     <tr class="d-flex">
-                                        <th *ngIf="!isSmallScreen" class="col-4">First Name</th>
-                                        <th *ngIf="!isSmallScreen" class="col-4">Last Name</th>
+                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">First Name</th>
+                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">Last Name</th>
+                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">First Name</th>
+                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">Last Name</th>
                                         <th *ngIf="!isSmallScreen && showTeamSorting" class="col-3">Team</th>
                                         <th *ngIf="isSmallScreen" class="col-4" style="font-size:12px">Name</th>
                                         <th *ngIf="isSmallScreen && showTeamSorting" class="col-3">Team</th>
@@ -1411,15 +1461,22 @@
                                 <tbody>
                                     <tr *ngFor="let player of listOfTeams[i+3].players" class="d-flex align-items-center">
                                         <!-- male/female logic again -->
-                                        <td *ngIf="player.isMale && !isSmallScreen" class="col-4 extended-background-blue">
+                                        <td *ngIf="player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-blue">
                                             {{ player.firstName }}
                                         </td>
                                         <td *ngIf="player.isMale && !player.isSub && isSmallScreen"
                                             class="col-4 extended-background-blue-lastName">
                                             {{ player.firstName[0] }}.{{ player.lastName }}
                                         </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen"
+                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
                                             class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
+                                            class="col-6 extended-background-blue-lastName">
                                             {{ player.lastName }}
                                         </td>
                                         <td *ngIf="player.isMale && player.isSub"
@@ -1427,15 +1484,22 @@
                                             {{ player.lastName }} - Sub
                                         </td>
 
-                                        <td *ngIf="!player.isMale && !isSmallScreen" class="col-4 extended-background-pink">
+                                        <td *ngIf="!player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-pink">
                                             {{ player.firstName }}
                                         </td>
                                         <td *ngIf="!player.isMale && !player.isSub && isSmallScreen"
                                             class="col-4 extended-background-pink-lastName">
                                             {{ player.firstName[0] }}.{{ player.lastName }}
                                         </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen"
+                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
                                             class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
+                                            class="col-6 extended-background-pink-lastName">
                                             {{ player.lastName }}
                                         </td>
                                         <td *ngIf="!player.isMale && player.isSub"
@@ -1446,7 +1510,7 @@
                                         <!-- Team-switch dropdown -->
                                         <td class="col-3" *ngIf="showTeamSorting && !allowScrambleWithNoDuplicates">
                                             <select class="form-select"
-                                                    style="width: 80%; min-height: 35px;"
+                                                    style="width: 100%; min-height: 35px;"
                                                     [value]="listOfTeams[i+3].sortingId"
                                                     (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i+3].sortingId)">
                                                 <option *ngFor="let otherTeam of listOfTeams"
