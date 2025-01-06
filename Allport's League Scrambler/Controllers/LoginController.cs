@@ -59,7 +59,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 {
                     return BadRequest(new { message = "Username or email already in use." });
                 }
-
+                registrationModel.UserRoleId = 3;
                 var user = registrationModel.ToUser(); // Convert RegistrationModel to User
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync(); // Save changes to generate the UserId
