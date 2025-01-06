@@ -71,6 +71,42 @@ namespace Allport_s_League_Scrambler.Controllers
             return BadRequest(new { message = "Invalid registration data." });
         }
 
+        [HttpGet("GetLockSignInStatus")]
+        public IActionResult GetLockSignInStatus()
+        {
+            var _context = new DataContext();
+
+            var currentLockStatus = _context.PlayerSignIn
+                .OrderByDescending(s => s.DateTime)
+                .Select(s => s.LockedSignIn)
+                .FirstOrDefault();
+
+            return Ok(currentLockStatus);
+        }
+
+        public class LockSignInRequest
+        {
+            public bool Locked { get; set; }
+        }
+
+        [HttpPost("SetLockSignInStatus")]
+        public IActionResult SetLockSignInStatus([FromBody] LockSignInRequest request)
+        {
+            var _context = new DataContext();
+            var latestSignIn = _context.PlayerSignIn
+                .OrderByDescending(s => s.DateTime)
+                .FirstOrDefault();
+
+            if (latestSignIn != null)
+            {
+                latestSignIn.LockedSignIn = request.Locked;
+                _context.SaveChanges();
+                return Ok(request.Locked); // Return the updated lock status
+            }
+
+            return NotFound("No sign-in records found to update.");
+        }
+
 
         [HttpGet("isauthenticated")]
         public IActionResult IsAuthenticated()

@@ -41,3 +41,28 @@ table.mat-table {
     table.mat-table tr {
         height: auto !important; /* Allow rows to shrink */
     }
+
+/* Styles specific to the Signed-In Players table */
+table.signed-in-players-table tr {
+    height: 25px !important; /* Set a consistent row height */
+    cursor: pointer; /* Keep rows clickable */
+    transition: background-color 0.2s; /* Add hover transition */
+}
+
+table.signed-in-players-table th,
+table.signed-in-players-table td {
+    padding: 5px !important; /* Increase padding for larger click area */
+    line-height: 1.2 !important; /* Adjust line height for better spacing */
+    font-size: 15px !important; /* Slightly larger font size for readability */
+}
+
+/* Hover effect for rows */
+table.signed-in-players-table tr:hover {
+    background-color: #f8f9fa; /* Light gray hover effect */
+}
+
+/* Ensure header rows maintain consistent size */
+table.signed-in-players-table th {
+    height: 30px !important; /* Slightly taller header row */
+    vertical-align: middle; /* Vertically center header text */
+}

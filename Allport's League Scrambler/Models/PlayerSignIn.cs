@@ -12,6 +12,7 @@ namespace Allport_s_League_Scrambler.Models
         public DateTime DateTime { get; set; }
         public int LeagueId { get; set; }
         public int PlayerId { get; set; }
+        public bool LockedSignIn { get; set; }
 
         // Foreign keys
         [ForeignKey("LeagueId")]

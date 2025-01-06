@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatTableDataSource, MatSort } from '@angular/material';
+import { MatTableDataSource, MatSort, MatSnackBar } from '@angular/material';
 import { FormGroup, FormControl } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { PlayerService } from '../services/player.service';
@@ -7,6 +7,8 @@ import { PlayerSignIn } from '../data-models/playerSignIn.model';
 import { Leagues } from '../data-models/leagues.model';
 import { PlayerSignInResult } from '../data-models/playerSignInResult.model';
 import { StatisticsService } from '../services/statistics.service';
+import { Player } from '../data-models/player.model';
+import { LoginService } from '../services/login.service';
 
 @Component({
     selector: 'app-sign-in',
@@ -21,10 +23,14 @@ export class SignInComponent implements OnInit {
     playerSignIn: any[] = []; 
     filteredPlayers: any[] = [];
     dataSource = new MatTableDataSource();
-    signedInDataSource = new MatTableDataSource();
-
+    signedInDataSource = new MatTableDataSource<Player>();
+    isSignInLocked: boolean = false; // Bind to the checkbox
     displayedColumns: string[] = ['firstName', 'lastName'];
-    signedInColumns: string[] = [ 'firstName', 'lastName'];
+    signedInColumns: string[] = ['firstName', 'lastName'];
+    userRole: string; // To store the role of the user
+
+    maleCount: number = 0;
+    femaleCount: number = 0;
 
     PlayerForm = new FormGroup({
         firstName: new FormControl(),
@@ -35,10 +41,59 @@ export class SignInComponent implements OnInit {
 
     @ViewChild(MatSort) sort: MatSort;
 
-    constructor(private playerService: PlayerService, private http: HttpClient) { }
+    constructor(private playerService: PlayerService, private loginService: LoginService, private http: HttpClient, private snackBar: MatSnackBar) { }
 
     ngOnInit() {
         this.loadLeagues();
+        this.loginService.getUsersRole().subscribe(
+            (role) => {
+                this.userRole = role.role;
+            },
+            (error) => {
+                console.error('ngOnInit: Error fetching user role:', error);
+            }
+        );
+        this.loadSignInLockStatus();
+    }
+
+    // Load initial lock status
+    private loadSignInLockStatus(): void {
+        this.playerService.getSignInLockStatus().subscribe(
+            (status) => {
+                this.isSignInLocked = status;
+            },
+            (error) => {
+                console.error('Error loading sign-in lock status:', error);
+            }
+        );
+    }
+
+    onLockSignInChange(locked: boolean): void {
+        this.playerService.setSignInLockStatus(locked).subscribe(
+            (updatedStatus: boolean) => {
+                this.isSignInLocked = updatedStatus;
+
+                // Show Snackbar Notification
+                const message = updatedStatus
+                    ? 'Sign-in list has been locked.'
+                    : 'Sign-in list has been unlocked.';
+                this.snackBar.open(message, 'Close', {
+                    duration: 3000,
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                });
+            },
+            (error) => {
+                console.error('Error updating sign-in lock status:', error);
+
+                // Error Snackbar
+                this.snackBar.open('Error updating lock status.', 'Close', {
+                    duration: 3000,
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                });
+            }
+        );
     }
 
     loadLeagues() {
@@ -114,6 +169,9 @@ export class SignInComponent implements OnInit {
                 // Update the dataSource with the sorted list
                 this.dataSource.data = [...this.players];
                 this.filteredPlayers = [...this.players];
+
+                // Update gender counts
+                this.updateGenderCounts();
             },
             (error) => {
                 console.error('Error removing player from PlayerSignIn:', error);
@@ -142,18 +200,32 @@ export class SignInComponent implements OnInit {
             .catch((error) => console.error('Error during league selection:', error));
     }
 
+    updateGenderCounts(): void {
+        const signedInPlayers = this.signedInDataSource.data;
+        this.maleCount = signedInPlayers.filter((player: Player) => player.gender === 'Male').length;
+        this.femaleCount = signedInPlayers.filter((player: Player) => player.gender === 'Female').length;
+    }
+
     loadSignedInPlayers(): Promise<void> {
         return new Promise((resolve, reject) => {
             const today = new Date().toISOString().split('T')[0]; // Get current date without time
 
             this.playerService.getSignedInPlayers(this.selectedLeague.id, today).subscribe(
                 (signedInPlayers) => {
+                    signedInPlayers.sort((a, b) => {
+                        if (a.firstName.toLowerCase() < b.firstName.toLowerCase()) return -1;
+                        if (a.firstName.toLowerCase() > b.firstName.toLowerCase()) return 1;
+                        return 0;
+                    });
                     this.playerSignIn = signedInPlayers;
                     this.signedInDataSource.data = [...this.playerSignIn];
                     const signedInPlayerIds = this.playerSignIn.map(player => player.playerId);
                     this.players = this.players.filter(player => !signedInPlayerIds.includes(player.id));
                     this.dataSource.data = [...this.players];
                     this.filteredPlayers = [...this.players];
+
+
+                    this.updateGenderCounts();
                     resolve(); // Resolve the promise when signed-in players are loaded
                 },
                 (error) => {
@@ -191,7 +263,15 @@ export class SignInComponent implements OnInit {
                     gender: result.gender
                 });
 
+                this.playerSignIn.sort((a, b) => {
+                    if (a.firstName.toLowerCase() < b.firstName.toLowerCase()) return -1;
+                    if (a.firstName.toLowerCase() > b.firstName.toLowerCase()) return 1;
+                    return 0;
+                });
+
                 this.signedInDataSource.data = [...this.playerSignIn]; // Update the dataSource
+
+                this.updateGenderCounts();
             },
             (error) => console.error('Error signing in player:', error)
         );

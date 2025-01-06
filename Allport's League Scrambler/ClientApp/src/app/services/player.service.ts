@@ -34,6 +34,13 @@ export class PlayerService {
         return this.httpClient.get<Player[]>(`${this.baseUrl}api/ScrambleData/GetPlayerByFirstLastName`, { params });
     }
 
+    public getSignInLockStatus(): Observable<boolean> {
+        return this.httpClient.get<boolean>(`${this.baseUrl}api/Login/GetLockSignInStatus`);
+    }
+
+    public setSignInLockStatus(locked: boolean): Observable<boolean> {
+        return this.httpClient.post<boolean>(`${this.baseUrl}api/Login/SetLockSignInStatus`, { locked });
+    }
 
     public GetLeagues() {
         return this.httpClient.get<Leagues[]>(this.baseUrl + 'api/ScrambleData/GetLeagues');
@@ -209,13 +216,24 @@ export class PlayerService {
     }
 
     public signInPlayer(playerSignIn: PlayerSignIn): Observable<any> {
-        console.log('playersignin', playerSignIn);
         return this.httpClient.post<PlayerSignIn>(this.baseUrl + 'api/ScrambleData/SignInPlayer', playerSignIn);
     }
 
     public deleteSignInPlayer(playerSignInId: number): Observable<void> {
         return this.httpClient.delete<void>(this.baseUrl + `api/ScrambleData/SignInPlayer/${playerSignInId}`);
-}
+    }
+
+    generateScramble(
+        leagueName: string,
+        request: KingQueenTeamsResponse
+    ): Observable<KingQueenTeam[]> {
+        const url = `${this.baseUrl}api/ScrambleData/GenerateScramble/${leagueName}`;
+        const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+
+        // Because the endpoint returns List<KingQueenTeam>,
+        // we expect an array of KingQueenTeam in the response.
+        return this.httpClient.post<KingQueenTeam[]>(url, request, { headers });
+    }
 }
 
 

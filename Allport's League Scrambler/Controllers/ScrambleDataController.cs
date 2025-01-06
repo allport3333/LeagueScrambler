@@ -218,7 +218,7 @@ namespace Allport_s_League_Scrambler.Controllers
             var context = new DataContext();
             var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
             var kingQueenTeamsDistinct = context.KingQueenTeam
-                .Where(x => x.LeagueID == league.ID)
+                .Where(x => x.LeagueID == league.ID && x.ScrambleWithScoresToBeSaved == true)
                 .GroupBy(x => x.ScrambleNumber)
                 .Select(g => g.First())
                 .ToList();
@@ -432,7 +432,7 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             var context = new DataContext();
             // Fetch the KingQueenTeam and include its players
-            var team = context.KingQueenTeam
+            var team = context.KingQueenTeam.Where(x => x.ScrambleWithScoresToBeSaved == true)
                 .Include(t => t.KingQueenPlayers) // Ensure players are included in the result
                 .FirstOrDefault(t => t.Id == teamId);
 
@@ -451,96 +451,167 @@ namespace Allport_s_League_Scrambler.Controllers
             return Ok(team); // Return the team details
         }
 
+        [HttpPost("GenerateScramble/{leagueName}")]
+        public IActionResult GenerateScramble([FromBody] KingQueenTeamsResponse request, string leagueName)
+        {
+            using (var context = new DataContext())
+            {
+                // 1) Check that the league exists
+                var existingLeague = context.Leagues
+                    .FirstOrDefault(x => x.LeagueName == leagueName);
+
+                if (existingLeague == null)
+                {
+                    return NotFound("League does not exist.");
+                }
+
+                var leagueId = existingLeague.ID;
+
+                // 2) Determine next ScrambleNumber (if that's how you want to group these new teams)
+                var scrambleNumber = context.KingQueenTeam
+                    .Where(kt => kt.LeagueID == leagueId)
+                    .Select(kt => kt.ScrambleNumber)
+                    .DefaultIfEmpty(0)
+                    .Max() + 1;
+
+                // 3) Prepare a list to hold the newly created teams
+                var createdTeams = new List<KingQueenTeam>();
+
+                // 4) Loop through each KingQueenTeamWithPlayers in the request
+                foreach (var teamWithPlayers in request.KingQueenTeams)
+                {
+                    // Create a new KingQueenTeam record (one per item in KingQueenTeams)
+                    var newTeam = new KingQueenTeam
+                    {
+                        LeagueID = leagueId,
+                        DateOfTeam = DateTime.Now,                
+                        ScrambleNumber = scrambleNumber,
+                        ScrambleWithScoresToBeSaved = false       
+                    };
+
+                    // Add and save the team so we can get its ID
+                    context.KingQueenTeam.Add(newTeam);
+                    context.SaveChanges();
+
+                    // Keep track of all created teams
+                    createdTeams.Add(newTeam);
+                }
+                return Ok(createdTeams);
+            }
+        }
+
+
+
 
         [HttpPost("[action]/{leagueName}")]
         public KingQueenTeamsResponse SaveKingQueenTeams([FromBody] KingQueenTeamsResponse request, string leagueName)
         {
-            var context = new DataContext();
-            var existingLeague = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
-
-            if (existingLeague == null)
+            using (var context = new DataContext())
             {
-                return null; // Return null if league doesn't exist
-            }
-
-            var currentDate = DateTime.Now;
-            var leagueId = existingLeague.ID;
-
-            var results = new List<KingQueenTeamWithPlayers>();
-            var scrambleNumber = context.KingQueenTeam
-                .Where(kt => kt.LeagueID == leagueId)
-                .Select(kt => kt.ScrambleNumber)
-                .DefaultIfEmpty(0)
-                .Max() + 1;
-
-            var savedByePlayers = new List<Player>();
-
-            // Process and save KingQueenTeams
-            foreach (var team in request.KingQueenTeams)
-            {
-                var newTeam = new KingQueenTeam
+                var existingLeague = context.Leagues
+                    .FirstOrDefault(x => x.LeagueName == leagueName);
+                if (existingLeague == null)
                 {
-                    LeagueID = leagueId,
-                    DateOfTeam = currentDate,
-                    ScrambleNumber = scrambleNumber,
-                    KingQueenPlayers = new List<KingQueenPlayer>() // Ensure it is not null
-                };
+                    return null;
+                }
 
-                context.KingQueenTeam.Add(newTeam);
-                context.SaveChanges();
+                var leagueId = existingLeague.ID;
 
-                foreach (var player in team.Players)
+                // 1) Find the highest ScrambleNumber for unscrambled teams:
+                var latestScrambleNumber = context.KingQueenTeam
+                    .Where(kt => kt.LeagueID == leagueId && kt.ScrambleWithScoresToBeSaved == false)
+                    .Select(kt => kt.ScrambleNumber)
+                    .DefaultIfEmpty(0)
+                    .Max();
+
+                // If 0, it means none exist, or everything is already true
+                if (latestScrambleNumber == 0)
                 {
-                    var newKingQueenPlayer = new KingQueenPlayer
-                    {
-                        KingQueenTeamId = newTeam.Id,
-                        PlayerId = player.Id,
-                        isSubScore = newTeam.KingQueenPlayers?.Where(x => x.PlayerId == player.Id)
-                      .FirstOrDefault()?.isSubScore ?? false
-                };
-                    context.KingQueenPlayer.Add(newKingQueenPlayer);
+                    return null; // or handle "nothing to finalize"
+                }
+
+                // 2) Get all teams for that scramble number
+                var teamsToFinalize = context.KingQueenTeam
+                    .Where(kt => kt.LeagueID == leagueId
+                              && kt.ScrambleWithScoresToBeSaved == false
+                              && kt.ScrambleNumber == latestScrambleNumber)
+                    .OrderBy(kt => kt.Id) // or some order
+                    .ToList();
+
+                if (teamsToFinalize.Count == 0)
+                {
+                    return null;
+                }
+
+                // 3) Mark them as finalized
+                foreach (var team in teamsToFinalize)
+                {
+                    team.ScrambleWithScoresToBeSaved = true;
                 }
                 context.SaveChanges();
 
-                results.Add(new KingQueenTeamWithPlayers
+                // 4) If request.KingQueenTeams has the same count, 
+                //    attach the players in the same index order:
+                var results = new List<KingQueenTeamWithPlayers>();
+                for (int i = 0; i < teamsToFinalize.Count && i < request.KingQueenTeams.Count; i++)
                 {
-                    KingQueenTeam = newTeam,
-                    Players = team.Players
-                });
-            }
+                    var dbTeam = teamsToFinalize[i];
+                    var reqTeam = request.KingQueenTeams[i];
 
-            var newByeRound = new ByeRounds
-            {
-                LeagueID = leagueId,
-                DateOfRound = DateTime.Now,
-                ScrambleNumber = scrambleNumber
-            };
-            context.ByeRounds.Add(newByeRound);
-            context.SaveChanges(); // Save the ByeRound to generate its Id
+                    // Insert KingQueenPlayers for each player in reqTeam
+                    foreach (var player in reqTeam.Players)
+                    {
+                        var newKingQueenPlayer = new KingQueenPlayer
+                        {
+                            KingQueenTeamId = dbTeam.Id,
+                            PlayerId = player.Id,
+                            isSubScore = false  // or set properly
+                        };
+                        context.KingQueenPlayer.Add(newKingQueenPlayer);
+                    }
+                    context.SaveChanges();
 
-            // Process and save ByePlayers
-            foreach (var player in request.ByePlayers)
-            {
-                var newByePlayer = new ByePlayer
+                    // Build the result item
+                    results.Add(new KingQueenTeamWithPlayers
+                    {
+                        KingQueenTeam = dbTeam,
+                        Players = reqTeam.Players
+                    });
+                }
+
+                // 5) Create a new ByeRounds record
+                var newByeRound = new ByeRounds
                 {
-                    ByeRoundId = newByeRound.Id,
-                    PlayerId = player.Id
+                    LeagueID = leagueId,
+                    DateOfRound = DateTime.Now,
+                    ScrambleNumber = latestScrambleNumber
                 };
-                context.ByePlayer.Add(newByePlayer);
+                context.ByeRounds.Add(newByeRound);
                 context.SaveChanges();
 
-                savedByePlayers.Add(player);
+                // 6) Insert all ByePlayers
+                var savedByePlayers = new List<Player>();
+                foreach (var player in request.ByePlayers)
+                {
+                    var newByePlayer = new ByePlayer
+                    {
+                        ByeRoundId = newByeRound.Id,
+                        PlayerId = player.Id
+                    };
+                    context.ByePlayer.Add(newByePlayer);
+                    context.SaveChanges();
+
+                    savedByePlayers.Add(player);
+                }
+
+                // 7) Return
+                return new KingQueenTeamsResponse
+                {
+                    KingQueenTeams = results,
+                    ByePlayers = savedByePlayers
+                };
             }
-
-            // Return the combined response
-            return new KingQueenTeamsResponse
-            {
-                KingQueenTeams = results,
-                ByePlayers = savedByePlayers
-            };
         }
-
-
 
 
         [HttpGet("[action]/{leagueName}/{scrambleNumber}")]
@@ -566,7 +637,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 .Include(t => t.KingQueenPlayers)
                 .Where(t =>
                     t.LeagueID == leagueId &&
-                    t.ScrambleNumber == scrambleNumber)
+                    t.ScrambleNumber == scrambleNumber && t.ScrambleWithScoresToBeSaved == true)
                 .ToList();
 
             foreach (var kingQueenTeam in kingQueenTeams)
@@ -681,7 +752,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 // Retrieve the latest scramble number for the league
                 var leagueId = scores.First().LeagueId;
                 var latestScrambleNumber = await context.KingQueenTeam
-                    .Where(t => t.LeagueID == leagueId)
+                    .Where(t => t.LeagueID == leagueId && t.ScrambleWithScoresToBeSaved == true)
                     .OrderByDescending(t => t.ScrambleNumber)
                     .Select(t => t.ScrambleNumber)
                     .FirstOrDefaultAsync();
@@ -696,7 +767,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     }
 
                     // Get or create KingQueenTeam
-                    var team = await context.KingQueenTeam
+                    var team = await context.KingQueenTeam.Where(t => t.ScrambleWithScoresToBeSaved == true)
                         .Include(t => t.KingQueenPlayers)
                         .Include(t => t.KingQueenRoundScores)
                         .FirstOrDefaultAsync(t => t.Id == teamScore.KingQueenTeamId);
@@ -709,7 +780,8 @@ namespace Allport_s_League_Scrambler.Controllers
                             DateOfTeam = DateTime.Parse(teamScore.Date),
                             ScrambleNumber = teamScore.ScrambleNumber,
                             KingQueenPlayers = new List<KingQueenPlayer>(),
-                            KingQueenRoundScores = new List<KingQueenRoundScores>()
+                            KingQueenRoundScores = new List<KingQueenRoundScores>(),
+                            ScrambleWithScoresToBeSaved = true
                         };
                         await context.KingQueenTeam.AddAsync(team);
                     }
@@ -717,7 +789,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     await context.SaveChangesAsync(); // Save to generate the KingQueenTeam ID
 
                     // Refresh the team from the database to ensure it's up-to-date
-                    team = await context.KingQueenTeam
+                    team = await context.KingQueenTeam.Where(t => t.ScrambleWithScoresToBeSaved == true)
                         .Include(t => t.KingQueenPlayers)
                         .Include(t => t.KingQueenRoundScores)
                         .FirstOrDefaultAsync(t => t.Id == team.Id);
@@ -739,7 +811,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     await context.SaveChangesAsync(); // Save after updating players
 
                     // Refresh the team again
-                    team = await context.KingQueenTeam
+                    team = await context.KingQueenTeam.Where(t => t.ScrambleWithScoresToBeSaved == true)
                         .Include(t => t.KingQueenPlayers)
                         .Include(t => t.KingQueenRoundScores)
                         .FirstOrDefaultAsync(t => t.Id == team.Id);
@@ -807,7 +879,7 @@ namespace Allport_s_League_Scrambler.Controllers
             var context = new DataContext();
 
             var teams = await context.KingQueenTeam
-                .Where(t => t.LeagueID == leagueId && t.ScrambleNumber == scrambleNumber)
+                .Where(t => t.LeagueID == leagueId && t.ScrambleNumber == scrambleNumber && t.ScrambleWithScoresToBeSaved == true)
                 .Include(t => t.KingQueenPlayers)
                 .ThenInclude(p => p.Player)
                 .Select(t => new
@@ -835,7 +907,7 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             var context = new DataContext();
             var scrambleNumbers = context.KingQueenTeam
-                .Where(t => t.LeagueID == leagueId)
+                .Where(t => t.LeagueID == leagueId && t.ScrambleWithScoresToBeSaved == true)
                 .Select(t => t.ScrambleNumber)
                 .Distinct()
                 .OrderBy(n => n)
@@ -940,7 +1012,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             // Step 2: Retrieve KingQueenTeams for the league
             var kingQueenTeams = await context.KingQueenTeam
-                .Where(team => team.LeagueID == leagueId)
+                .Where(team => team.LeagueID == leagueId && team.ScrambleWithScoresToBeSaved == true)
                 .Include(team => team.KingQueenRoundScores) // Include round scores to validate rounds
                 .Include(team => team.KingQueenPlayers)
                 .ThenInclude(player => player.Player)
@@ -1034,7 +1106,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             // Step 2: Retrieve KingQueenTeams for the league
             var kingQueenTeams = await context.KingQueenTeam
-                .Where(team => team.LeagueID == leagueId)
+                .Where(team => team.LeagueID == leagueId && team.ScrambleWithScoresToBeSaved == true)
                 .Include(team => team.KingQueenRoundScores) // Include round scores
                 .Include(team => team.KingQueenPlayers)
                 .ThenInclude(player => player.Player)
@@ -1223,7 +1295,7 @@ namespace Allport_s_League_Scrambler.Controllers
             var kingQueenTeams = context.KingQueenTeam
                 .Where(t =>
                     t.LeagueID == leagueId &&
-                    scrambleNumbers.Contains(t.ScrambleNumber))
+                    scrambleNumbers.Contains(t.ScrambleNumber) && t.ScrambleWithScoresToBeSaved == true)
                 .ToList();
 
             foreach (var kingQueenTeam in kingQueenTeams)

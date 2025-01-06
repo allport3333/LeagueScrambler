@@ -21,6 +21,7 @@ import { KingQueenRoundScoresRequest } from '../data-models/kingQueenRoundScores
 import { PlayerScoreGroup, PlayerScoresResponse } from '../data-models/playerScoresResponse';
 import { KingQueenPlayer } from '../data-models/kingQueenPlayer.model';
 import { LeagueService } from '../services/league.service';
+import { KingQueenTeamsResponse } from '../data-models/kingQueenTeamsResponse';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
@@ -172,7 +173,7 @@ export class ScramblerComponent implements OnInit {
 
     }
 
-    
+
 
 
     toggleTeamSorting(): void {
@@ -2727,13 +2728,46 @@ export class ScramblerComponent implements OnInit {
             else {
                 this.locked = false;
             }
-            //if (this.hideInputOptions == false) {
-            //    this.hideOptions();
-            //}
             if (this.saveTeamsDiv) {
                 // Set focus on the div element
                 this.saveTeamsDiv.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
                 this.saveTeamsDiv.nativeElement.focus();
+            }
+
+
+            const requestBody: KingQueenTeamsResponse = {
+                kingQueenTeams: this.listOfTeams.map(team => {
+                    return {
+                        kingQueenTeam: {
+                            id: 0,
+                            leagueID: 0,
+                            dateOfTeam: new Date(),            // or new Date().toISOString()
+                            kingQueenPlayers: [],
+                            scrambleNumber: 0,                 // Will be assigned by server
+                            scrambleWithScoresToBeSaved: false,
+                            kingQueenRoundScores: []
+                        },
+                        players: team.players // The array of players for this "team"
+                    };
+                }),
+                byePlayers: [] // If you have no ByePlayers right now, just keep it empty
+            };
+
+            // 2) Call generateScramble
+            try {
+                const createdTeams: KingQueenTeam[] = await this.playerService
+                    .generateScramble(this.selectedLeague, requestBody)
+                    .toPromise();
+
+                if (createdTeams && createdTeams.length > 0) {
+                    // The server returns an array of newly created KingQueenTeams
+                    this.scrambleNumber = createdTeams[0].scrambleNumber;
+                    console.log('Scramble saved successfully! Scramble # =', this.scrambleNumber);
+                } else {
+                    console.error('Error: No teams returned from server');
+                }
+            } catch (error) {
+                console.error('Error generating scramble:', error);
             }
         }
     }
