@@ -1157,7 +1157,7 @@
                     <div class="row justify-content-center align-items-center">
 
                         <!-- LEFT TEAM (Team i) -->
-                        <div class="col-4" *ngIf="listOfTeams[i]">
+                        <div class="col-5" *ngIf="listOfTeams[i]">
                             <table class="table">
                                 <thead>
                                     <!-- Team Title -->
@@ -1228,14 +1228,14 @@
                         </div>
 
                         <!-- MIDDLE: Court + VS (only if i+1 exists) -->
-                        <div class="col-2 text-center" *ngIf="listOfTeams[i+1]">
+                        <div class="col-1 text-center" *ngIf="listOfTeams[i+1] && !isSmallScreen">
                             <h4 style="font-size: 18px;">Court</h4>
                             <input style="width: 35px; height: 35px; font-size: 20px;" type="text" />
                             <h4 style="font-size: 20px; margin-top: 8px;">VS</h4>
                         </div>
 
                         <!-- RIGHT TEAM (Team i+1) -->
-                        <div class="col-4" *ngIf="listOfTeams[i+1]">
+                        <div class="col-5" *ngIf="listOfTeams[i+1]">
                             <table class="table">
                                 <thead>
                                     <tr>
@@ -1315,7 +1315,7 @@
                     <div class="row justify-content-center align-items-center">
 
                         <!-- LEFT TEAM (Team i+2) -->
-                        <div class="col-4" *ngIf="listOfTeams[i+2]">
+                        <div class="col-5" *ngIf="listOfTeams[i+2]">
                             <table class="table">
                                 <thead>
                                     <tr>
@@ -1385,14 +1385,14 @@
                         </div>
 
                         <!-- MIDDLE: Court + VS (only if i+3 exists) -->
-                        <div class="col-2 text-center" *ngIf="listOfTeams[i+3]">
+                        <div class="col-1 text-center" *ngIf="listOfTeams[i+3] && !isSmallScreen">
                             <h4 style="font-size: 18px;">Court</h4>
                             <input style="width: 35px; height: 35px; font-size: 20px;" type="text" />
                             <h4 style="font-size: 20px; margin-top: 8px;">VS</h4>
                         </div>
 
                         <!-- RIGHT TEAM (Team i+3) -->
-                        <div class="col-4" *ngIf="listOfTeams[i+3]">
+                        <div class="col-5" *ngIf="listOfTeams[i+3]">
                             <table class="table">
                                 <thead>
                                     <tr>
