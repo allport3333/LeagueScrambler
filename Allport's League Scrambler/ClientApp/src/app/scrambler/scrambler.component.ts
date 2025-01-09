@@ -1816,7 +1816,7 @@ export class ScramblerComponent implements OnInit {
 
         // Call the API to persist the change
         this.playerService.updateKingQueenPlayerSubStatus(kingQueenTeamId, playerId, isSub).subscribe({
-            next: () => console.log('Sub status updated successfully'),
+            next: () => console.log(''),
             error: (err) => console.error('Error updating sub status:', err)
         });
     }
@@ -2762,7 +2762,6 @@ export class ScramblerComponent implements OnInit {
                 if (createdTeams && createdTeams.length > 0) {
                     // The server returns an array of newly created KingQueenTeams
                     this.scrambleNumber = createdTeams[0].scrambleNumber;
-                    console.log('Scramble saved successfully! Scramble # =', this.scrambleNumber);
                 } else {
                     console.error('Error: No teams returned from server');
                 }

@@ -65,7 +65,6 @@ export class LeagueService {
 
     // Set the selected league globally
     setSelectedLeague(leagueId: number) {
-        console.log('setSelectedLeague called with leagueId:', leagueId);
 
         if (!this.leaguesAvailable || this.leaguesAvailable.length === 0) {
             console.error('leaguesAvailable is not initialized or empty');
@@ -73,14 +72,8 @@ export class LeagueService {
         }
 
         const selectedLeague = this.leaguesAvailable.find((league) => league.id === leagueId);
-        console.log('Found selectedLeague:', selectedLeague);
-
         if (selectedLeague) {
             this.selectedLeagueSource.next({
-                leagueId: selectedLeague.id,
-                leagueName: selectedLeague.leagueName,
-            });
-            console.log('selectedLeagueSource updated:', {
                 leagueId: selectedLeague.id,
                 leagueName: selectedLeague.leagueName,
             });

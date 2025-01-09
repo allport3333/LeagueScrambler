@@ -115,7 +115,6 @@ export class HomeComponent implements OnInit {
                             // Select the first league
                             const firstLeague = leagues[0];
                             this.leagueService.setSelectedLeague(firstLeague.id);
-                            console.log('First league selected:', firstLeague.leagueName);
 
                             // Navigate based on the role
                             if (userRole === 'Player') {
@@ -365,7 +364,6 @@ export class HomeComponent implements OnInit {
         this.selectedPlayer = player;
         this.searchTerm = `${player.firstName} ${player.lastName}`; // Display the selected player in the input
         this.filteredPlayers = []; // Clear the dropdown
-        console.log('Selected player:', player);
         this.claimPlayer(player);
     }
 

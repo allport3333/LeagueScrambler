@@ -35,15 +35,11 @@ export class DetailedPlayerStatsComponent implements OnInit {
     constructor(private statisticsService: StatisticsService, public leagueService: LeagueService, private route: ActivatedRoute) { }
 
     onSortDebug(event: any) {
-        console.log('Sort triggered:', event);
-        console.log('Current data:', this.dataSource.data);
     }
 
     ngAfterViewInit() {
         this.dataSource.sort = this.sort;
 
-        console.log('Sort applied:', this.dataSource.sort);
-        console.log('Teammate counts:', this.dataSource.data);
     }
 
     ngOnInit() {

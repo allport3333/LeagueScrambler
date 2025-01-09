@@ -82,7 +82,6 @@ export class NavMenuComponent implements OnInit {
             this.selectedLeagueId = leagueId; // Update the selected league ID
             this.selectedLeagueName = selectedLeague.leagueName; // Update the name to display
             this.leagueService.setSelectedLeague(leagueId); // Update globally
-            console.log('Selected league updated:', this.selectedLeagueName);
         } else {
             console.error('League not found with ID:', leagueId);
         }

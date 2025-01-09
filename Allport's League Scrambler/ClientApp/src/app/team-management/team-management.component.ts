@@ -57,7 +57,6 @@ export class TeamManagementComponent implements OnInit {
         if (changes['leagueId']) {
             const leagueId = changes['leagueId'].currentValue;
             if (leagueId) {
-                console.log('League ID changed:', leagueId);
                 this.loadTeams();
                 this.loadAllPlayers();
             }
@@ -67,12 +66,10 @@ export class TeamManagementComponent implements OnInit {
     private loadTeams(): void {
         if (!this.leagueId) return;
 
-        console.log('Loading teams for leagueId:', this.leagueId);
         this.loadingData = true;
 
         this.statisticsService.GetTeamsByLeagueId(this.leagueId).subscribe({
             next: (res) => {
-                console.log('Teams loaded:', res);
                 this.teams = res;
                 this.loadingData = false;
             },
@@ -86,10 +83,8 @@ export class TeamManagementComponent implements OnInit {
     private loadAllPlayers(): void {
         if (!this.leagueId) return;
 
-        console.log('Loading players for leagueId:', this.leagueId);
         this.playerService.GetPlayersByLeague(this.leagueId).subscribe({
             next: (players) => {
-                console.log('Players loaded:', players);
                 this.allPlayers = players;
                 this.filteredPlayers = [...players];
             },
@@ -126,7 +121,6 @@ export class TeamManagementComponent implements OnInit {
 
     onSelectPlayer(player: Player) {
         this.selectedPlayer = player;
-        console.log('Selected player:', this.selectedPlayer);
     }
 
     // *** SEARCH/TYPEAHEAD FOR PLAYERS ***

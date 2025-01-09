@@ -152,7 +152,6 @@ export class LeagueStandingsComponent implements OnInit {
 
     private async awaitSettingsAndInitialize(): Promise<void> {
         await this.initializeSettings(); // Wait for settings initialization
-        this.initializeStandings(); // Load standings after settings
     }
 
 
@@ -281,6 +280,12 @@ export class LeagueStandingsComponent implements OnInit {
                         totalWins,
                         totalScoreBeforeReduction,
                     };
+                }).sort((a, b) => {
+                    // Sort by total wins descending, then by total score descending
+                    if (b.totalWins !== a.totalWins) {
+                        return b.totalWins - a.totalWins;
+                    }
+                    return b.totalScore - a.totalScore;
                 });
 
             this.maleStandings = transformStandings(this.maleStandings);
