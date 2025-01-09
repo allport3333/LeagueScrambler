@@ -1,0 +1,41 @@
+mat-card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+    mat-card:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+h2,
+h3 {
+    font-family: 'Arial', sans-serif;
+    margin-bottom: 10px;
+}
+
+p {
+    font-family: 'Verdana', sans-serif;
+}
+
+.mat-spinner {
+    margin: auto;
+}
+
+ng-deep .mat-tab-label {
+    min-width: 50px; /* Adjust to your preference */
+    max-width: 80px; /* Adjust to your preference */
+    font-size: 12px; /* Smaller font size */
+    text-align: center;
+    padding: 4px 8px; /* Less padding for compact look */
+}
+
+ng-deep .mat-tab-header {
+    justify-content: center; /* Center the tabs */
+    overflow-x: auto; /* Allow horizontal scrolling */
+}
+
+ng-deep .mat-tab-header-pagination {
+    display: none; /* Hide pagination arrows for cleaner look */
+}

@@ -2,34 +2,35 @@
     <h2 class="ml-4">Loading...</h2>
     <mat-spinner diameter="200"></mat-spinner>
 </div>
+
 <div class="row" *ngIf="!loading">
     <div class="col-2">
-
-        <mat-card class=" mt-2 " style="background-color:lightgray; ">
+        <mat-card class="mt-2" style="background-color: lightgray;">
             <h4>Select League</h4>
             <mat-form-field>
                 <mat-label>League</mat-label>
-                <mat-select style="min-width:210px;" [(ngModel)]="selectedLeague" [(value)]="league" (selectionChange)="getTeams(selectedLeague)">
+                <mat-select style="min-width:210px;"
+                            [(ngModel)]="selectedLeague"
+                            (selectionChange)="getTeams(selectedLeague)">
                     <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
-                        {{league.leagueName}}
+                        {{ league.leagueName }}
                     </mat-option>
                 </mat-select>
             </mat-form-field>
         </mat-card>
-
     </div>
 
     <div class="col-10">
-        <mat-card class=" ml-3 mt-2 " style="background-color:lightgray; ">
+        <mat-card class="ml-3 mt-2" style="background-color: lightgray;">
             <mat-tab-group>
+                <!-- TAB 1: Team Scores (Total Wins/Losses) -->
                 <mat-tab label="Team Scores">
-                    <table *ngIf="teams != null" class='table' style="max-width:600px;">
+                    <table *ngIf="teams != null" class="table" style="max-width:600px;">
                         <thead>
                             <tr>
                                 <th>Team Name</th>
                                 <th>Total Wins</th>
                                 <th>Total Losses</th>
-
                             </tr>
                         </thead>
                         <tbody>
@@ -37,181 +38,213 @@
                                 <td>{{ singleTeam.teamName }}</td>
                                 <td>{{ singleTeam.totalWins }}</td>
                                 <td>{{ singleTeam.totalLosses }}</td>
-
                             </tr>
                         </tbody>
                     </table>
                 </mat-tab>
+
+                <!-- TAB 2: Individual Team Scores (Now shows new fields) -->
                 <mat-tab label="Individual Team Scores">
-                    <div style="margin-top:20px;">
+                    <div style="margin-top: 20px;">
                         <mat-form-field>
                             <input matInput [matDatepicker]="picker" placeholder="Choose a date" [(ngModel)]="initialDate">
                             <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
                             <mat-datepicker #picker></mat-datepicker>
                         </mat-form-field>
+                        <button class="ml-2" (click)="getTeamScores()" mat-raised-button color="primary">
+                            Get Dates Scores
+                        </button>
 
-                        <button class="ml-2" (click)="getTeamScores()" mat-raised-button color="primary">Get Dates Scores</button>
-
-                        <table *ngIf="teamScores != null" class='table' style="max-width:650px;">
+                        <!-- Display the new LEAGUETEAMSCOREDTO fields -->
+                        <table *ngIf="teamScores != null" class="table" style="max-width:650px;">
                             <thead>
                                 <tr>
-                                    <th>Team 1 Name</th>
-                                    <th>Team 1 Score</th>
-                                    <th>Team 2 Name</th>
-                                    <th>Team 2 Score</th>
+                                    <th>ID</th>
+                                    <th>Team Id</th>
+                                    <th>Opponents Team Id</th>
+                                    <th>Team Score</th>
+                                    <th>Won Game?</th>
                                     <th>Date</th>
-
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr *ngFor="let score of teamScores">
-                                    <td>{{ score.team1Name }}</td>
-                                    <td>{{ score.team1Score }}</td>
-                                    <td>{{ score.team2Name }}</td>
-                                    <td>{{ score.team2Score }}</td>
+                                    <td>{{ score.id }}</td>
+                                    <td>{{ score.teamId }}</td>
+                                    <td>{{ score.opponentsTeamId }}</td>
+                                    <td>{{ score.teamScore }}</td>
+                                    <td>{{ score.wonGame ? 'Yes' : 'No' }}</td>
                                     <td>{{ score.date | date }}</td>
-
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </mat-tab>
-                <div>
 
-                    <mat-tab label="Enter Team Scores">
-                        <div class="container-fluid">
+                <!-- TAB 3: Enter Team Scores -->
+                <mat-tab label="Enter Team Scores">
+                    <div class="container-fluid">
+                        <div [hidden]="!newTeamScoreLoading"
+                             style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; margin-top: -200px;">
+                            <h2 class="ml-4">Loading...</h2>
+                            <mat-spinner diameter="200"></mat-spinner>
+                        </div>
 
-                            <div [hidden]="!newTeamScoreLoading" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; margin-top: -200px;">
-                                <h2 class="ml-4">Loading...</h2>
-                                <mat-spinner diameter="200"></mat-spinner>
+                        <div [hidden]="newTeamScoreLoading">
+                            <h4 style="margin-top: 20px;">Enter Team Scores</h4>
+
+                            <div class="row">
+                                <div class="col-3">
+                                    <h6>Team 1</h6>
+                                    <mat-form-field>
+                                        <mat-label>Team 1 Name:</mat-label>
+                                        <mat-select [(ngModel)]="selectedTeam1">
+                                            <mat-option *ngFor="let team1 of teams" [value]="team1">
+                                                {{ team1.teamName }}
+                                            </mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                                <div class="col-3">
+                                    <h6>Team 2</h6>
+                                    <mat-form-field>
+                                        <mat-label>Team 2 Name:</mat-label>
+                                        <mat-select [(ngModel)]="selectedTeam2">
+                                            <mat-option *ngFor="let team2 of teams" [value]="team2">
+                                                {{ team2.teamName }}
+                                            </mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
                             </div>
-                            <div [hidden]="newTeamScoreLoading">
 
-
-                                <h4 style="margin-top:20px">Enter Team Scores</h4>
-
-
+                            <form [formGroup]="TeamScoresForm" (ngSubmit)="onSubmitClick()">
                                 <div class="row">
+                                    <!-- LEFT Column: Team1 Scores, Date, Submit button -->
                                     <div class="col-3">
-                                        <h6>Team 1</h6>
-                                        <mat-form-field>
-                                            <mat-label>Team 1 Name:</mat-label>
-                                            <mat-select [(ngModel)]="selectedTeam1">
-                                                <mat-option *ngFor="let team1 of teams" [value]="team1">
-                                                    {{team1.teamName}}
-                                                </mat-option>
-                                            </mat-select>
+                                        <mat-form-field style="max-width:220px" appearance="outline">
+                                            <mat-label>Team 1 Game 1 Score:</mat-label>
+                                            <input matInput
+                                                   placeholder="Team 1 Score"
+                                                   type="number"
+                                                   formControlName="team1Score" />
                                         </mat-form-field>
+                                        <mat-form-field style="max-width:220px" appearance="outline">
+                                            <mat-label>Team 1 Game 2 Score:</mat-label>
+                                            <input matInput
+                                                   placeholder="Team 1 Score"
+                                                   type="number"
+                                                   formControlName="team1Score1" />
+                                        </mat-form-field>
+                                        <mat-form-field style="max-width:220px" appearance="outline">
+                                            <mat-label>Team 1 Game 3 Score:</mat-label>
+                                            <input matInput
+                                                   placeholder="Team 1 Score"
+                                                   type="number"
+                                                   formControlName="team1Score2" />
+                                        </mat-form-field>
+                                        <mat-form-field style="max-width:220px" appearance="outline">
+                                            <mat-label>Team 1 Game 4 Score:</mat-label>
+                                            <input matInput
+                                                   placeholder="Team 1 Score"
+                                                   type="number"
+                                                   formControlName="team1Score3" />
+                                        </mat-form-field>
+                                        <mat-form-field style="max-width:220px" appearance="outline">
+                                            <mat-label>Team 1 Game 5 Score:</mat-label>
+                                            <input matInput
+                                                   placeholder="Team 1 Score"
+                                                   type="number"
+                                                   formControlName="team1Score4" />
+                                        </mat-form-field>
+                                        <mat-form-field style="max-width:220px" appearance="outline">
+                                            <mat-label>Date: MM/DD/YYYY</mat-label>
+                                            <input matInput
+                                                   placeholder="Date"
+                                                   type="datetime"
+                                                   formControlName="date"
+                                                   required />
+                                        </mat-form-field>
+                                        <br />
+                                        <button mat-raised-button color="primary">Submit</button><br /><br />
                                     </div>
+
+                                    <!-- RIGHT Column: Team2 Scores, password -->
                                     <div class="col-3">
-                                        <h6>Team 2</h6>
-                                        <mat-form-field>
-                                            <mat-label>Team 2 Name:</mat-label>
-                                            <mat-select [(ngModel)]="selectedTeam2">
-                                                <mat-option *ngFor="let team2 of teams" [value]="team2">
-                                                    {{team2.teamName}}
-                                                </mat-option>
-                                            </mat-select>
+                                        <mat-form-field style="max-width:220px" appearance="outline">
+                                            <mat-label>Team 2 Game 1 Score:</mat-label>
+                                            <input matInput
+                                                   placeholder="Team 2 Score"
+                                                   type="number"
+                                                   formControlName="team2Score" />
                                         </mat-form-field>
+                                        <mat-form-field style="max-width:220px" appearance="outline">
+                                            <mat-label>Team 2 Game 2 Score:</mat-label>
+                                            <input matInput
+                                                   placeholder="Team 2 Score"
+                                                   type="number"
+                                                   formControlName="team2Score1" />
+                                        </mat-form-field>
+                                        <mat-form-field style="max-width:220px" appearance="outline">
+                                            <mat-label>Team 2 Game 3 Score:</mat-label>
+                                            <input matInput
+                                                   placeholder="Team 2 Score"
+                                                   type="number"
+                                                   formControlName="team2Score2" />
+                                        </mat-form-field>
+                                        <mat-form-field style="max-width:220px" appearance="outline">
+                                            <mat-label>Team 2 Game 4 Score:</mat-label>
+                                            <input matInput
+                                                   placeholder="Team 2 Score"
+                                                   type="number"
+                                                   formControlName="team2Score3" />
+                                        </mat-form-field>
+                                        <mat-form-field style="max-width:220px" appearance="outline">
+                                            <mat-label>Team 2 Game 5 Score:</mat-label>
+                                            <input matInput
+                                                   placeholder="Team 2 Score"
+                                                   type="number"
+                                                   formControlName="team2Score4" />
+                                        </mat-form-field>
+                                        <mat-form-field>
+                                            <mat-label>Password</mat-label>
+                                            <input matInput
+                                                   placeholder="Password"
+                                                   type="password"
+                                                   formControlName="password"
+                                                   required />
+                                        </mat-form-field>
+                                        <br />
                                     </div>
                                 </div>
-                                <form [formGroup]="TeamScoresForm" (ngSubmit)="onSubmitClick()">
-                                    <div class="row">
-                                        <div class="col-3">
-                                            <mat-form-field style="max-width:220px" appearance="outline">
-                                                <mat-label>Team 1 Game 1 Score:</mat-label>
-                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team1Score" value="{{teamScores?.team1Score}}"  />
-                                            </mat-form-field>
-                                            <mat-form-field style="max-width:220px" appearance="outline">
-                                                <mat-label>Team 1 Game 2 Score:</mat-label>
-                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team1Score1" value="{{teamScores?.team1Score1}}"  />
-                                            </mat-form-field>
-                                            <mat-form-field style="max-width:220px" appearance="outline">
-                                                <mat-label>Team 1 Game 3 Score:</mat-label>
-                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team1Score2" value="{{teamScores?.team1Score2}}"  />
-                                            </mat-form-field>
-                                            <mat-form-field style="max-width:220px" appearance="outline">
-                                                <mat-label>Team 1 Game 4 Score:</mat-label>
-                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team1Score3" value="{{teamScores?.team1Score3}}"  />
-                                            </mat-form-field>
-                                            <mat-form-field style="max-width:220px" appearance="outline">
-                                                <mat-label>Team 1 Game 5 Score:</mat-label>
-                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team1Score4" value="{{teamScores?.team1Score4}}"  />
-                                            </mat-form-field>
-                                            <mat-form-field style="max-width:220px" appearance="outline">
-                                                <mat-label>Date: MM/DD/YYYY</mat-label>
-                                                <input matInput placeholder="Date" type="datetime" formControlName="date" value="{{teamScores?.date}}" required />
-                                            </mat-form-field>
-                                            <br />
-                                            <button mat-raised-button color="primary">Submit</button><br /><br />
-                                        </div>
-                                        <div class="col-3">
-                                            <mat-form-field style="max-width:220px" appearance="outline">
-                                                <mat-label>Team 2 Game 1 Score:</mat-label>
-                                                <input matInput placeholder="Team 2 Score" type="number" formControlName="team2Score" value="{{teamScores?.team2Score}}"  />
-                                            </mat-form-field>
-                                            <mat-form-field style="max-width:220px" appearance="outline">
-                                                <mat-label>Team 2 Game 2 Score:</mat-label>
-                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team2Score1" value="{{teamScores?.team2Score1}}"  />
-                                            </mat-form-field>
-                                            <mat-form-field style="max-width:220px" appearance="outline">
-                                                <mat-label>Team 2 Game 3 Score:</mat-label>
-                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team2Score2" value="{{teamScores?.team2Score2}}"  />
-                                            </mat-form-field>
-                                            <mat-form-field style="max-width:220px" appearance="outline">
-                                                <mat-label>Team 2 Game 4 Score:</mat-label>
-                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team2Score3" value="{{teamScores?.team2Score3}}"  />
-                                            </mat-form-field>
-                                            <mat-form-field style="max-width:220px" appearance="outline">
-                                                <mat-label>Team 2 Game 5 Score:</mat-label>
-                                                <input matInput placeholder="Team 1 Score" type="number" formControlName="team2Score4" value="{{teamScores?.team2Score4}}"  />
-                                            </mat-form-field>
-                                            <mat-form-field>
-                                                <mat-label>Password</mat-label>
-                                                <input matInput placeholder="Password" type="password" formControlName="password" value="{{password.password}}" required />
-                                            </mat-form-field>
-                                            <br />
+                            </form>
 
-                                        </div>
-                                        <br />
-
-                                    </div>
-
-
-                                </form>
-                                <button style="float:right; margin-top:-50px" (click)="updateScores()" mat-raised-button color="primary">Update Scores</button>
-                                <br />
-                                <!--<button style="float:right; margin-top:-30px" (click)="showScoresEntry()" mat-raised-button color="primary">Add Additional Scores</button>-->
-                            </div>
+                            <button style="float:right; margin-top:-50px" (click)="updateScores()" mat-raised-button color="primary">
+                                Update Scores
+                            </button>
+                            <br />
                         </div>
-                    </mat-tab>>
+                    </div>
+                </mat-tab>
 
-                </div>
-                <div>
-                    <mat-tab label="Add Team">
-
-                        <h4 style="margin-top:20px;">Add Team</h4>
-
-                        <form [formGroup]="NewTeamForm">
-                            <mat-form-field style="max-width:180px" appearance="outline">
-                                <mat-label>New Team Name</mat-label>
-                                <input matInput placeholder="Team Name" type="text" formControlName="newTeamName" required />
-                            </mat-form-field>
-                            <br />
-                            <mat-form-field style="margin-top:-20px;">
-                                <mat-label>Password</mat-label>
-                                <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
-                            </mat-form-field>
-                            <br />
-                            <button (click)="addTeam()" mat-raised-button color="primary">Add Team</button>
-                        </form>
-
-                    </mat-tab>
-                </div>
-
+                <!-- TAB 4: Add Team -->
+                <mat-tab label="Add Team">
+                    <h4 style="margin-top:20px;">Add Team</h4>
+                    <form [formGroup]="NewTeamForm">
+                        <mat-form-field style="max-width:180px" appearance="outline">
+                            <mat-label>New Team Name</mat-label>
+                            <input matInput placeholder="Team Name" type="text" formControlName="newTeamName" required />
+                        </mat-form-field>
+                        <br />
+                        <mat-form-field style="margin-top:-20px;">
+                            <mat-label>Password</mat-label>
+                            <input matInput placeholder="Password" type="password" formControlName="password" required />
+                        </mat-form-field>
+                        <br />
+                        <button (click)="addTeam()" mat-raised-button color="primary">Add Team</button>
+                    </form>
+                </mat-tab>
             </mat-tab-group>
         </mat-card>
     </div>
-
-
 </div>

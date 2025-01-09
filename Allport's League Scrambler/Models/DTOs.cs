@@ -33,4 +33,21 @@ namespace Allport_s_League_Scrambler.Models
         public bool IsMale { get; set; }
     }
 
+    public class TeamWithPlayersDto
+    {
+        public int Id { get; set; }
+        public string TeamName { get; set; }
+        public int TotalWins { get; set; }
+        public int TotalLosses { get; set; }
+
+        public List<PlayerDtoFullName> Players { get; set; }
+    }
+
+    public class PlayerDtoFullName
+    {
+        public int Id { get; set; }
+        public string FullName { get; set; }
+        public bool IsMale { get; set; }
+    }
+
 }

@@ -1,0 +1,27 @@
+<div class="container" style="margin-top: 20px; text-align: center;">
+    <h2>League Dashboard</h2>
+
+    <p *ngIf="selectedLeagueId">
+        ({{ selectedLeagueName }})
+    </p>
+
+    <div style="display: flex; justify-content: center; margin-top: 20px;">
+        <mat-tab-group style="width: 100%; max-width: 1200px;" mat-align-tabs="center">
+            <!-- TAB #1: Schedule -->
+            <mat-tab label="Schedule">
+                <app-league-schedule [leagueId]="selectedLeagueId" style="width: 100%;"></app-league-schedule>
+            </mat-tab>
+
+            <!-- TAB #2: League Teams -->
+            <mat-tab label="League Teams">
+                <app-league-teams [leagueId]="selectedLeagueId" style="width: 100%;"></app-league-teams>
+            </mat-tab>
+
+            <!-- TAB #3: Team Management (only if user is admin or manager) -->
+            <mat-tab *ngIf="isAdminOrManager" label="Team Management">
+                <app-team-management [leagueId]="selectedLeagueId" style="width: 100%;"></app-team-management>
+            </mat-tab>
+        </mat-tab-group>
+    </div>
+
+</div>

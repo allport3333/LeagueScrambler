@@ -4,14 +4,16 @@ using Allport_s_League_Scrambler.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Allport_s_League_Scrambler.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250109010349_UpdateLeagueTeamModel3")]
+    partial class UpdateLeagueTeamModel3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -116,35 +118,6 @@ namespace Allport_s_League_Scrambler.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("KingQueenTeam","dbo");
-                });
-
-            modelBuilder.Entity("Allport_s_League_Scrambler.Models.LeagueSchedule", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<DateTime>("Date");
-
-                    b.Property<int>("LeagueId");
-
-                    b.Property<string>("MatchDescription");
-
-                    b.Property<int>("Team1Id");
-
-                    b.Property<int>("Team2Id");
-
-                    b.Property<int>("WeekNumber");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LeagueId");
-
-                    b.HasIndex("Team1Id");
-
-                    b.HasIndex("Team2Id");
-
-                    b.ToTable("LeagueSchedule");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.LeagueSettings", b =>
@@ -473,24 +446,6 @@ namespace Allport_s_League_Scrambler.Migrations
                         .WithMany("KingQueenRoundScores")
                         .HasForeignKey("KingQueenTeamId")
                         .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Allport_s_League_Scrambler.Models.LeagueSchedule", b =>
-                {
-                    b.HasOne("Allport_s_League_Scrambler.Models.LeagueType", "League")
-                        .WithMany()
-                        .HasForeignKey("LeagueId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Allport_s_League_Scrambler.Models.LeagueTeam", "Team1")
-                        .WithMany()
-                        .HasForeignKey("Team1Id")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Allport_s_League_Scrambler.Models.LeagueTeam", "Team2")
-                        .WithMany()
-                        .HasForeignKey("Team2Id")
-                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.LeagueSettings", b =>

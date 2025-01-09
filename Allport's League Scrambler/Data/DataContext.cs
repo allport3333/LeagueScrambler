@@ -17,7 +17,6 @@ namespace Allport_s_League_Scrambler.Data
         public virtual DbSet<Password> Passwords { get; set; }
         public virtual DbSet<PlayerScore> PlayerScore { get; set; }
         public virtual DbSet<LeagueTeam> LeagueTeam { get; set; }
-        public virtual DbSet<TeamScore> TeamScore { get; set; }
         public virtual DbSet<KingQueenTeam> KingQueenTeam { get; set; }
         public virtual DbSet<KingQueenPlayer> KingQueenPlayer { get; set; }
         public virtual DbSet<User> Users { get; set; }
@@ -29,6 +28,9 @@ namespace Allport_s_League_Scrambler.Data
         public virtual DbSet<KingQueenRoundScores> KingQueenRoundScores { get; set; }
         public virtual DbSet<UserRoles> UserRoles { get; set; }
         public virtual DbSet<UsersPlayer> UsersPlayer { get; set; }
+        public virtual DbSet<LeagueTeamScore> LeagueTeamScore { get; set; }
+        public virtual DbSet<LeagueTeamPlayer> LeagueTeamPlayer { get; set; }
+        public virtual DbSet<LeagueSchedule> LeagueSchedule { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -50,7 +52,35 @@ namespace Allport_s_League_Scrambler.Data
             modelBuilder.Entity<Password>().ToTable("Password", "dbo");
             modelBuilder.Entity<PlayerScore>().ToTable("PlayerScore", "dbo");
             modelBuilder.Entity<LeagueTeam>().ToTable("LeagueTeam", "dbo");
-            modelBuilder.Entity<TeamScore>().ToTable("TeamScore", "dbo");
+            modelBuilder.Entity<LeagueSchedule>()
+                .HasOne(ls => ls.Team1)
+                .WithMany()
+                .HasForeignKey(ls => ls.Team1Id)
+                .OnDelete(DeleteBehavior.Restrict); // Keep cascade for Team1Id
+
+            modelBuilder.Entity<LeagueSchedule>()
+                .HasOne(ls => ls.Team2)
+                .WithMany()
+                .HasForeignKey(ls => ls.Team2Id)
+                .OnDelete(DeleteBehavior.Restrict); // Restrict or No Action for Team2Id
+
+            modelBuilder.Entity<LeagueSchedule>()
+                .HasOne(ls => ls.League)
+                .WithMany()
+                .HasForeignKey(ls => ls.LeagueId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<LeagueTeamScore>()
+                .HasOne(lt => lt.LeagueTeam)
+                .WithMany()
+                .HasForeignKey(lt => lt.LeagueTeamId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<LeagueTeamScore>()
+                .HasOne(lt => lt.OpponentsTeam)
+                .WithMany() // or .WithMany(...)
+                .HasForeignKey(lt => lt.OpponentsLeagueTeamId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<LeagueTeamPlayer>().ToTable("LeagueTeamPlayer", "dbo");
             modelBuilder.Entity<KingQueenPlayer>().ToTable("KingQueenPlayer", "dbo");
             modelBuilder.Entity<KingQueenTeam>().ToTable("KingQueenTeam", "dbo");
             modelBuilder.Entity<User>().ToTable("User", "dbo");

@@ -47,6 +47,7 @@
 
   <ItemGroup>
     <None Remove="ClientApp\src\app\auth.service.ts" />
+    <None Remove="ClientApp\src\app\data-models\leagueTeamScore.model.ts" />
     <None Remove="ClientApp\src\app\data-models\leagueTeamScores.model.ts" />
     <None Remove="ClientApp\src\app\data-models\playerInformation.ts" />
     <None Remove="ClientApp\src\app\data-models\playerScores.model.ts" />
@@ -65,6 +66,9 @@
 
   <ItemGroup>
     <TypeScriptCompile Include="ClientApp\src\app\auth.service.ts" />
+    <TypeScriptCompile Include="ClientApp\src\app\data-models\leagueTeamScore.model.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
     <TypeScriptCompile Include="ClientApp\src\app\data-models\playerInformation.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>

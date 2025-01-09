@@ -7,5 +7,5 @@ export interface LeagueTeams {
     totalWins: number;
     totalLosses: number;
     leagueID: number;
-
+    division: string;
 }

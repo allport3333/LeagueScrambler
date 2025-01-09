@@ -5,14 +5,13 @@ using System.Threading.Tasks;
 
 namespace Allport_s_League_Scrambler.Models
 {
-    public class TeamScore
+    public class LeagueTeamScoreDto
     {
         public int Id { get; set; }
-        public int Team1ID { get; set; }
-        public int Team2ID { get; set; }
-        public int Team1Score { get; set; }
-        public int Team2Score { get; set; }
+        public int TeamId { get; set; }
+        public int OpponentsTeamId { get; set; }
+        public int TeamScore { get; set; }
+        public bool WonGame { get; set; }
         public DateTime Date { get; set; }
-
     }
 }

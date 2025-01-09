@@ -35,66 +35,93 @@ namespace Allport_s_League_Scrambler.Controllers
             return teams;
         }
 
-        [HttpPost("[action]")]
-        public List<TeamScore> AddScore([FromBody] List<TeamScore> teamScore)
+        [HttpGet("[action]/{leagueId}")]
+        public List<LeagueTeam> GetTeamsByLeagueId(int leagueId)
         {
+            List<LeagueTeam> teams = new List<LeagueTeam>();
             var context = new DataContext();
-            List<TeamScore> teamScoresAdded = new List<TeamScore>();
-            foreach (var score in teamScore)
+            try
             {
-                var newScore = new TeamScore()
-                {
-                    Date = score.Date,
-                    Team1ID = score.Team1ID,
-                    Team2ID = score.Team2ID,
-                    Team1Score = score.Team1Score,
-                    Team2Score = score.Team2Score
-                };
-                teamScoresAdded.Add(newScore);
-                context.TeamScore.Add(newScore);
+                teams = context.LeagueTeam.Where(x => x.LeagueID == leagueId).ToList();
+            }
+            catch (Exception)
+            {
+
+                return teams;
             }
 
-            context.SaveChanges();
 
-            return teamScoresAdded;
+
+            return teams;
         }
+
+        [HttpPost("[action]")]
+        public IActionResult RecordLeagueTeamScore([FromBody] LeagueTeamScoreDto dto)
+        {
+            var _context = new DataContext();
+            // Make sure the "Team" and "OpponentTeam" actually exist:
+            var mainTeam = _context.LeagueTeam.FirstOrDefault(t => t.Id == dto.TeamId);
+            var oppTeam = _context.LeagueTeam.FirstOrDefault(t => t.Id == dto.OpponentsTeamId);
+            if (mainTeam == null || oppTeam == null)
+            {
+                return BadRequest("Either the main team or the opponent team was not found.");
+            }
+
+            var newScore = new LeagueTeamScore
+            {
+                LeagueTeamId = dto.TeamId,
+                OpponentsLeagueTeamId = dto.OpponentsTeamId,
+                TeamScore = dto.TeamScore,
+                WonGame = dto.WonGame,
+                Date = dto.Date, // or DateTime.Now if you want the current time
+                LeagueTeam = mainTeam,
+                OpponentsTeam = oppTeam
+            };
+
+            _context.LeagueTeamScore.Add(newScore);
+            _context.SaveChanges();
+
+            return Ok(newScore);
+        }
+
 
         [HttpGet("[action]/{leagueName}")]
         public List<LeagueTeam> UpdateTeamScores(string leagueName)
         {
-            var context = new DataContext();
-            var teams = new List<LeagueTeam>();
-            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
-            teams = context.LeagueTeam.Where(x => x.LeagueID == league.ID).ToList();
-
-            foreach (var team in teams)
+            var _context = new DataContext();
+            var league = _context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
+            if (league == null)
             {
-                var teamScores1 = new List<TeamScore>();
-                teamScores1 = context.TeamScore.Where(x => x.Team1ID == team.Id && x.Team1Score == 15).ToList();
-                var teamScores2 = new List<TeamScore>();
-                teamScores2 = context.TeamScore.Where(x => x.Team2ID == team.Id && x.Team2Score == 15).ToList();
-                var totalWins = teamScores1.Count();
-                totalWins = totalWins + teamScores2.Count(); ;
-
-                var teamScoresLosses1 = new List<TeamScore>();
-                teamScoresLosses1 = context.TeamScore.Where(x => x.Team1ID == team.Id && x.Team1Score != 15).ToList();
-                var teamScoresLosses2 = new List<TeamScore>();
-                teamScoresLosses2 = context.TeamScore.Where(x => x.Team2ID == team.Id && x.Team2Score != 15).ToList();
-                var totalLosses = teamScoresLosses1.Count();
-                totalLosses = totalLosses + teamScoresLosses2.Count();
-
-                var leagueTeam = context.LeagueTeam.Where(x => x.Id == team.Id).FirstOrDefault();
-                leagueTeam.TotalWins = totalWins;
-                leagueTeam.TotalLosses = totalLosses;
-                context.LeagueTeam.Update(leagueTeam);
-                context.SaveChanges();
+                return new List<LeagueTeam>();
             }
 
-            var updatedTeams = GetTeams(league.LeagueName);
+            var teams = _context.LeagueTeam
+                .Where(x => x.LeagueID == league.ID)
+                .ToList();
 
-            context.SaveChanges();
+            // For each team, count how many times they have "WonGame" = true
+            foreach (var team in teams)
+            {
+                var winsAsMain = _context.LeagueTeamScore
+                    .Count(s => s.LeagueTeamId == team.Id && s.WonGame == true);
+
+                var lossesAsMain = _context.LeagueTeamScore
+                    .Count(s => s.LeagueTeamId == team.Id && s.WonGame == false);
+
+                team.TotalWins = winsAsMain;
+                team.TotalLosses = lossesAsMain;
+
+                _context.LeagueTeam.Update(team);
+                _context.SaveChanges();
+            }
+
+            var updatedTeams = _context.LeagueTeam
+                .Where(x => x.LeagueID == league.ID)
+                .ToList();
+
             return updatedTeams;
         }
+
 
         [HttpGet("[action]/{leagueID}")]
         public List<PlayerInformation> GetPlayers(int leagueID)
@@ -132,128 +159,224 @@ namespace Allport_s_League_Scrambler.Controllers
             return playerInformation;
         }
 
-        [HttpPost("[action]")]
-        public LeagueTeam AddTeam([FromBody] NewCreatedTeam newCreatedTeam)
+        [HttpGet("GetLeagueSchedule/{leagueId}")]
+        public IActionResult GetLeagueSchedule(int leagueId)
         {
-            var context = new DataContext();
-            var newTeam = new LeagueTeam();
-            if (newCreatedTeam.LeagueName != null)
+            using (var _context = new DataContext())
             {
-                var league = context.Leagues.Where(x => x.LeagueName == newCreatedTeam.LeagueName).FirstOrDefault();
-                var teamExists = context.LeagueTeam.Where(x => x.TeamName == newCreatedTeam.TeamName && x.LeagueID == league.ID).FirstOrDefault();
-
-                if (teamExists == null)
-                {
-                    newTeam = new LeagueTeam()
+                var schedule = _context.LeagueSchedule
+                    .Where(s => s.LeagueId == leagueId)
+                    .GroupBy(s => new { s.WeekNumber, s.Date })
+                    .Select(g => new
                     {
-                        TeamName = newCreatedTeam.TeamName,
-                        TotalLosses = 0,
-                        TotalWins = 0,
-                        LeagueID = league.ID
-                    };
+                        WeekNumber = g.Key.WeekNumber,
+                        Date = g.Key.Date,
+                        Matches = g.Select(m => new
+                        {
+                            Team1Name = _context.LeagueTeam.FirstOrDefault(t => t.Id == m.Team1Id).TeamName,
+                            Team2Name = _context.LeagueTeam.FirstOrDefault(t => t.Id == m.Team2Id).TeamName,
+                            MatchDescription = m.MatchDescription
+                        }).ToList()
+                    })
+                    .ToList();
 
-
-                    context.LeagueTeam.Add(newTeam);
-                    context.SaveChanges();
-
-                    return newTeam;
-
-                }
-                else
-                {
-                    return newTeam;
-                }
+                return Ok(schedule);
             }
-            else
+        }
+
+
+        [HttpGet("GetAllTeamsWithPlayers/{leagueId}")]
+        public List<TeamWithPlayersDto> GetAllTeamsWithPlayers(int leagueId)
+        {
+            using (var _context = new DataContext())
             {
-                return newTeam;
+                // 1) Grab all teams in the specified league
+                var leagueTeams = _context.LeagueTeam
+                    .Where(t => t.LeagueID == leagueId)
+                    .ToList();
+
+                // 2) For each team, find its players by looking up LeagueTeamPlayer
+                var results = leagueTeams
+                    .Select(team => new TeamWithPlayersDto
+                    {
+                        Id = team.Id,
+                        TeamName = team.TeamName,
+                        TotalWins = team.TotalWins,
+                        TotalLosses = team.TotalLosses,
+
+                        // 3) Query LeagueTeamPlayer to get players for this specific team
+                        Players = _context.LeagueTeamPlayer
+                            .Where(ltp => ltp.LeagueTeamId == team.Id)
+                            .Select(ltp => new PlayerDtoFullName
+                            {
+                                Id = ltp.Player.Id,
+                                FullName = ltp.Player.FirstName + " " + ltp.Player.LastName,
+                                IsMale = ltp.Player.IsMale
+                            })
+                            .ToList()
+                    })
+                    .ToList();
+
+                return results;
             }
+        }
+
+
+
+        [HttpPost("AddPlayerToLeagueTeam")]
+        public IActionResult AddPlayerToLeagueTeam(int leagueTeamId, int playerId)
+        {
+            using (var _context = new DataContext())
+            {
+                var leagueTeam = _context.LeagueTeam.FirstOrDefault(t => t.Id == leagueTeamId);
+                var player = _context.Players.FirstOrDefault(p => p.Id == playerId);
+
+                if (leagueTeam == null || player == null)
+                    return BadRequest("LeagueTeam or Player not found.");
+
+                // Check if the player is already on the team
+                var exists = _context.LeagueTeamPlayer
+                    .Any(ltp => ltp.LeagueTeamId == leagueTeamId && ltp.PlayerId == playerId);
+                if (exists)
+                    return BadRequest("Player is already on that team.");
+
+                // Add the player to the team
+                var newRow = new LeagueTeamPlayer
+                {
+                    LeagueTeamId = leagueTeamId,
+                    PlayerId = playerId
+                };
+                _context.LeagueTeamPlayer.Add(newRow);
+                _context.SaveChanges();
+
+                return Ok(new { message = $"Added player {playerId} to team {leagueTeamId} successfully." });
+            }
+        }
+
+
+
+        [HttpPost("AddTeam")]
+        public IActionResult AddTeam([FromBody] AddTeamRequest request)
+        {
+            var _context = new DataContext();
+            // Basic checks
+            var league = _context.Leagues.FirstOrDefault(x => x.ID == request.LeagueId);
+            if (league == null)
+                return BadRequest("League not found.");
+
+            // Create new LeagueTeam
+            var newTeam = new LeagueTeam
+            {
+                LeagueID = request.LeagueId,
+                TeamName = request.TeamName,
+                Division = request.Division ?? "", // e.g. "Silver" or "Gold"
+                TotalWins = 0,
+                TotalLosses = 0
+            };
+
+            _context.LeagueTeam.Add(newTeam);
+            _context.SaveChanges();
+
+            // Return the newly created row (with its ID)
+            return Ok(newTeam);
 
         }
+
+
+        // The request body for creating a team
+        public class AddTeamRequest
+        {
+            public int LeagueId { get; set; }
+            public string TeamName { get; set; }
+            public string Division { get; set; }  // e.g. "Silver" or "Gold"
+        }
+
 
         [HttpGet("[action]/{date}/{leagueName}")]
-        public List<LeagueTeamScore> GetTeamScores(string date, string leagueName)
+        public List<LeagueTeamScoreDto> GetTeamScores(string date, string leagueName)
         {
-            var context = new DataContext();
-            var teams = new List<LeagueTeam>();
-            //List<TeamScore> leagueTeamScores = new List<TeamScore>();
-            List<LeagueTeam> leagueTeams = new List<LeagueTeam>();
-            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
-            leagueTeams = context.LeagueTeam.Where(x => x.LeagueID == league.ID).ToList();
-            teams = context.LeagueTeam.Where(x => x.LeagueID == league.ID).ToList();
-            var newDate = DateTime.Parse(date);
-            List<LeagueTeamScore> leagueTeamScores1 = new List<LeagueTeamScore>();
-
-            foreach (var team in teams)
-            {
-                List<TeamScore> teamScores = context.TeamScore.Where(x => x.Team1ID == team.Id && x.Date == newDate).ToList();
-                foreach (var teamScoreSingle in teamScores)
-                {
-                    LeagueTeamScore leagueTeamScore = new LeagueTeamScore();
-                    leagueTeamScore.Team1ID = teamScoreSingle.Team1ID;
-                    leagueTeamScore.Team2ID = teamScoreSingle.Team2ID;
-                    leagueTeamScore.Team1Score = teamScoreSingle.Team1Score;
-                    leagueTeamScore.Team2Score = teamScoreSingle.Team2Score;
-                    leagueTeamScore.Id = teamScoreSingle.Id;
-                    leagueTeamScore.Date = teamScoreSingle.Date;
-                    foreach (var leagueTeam in leagueTeams)
-                    {
-                        if (leagueTeam.Id == teamScoreSingle.Team1ID)
-                        {
-                            leagueTeamScore.Team1Name = leagueTeam.TeamName;
-                        }
-                        if (leagueTeam.Id == teamScoreSingle.Team2ID)
-                        {
-                            leagueTeamScore.Team2Name = leagueTeam.TeamName;
-                        }
-                    }
-                    leagueTeamScores1.Add(leagueTeamScore);
-                }
-
-            }
-
-            return leagueTeamScores1.OrderBy(x => x.Team1Name).ToList();
-        }
-
-        [HttpGet("GetLeagues")]
-        public async Task<IActionResult> GetLeagues()
-        {
-
             var _context = new DataContext();
-            var leagues = await _context.Leagues
-                .Select(l => new { l.ID, l.LeagueName })
-                .ToListAsync();
+            var league = _context.Leagues
+                .FirstOrDefault(x => x.LeagueName == leagueName);
+            if (league == null)
+            {
+                return new List<LeagueTeamScoreDto>();
+            }
 
-            return Ok(leagues);
+            var parsedDate = DateTime.Parse(date);
+
+            var scores = _context.LeagueTeamScore
+                // If you must filter by league, you can do a join or check the team’s leagueID
+                .Where(s => s.Date.Date == parsedDate.Date)
+                .ToList();
+
+            var result = scores.Select(s => new LeagueTeamScoreDto
+            {
+                Id = s.Id,
+                TeamId = s.LeagueTeamId,
+                OpponentsTeamId = s.OpponentsLeagueTeamId,
+                TeamScore = s.TeamScore,
+                WonGame = s.WonGame,
+                Date = s.Date
+            })
+            .ToList();
+
+            return result;
         }
 
-        [HttpGet("GetLeaguesForPlayer")]
-        public async Task<IActionResult> GetLeaguesForPlayer(int playerId)
+        [HttpGet("[action]/{playerId}")]
+        public List<LeagueTeamScoreDto> GetTeamScoresForPlayer(int playerId)
         {
-            if (playerId <= 0)
-            {
-                return BadRequest("Invalid playerId.");
-            }
-
             var _context = new DataContext();
+            // 1) Get all LeagueTeamIds for this player from LeagueTeamPlayer
+            var playerTeamIds = _context.LeagueTeamPlayer
+                    .Where(ltp => ltp.PlayerId == playerId)
+                    .Select(ltp => ltp.LeagueTeamId)
+                    .Distinct()
+                    .ToList();
 
-            var leagues = await (from pl in _context.PlayersLeagues
-                                 join l in _context.Leagues on pl.LeagueID equals l.ID
-                                 where pl.PlayerID == playerId
-                                 select new
-                                 {
-                                     l.ID,
-                                     l.LeagueName
-                                 }).ToListAsync();
-
-            if (leagues == null || !leagues.Any())
+            if (!playerTeamIds.Any())
             {
-                return NotFound($"No leagues found for playerId {playerId}.");
+                // This player isn't on any LeagueTeams
+                return new List<LeagueTeamScoreDto>();
             }
 
-            return Ok(leagues);
+            // 2) Find all LeagueTeamScore rows where the main team or the opponent team
+            //    is one of the player's teams
+            var scores = _context.LeagueTeamScore
+                .Where(s => playerTeamIds.Contains(s.LeagueTeamId))
+                .ToList();
+
+            // 3) Convert to Dto
+            var result = scores.Select(s => new LeagueTeamScoreDto
+            {
+                Id = s.Id,
+                TeamId = s.LeagueTeamId,
+                OpponentsTeamId = s.OpponentsLeagueTeamId,
+                TeamScore = s.TeamScore,
+                WonGame = s.WonGame,
+                Date = s.Date
+            })
+            .ToList();
+
+            return result;
+
         }
 
+        [HttpPost("SetTeamDivision")]
+        public IActionResult SetTeamDivision(int leagueTeamId, string division)
+        {
+            var _context = new DataContext();
+            var team = _context.LeagueTeam.FirstOrDefault(t => t.Id == leagueTeamId);
+            if (team == null)
+                return NotFound("Team not found.");
+
+            team.Division = division; // e.g. "Silver" or "Gold"
+            _context.SaveChanges();
+
+            return Ok($"Team {team.TeamName} updated to division: {division}");
+
+        }
 
         [HttpGet("GetProfile")]
         public async Task<IActionResult> GetProfile(int playerId)

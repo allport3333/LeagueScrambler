@@ -12,5 +12,6 @@ namespace Allport_s_League_Scrambler.Models
         public int TotalWins { get; set; }
         public int TotalLosses { get; set; }
         public int LeagueID { get; set; }
+        public string Division { get; set; } 
     }
 }

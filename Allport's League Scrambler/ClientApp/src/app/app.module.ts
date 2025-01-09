@@ -25,6 +25,10 @@ import { DetailedPlayerStatsComponent } from './detailed-player-stats/detailed-p
 import { SignInComponent } from './sign-in/sign-in.component';
 import { CreateTeamsComponent } from './create-teams/create-teams.component';
 import { LeagueStandingsComponent } from './league-standings/league-standings.component';
+import { LeagueDashboardComponent } from './league-dashboard/league-dashboard.component';
+import { LeagueTeamsComponent } from './league-teams/league-teams.component';
+import { TeamManagementComponent } from './team-management/team-management.component';
+import { LeagueScheduleComponent } from './league-schedule/league-schedule.component';
 
 @NgModule({
     declarations: [
@@ -41,7 +45,11 @@ import { LeagueStandingsComponent } from './league-standings/league-standings.co
         DetailedPlayerStatsComponent,
         SignInComponent,
         CreateTeamsComponent,
-        LeagueStandingsComponent
+        LeagueStandingsComponent,
+        LeagueDashboardComponent,
+        LeagueScheduleComponent,
+        LeagueTeamsComponent,
+        TeamManagementComponent
 
     ],
     imports: [
@@ -88,7 +96,8 @@ import { LeagueStandingsComponent } from './league-standings/league-standings.co
             { path: 'resetpassword', component: ResetPasswordComponent },
             { path: 'player-stats/:id', component: DetailedPlayerStatsComponent },
             { path: 'sign-in', component: SignInComponent },
-            { path: 'standings', component: LeagueStandingsComponent }
+            { path: 'standings', component: LeagueStandingsComponent },
+            { path: 'league-dashboard', component: LeagueDashboardComponent }
         ]),
         BrowserAnimationsModule
     ],

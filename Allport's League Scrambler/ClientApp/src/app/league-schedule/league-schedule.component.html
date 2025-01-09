@@ -1,0 +1,65 @@
+<div *ngIf="loading" style="text-align: center;">
+    <p>Loading schedule...</p>
+    <mat-spinner diameter="50"></mat-spinner>
+</div>
+
+<div *ngIf="!loading && schedule.length > 0">
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h2>League Schedule</h2>
+    </div>
+
+    <!-- Scrollable and compact mat-tabs -->
+    <mat-tab-group [(selectedIndex)]="activeTabIndex"
+                   style="overflow-x: auto; display: block; max-width: 100%; white-space: nowrap;">
+        <mat-tab *ngFor="let week of schedule"
+                 label="Week {{ week.weekNumber }}"
+                 [ngStyle]="{
+                     'min-width': '30px',
+                     'max-width': '80px',
+                     'font-size': '12px',
+                     'text-align': 'center'
+                 }">
+            <div style="margin-top: 20px;">
+                <h3 style="text-align: center;">
+                    Week {{ week.weekNumber }} ({{ week.date | date: 'longDate' }})
+                </h3>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+                    <mat-card *ngFor="let match of week.matches"
+                              style="
+                                  flex: 1 1 calc(33% - 20px);
+                                  min-width: 250px;
+                                  max-width: 300px;
+                                  margin-bottom: 20px;
+                                  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+                                  border-radius: 8px;
+                                  transition: transform 0.2s, box-shadow 0.2s;
+                              "
+                              (mouseenter)="match.hovered = true"
+                              (mouseleave)="match.hovered = false"
+                              [ngStyle]="{
+                                  transform: match.hovered ? 'scale(1.03)' : 'scale(1)',
+                                  boxShadow: match.hovered
+                                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+                                      : '0 2px 6px rgba(0, 0, 0, 0.2)'
+                              }">
+                        <mat-card-header style="text-align: center; display: flex; flex-direction: column;">
+                            <mat-card-title style="text-align: center;">
+                                {{ match.team1Name }}
+                            </mat-card-title>
+                            <mat-card-subtitle style="text-align: center;">
+                                vs
+                            </mat-card-subtitle>
+                            <mat-card-title style="text-align: center;">
+                                {{ match.team2Name }}
+                            </mat-card-title>
+                        </mat-card-header>
+                    </mat-card>
+                </div>
+            </div>
+        </mat-tab>
+    </mat-tab-group>
+</div>
+
+<div *ngIf="!loading && schedule.length === 0" style="text-align: center;">
+    <p>No schedule available for this league.</p>
+</div>

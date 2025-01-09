@@ -54,9 +54,9 @@
                         <span class='fas fa-database'></span> Team Scores
                     </a>
                 </li>
-                <li *ngIf="userRole === 'Admin' || userRole === 'Manager'" class="nav-item" [routerLinkActive]='["link-active"]'>
-                    <a [routerLink]='["/schedule"]' class="nav-link" (click)='collapse()'>
-                        <span class='fas fa-database'></span> League Schedule
+                <li *ngIf="userRole === 'Admin' || userRole === 'Manager' || userRole === 'Player'" class="nav-item" [routerLinkActive]='["link-active"]'>
+                    <a [routerLink]='["/league-dashboard"]' class="nav-link" (click)='collapse()'>
+                        <span class='fas fa-database'></span> League Dashboard
                     </a>
                 </li>
                 <li *ngIf="userRole === 'Admin' || userRole === 'Manager' || userRole === 'Player'" class="nav-item" [routerLinkActive]='["link-active"]'>

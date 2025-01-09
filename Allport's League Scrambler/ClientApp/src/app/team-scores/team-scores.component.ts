@@ -1,17 +1,18 @@
-import { Component, Inject, OnInit, ViewChild } from '@angular/core';
-import { Player } from '../data-models/player.model';
-import { PlayerService } from '../services/player.service';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-import { StatisticsService } from '../services/statistics.service';
-import { Team } from '../data-models/teams.model';
-import { Leagues } from '../data-models/leagues.model';
-import { NewCreatedTeam } from '../data-models/newCreatedTeam.model';
-import { LeagueTeams } from '../data-models/leagueTeams.model';
-import { TeamScores } from '../data-models/teamScores.model';
-import { Password } from '../data-models/password.model';
 import { MatInput } from '@angular/material';
-import { LeagueTeamScores } from '../data-models/leagueTeamScores.model';
+
+import { PlayerService } from '../services/player.service';
+import { StatisticsService } from '../services/statistics.service';
+
+import { Leagues } from '../data-models/leagues.model';
+import { LeagueTeams } from '../data-models/leagueTeams.model';
+import { Password } from '../data-models/password.model';
+import { NewCreatedTeam } from '../data-models/newCreatedTeam.model';
+
+// Our new interface for LEAGUE TEAM SCORES
+import { LeagueTeamScoreDto } from '../data-models/leagueTeamScore.model';
+
 @Component({
     selector: 'app-team-scores',
     templateUrl: './team-scores.component.html',
@@ -19,19 +20,22 @@ import { LeagueTeamScores } from '../data-models/leagueTeamScores.model';
 })
 export class TeamScoresComponent implements OnInit {
     teams: LeagueTeams[];
-    team: LeagueTeams;
-    loading: boolean;
-    leagueID: number = 1;
-    selectedLeague: string;
-    leaguesAvailable: Leagues[];
     selectedTeam1: LeagueTeams;
-    containsTeam: boolean;
     selectedTeam2: LeagueTeams;
-    gameDate: Date;
-    TeamScoresMultiple: TeamScores[];
+    selectedLeague: string;
+
+    leagueID: number = 1;
+    leaguesAvailable: Leagues[];
+    loading: boolean;
     newTeamScoreLoading: boolean;
-    teamScores: LeagueTeamScores[];
-    newTeam: NewCreatedTeam;
+    containsTeam: boolean;
+
+    teamScores: LeagueTeamScoreDto[]; // GET call result
+    gameDate: Date;
+    initialDate = new Date(); // For the datepicker
+    password: Password = { password: '', id: null };
+
+    // The form with multiple "game" score boxes
     TeamScoresForm = new FormGroup({
         team1Score: new FormControl(),
         team2Score: new FormControl(),
@@ -46,206 +50,237 @@ export class TeamScoresComponent implements OnInit {
         date: new FormControl(),
         password: new FormControl()
     });
+
+    // For creating a new team
     NewTeamForm = new FormGroup({
         newTeamName: new FormControl(),
         password: new FormControl()
     });
-    picker: Date;
-    teamName: string;
-    password: Password = {
-        password: '',
-        id: null 
-    };
-    initialDate = new Date();
-    @ViewChild('dateInput', { read: MatInput }) dateInput;
-    constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, public statisticsService: StatisticsService) {
 
+    @ViewChild('dateInput', { read: MatInput }) dateInput;
+
+    constructor(
+        public playerService: PlayerService,
+        public statisticsService: StatisticsService
+    ) {
+        // no-op
     }
+
     ngOnInit() {
         this.loading = true;
         this.newTeamScoreLoading = false;
-        this.playerService.GetLeagues().subscribe(result => {
-            this.leaguesAvailable = result;
-            this.loading = false;
-        }, error => console.error(error));
-    }
 
-    onSubmitClick() {
-        this.playerService.GetPassword().subscribe(result => {
-            this.TeamScoresMultiple = [];
-            this.password = result;
-            if (this.TeamScoresForm.controls["password"].value == "" || this.TeamScoresForm.controls["password"].value != this.password.password) {
-                alert("Password is not correct.")
-            }
-            else {
-                this.newTeamScoreLoading = true;
-
-                if (this.TeamScoresForm.controls["team1Score"].value === null || this.TeamScoresForm.controls["team2Score"].value === null || this.selectedTeam1 == null || this.selectedTeam2 == null
-                    || this.TeamScoresForm.controls["date"].value == "" || this.TeamScoresForm == null) {
-                    alert("Please ensure that all fields are filled out.");
-                    this.newTeamScoreLoading = false;
-                }
-                else {
-                    let newScore: TeamScores = {
-                        id: 0,
-                        team1Score: this.TeamScoresForm.controls["team1Score"].value,
-                        team2Score: this.TeamScoresForm.controls["team2Score"].value,
-                        team1ID: this.selectedTeam1.id,
-                        team2ID: this.selectedTeam2.id,
-                        date: this.TeamScoresForm.controls["date"].value
-                    };
-                    let newScore1: TeamScores = {
-                        id: 0,
-                        team1Score: this.TeamScoresForm.controls["team1Score1"].value,
-                        team2Score: this.TeamScoresForm.controls["team2Score1"].value,
-                        team1ID: this.selectedTeam1.id,
-                        team2ID: this.selectedTeam2.id,
-                        date: this.TeamScoresForm.controls["date"].value
-                    };
-                    let newScore2: TeamScores = {
-                        id: 0,
-                        team1Score: this.TeamScoresForm.controls["team1Score2"].value,
-                        team2Score: this.TeamScoresForm.controls["team2Score2"].value,
-                        team1ID: this.selectedTeam1.id,
-                        team2ID: this.selectedTeam2.id,
-                        date: this.TeamScoresForm.controls["date"].value
-                    };
-                    let newScore3: TeamScores = {
-                        id: 0,
-                        team1Score: this.TeamScoresForm.controls["team1Score3"].value,
-                        team2Score: this.TeamScoresForm.controls["team2Score3"].value,
-                        team1ID: this.selectedTeam1.id,
-                        team2ID: this.selectedTeam2.id,
-                        date: this.TeamScoresForm.controls["date"].value
-                    };
-                    let newScore4: TeamScores = {
-                        id: 0,
-                        team1Score: this.TeamScoresForm.controls["team1Score4"].value,
-                        team2Score: this.TeamScoresForm.controls["team2Score4"].value,
-                        team1ID: this.selectedTeam1.id,
-                        team2ID: this.selectedTeam2.id,
-                        date: this.TeamScoresForm.controls["date"].value
-                    };
-                    this.TeamScoresMultiple.push(newScore);
-                    if (newScore1.team1Score != null && newScore1.team2Score != null) {
-                        this.TeamScoresMultiple.push(newScore1);
-                    };
-                    if (newScore2.team1Score != null && newScore2.team2Score != null) {
-                        this.TeamScoresMultiple.push(newScore2);
-                    };
-                    if (newScore3.team1Score != null && newScore3.team2Score != null) {
-                        this.TeamScoresMultiple.push(newScore3);
-                    };
-                    if (newScore4.team1Score != null && newScore4.team2Score != null) {
-                        this.TeamScoresMultiple.push(newScore4);
-                    };
-                    this.TeamScoresForm = new FormGroup({
-                        team1Score: new FormControl(),
-                        team2Score: new FormControl(),
-                        team1Score1: new FormControl(),
-                        team2Score1: new FormControl(),
-                        team1Score2: new FormControl(),
-                        team2Score2: new FormControl(),
-                        team1Score3: new FormControl(),
-                        team2Score3: new FormControl(),
-                        team1Score4: new FormControl(),
-                        team2Score4: new FormControl(),
-                        date: new FormControl(),
-                        password: new FormControl()
-                    });
-                    
-                    if (this.selectedLeague != null) {
-                        this.statisticsService.AddScore(this.TeamScoresMultiple).subscribe(result => {
-                            var temp = result;
-                            this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe(result => {
-
-                                this.statisticsService.GetTeams(this.selectedLeague).subscribe(result => {
-                                    this.teams = result;
-                                    this.newTeamScoreLoading = false;
-                                    alert('Succesfully added score(s).')
-                                }, error => console.error(error));
-                            }
-                                , error => console.error(error));
-                        });
-                    }
-                    else {
-                        alert("Please Select A League From The Dropdown");
-                    }
-                    this.password.password = '';
-                }
-            }
+        // Load leagues
+        this.playerService.GetLeagues().subscribe({
+            next: (result) => {
+                this.leaguesAvailable = result;
+                this.loading = false;
+            },
+            error: (err) => console.error(err)
         });
     }
 
-    updateScores() {
-        if (this.selectedLeague != null) {
-            this.newTeamScoreLoading = true;
-            this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe(result => {
+    // *** SUBMIT: Called when user enters multiple game scores ***
+    onSubmitClick() {
+        this.playerService.GetPassword().subscribe({
+            next: (result) => {
+                this.password = result;
 
-                this.statisticsService.GetTeams(this.selectedLeague).subscribe(result => {
-                    this.teams = result;
+                if (
+                    !this.TeamScoresForm.controls['password'].value ||
+                    this.TeamScoresForm.controls['password'].value !== this.password.password
+                ) {
+                    alert('Password is not correct.');
+                    return;
+                }
+
+                this.newTeamScoreLoading = true;
+
+                // Basic validation
+                if (
+                    this.TeamScoresForm.controls['team1Score'].value === null ||
+                    this.TeamScoresForm.controls['team2Score'].value === null ||
+                    !this.selectedTeam1 ||
+                    !this.selectedTeam2 ||
+                    !this.TeamScoresForm.controls['date'].value
+                ) {
+                    alert('Please ensure that all required fields are filled out.');
                     this.newTeamScoreLoading = false;
-                    alert('Succesfully updated score.')
-                }, error => console.error(error));
-            }
-                , error => console.error(error));
+                    return;
+                }
 
-        }
-        else {
-            alert("Please Select A League From The Dropdown");
+                // We'll build an array of LeagueTeamScoreDto for ALL the "games" the user typed in
+                let leagueTeamScoresArray: LeagueTeamScoreDto[] = [];
+
+                // Helper function to add a single "game"
+                const addGameRecords = (
+                    team1ScoreControl: string,
+                    team2ScoreControl: string
+                ) => {
+                    const team1Score = this.TeamScoresForm.controls[team1ScoreControl].value;
+                    const team2Score = this.TeamScoresForm.controls[team2ScoreControl].value;
+
+                    // If user didn't fill these in, skip
+                    if (team1Score == null || team2Score == null) return;
+
+                    // 1) Record from Team1's perspective
+                    const recordForTeam1: LeagueTeamScoreDto = {
+                        id: 0,
+                        teamId: this.selectedTeam1.id,
+                        opponentsTeamId: this.selectedTeam2.id,
+                        teamScore: +team1Score,
+                        wonGame: +team1Score === 15, // or whatever your logic is
+                        date: this.TeamScoresForm.controls['date'].value
+                    };
+
+                    // 2) Record from Team2's perspective
+                    const recordForTeam2: LeagueTeamScoreDto = {
+                        id: 0,
+                        teamId: this.selectedTeam2.id,
+                        opponentsTeamId: this.selectedTeam1.id,
+                        teamScore: +team2Score,
+                        wonGame: +team2Score === 15,
+                        date: this.TeamScoresForm.controls['date'].value
+                    };
+
+                    leagueTeamScoresArray.push(recordForTeam1, recordForTeam2);
+                };
+
+                // Collect all "games" the user entered
+                addGameRecords('team1Score', 'team2Score');
+                addGameRecords('team1Score1', 'team2Score1');
+                addGameRecords('team1Score2', 'team2Score2');
+                addGameRecords('team1Score3', 'team2Score3');
+                addGameRecords('team1Score4', 'team2Score4');
+
+                // Reset form
+                this.TeamScoresForm.reset();
+
+                if (this.selectedLeague) {
+
+                    let pendingCalls = leagueTeamScoresArray.length;
+                    if (pendingCalls === 0) {
+                        alert('No valid score entries found.');
+                        this.newTeamScoreLoading = false;
+                        return;
+                    }
+
+                    // We'll insert them one by one, then update scores at the end
+                    leagueTeamScoresArray.forEach((dto, index) => {
+                        this.statisticsService.RecordLeagueTeamScore(dto).subscribe({
+                            next: () => {
+                                pendingCalls--;
+                                if (pendingCalls === 0) {
+                                    // All done inserting, update wins/losses, then get teams
+                                    this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe({
+                                        next: () => {
+                                            this.statisticsService.GetTeams(this.selectedLeague).subscribe({
+                                                next: updatedTeams => {
+                                                    this.teams = updatedTeams;
+                                                    this.newTeamScoreLoading = false;
+                                                    alert('Successfully added score(s).');
+                                                },
+                                                error: err => console.error(err)
+                                            });
+                                        },
+                                        error: err => console.error(err)
+                                    });
+                                }
+                            },
+                            error: err => console.error(err)
+                        });
+                    });
+                } else {
+                    alert('Please Select A League From The Dropdown');
+                    this.newTeamScoreLoading = false;
+                }
+
+                this.password.password = '';
+            },
+            error: (err) => console.error(err)
+        });
+    }
+
+    // *** Update All Scores for the league ***
+    updateScores() {
+        if (this.selectedLeague) {
+            this.newTeamScoreLoading = true;
+            this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe({
+                next: () => {
+                    this.statisticsService.GetTeams(this.selectedLeague).subscribe({
+                        next: result => {
+                            this.teams = result;
+                            this.newTeamScoreLoading = false;
+                            alert('Successfully updated scores.');
+                        },
+                        error: err => console.error(err)
+                    });
+                },
+                error: err => console.error(err)
+            });
+        } else {
+            alert('Please Select A League From The Dropdown');
         }
     }
 
-
-
-
+    // *** GET (READ) the existing scores for a certain date ***
     getTeamScores() {
-        if (this.selectedLeague == null) {
+        if (!this.selectedLeague) {
             alert('Please select a league');
+            return;
         }
-        else {
-            this.gameDate = this.initialDate;
-            this.gameDate.toUTCString();
-            this.statisticsService.GetTeamScores(this.gameDate, this.selectedLeague).subscribe(result => {
+        this.gameDate = this.initialDate;
+        this.statisticsService.GetTeamScores(this.gameDate, this.selectedLeague).subscribe({
+            next: (result) => {
                 this.teamScores = result;
-                
-            });
-
-        }
+            },
+            error: err => console.error(err)
+        });
     }
 
     addTeam() {
-        this.containsTeam = false;
-        this.playerService.GetPassword().subscribe(result => {
-            this.password = result;
-            if (this.NewTeamForm.controls["password"].value == "" || this.NewTeamForm.controls["password"].value != this.password.password) {
-                alert("Password is not correct.")
-            }
-            else {
-                let newTeam: NewCreatedTeam = {
-                    teamName: this.NewTeamForm.controls["newTeamName"].value,
-                    leagueName: this.selectedLeague
+        this.playerService.GetPassword().subscribe({
+            next: (result) => {
+                this.password = result;
+                if (
+                    !this.NewTeamForm.controls['password'].value ||
+                    this.NewTeamForm.controls['password'].value !== this.password.password
+                ) {
+                    alert('Password is not correct.');
+                } else {
+                    const newTeam: NewCreatedTeam = {
+                        teamName: this.NewTeamForm.controls['newTeamName'].value,
+                        leagueName: this.selectedLeague
+                    };
+                    this.statisticsService.AddTeam(newTeam).subscribe({
+                        next: (created) => {
+                            if (created.id === 0) {
+                                alert('Error creating team. Make sure a league is selected.');
+                            } else {
+                                alert(
+                                    newTeam.teamName +
+                                    ' successfully created for league ' +
+                                    newTeam.leagueName +
+                                    '.'
+                                );
+                                this.getTeams();
+                            }
+                        },
+                        error: err => console.error(err)
+                    });
                 }
-
-
-                this.statisticsService.AddTeam(newTeam).subscribe(result => {
-
-                    if (result.id == 0) {
-                        alert('Error creating team. Make sure a league is selected.');
-                    }
-                    else {
-                        alert(newTeam.teamName + ' successfully created for league ' + newTeam.leagueName + '.');
-                        this.getTeams();
-                    }
-
-                }, error => console.error(error));
-            }
+            },
+            error: (err) => console.error(err)
         });
     }
 
     getTeams() {
-        this.statisticsService.GetTeams(this.selectedLeague).subscribe(result => {
-            this.teams = result;
-        }, error => console.error(error));
+        if (!this.selectedLeague) return;
+        this.statisticsService.GetTeams(this.selectedLeague).subscribe({
+            next: result => {
+                this.teams = result;
+            },
+            error: err => console.error(err)
+        });
     }
 }
