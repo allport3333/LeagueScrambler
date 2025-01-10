@@ -55,6 +55,286 @@ namespace Allport_s_League_Scrambler.Controllers
             return teams;
         }
 
+        [HttpGet("league-team-scores/{playerId}/{leagueId}")]
+        public IActionResult GetLeagueTeamScores(int playerId, int leagueId)
+        {
+            var _context = new DataContext();
+
+            // Filter scores for the player's team within the specified league
+            var scores = _context.LeagueTeamScore
+                .Join(
+                    _context.LeagueTeamPlayer,
+                    score => score.LeagueTeamId,
+                    teamPlayer => teamPlayer.LeagueTeamId,
+                    (score, teamPlayer) => new { score, teamPlayer }
+                )
+                .Join(
+                    _context.LeagueTeam,
+                    joined => joined.teamPlayer.LeagueTeamId,
+                    leagueTeam => leagueTeam.Id,
+                    (joined, leagueTeam) => new { joined.score, joined.teamPlayer, leagueTeam }
+                )
+                .Where(joined =>
+                    joined.leagueTeam.LeagueID == leagueId && // Match league
+                    joined.score.LeagueTeamId == joined.leagueTeam.Id && // Match team
+                    joined.teamPlayer.PlayerId == playerId) // Match player
+                .GroupBy(joined => joined.score.Id) // Group by unique score ID to eliminate duplicates
+                .Select(group => new
+                {
+                    Date = group.FirstOrDefault().score.Date,
+                    OpponentTeam = _context.LeagueTeam
+                        .Where(t => t.Id == group.FirstOrDefault().score.OpponentsLeagueTeamId)
+                        .Select(t => t.TeamName)
+                        .FirstOrDefault(),
+                    TeamScore = group.FirstOrDefault().score.TeamScore,
+                    WonGame = group.FirstOrDefault().score.WonGame
+                })
+                .ToList();
+
+            return Ok(scores);
+        }
+
+        [HttpGet("league-standings/{leagueId}")]
+        public IActionResult GetLeagueStandings(int leagueId)
+        {
+            var _context = new DataContext();
+
+            // Get standings for the league
+            var standings = _context.LeagueTeam
+                .Where(lt => lt.LeagueID == leagueId)
+                .Select(team => new
+                {
+                    TeamName = team.TeamName,
+                    Division = team.Division,
+                    Wins = _context.LeagueTeamScore
+                        .Where(score => score.LeagueTeamId == team.Id && score.WonGame)
+                        .Count(),
+                    Losses = _context.LeagueTeamScore
+                        .Where(score => score.LeagueTeamId == team.Id && !score.WonGame)
+                        .Count(),
+                    TotalPoints = _context.LeagueTeamScore
+                        .Where(score => score.LeagueTeamId == team.Id)
+                        .Sum(score => score.TeamScore)
+                })
+                .ToList();
+
+            return Ok(standings);
+        }
+
+
+
+        [HttpGet("combined-stats/{playerId}/{leagueId}")]
+        public IActionResult GetCombinedStats(int playerId, int leagueId)
+        {
+            var _context = new DataContext();
+
+            // Get all scores for the player's team within the specified league
+            var scores = _context.LeagueTeamScore
+                .Join(
+                    _context.LeagueTeamPlayer,
+                    score => score.LeagueTeamId,
+                    teamPlayer => teamPlayer.LeagueTeamId,
+                    (score, teamPlayer) => new { score, teamPlayer }
+                )
+                .Join(
+                    _context.LeagueTeam,
+                    joined => joined.teamPlayer.LeagueTeamId,
+                    leagueTeam => leagueTeam.Id,
+                    (joined, leagueTeam) => new { joined.score, joined.teamPlayer, leagueTeam }
+                )
+                .Where(joined => joined.teamPlayer.PlayerId == playerId && joined.leagueTeam.LeagueID == leagueId)
+                .Select(joined => new
+                {
+                    Score = joined.score,
+                    TeamPlayer = joined.teamPlayer,
+                    LeagueTeam = joined.leagueTeam
+                })
+                .ToList();
+
+            if (!scores.Any())
+            {
+                return Ok(new
+                {
+                    totalScores = 0,
+                    totalWins = 0,
+                    totalGames = 0,
+                    winPercentage = 0,
+                    averageScore = 0,
+                    highestScore = 0,
+                    lowestScore = 0,
+                    longestWinStreak = 0,
+                    longestLossStreak = 0,
+                    totalOpponents = 0,
+                    opponentStats = new List<object>(),
+                    leagueStats = new List<object>(),
+                    teammateStats = new List<object>()
+                });
+            }
+
+
+
+            int? leagueTeamId = null;
+
+            if (scores != null && scores.Count > 0 && scores[0].Score != null)
+            {
+                leagueTeamId = scores[0].Score.LeagueTeamId;
+            }
+
+            // Log or handle cases where opponentsLeagueTeamId is null
+            if (leagueTeamId == null)
+            {
+                Console.WriteLine("OpponentsLeagueTeamId is null. Ensure scores contain valid data.");
+            }
+
+            var distinctOpponentTeamIds = _context.LeagueTeamScore
+                    .Where(s => s.LeagueTeamId == leagueTeamId)
+                    .Select(s => s.OpponentsLeagueTeamId)
+                    .Distinct()
+                    .ToList();
+
+            // Ensure valid opponent IDs
+            if (distinctOpponentTeamIds == null || !distinctOpponentTeamIds.Any())
+            {
+                Console.WriteLine("No distinct opponent team IDs found.");
+            }
+
+            // Calculate totals
+            var totalScores = scores.Sum(s => s.Score.TeamScore);
+            var totalWins = scores.Count(s => s.Score.WonGame);
+            var totalGames = scores.Count();
+            var winPercentage = totalGames > 0 ? (double)totalWins / totalGames * 100 : 0;
+
+            // Calculate averages
+            var averageScore = totalGames > 0 ? scores.Average(s => s.Score.TeamScore) : 0;
+
+            // Calculate highest and lowest scores
+            var highestScore = totalGames > 0 ? scores.Max(s => s.Score.TeamScore) : 0;
+            var lowestScore = totalGames > 0 ? scores.Min(s => s.Score.TeamScore) : 0;
+
+            // Streak calculations
+            int currentWinStreak = 0, longestWinStreak = 0;
+            int currentLossStreak = 0, longestLossStreak = 0;
+            foreach (var game in scores.OrderBy(s => s.Score.Date))
+            {
+                if (game.Score.WonGame)
+                {
+                    currentWinStreak++;
+                    longestWinStreak = Math.Max(longestWinStreak, currentWinStreak);
+                    currentLossStreak = 0;
+                }
+                else
+                {
+                    currentLossStreak++;
+                    longestLossStreak = Math.Max(longestLossStreak, currentLossStreak);
+                    currentWinStreak = 0;
+                }
+            }
+
+            // Opponent stats
+            var opponentStats = distinctOpponentTeamIds
+                 .Select(opponentsLeagueTeamId => new
+                 {
+                     OpponentTeamId = opponentsLeagueTeamId,
+                     OpponentTeamName = _context.LeagueTeam
+                         .Where(t => t.Id == opponentsLeagueTeamId)
+                         .Select(t => t.TeamName)
+                         .FirstOrDefault(),
+                     GamesPlayed = _context.LeagueTeamScore
+                         .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
+                         .Count(),
+                     Wins = _context.LeagueTeamScore
+                         .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId && s.WonGame)
+                         .Count(),
+                     WinPercentage = _context.LeagueTeamScore
+                         .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
+                         .Count() > 0
+                         ? (double)_context.LeagueTeamScore
+                             .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId && s.WonGame)
+                             .Count() /
+                           _context.LeagueTeamScore
+                             .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
+                             .Count() * 100
+                         : 0,
+                     TotalPointsScored = _context.LeagueTeamScore
+                         .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
+                         .Sum(s => s.TeamScore),
+                     AveragePointsPerGame = _context.LeagueTeamScore
+                         .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
+                         .Count() > 0
+                         ? (double)_context.LeagueTeamScore
+                             .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
+                             .Sum(s => s.TeamScore) /
+                           _context.LeagueTeamScore
+                             .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
+                             .Count()
+                         : 0
+                 })
+                 .ToList();
+
+            // League stats
+            var leagueStats = scores
+                .GroupBy(s => s.Score.LeagueTeamId)
+                .Select(g => new
+                {
+                    LeagueTeamId = g.Key,
+                    LeagueName = _context.LeagueTeam
+                        .Where(lt => lt.Id == g.Key)
+                        .Select(lt => lt.TeamName)
+                        .FirstOrDefault(),
+                    GamesPlayed = g.Count(),
+                    Wins = g.Count(s => s.Score.WonGame),
+                    WinPercentage = g.Count() > 0 ? (double)g.Count(s => s.Score.WonGame) / g.Count() * 100 : 0
+                })
+                .ToList();
+
+            // Teammate stats
+            var teammateStats = _context.LeagueTeamPlayer
+                .Where(tp => tp.PlayerId == playerId)
+                .Join(_context.LeagueTeamPlayer,
+                      tp => tp.LeagueTeamId,
+                      other => other.LeagueTeamId,
+                      (tp, other) => new { tp, other })
+                .Where(joined => joined.other.PlayerId != playerId && joined.tp.LeagueTeamId == leagueId)
+                .GroupBy(joined => joined.other.PlayerId)
+                .Select(g => new
+                {
+                    TeammateId = g.Key,
+                    TeammateName = _context.Players
+                        .Where(p => p.Id == g.Key)
+                        .Select(p => p.FirstName + " " + p.LastName)
+                        .FirstOrDefault(),
+                    GamesPlayedTogether = g.Count(),
+                    WinsTogether = scores.Count(s => s.Score.WonGame && s.Score.LeagueTeamId == g.First().tp.LeagueTeamId)
+                })
+                .ToList();
+
+            // Total unique opponents
+            var totalOpponents = scores
+                .Select(s => s.Score.OpponentsLeagueTeamId)
+                .Distinct()
+                .Count();
+
+            // Results
+            return Ok(new
+            {
+                totalScores,
+                totalWins,
+                totalGames,
+                winPercentage,
+                averageScore,
+                highestScore,
+                lowestScore,
+                longestWinStreak,
+                longestLossStreak,
+                totalOpponents,
+                opponentStats,
+                leagueStats,
+                teammateStats
+            });
+        }
+
+
+
         [HttpPost("[action]")]
         public IActionResult RecordLeagueTeamScore([FromBody] LeagueTeamScoreDto dto)
         {

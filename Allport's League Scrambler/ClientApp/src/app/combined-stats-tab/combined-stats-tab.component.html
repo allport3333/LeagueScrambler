@@ -1,0 +1,135 @@
+<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+    <h2 style="text-align: center; color: blue;">League Player Stats</h2>
+
+    <!-- Overview Section -->
+    <mat-card style="margin-bottom: 20px; text-align: center;">
+        <h3>Overview</h3>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+            <div>
+                <p><strong>Total Games:</strong> {{ combinedStats.totalGames }}</p>
+            </div>
+            <div>
+                <p><strong>Total Scores:</strong> {{ combinedStats.totalScores }}</p>
+            </div>
+            <div>
+                <p><strong>Total Wins:</strong> {{ combinedStats.totalWins }}</p>
+            </div>
+            <div>
+                <p><strong>Average Score:</strong> {{ combinedStats.averageScore }}</p>
+            </div>
+            <div>
+                <p><strong>Highest Score:</strong> {{ combinedStats.highestScore }}</p>
+            </div>
+            <div>
+                <p><strong>Lowest Score:</strong> {{ combinedStats.lowestScore }}</p>
+            </div>
+            <div>
+                <p><strong>Win Percentage:</strong> {{ combinedStats.winPercentage }}%</p>
+            </div>
+        </div>
+    </mat-card>
+
+    <!-- Streaks Section -->
+    <mat-card style="margin-bottom: 20px; text-align: center;">
+        <h3>Streaks</h3>
+        <div style="display: flex; justify-content: center; gap: 40px;">
+            <div>
+                <p><strong>Longest Win Streak:</strong> {{ combinedStats.longestWinStreak }}</p>
+            </div>
+            <div>
+                <p><strong>Longest Loss Streak:</strong> {{ combinedStats.longestLossStreak }}</p>
+            </div>
+        </div>
+    </mat-card>
+
+    <!-- League Stats Section -->
+    <mat-card style="margin-bottom: 20px; text-align: center;">
+        <h3>League Stats</h3>
+        <mat-table [dataSource]="combinedStats.leagueStats" class="mat-elevation-z8">
+            <ng-container matColumnDef="league">
+                <mat-header-cell *matHeaderCellDef> League </mat-header-cell>
+                <mat-cell *matCellDef="let stat"> {{ stat.leagueName }} </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="gamesPlayed">
+                <mat-header-cell *matHeaderCellDef> Games Played </mat-header-cell>
+                <mat-cell *matCellDef="let stat"> {{ stat.gamesPlayed }} </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="winPercentage">
+                <mat-header-cell *matHeaderCellDef> Win % </mat-header-cell>
+                <mat-cell *matCellDef="let stat"> {{ stat.winPercentage }}% </mat-cell>
+            </ng-container>
+
+            <mat-header-row *matHeaderRowDef="['league', 'gamesPlayed', 'winPercentage']"></mat-header-row>
+            <mat-row *matRowDef="let row; columns: ['league', 'gamesPlayed', 'winPercentage']"></mat-row>
+        </mat-table>
+    </mat-card>
+
+    <!-- Opponent Stats Section -->
+    <div *ngIf="combinedStats.opponentStats && combinedStats.opponentStats.length > 0;" style="padding: 20px;">
+        <mat-card style="margin-bottom: 20px; text-align: center;">
+            <h3>Opponent Stats</h3>
+            <mat-table [dataSource]="combinedStats.opponentStats" class="mat-elevation-z8">
+                <ng-container matColumnDef="opponentTeamName">
+                    <mat-header-cell *matHeaderCellDef> Opponent Team </mat-header-cell>
+                    <mat-cell *matCellDef="let opponent"> {{ opponent.opponentTeamName }} </mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="gamesPlayed">
+                    <mat-header-cell *matHeaderCellDef> Games Played </mat-header-cell>
+                    <mat-cell *matCellDef="let opponent"> {{ opponent.gamesPlayed }} </mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="wins">
+                    <mat-header-cell *matHeaderCellDef> Wins </mat-header-cell>
+                    <mat-cell *matCellDef="let opponent"> {{ opponent.wins }} </mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="winPercentage">
+                    <mat-header-cell *matHeaderCellDef> Win % </mat-header-cell>
+                    <mat-cell *matCellDef="let opponent">
+                        {{ opponent.winPercentage | number: '1.0-2' }}%
+                    </mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="totalPointsScored">
+                    <mat-header-cell *matHeaderCellDef> Total Points Scored </mat-header-cell>
+                    <mat-cell *matCellDef="let opponent"> {{ opponent.totalPointsScored }} </mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="averagePointsPerGame">
+                    <mat-header-cell *matHeaderCellDef> Average Points Scored </mat-header-cell>
+                    <mat-cell *matCellDef="let opponent"> {{ opponent.averagePointsPerGame }} </mat-cell>
+                </ng-container>
+
+                <mat-header-row *matHeaderRowDef="['opponentTeamName', 'gamesPlayed', 'wins', 'winPercentage', 'totalPointsScored', 'averagePointsPerGame']"></mat-header-row>
+                <mat-row *matRowDef="let row; columns: ['opponentTeamName', 'gamesPlayed', 'wins', 'winPercentage', 'totalPointsScored', 'averagePointsPerGame']"></mat-row>
+            </mat-table>
+        </mat-card>
+    </div>
+
+    <!-- Teammate Stats Section -->
+    <mat-card style="text-align: center;">
+        <h3>Teammate Stats</h3>
+        <mat-table [dataSource]="combinedStats.teammateStats" class="mat-elevation-z8">
+            <ng-container matColumnDef="teammate">
+                <mat-header-cell *matHeaderCellDef> Teammate </mat-header-cell>
+                <mat-cell *matCellDef="let stat"> {{ stat.teammateName }} </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="gamesPlayed">
+                <mat-header-cell *matHeaderCellDef> Games Together </mat-header-cell>
+                <mat-cell *matCellDef="let stat"> {{ stat.gamesPlayedTogether }} </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="winsTogether">
+                <mat-header-cell *matHeaderCellDef> Wins Together </mat-header-cell>
+                <mat-cell *matCellDef="let stat"> {{ stat.winsTogether }} </mat-cell>
+            </ng-container>
+
+            <mat-header-row *matHeaderRowDef="['teammate', 'gamesPlayed', 'winsTogether']"></mat-header-row>
+            <mat-row *matRowDef="let row; columns: ['teammate', 'gamesPlayed', 'winsTogether']"></mat-row>
+        </mat-table>
+    </mat-card>
+</div>

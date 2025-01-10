@@ -48,7 +48,6 @@ export class LeagueStandingsComponent implements OnInit {
         this.loginService.getUsersRole().subscribe(
             (role) => {
                 this.userRole = role.role;
-
                 // Fetch settings and standings only if leagueName is provided
                 if (this.leagueName) {
                     this.awaitSettingsAndInitialize();
@@ -61,12 +60,20 @@ export class LeagueStandingsComponent implements OnInit {
 
         // Subscribe to selected league changes
         this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
+            this.standings = null;
+            this.originalStandings = null;
+            this.maleStandings = null;
+            this.femaleStandings = null;
+            this.lastResult = null;
             if (selectedLeague) {
                 this.selectedLeagueId = selectedLeague.leagueId;
                 this.leagueName = selectedLeague.leagueName;
-                this.awaitSettingsAndInitialize(); // Reinitialize settings and standings for the selected league
+                this.initializeSettings();
+            } else {
+                console.warn('No league selected.');
             }
         });
+
     }
 
 
@@ -76,11 +83,19 @@ export class LeagueStandingsComponent implements OnInit {
         this.playerLoading = true;
         this.playerService.getStandingsByLeague(this.leagueName).subscribe(
             (result: PlayerScoresResponse) => {
-
-                this.lastResult = result;
-                this.processStandings(result, this.getCurrentOptions());
-                this.sortStandingsWithUpdates('totalScoreBeforeReduction'); 
-                this.playerLoading = false;
+                if (result != null) {
+                    this.lastResult = result;
+                    this.processStandings(result, this.getCurrentOptions());
+                    this.sortStandingsWithUpdates('totalScoreBeforeReduction');
+                    this.playerLoading = false;
+                }
+                else {
+                    this.standings = null;
+                    this.originalStandings = null;
+                    this.maleStandings = null;
+                    this.femaleStandings = null;
+                    this.lastResult = null;
+                }
             },
             error => {
                 console.error('initializeStandings: Error fetching standings:', error);
@@ -91,6 +106,7 @@ export class LeagueStandingsComponent implements OnInit {
 
     private initializeSettings(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
+
             this.loginService.getSettingValue('numberOfSubsAllowed', this.selectedLeagueId).subscribe(
                 (numberOfSubsAllowedValue) => {
                     this.numberOfSubsAllowed = this.parseValueAsNumber(numberOfSubsAllowedValue, 100);
@@ -106,11 +122,18 @@ export class LeagueStandingsComponent implements OnInit {
                                     this.loginService.getSettingValue('standingsType', this.selectedLeagueId).subscribe(
                                         (newStandingsType) => {
                                             this.retrievedStandingsType = newStandingsType;
+
                                             if (this.retrievedStandingsType !== this.standingsType) {
                                                 this.toggleStandingsType(); // Call toggleStandingsType if it changed
                                             } else {
-                                                this.processStandings(this.lastResult, this.getCurrentOptions()); // Call processStandings otherwise
+                                                if (this.lastResult != null) {
+                                                    this.processStandings(this.lastResult, this.getCurrentOptions());
+                                                }
+                                                else {
+                                                    this.initializeStandings();
+                                                } // Call processStandings otherwise
                                             }
+
                                             resolve(); // All settings fetched, resolve promise
                                         },
                                         (error) => {
@@ -138,6 +161,7 @@ export class LeagueStandingsComponent implements OnInit {
             );
         });
     }
+
 
     private parseValueAsNumber(value: any, defaultValue: number): number {
         if (typeof value === 'number') {
@@ -216,6 +240,10 @@ export class LeagueStandingsComponent implements OnInit {
         options: { dropLowestNumber: number; numberOfSubsAllowed: number; subScorePercent: number }
     ): void {
         if (!result || !result.playerScores) {
+            this.standings = null;
+            this.originalStandings = null;
+            this.maleStandings = null;
+            this.femaleStandings = null;
             return;
         }
 
@@ -254,13 +282,16 @@ export class LeagueStandingsComponent implements OnInit {
 
                     // #2: Drop the lowest [dropLowestNumber] scores
                     const sortedByScore = [...updatedScores].sort((a, b) => a.score - b.score);
-                    const toDrop = sortedByScore.slice(0, options.dropLowestNumber);
-                    toDrop.forEach(dropItem => {
-                        const dropIndex = updatedScores.findIndex(s => s === dropItem);
-                        if (dropIndex !== -1) {
-                            updatedScores[dropIndex] = { ...updatedScores[dropIndex], isDropped: true };
-                        }
-                    });
+                    if (sortedByScore != null) {
+                        const toDrop = sortedByScore.slice(0, options.dropLowestNumber);
+                        toDrop.forEach(dropItem => {
+                            const dropIndex = updatedScores.findIndex(s => s === dropItem);
+                            if (dropIndex !== -1) {
+                                updatedScores[dropIndex] = { ...updatedScores[dropIndex], isDropped: true };
+                            }
+                        });
+                    
+
 
                     // #3: Recompute totals
                     const totalScore = updatedScores
@@ -279,7 +310,11 @@ export class LeagueStandingsComponent implements OnInit {
                         totalScore,
                         totalWins,
                         totalScoreBeforeReduction,
-                    };
+                        };
+                    }
+                    else {
+                        return;
+                    }
                 }).sort((a, b) => {
                     // Sort by total wins descending, then by total score descending
                     if (b.totalWins !== a.totalWins) {
@@ -319,26 +354,31 @@ export class LeagueStandingsComponent implements OnInit {
     }
 
     private sortMaleStandings(column: string) {
-        this.maleStandings = [...this.maleStandings].sort((a, b) => {
-            const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
-            const valueB = column === 'playerName' ? b[column].toLowerCase() : b[column];
-            if (this.sortDirection === 'asc') {
-                return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
-            } else {
-                return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
-            }
-        });
+        if (this.maleStandings) {
+            this.maleStandings = [...this.maleStandings].sort((a, b) => {
+                const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
+                const valueB = column === 'playerName' ? b[column].toLowerCase() : b[column];
+                if (this.sortDirection === 'asc') {
+                    return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+                } else {
+                    return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+                }
+            });
+        }
+ 
     }
 
     private sortFemaleStandings(column: string) {
-        this.femaleStandings = [...this.femaleStandings].sort((a, b) => {
-            const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
-            const valueB = column === 'playerName' ? b[column].toLowerCase() : b[column];
-            if (this.sortDirection === 'asc') {
-                return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
-            } else {
-                return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
-            }
-        });
+        if (this.femaleStandings) {
+            this.femaleStandings = [...this.femaleStandings].sort((a, b) => {
+                const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
+                const valueB = column === 'playerName' ? b[column].toLowerCase() : b[column];
+                if (this.sortDirection === 'asc') {
+                    return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+                } else {
+                    return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+                }
+            });
+        }
     }
 }

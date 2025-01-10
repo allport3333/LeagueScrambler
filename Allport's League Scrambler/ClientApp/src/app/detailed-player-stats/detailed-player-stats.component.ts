@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, Input } from '@angular/core';
 import { StatisticsService } from '../services/statistics.service';
 import { ActivatedRoute } from '@angular/router';
 import { MatTableDataSource, MatSort } from '@angular/material';
@@ -10,7 +10,8 @@ import { LeagueService } from '../services/league.service';
   styleUrls: ['./detailed-player-stats.component.css']
 })
 export class DetailedPlayerStatsComponent implements OnInit {
-    playerId: number;
+    @Input() playerId!: number;
+    @Input() leagueId!: number;
     showTeammates = false;
     playerStats: any;
     displayedColumns: string[] = ['playerName', 'winsTogether', 'count'];
@@ -45,7 +46,7 @@ export class DetailedPlayerStatsComponent implements OnInit {
     ngOnInit() {
         // Subscribe to route parameters to handle changes in playerId
         this.route.params.subscribe(params => {
-            this.playerId = +params['id']; // Get 'id' from the route
+            this.playerId = +params['playerId']; // Get 'id' from the route
             this.loadPlayerStats(this.playerId); // Load data for the new playerId
             this.processRoundsWithDividers(); // Process rounds after updating playerId
         });

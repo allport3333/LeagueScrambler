@@ -7,6 +7,9 @@
 
     <div style="display: flex; justify-content: center; margin-top: 20px;">
         <mat-tab-group style="width: 100%; max-width: 1200px;" mat-align-tabs="center">
+            <mat-tab label="Standings">
+                <app-league-team-standings [leagueId]="selectedLeagueId"></app-league-team-standings>
+            </mat-tab>
             <!-- TAB #1: Schedule -->
             <mat-tab label="Schedule">
                 <app-league-schedule [leagueId]="selectedLeagueId" style="width: 100%;"></app-league-schedule>

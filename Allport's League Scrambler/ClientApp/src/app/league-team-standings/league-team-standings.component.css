@@ -1,0 +1,43 @@
+/* Small columns for Rank, Wins, and Losses */
+.small-column, .mat-column-rank, .mat-column-wins, .mat-column-losses {
+    width: 60px !important;
+    min-width: 60px !important;
+    max-width: 60px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+}
+
+/* Adjusted Total Points column (15px wider) */
+.total-points-column, .mat-column-totalPoints {
+    width: 75px !important; /* Increased from 60px to 75px */
+    min-width: 75px !important;
+    max-width: 75px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+}
+
+/* Wider Team Name column (Balanced size) */
+.wide-column, .mat-column-teamName {
+    width: 125px !important;
+    min-width: 125px !important;
+    max-width: 175px !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+}
+
+/* Responsive table behavior */
+.responsive-table {
+    width: 100% !important;
+    min-width: 450px !important;
+}
+
+/* Ensure the table scrolls horizontally if content overflows */
+mat-table {
+    display: block !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    table-layout: fixed !important;
+}

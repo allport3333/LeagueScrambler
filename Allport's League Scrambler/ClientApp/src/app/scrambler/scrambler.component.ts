@@ -613,14 +613,6 @@ export class ScramblerComponent implements OnInit {
                 this.loginService.getUsersRole().subscribe((roleResult) => {
                     this.userRole = roleResult.role; // Assuming the API returns { role: 'Admin' }
 
-                    // Perform actions based on role
-                    if (this.userRole === 'Admin') {
-                        // Admin-specific logic
-                    } else if (this.userRole === 'Manager') {
-                        // Manager-specific logic
-                    } else if (this.userRole === 'Player') {
-                        // Player-specific logic
-                    }
                 });
 
                 // Fetch user leagues

@@ -76,7 +76,7 @@
         <div class="d-flex">
             <ul class='nav navbar-nav'>
                 <li *ngIf="loggedIn && playerId" class="nav-item" [routerLinkActive]="['link-active']">
-                    <a [routerLink]="['/player-stats', playerId]" class="nav-link" (click)="collapse()">
+                    <a [routerLink]="['/player-stats-tabs', playerId]" class="nav-link" (click)="collapse()">
                         <span class="fas fa-user"></span> Profile
                     </a>
                 </li>

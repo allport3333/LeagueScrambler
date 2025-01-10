@@ -29,6 +29,10 @@ import { LeagueDashboardComponent } from './league-dashboard/league-dashboard.co
 import { LeagueTeamsComponent } from './league-teams/league-teams.component';
 import { TeamManagementComponent } from './team-management/team-management.component';
 import { LeagueScheduleComponent } from './league-schedule/league-schedule.component';
+import { LeagueTeamPlayerScoresComponent } from './league-team-player-scores/league-team-player-scores.component';
+import { PlayerStatsTabsComponent } from './player-stats-tabs/player-stats-tabs.component';
+import { CombinedStatsTabComponent } from './combined-stats-tab/combined-stats-tab.component';
+import { LeagueTeamStandingsComponent } from './league-team-standings/league-team-standings.component';
 
 @NgModule({
     declarations: [
@@ -49,7 +53,11 @@ import { LeagueScheduleComponent } from './league-schedule/league-schedule.compo
         LeagueDashboardComponent,
         LeagueScheduleComponent,
         LeagueTeamsComponent,
-        TeamManagementComponent
+        TeamManagementComponent,
+        LeagueTeamPlayerScoresComponent,
+        PlayerStatsTabsComponent,
+        CombinedStatsTabComponent,
+        LeagueTeamStandingsComponent
 
     ],
     imports: [
@@ -94,9 +102,10 @@ import { LeagueScheduleComponent } from './league-schedule/league-schedule.compo
             { path: 'player-scores', component: PlayerScoresComponent },
             { path: 'schedule', component: ScheduleComponent },
             { path: 'resetpassword', component: ResetPasswordComponent },
-            { path: 'player-stats/:id', component: DetailedPlayerStatsComponent },
+            { path: 'player-stats/:playerId', component: DetailedPlayerStatsComponent },
             { path: 'sign-in', component: SignInComponent },
             { path: 'standings', component: LeagueStandingsComponent },
+            { path: 'player-stats-tabs/:playerId', component: PlayerStatsTabsComponent },
             { path: 'league-dashboard', component: LeagueDashboardComponent }
         ]),
         BrowserAnimationsModule

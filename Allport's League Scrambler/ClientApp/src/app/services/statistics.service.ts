@@ -122,6 +122,19 @@ export class StatisticsService {
         );
     }
 
+    getLeagueTeamScores(playerId: number, leagueId: number) {
+        return this.httpClient.get<any[]>(`${this.baseUrl}api/Statistics/league-team-scores/${playerId}/${leagueId}`);
+    }
+
+
+    getCombinedStats(playerId: number, leagueId: number) {
+        return this.httpClient.get<any>(`${this.baseUrl}api/Statistics/combined-stats/${playerId}/${leagueId}`);
+    }
+
+    getLeagueStandings(leagueId: number) {
+        return this.httpClient.get<any[]>(`${this.baseUrl}api/Statistics/league-standings/${leagueId}`);
+    }
+
     getLeagueSchedule(leagueId: number): Observable<WeekSchedule[]> {
         return this.httpClient.get<WeekSchedule[]>(
             `${this.baseUrl}api/Statistics/GetLeagueSchedule/${leagueId}`

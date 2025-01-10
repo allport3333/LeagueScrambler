@@ -1,0 +1,50 @@
+<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+
+    <h2 style="text-align: center; color: blue;">League Team Stats</h2>
+
+
+    <!-- Performance Stats -->
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h3 style="margin-bottom: 10px;">Performance Stats</h3>
+        <div style="display: inline-block; border: 1px solid #ddd; padding: 15px; border-radius: 8px; width: 30%;">
+            <div>
+                <p><strong>Total Scores:</strong> {{ performanceStats.totalScores }}</p>
+            </div>
+            <div>
+                <p><strong>Total Wins:</strong> {{ performanceStats.totalWins }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- League Scores Table -->
+    <mat-table [dataSource]="dataSource" class="mat-elevation-z8">
+        <!-- Date Column -->
+        <ng-container matColumnDef="date">
+            <mat-header-cell *matHeaderCellDef> Date </mat-header-cell>
+            <mat-cell *matCellDef="let score"> {{ score.date | date }} </mat-cell>
+        </ng-container>
+
+        <!-- Opponent Team Column -->
+        <ng-container matColumnDef="opponentTeam">
+            <mat-header-cell *matHeaderCellDef> Opponent Team </mat-header-cell>
+            <mat-cell *matCellDef="let score"> {{ score.opponentTeam }} </mat-cell>
+        </ng-container>
+
+        <!-- Team Score Column -->
+        <ng-container matColumnDef="teamScore">
+            <mat-header-cell *matHeaderCellDef> Team Score </mat-header-cell>
+            <mat-cell *matCellDef="let score"> {{ score.teamScore }} </mat-cell>
+        </ng-container>
+
+        <!-- Won Game Column -->
+        <ng-container matColumnDef="wonGame">
+            <mat-header-cell *matHeaderCellDef> Won Game </mat-header-cell>
+            <mat-cell *matCellDef="let score"> {{ score.wonGame ? 'Yes' : 'No' }} </mat-cell>
+        </ng-container>
+
+        <!-- Header Row -->
+        <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+        <!-- Data Row -->
+        <mat-row *matRowDef="let row; columns: displayedColumns"></mat-row>
+    </mat-table>
+</div>
