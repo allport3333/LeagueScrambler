@@ -4,3 +4,74 @@
     margin-right: auto;
     width: 50%;
 }
+
+.score-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+    padding: 0 10px;
+}
+
+.score-input {
+    width: 70%;
+}
+
+.vs-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+}
+
+.team-card {
+    width: 400px;
+    padding: 10px;
+}
+/* Center the entire mat-tab-group */
+mat-tab-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+/* Center the tab labels */
+.mat-tab-labels {
+    justify-content: center !important;
+}
+
+/* Card styling for each team's score */
+.score-card {
+    width: 350px;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Win and Loss Badge Styles */
+.win-badge {
+    background-color: #4CAF50;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.loss-badge {
+    background-color: #F44336;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+/* Material Table Styling */
+table {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.mat-header-cell, .mat-cell {
+    text-align: center;
+    padding: 10px;
+}

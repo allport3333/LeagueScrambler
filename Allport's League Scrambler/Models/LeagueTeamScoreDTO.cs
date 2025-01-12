@@ -13,5 +13,7 @@ namespace Allport_s_League_Scrambler.Models
         public int TeamScore { get; set; }
         public bool WonGame { get; set; }
         public DateTime Date { get; set; }
+        public string TeamName { get; set; }
+        public string OpponentsTeamName { get; set; }
     }
 }

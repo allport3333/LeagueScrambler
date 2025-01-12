@@ -5,4 +5,6 @@
     teamScore: number;
     wonGame: boolean;
     date: string; 
+    teamName: string;
+    opponentsTeamName: string;
 }

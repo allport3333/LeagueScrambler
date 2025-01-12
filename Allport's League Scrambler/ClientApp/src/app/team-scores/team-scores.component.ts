@@ -12,6 +12,8 @@ import { NewCreatedTeam } from '../data-models/newCreatedTeam.model';
 
 // Our new interface for LEAGUE TEAM SCORES
 import { LeagueTeamScoreDto } from '../data-models/leagueTeamScore.model';
+import { LeagueService } from '../services/league.service';
+import { LoginService } from '../services/login.service';
 
 @Component({
     selector: 'app-team-scores',
@@ -23,33 +25,25 @@ export class TeamScoresComponent implements OnInit {
     selectedTeam1: LeagueTeams;
     selectedTeam2: LeagueTeams;
     selectedLeague: string;
-
+    loggedIn: boolean = false;
     leagueID: number = 1;
     leaguesAvailable: Leagues[];
     loading: boolean;
     newTeamScoreLoading: boolean;
     containsTeam: boolean;
-
+    numberOfGames: number = 3;
     teamScores: LeagueTeamScoreDto[]; // GET call result
     gameDate: Date;
-    initialDate = new Date(); // For the datepicker
+    initialDate: Date | null = new Date();
     password: Password = { password: '', id: null };
-
+    isActionAllowed: boolean = false;
+    userRole: string;
     // The form with multiple "game" score boxes
     TeamScoresForm = new FormGroup({
-        team1Score: new FormControl(),
-        team2Score: new FormControl(),
-        team1Score1: new FormControl(),
-        team2Score1: new FormControl(),
-        team1Score2: new FormControl(),
-        team2Score2: new FormControl(),
-        team1Score3: new FormControl(),
-        team2Score3: new FormControl(),
-        team1Score4: new FormControl(),
-        team2Score4: new FormControl(),
-        date: new FormControl(),
+        date: new FormControl(new Date()),
         password: new FormControl()
     });
+
 
     // For creating a new team
     NewTeamForm = new FormGroup({
@@ -61,7 +55,9 @@ export class TeamScoresComponent implements OnInit {
 
     constructor(
         public playerService: PlayerService,
-        public statisticsService: StatisticsService
+        public statisticsService: StatisticsService,
+        public leagueService: LeagueService,
+        public loginService: LoginService
     ) {
         // no-op
     }
@@ -70,136 +66,168 @@ export class TeamScoresComponent implements OnInit {
         this.loading = true;
         this.newTeamScoreLoading = false;
 
-        // Load leagues
-        this.playerService.GetLeagues().subscribe({
-            next: (result) => {
-                this.leaguesAvailable = result;
-                this.loading = false;
-            },
-            error: (err) => console.error(err)
+        this.leagueService.selectedLeague$.subscribe(selected => {
+            this.leagueID = selected.leagueId;
+            this.selectedLeague = selected.leagueName;
+            this.getTeams();
         });
+
+        this.loginService.isLoggedIn().subscribe((result) => {
+            this.loggedIn = result;
+
+            if (result) {
+                // User is logged in
+                this.isActionAllowed = true; // Enable action for logged-in users
+
+                // Fetch user role
+                this.loginService.getUsersRole().subscribe((roleResult) => {
+                    this.userRole = roleResult.role;
+                    this.loading = false;
+                });
+
+                // Fetch user leagues
+                this.leagueService.getLeagues().subscribe((leagueResult) => {
+                    this.leaguesAvailable = leagueResult;
+                    this.loading = false;
+                });
+            } else {
+                this.isActionAllowed = false;
+                this.loading = false;
+            }
+        });
+
+        this.adjustScoreInputs();  // Initialize score inputs
     }
+
+    // Adjust form controls based on number of games
+    adjustScoreInputs() {
+        // Remove old score controls
+        Object.keys(this.TeamScoresForm.controls).forEach((key) => {
+            if (key.startsWith('team1Score') || key.startsWith('team2Score')) {
+                this.TeamScoresForm.removeControl(key);
+            }
+        });
+
+        // Add new controls based on the selected number of games
+        for (let i = 0; i < this.numberOfGames; i++) {
+            this.TeamScoresForm.addControl(`team1Score${i}`, new FormControl());
+            this.TeamScoresForm.addControl(`team2Score${i}`, new FormControl());
+        }
+    }
+
 
     // *** SUBMIT: Called when user enters multiple game scores ***
     onSubmitClick() {
-        this.playerService.GetPassword().subscribe({
-            next: (result) => {
-                this.password = result;
+        this.newTeamScoreLoading = true;
 
-                if (
-                    !this.TeamScoresForm.controls['password'].value ||
-                    this.TeamScoresForm.controls['password'].value !== this.password.password
-                ) {
-                    alert('Password is not correct.');
-                    return;
-                }
+        // Validate the first game's scores
+        if (
+            this.TeamScoresForm.controls['team1Score0'].value === null ||
+            this.TeamScoresForm.controls['team2Score0'].value === null ||
+            !this.selectedTeam1 ||
+            !this.selectedTeam2 ||
+            !this.TeamScoresForm.controls['date'].value
+        ) {
+            alert('Please ensure all required fields are filled out.');
+            this.newTeamScoreLoading = false;
+            return;
+        }
 
-                this.newTeamScoreLoading = true;
+        // Collect all game scores
+        let leagueTeamScoresArray: LeagueTeamScoreDto[] = [];
 
-                // Basic validation
-                if (
-                    this.TeamScoresForm.controls['team1Score'].value === null ||
-                    this.TeamScoresForm.controls['team2Score'].value === null ||
-                    !this.selectedTeam1 ||
-                    !this.selectedTeam2 ||
-                    !this.TeamScoresForm.controls['date'].value
-                ) {
-                    alert('Please ensure that all required fields are filled out.');
-                    this.newTeamScoreLoading = false;
-                    return;
-                }
+        const addGameRecords = (team1ScoreControl: string, team2ScoreControl: string) => {
+            const team1Score = this.TeamScoresForm.controls[team1ScoreControl].value;
+            const team2Score = this.TeamScoresForm.controls[team2ScoreControl].value;
 
-                // We'll build an array of LeagueTeamScoreDto for ALL the "games" the user typed in
-                let leagueTeamScoresArray: LeagueTeamScoreDto[] = [];
+            if (team1Score == null || team2Score == null) return;
 
-                // Helper function to add a single "game"
-                const addGameRecords = (
-                    team1ScoreControl: string,
-                    team2ScoreControl: string
-                ) => {
-                    const team1Score = this.TeamScoresForm.controls[team1ScoreControl].value;
-                    const team2Score = this.TeamScoresForm.controls[team2ScoreControl].value;
+            const recordForTeam1: LeagueTeamScoreDto = {
+                id: 0,
+                teamId: this.selectedTeam1.id,
+                opponentsTeamId: this.selectedTeam2.id,
+                teamScore: +team1Score,
+                wonGame: +team1Score === 15,
+                date: this.TeamScoresForm.controls['date'].value,
+                teamName: null,
+                opponentsTeamName: null
+            };
 
-                    // If user didn't fill these in, skip
-                    if (team1Score == null || team2Score == null) return;
+            const recordForTeam2: LeagueTeamScoreDto = {
+                id: 0,
+                teamId: this.selectedTeam2.id,
+                opponentsTeamId: this.selectedTeam1.id,
+                teamScore: +team2Score,
+                wonGame: +team2Score === 15,
+                date: this.TeamScoresForm.controls['date'].value,
+                teamName: null,
+                opponentsTeamName: null
+            };
 
-                    // 1) Record from Team1's perspective
-                    const recordForTeam1: LeagueTeamScoreDto = {
-                        id: 0,
-                        teamId: this.selectedTeam1.id,
-                        opponentsTeamId: this.selectedTeam2.id,
-                        teamScore: +team1Score,
-                        wonGame: +team1Score === 15, // or whatever your logic is
-                        date: this.TeamScoresForm.controls['date'].value
-                    };
+            leagueTeamScoresArray.push(recordForTeam1, recordForTeam2);
+        };
 
-                    // 2) Record from Team2's perspective
-                    const recordForTeam2: LeagueTeamScoreDto = {
-                        id: 0,
-                        teamId: this.selectedTeam2.id,
-                        opponentsTeamId: this.selectedTeam1.id,
-                        teamScore: +team2Score,
-                        wonGame: +team2Score === 15,
-                        date: this.TeamScoresForm.controls['date'].value
-                    };
+        // Loop through dynamic controls
+        for (let i = 0; i < this.numberOfGames; i++) {
+            addGameRecords(`team1Score${i}`, `team2Score${i}`);
+        }
 
-                    leagueTeamScoresArray.push(recordForTeam1, recordForTeam2);
-                };
+        // Check if scores were entered
+        if (leagueTeamScoresArray.length === 0) {
+            alert('No valid score entries found.');
+            this.newTeamScoreLoading = false;
+            return;
+        }
 
-                // Collect all "games" the user entered
-                addGameRecords('team1Score', 'team2Score');
-                addGameRecords('team1Score1', 'team2Score1');
-                addGameRecords('team1Score2', 'team2Score2');
-                addGameRecords('team1Score3', 'team2Score3');
-                addGameRecords('team1Score4', 'team2Score4');
+        // Submit each score to the backend
+        let pendingCalls = leagueTeamScoresArray.length;
 
-                // Reset form
-                this.TeamScoresForm.reset();
-
-                if (this.selectedLeague) {
-
-                    let pendingCalls = leagueTeamScoresArray.length;
+        leagueTeamScoresArray.forEach((dto) => {
+            this.statisticsService.RecordLeagueTeamScore(dto).subscribe({
+                next: () => {
+                    pendingCalls--;
                     if (pendingCalls === 0) {
-                        alert('No valid score entries found.');
-                        this.newTeamScoreLoading = false;
-                        return;
-                    }
-
-                    // We'll insert them one by one, then update scores at the end
-                    leagueTeamScoresArray.forEach((dto, index) => {
-                        this.statisticsService.RecordLeagueTeamScore(dto).subscribe({
+                        // Once all scores are recorded, update the team scores
+                        this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe({
                             next: () => {
-                                pendingCalls--;
-                                if (pendingCalls === 0) {
-                                    // All done inserting, update wins/losses, then get teams
-                                    this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe({
-                                        next: () => {
-                                            this.statisticsService.GetTeams(this.selectedLeague).subscribe({
-                                                next: updatedTeams => {
-                                                    this.teams = updatedTeams;
-                                                    this.newTeamScoreLoading = false;
-                                                    alert('Successfully added score(s).');
-                                                },
-                                                error: err => console.error(err)
-                                            });
-                                        },
-                                        error: err => console.error(err)
-                                    });
-                                }
+                                this.statisticsService.GetTeams(this.selectedLeague).subscribe({
+                                    next: (updatedTeams) => {
+                                        this.teams = updatedTeams;
+                                        this.newTeamScoreLoading = false;
+                                        alert('Scores submitted and team standings updated successfully!');
+                                    },
+                                    error: (err) => console.error(err)
+                                });
                             },
-                            error: err => console.error(err)
+                            error: (err) => console.error(err)
                         });
-                    });
-                } else {
-                    alert('Please Select A League From The Dropdown');
-                    this.newTeamScoreLoading = false;
-                }
-
-                this.password.password = '';
-            },
-            error: (err) => console.error(err)
+                    }
+                },
+                error: (err) => console.error(err)
+            });
         });
+
+        // Reset form after submission
+        this.TeamScoresForm.reset();
+        this.password.password = '';
     }
+
+    groupScoresByTeam() {
+        if (!this.teamScores || this.teamScores.length === 0) {
+            return [];  // Return an empty array if teamScores is undefined or empty
+        }
+
+        const grouped = this.teamScores.reduce((acc, score) => {
+            if (!acc[score.teamId]) {
+                acc[score.teamId] = [];
+            }
+            acc[score.teamId].push(score);
+            return acc;
+        }, {} as { [key: number]: LeagueTeamScoreDto[] });
+
+        return Object.values(grouped);
+    }
+
 
     // *** Update All Scores for the league ***
     updateScores() {

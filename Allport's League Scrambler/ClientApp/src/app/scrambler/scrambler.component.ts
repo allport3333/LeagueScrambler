@@ -48,6 +48,7 @@ export class ScramblerComponent implements OnInit {
     showSaveRoundScores: boolean = false;
     allowScrambleWithNoDuplicates: boolean = false;
     retrievedPlayersBefore: boolean = false;
+    scrambleSelected: boolean = false;
     showPlayerTeams = false; // Controls the visibility of the player teams section
     showTeamFormation = false; // Controls the visibility of the team formation section
     hideEverything: boolean;
@@ -561,8 +562,14 @@ export class ScramblerComponent implements OnInit {
 
         this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
             if (selectedLeague.leagueId !== null && selectedLeague.leagueName !== null) {
-                this.leagueId = selectedLeague.leagueId;
+                this.leagueId = selectedLeague.leagueId;                
                 this.selectedLeague = selectedLeague.leagueName; // Use leagueName as needed
+                this.selectedLeagueDto = {
+                    id: selectedLeague.leagueId,
+                    leagueName: selectedLeague.leagueName
+                };
+
+
                 this.onLeagueChanged();
             }
         });
@@ -1891,6 +1898,7 @@ export class ScramblerComponent implements OnInit {
 
 
     retrieveScramble(scramble: KingQueenTeam) {
+        this.scrambleSelected = true;
         this.retrievedPlayersBefore = true;
         this.allowScrambleWithNoDuplicates = true;
         this.showSaveRoundScores = true;
@@ -2633,6 +2641,7 @@ export class ScramblerComponent implements OnInit {
 
 
     async scramblePlayers(nonDuplicates: boolean = false) {
+        this.scrambleSelected = false;
         if (nonDuplicates) {
             this.allowScrambleWithNoDuplicates = false;
         }

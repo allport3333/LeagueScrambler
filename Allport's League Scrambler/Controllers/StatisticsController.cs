@@ -587,19 +587,26 @@ namespace Allport_s_League_Scrambler.Controllers
 
             var scores = _context.LeagueTeamScore
                 // If you must filter by league, you can do a join or check the team’s leagueID
-                .Where(s => s.Date.Date == parsedDate.Date)
+                .Where(s => s.Date.Date == parsedDate.Date && s.LeagueTeam.LeagueID == league.ID)
+                .Include(s => s.LeagueTeam)
+                .Include(s => s.OpponentsTeam)
                 .ToList();
 
-            var result = scores.Select(s => new LeagueTeamScoreDto
-            {
-                Id = s.Id,
-                TeamId = s.LeagueTeamId,
-                OpponentsTeamId = s.OpponentsLeagueTeamId,
-                TeamScore = s.TeamScore,
-                WonGame = s.WonGame,
-                Date = s.Date
-            })
-            .ToList();
+            var result = scores
+                .Select(s => new LeagueTeamScoreDto
+                {
+                    Id = s.Id,
+                    TeamId = s.LeagueTeamId,
+                    OpponentsTeamId = s.OpponentsLeagueTeamId,
+                    TeamScore = s.TeamScore,
+                    WonGame = s.WonGame,
+                    Date = s.Date,
+                    OpponentsTeamName = s.OpponentsTeam.TeamName,
+                    TeamName = s.LeagueTeam.TeamName
+                })
+                .OrderBy(s => s.TeamId)  // Correct placement of OrderBy
+                .ToList();
+
 
             return result;
         }
