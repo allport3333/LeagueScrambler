@@ -357,6 +357,7 @@ export class HomeComponent implements OnInit {
 
     closeModal() {
         this.showPlayerClaimModal = false;
+        this.showSpecificPlayerClaimModal = false;
         this.selectedPlayer = null;
     }
 
