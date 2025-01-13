@@ -75,7 +75,7 @@
                     </a>
                 </li>
 
-                <li class="nav-item" [routerLinkActive]="['link-active']">
+                <li *ngIf="loggedIn" class="nav-item" [routerLinkActive]="['link-active']">
                     <a [routerLink]="['/sign-in']" class="nav-link" (click)="collapse()">
                         <span class="fas fa-sign-in-alt"></span> Sign In Sheet
                     </a>
