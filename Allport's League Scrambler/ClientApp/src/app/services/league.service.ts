@@ -67,7 +67,7 @@ export class LeagueService {
     setSelectedLeague(leagueId: number) {
 
         if (!this.leaguesAvailable || this.leaguesAvailable.length === 0) {
-            console.error('leaguesAvailable is not initialized or empty');
+
             return;
         }
 

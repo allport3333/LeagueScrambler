@@ -34,8 +34,6 @@ export class LeagueTeamStandingsComponent implements OnInit {
         });
     }
     processDivisions() {
-        console.log('Initial Standings:', this.standings);
-
         if (!this.standings.length) {
             this.divisions = { general: [] }; // Default to an empty "general" group if no data
             return;

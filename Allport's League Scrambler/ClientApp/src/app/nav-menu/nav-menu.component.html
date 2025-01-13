@@ -39,7 +39,7 @@
             <ul class='nav navbar-nav justify-content-center'>
 
                 <!-- Common navigation items -->
-                <li class="nav-item" [routerLinkActive]='["link-active"]' [routerLinkActiveOptions]='{ exact: true }'>
+                <li *ngIf="!loggedIn" class="nav-item" [routerLinkActive]='["link-active"]' [routerLinkActiveOptions]='{ exact: true }'>
                     <a [routerLink]='["/"]' class="nav-link" (click)='collapse()'>
                         <span class='fas fa-home'></span> Home
                     </a>
@@ -72,6 +72,12 @@
                 <li *ngIf="userRole === 'Admin' || userRole === 'Manager' || userRole === 'Player'" class="nav-item" [routerLinkActive]='["link-active"]'>
                     <a [routerLink]='["/standings"]' class="nav-link" (click)='collapse()'>
                         <span class='fas fa-trophy'></span> K/Q Standings
+                    </a>
+                </li>
+
+                <li class="nav-item" [routerLinkActive]="['link-active']">
+                    <a [routerLink]="['/sign-in']" class="nav-link" (click)="collapse()">
+                        <span class="fas fa-sign-in-alt"></span> Sign In Sheet
                     </a>
                 </li>
 

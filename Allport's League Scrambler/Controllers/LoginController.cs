@@ -71,21 +71,22 @@ namespace Allport_s_League_Scrambler.Controllers
             return BadRequest(new { message = "Invalid registration data." });
         }
 
-        [HttpGet("GetLockSignInStatus")]
-        public IActionResult GetLockSignInStatus()
+        [HttpGet("GetLockSignInStatus/{leagueId}")]
+        public IActionResult GetLockSignInStatus(int leagueId)
         {
             var _context = new DataContext();
+            var today = DateTime.Today;
 
-            var currentLockStatus = _context.PlayerSignIn
-                .OrderByDescending(s => s.DateTime)
-                .Select(s => s.LockedSignIn)
-                .FirstOrDefault();
+            // Check if any sign-in for today's date and league is locked
+            bool isLocked = _context.PlayerSignIn
+                .Any(s => s.LeagueId == leagueId && s.DateTime.Date == today && s.LockedSignIn);
 
-            return Ok(currentLockStatus);
-        }
+            return Ok(isLocked);
+        }       
 
         public class LockSignInRequest
         {
+            public int LeagueId { get; set; }
             public bool Locked { get; set; }
         }
 
@@ -93,19 +94,37 @@ namespace Allport_s_League_Scrambler.Controllers
         public IActionResult SetLockSignInStatus([FromBody] LockSignInRequest request)
         {
             var _context = new DataContext();
-            var latestSignIn = _context.PlayerSignIn
+
+            // Get the latest sign-in date for the specified league
+            var latestDate = _context.PlayerSignIn
+                .Where(s => s.LeagueId == request.LeagueId)
                 .OrderByDescending(s => s.DateTime)
+                .Select(s => s.DateTime)
                 .FirstOrDefault();
 
-            if (latestSignIn != null)
+            if (latestDate != default)
             {
-                latestSignIn.LockedSignIn = request.Locked;
-                _context.SaveChanges();
-                return Ok(request.Locked); // Return the updated lock status
+                // Get all sign-in records for that date and league
+                var signInsToUpdate = _context.PlayerSignIn
+                    .Where(s => s.LeagueId == request.LeagueId && s.DateTime == latestDate)
+                    .ToList();
+
+                if (signInsToUpdate.Any())
+                {
+                    // Update LockedSignIn for all relevant records
+                    foreach (var signIn in signInsToUpdate)
+                    {
+                        signIn.LockedSignIn = request.Locked;
+                    }
+
+                    _context.SaveChanges();
+                    return Ok(request.Locked);  // Return the updated lock status
+                }
             }
 
-            return NotFound("No sign-in records found to update.");
+            return NotFound("No sign-in records found for this league to update.");
         }
+
 
 
         [HttpGet("isauthenticated")]
@@ -195,6 +214,49 @@ namespace Allport_s_League_Scrambler.Controllers
             }
         }
 
+        [HttpGet("GetPlayerByPlayerId")]
+        public IActionResult GetPlayerByPlayerId()
+        {
+            var _context = new DataContext();
+            // Retrieve the User ID from claims
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+            if (userIdClaim == null)
+            {
+                return Unauthorized("User is not logged in.");
+            }
+
+            int userId = int.Parse(userIdClaim);
+
+            // Find the PlayerId linked to this User
+            var userPlayer = _context.UsersPlayer.FirstOrDefault(up => up.UserId == userId);
+
+            if (userPlayer == null)
+            {
+                return NotFound("No Player linked to this user.");
+            }
+
+            // Get the full Player details
+            var player = _context.Players
+                .Where(p => p.Id == userPlayer.PlayerId)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.FirstName,
+                    p.LastName,
+                    p.IsMale,
+                    p.Gender,
+                    p.IsSub
+                })
+                .FirstOrDefault();
+
+            if (player == null)
+            {
+                return NotFound("Player not found.");
+            }
+
+            return Ok(player);
+        }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)

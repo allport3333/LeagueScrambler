@@ -133,77 +133,106 @@ export class TeamScoresComponent implements OnInit {
             return;
         }
 
-        // Collect all game scores
-        let leagueTeamScoresArray: LeagueTeamScoreDto[] = [];
+        // Arrays to store scores separately for Team 1 and Team 2
+        let team1ScoresArray: LeagueTeamScoreDto[] = [];
+        let team2ScoresArray: LeagueTeamScoreDto[] = [];
 
+        // Helper function to add game records in order
         const addGameRecords = (team1ScoreControl: string, team2ScoreControl: string) => {
             const team1Score = this.TeamScoresForm.controls[team1ScoreControl].value;
             const team2Score = this.TeamScoresForm.controls[team2ScoreControl].value;
 
             if (team1Score == null || team2Score == null) return;
 
+            // Compare scores to determine the winner
+            const team1Won = +team1Score > +team2Score;
+            const team2Won = +team2Score > +team1Score;
+
+            // Record for Team 1
             const recordForTeam1: LeagueTeamScoreDto = {
                 id: 0,
                 teamId: this.selectedTeam1.id,
                 opponentsTeamId: this.selectedTeam2.id,
                 teamScore: +team1Score,
-                wonGame: +team1Score === 15,
+                wonGame: team1Won,
                 date: this.TeamScoresForm.controls['date'].value,
                 teamName: null,
                 opponentsTeamName: null
             };
 
+            // Record for Team 2
             const recordForTeam2: LeagueTeamScoreDto = {
                 id: 0,
                 teamId: this.selectedTeam2.id,
                 opponentsTeamId: this.selectedTeam1.id,
                 teamScore: +team2Score,
-                wonGame: +team2Score === 15,
+                wonGame: team2Won,
                 date: this.TeamScoresForm.controls['date'].value,
                 teamName: null,
                 opponentsTeamName: null
             };
 
-            leagueTeamScoresArray.push(recordForTeam1, recordForTeam2);
+            // Push the scores into separate arrays
+            team1ScoresArray.push(recordForTeam1);
+            team2ScoresArray.push(recordForTeam2);
         };
 
-        // Loop through dynamic controls
+        // Loop through the dynamic controls to collect scores in order
         for (let i = 0; i < this.numberOfGames; i++) {
             addGameRecords(`team1Score${i}`, `team2Score${i}`);
         }
 
         // Check if scores were entered
-        if (leagueTeamScoresArray.length === 0) {
+        if (team1ScoresArray.length === 0 || team2ScoresArray.length === 0) {
             alert('No valid score entries found.');
             this.newTeamScoreLoading = false;
             return;
         }
 
-        // Submit each score to the backend
-        let pendingCalls = leagueTeamScoresArray.length;
+        // Helper function to submit scores in sequence
+        const submitScoresSequentially = (scoresArray: LeagueTeamScoreDto[], callback: () => void) => {
+            let index = 0;
 
-        leagueTeamScoresArray.forEach((dto) => {
-            this.statisticsService.RecordLeagueTeamScore(dto).subscribe({
-                next: () => {
-                    pendingCalls--;
-                    if (pendingCalls === 0) {
-                        // Once all scores are recorded, update the team scores
-                        this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe({
-                            next: () => {
-                                this.statisticsService.GetTeams(this.selectedLeague).subscribe({
-                                    next: (updatedTeams) => {
-                                        this.teams = updatedTeams;
-                                        this.newTeamScoreLoading = false;
-                                        alert('Scores submitted and team standings updated successfully!');
-                                    },
-                                    error: (err) => console.error(err)
-                                });
+            const submitNext = () => {
+                if (index >= scoresArray.length) {
+                    callback();  // All scores submitted, move to next step
+                    return;
+                }
+
+                this.statisticsService.RecordLeagueTeamScore(scoresArray[index]).subscribe({
+                    next: () => {
+                        index++;
+                        submitNext();  // Submit the next score
+                    },
+                    error: (err) => {
+                        console.error(err);
+                        this.newTeamScoreLoading = false;
+                        alert('Error submitting scores. Please try again.');
+                    }
+                });
+            };
+
+            submitNext();  // Start submitting
+        };
+
+        // Step 1: Submit Team 1's scores in order
+        submitScoresSequentially(team1ScoresArray, () => {
+            // Step 2: Submit Team 2's scores after Team 1
+            submitScoresSequentially(team2ScoresArray, () => {
+                // Step 3: Update team standings after all scores are submitted
+                this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe({
+                    next: () => {
+                        this.statisticsService.GetTeams(this.selectedLeague).subscribe({
+                            next: (updatedTeams) => {
+                                this.teams = updatedTeams;
+                                this.newTeamScoreLoading = false;
+                                alert('Scores submitted and team standings updated successfully!');
                             },
                             error: (err) => console.error(err)
                         });
-                    }
-                },
-                error: (err) => console.error(err)
+                    },
+                    error: (err) => console.error(err)
+                });
             });
         });
 
@@ -211,6 +240,7 @@ export class TeamScoresComponent implements OnInit {
         this.TeamScoresForm.reset();
         this.password.password = '';
     }
+
 
     groupScoresByTeam() {
         if (!this.teamScores || this.teamScores.length === 0) {
@@ -251,7 +281,6 @@ export class TeamScoresComponent implements OnInit {
         }
     }
 
-    // *** GET (READ) the existing scores for a certain date ***
     getTeamScores() {
         if (!this.selectedLeague) {
             alert('Please select a league');
@@ -263,42 +292,6 @@ export class TeamScoresComponent implements OnInit {
                 this.teamScores = result;
             },
             error: err => console.error(err)
-        });
-    }
-
-    addTeam() {
-        this.playerService.GetPassword().subscribe({
-            next: (result) => {
-                this.password = result;
-                if (
-                    !this.NewTeamForm.controls['password'].value ||
-                    this.NewTeamForm.controls['password'].value !== this.password.password
-                ) {
-                    alert('Password is not correct.');
-                } else {
-                    const newTeam: NewCreatedTeam = {
-                        teamName: this.NewTeamForm.controls['newTeamName'].value,
-                        leagueName: this.selectedLeague
-                    };
-                    this.statisticsService.AddTeam(newTeam).subscribe({
-                        next: (created) => {
-                            if (created.id === 0) {
-                                alert('Error creating team. Make sure a league is selected.');
-                            } else {
-                                alert(
-                                    newTeam.teamName +
-                                    ' successfully created for league ' +
-                                    newTeam.leagueName +
-                                    '.'
-                                );
-                                this.getTeams();
-                            }
-                        },
-                        error: err => console.error(err)
-                    });
-                }
-            },
-            error: (err) => console.error(err)
         });
     }
 

@@ -1,0 +1,72 @@
+<div class="text-center" style="margin-top: 20px;">
+    <!-- Date Picker and Button -->
+    <mat-form-field appearance="outline">
+        <mat-label>Select Date</mat-label>
+        <mat-select [(ngModel)]="selectedDate" [ngModelOptions]="{standalone: true}" (selectionChange)="getTeamScores()">
+            <mat-option *ngFor="let date of availableDates" [value]="date">
+                {{ date | date: 'mediumDate' }}
+            </mat-option>
+        </mat-select>
+    </mat-form-field>
+
+    <!-- Grouped Team Scores -->
+    <div class="d-flex flex-wrap justify-content-center mt-4">
+        <!-- Loop through grouped team scores -->
+        <mat-card *ngFor="let teamGroup of groupScoresByTeam()" class="score-card mx-3 my-3">
+            <mat-card-header>
+                <mat-card-title>
+                    {{ teamGroup[0].teamName }}
+                </mat-card-title>
+                <mat-card-subtitle>
+                    Games Played on {{ initialDate | date: 'mediumDate' }}
+                </mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-divider></mat-divider>
+
+            <!-- Table for Team's Game Details -->
+            <mat-card-content>
+                <table mat-table [dataSource]="teamGroup" class="mat-elevation-z2">
+
+                    <!-- Score Column -->
+                    <ng-container matColumnDef="teamScore">
+                        <th mat-header-cell *matHeaderCellDef> Team Score </th>
+                        <td mat-cell *matCellDef="let game">
+                            {{ game.teamScore }}
+                        </td>
+                    </ng-container>
+
+                    <!-- Win/Loss Column -->
+                    <ng-container matColumnDef="wonGame">
+                        <th mat-header-cell *matHeaderCellDef> Result </th>
+                        <td mat-cell *matCellDef="let game">
+                            <span [ngClass]="game.wonGame ? 'win-badge' : 'loss-badge'">
+                                {{ game.wonGame ? 'Win' : 'Loss' }}
+                            </span>
+                        </td>
+                    </ng-container>
+
+                    <!-- Date Column -->
+                    <ng-container matColumnDef="date">
+                        <th mat-header-cell *matHeaderCellDef> Date </th>
+                        <td mat-cell *matCellDef="let game">
+                            {{ game.date | date: 'mediumDate' }}
+                        </td>
+                    </ng-container>
+
+                    <!-- Opponent Column -->
+                    <ng-container matColumnDef="opponentsTeamName">
+                        <th mat-header-cell *matHeaderCellDef> Opponent </th>
+                        <td mat-cell *matCellDef="let game">
+                            {{ game.opponentsTeamName }}
+                        </td>
+                    </ng-container>
+
+                    <!-- Header and Rows -->
+                    <tr mat-header-row *matHeaderRowDef="['teamScore', 'wonGame', 'date', 'opponentsTeamName']"></tr>
+                    <tr mat-row *matRowDef="let row; columns: ['teamScore', 'wonGame', 'date', 'opponentsTeamName'];"></tr>
+                </table>
+            </mat-card-content>
+        </mat-card>
+    </div>
+</div>

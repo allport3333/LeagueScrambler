@@ -66,3 +66,67 @@ table.signed-in-players-table th {
     height: 30px !important; /* Slightly taller header row */
     vertical-align: middle; /* Vertically center header text */
 }
+/* Styling for the locked message card */
+.locked-message-card {
+    background-color: #ffe6e6; /* Light red background */
+    border: 1px solid #f44336; /* Red border */
+    padding: 15px;
+    border-radius: 8px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* Sign-In Button for Players */
+.btn-sign-in {
+    width: 90%;
+    height: 150px;
+    font-size: 28px;
+    font-weight: bold;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+    .btn-sign-in:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-sign-in:disabled {
+        background-color: #ccc;
+        color: #666;
+        cursor: not-allowed;
+    }
+
+/* Signed-In Players Table */
+.signed-in-players-table {
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+}
+
+    .signed-in-players-table th {
+        background-color: #f0f0f0;
+        font-weight: bold;
+        padding: 8px;
+    }
+
+    .signed-in-players-table td {
+        padding: 6px;
+        font-size: 13px;
+    }
+
+/* Disabled Player Card */
+.player-card .disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .btn-sign-in {
+        width: 100%;
+        height: 120px;
+        font-size: 22px;
+    }
+}

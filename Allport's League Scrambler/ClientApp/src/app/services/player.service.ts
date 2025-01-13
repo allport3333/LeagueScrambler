@@ -34,13 +34,21 @@ export class PlayerService {
         return this.httpClient.get<Player[]>(`${this.baseUrl}api/ScrambleData/GetPlayerByFirstLastName`, { params });
     }
 
-    public getSignInLockStatus(): Observable<boolean> {
-        return this.httpClient.get<boolean>(`${this.baseUrl}api/Login/GetLockSignInStatus`);
+    public getSignInLockStatus(leagueId: number): Observable<boolean> {
+        return this.httpClient.get<boolean>(`${this.baseUrl}api/Login/GetLockSignInStatus/${leagueId}`);
     }
 
-    public setSignInLockStatus(locked: boolean): Observable<boolean> {
-        return this.httpClient.post<boolean>(`${this.baseUrl}api/Login/SetLockSignInStatus`, { locked });
+    public getPlayerByPlayerId(): Observable<Player> {
+        return this.httpClient.get<Player>(`${this.baseUrl}api/Login/GetPlayerByPlayerId`);
     }
+
+    public setSignInLockStatus(locked: boolean, leagueId: number): Observable<boolean> {
+        return this.httpClient.post<boolean>(`${this.baseUrl}api/Login/SetLockSignInStatus`, {
+            locked: locked,
+            leagueId: leagueId
+        });
+    }
+
 
     public GetLeagues() {
         return this.httpClient.get<Leagues[]>(this.baseUrl + 'api/ScrambleData/GetLeagues');

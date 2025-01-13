@@ -2,7 +2,7 @@
     <h2 class="text-center">Sign In</h2>
 
     <!-- League Selection -->
-    <div class="form-group mt-3">
+    <div class="form-group mt-3" *ngIf="!isLoggedIn">
         <label for="leagueSelect">Select League:</label>
         <select id="leagueSelect" class="form-control" [(ngModel)]="selectedLeague" (change)="onLeagueSelect(selectedLeague)">
             <option *ngFor="let league of leaguesAvailable" [ngValue]="league">
@@ -11,7 +11,7 @@
         </select>
     </div>
 
-    <div class="text-center mt-3">
+    <div class="text-center mt-3" *ngIf="userRole === 'Admin' || userRole === 'Manager'">
         <button mat-raised-button color="primary" (click)="toggleAddPlayerForm()">
             {{ showAddPlayerForm ? 'Hide Add Player' : 'Add New Player' }}
         </button>
@@ -39,16 +39,26 @@
         </form>
     </div>
 
-    <div [hidden]="userRole !== 'Admin' && userRole !== 'Manager'" class="text-center mt-3">
+    <div *ngIf="userRole === 'Admin' || userRole === 'Manager'" class="text-center mt-3">
         <mat-checkbox [(ngModel)]="isSignInLocked" (change)="onLockSignInChange($event.checked)">
             Lock Sign In
         </mat-checkbox>
     </div>
 
+
+    <div *ngIf="userRole === 'Player' && isSignInLocked" class="text-center mt-3">
+        <mat-card class="locked-message-card">
+            <mat-card-content>
+                <h3 style="color: red; font-weight: bold;">Sign In is Currently Locked</h3>
+                <p>Please contact your league administrator for more information.</p>
+            </mat-card-content>
+        </mat-card>
+    </div>
+
     <!-- Tables Side by Side -->
     <div class="row mt-4">
-        <!-- Players in League Grid -->
-        <div class="col-lg-9 col-md-8 col-sm-12">
+        <!-- Players in League Grid for Admin/Manager -->
+        <div class="col-lg-9 col-md-8 col-sm-12" *ngIf="userRole === 'Admin' || userRole === 'Manager'">
             <h4 class="mb-3">Players in League</h4>
             <div class="mb-3">
                 <input matInput placeholder="Search Players"
@@ -76,41 +86,50 @@
             </div>
         </div>
 
-        <!-- Signed-In Players Table -->
+        <!-- Sign In Button for Player Role -->
+        <div class="col-lg-9 col-md-8 col-sm-12 d-flex justify-content-center align-items-center" *ngIf="userRole === 'Player'">
+            <button mat-raised-button
+                    [color]="isPlayerSignedIn ? 'warn' : 'primary'"
+                    class="btn-sign-in"
+                    (click)="togglePlayerSignIn()"
+                    [disabled]="isSignInLocked">
+                {{ isPlayerSignedIn ? 'Remove from Sign In' : 'Sign In' }} - {{ player?.firstName }} {{ player?.lastName }}
+            </button>
+        </div>
+
+
+        <!-- Signed-In Players Table (Visible to All Roles) -->
         <div class="col-lg-3 col-md-4 col-sm-12">
-            <h4 class="mb-3">Signed-In Players</h4>
+            <h4 class="mb-3 text-center">Signed-In Players</h4>
 
             <!-- Male and Female Count -->
             <div class="d-flex justify-content-between mb-3">
-                <div>
-                    <span><strong>Males:</strong> {{ maleCount }}</span>
-                </div>
-                <div>
-                    <span><strong>Females:</strong> {{ femaleCount }}</span>
-                </div>
+                <div><strong>Males:</strong> {{ maleCount }}</div>
+                <div><strong>Females:</strong> {{ femaleCount }}</div>
             </div>
 
-            <table mat-table [dataSource]="signedInDataSource" class="table table-hover mat-elevation-z8 signed-in-players-table"
-                   style="border-spacing: 0; border-collapse: collapse;">
+            <table mat-table [dataSource]="signedInDataSource" class="table table-hover mat-elevation-z8 signed-in-players-table">
+                <!-- First Name Column -->
                 <ng-container matColumnDef="firstName">
-                    <th mat-header-cell *matHeaderCellDef style="padding: 8px; font-size: 14px;"> First Name </th>
-                    <td mat-cell *matCellDef="let player" style="padding: 5px; font-size: 13px;"> {{ player.firstName }} </td>
+                    <th mat-header-cell *matHeaderCellDef>First Name</th>
+                    <td mat-cell *matCellDef="let player">{{ player.firstName }}</td>
                 </ng-container>
 
+                <!-- Last Name Column -->
                 <ng-container matColumnDef="lastName">
-                    <th mat-header-cell *matHeaderCellDef style="padding: 8px; font-size: 14px;"> Last Name </th>
-                    <td mat-cell *matCellDef="let player" style="padding: 5px; font-size: 13px;"> {{ player.lastName }} </td>
+                    <th mat-header-cell *matHeaderCellDef>Last Name</th>
+                    <td mat-cell *matCellDef="let player">{{ player.lastName }}</td>
                 </ng-container>
 
-                <tr mat-header-row *matHeaderRowDef="signedInColumns"
-                    style="line-height: 1.5; font-size: 16px; height: 50px;"></tr>
+                <!-- Rows -->
+                <tr mat-header-row *matHeaderRowDef="signedInColumns"></tr>
                 <tr mat-row *matRowDef="let row; columns: signedInColumns;"
-                    (click)="!isSignInLocked && unselectPlayer(row)"
-                    [class.disabled]="isSignInLocked"
-                    style="line-height: 1.5; cursor: pointer; font-size: 15px; height: 50px;"></tr>
+                    (click)="handlePlayerRemoval(row)"
+                    [class.disabled]="isSignInLocked || userRole === 'Player' && row.playerId !== currentPlayerId">
+                </tr>
             </table>
         </div>
-
     </div>
+
 
 </div>

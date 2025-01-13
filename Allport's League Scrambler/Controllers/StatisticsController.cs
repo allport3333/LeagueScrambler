@@ -562,6 +562,34 @@ namespace Allport_s_League_Scrambler.Controllers
 
         }
 
+        [HttpGet("available-dates/{leagueName}")]
+        public IActionResult GetAvailableScoreDates(string leagueName)
+        {
+            var _context = new DataContext();
+
+            // Step 1: Get the League ID from the LeagueType table using the league name
+            var leagueId = _context.Leagues
+                .Where(lt => lt.LeagueName == leagueName)
+                .Select(lt => lt.ID)
+                .FirstOrDefault();
+
+            // Step 2: Check if the league exists
+            if (leagueId == 0)
+            {
+                return NotFound($"League with name '{leagueName}' was not found.");
+            }
+
+            // Step 3: Fetch distinct dates for the league using the League ID
+            var dates = _context.LeagueTeamScore
+                .Where(score => score.LeagueTeam.LeagueID == leagueId)
+                .Select(score => score.Date.Date)
+                .Distinct()
+                .OrderByDescending(date => date)
+                .ToList();
+
+            return Ok(dates);
+        }
+
 
         // The request body for creating a team
         public class AddTeamRequest

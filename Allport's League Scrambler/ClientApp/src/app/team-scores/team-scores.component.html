@@ -8,7 +8,7 @@
         <mat-card class="mt-2" style="background-color: lightgray;">
             <mat-tab-group>
                 <!-- TAB 1: Team Scores -->
-                <mat-tab label="Team Scores">
+                <!--<mat-tab label="Team Scores">
                     <div class="d-flex justify-content-center">
                         <table *ngIf="teams != null" class="table" style="max-width:600px;">
                             <thead>
@@ -27,88 +27,7 @@
                             </tbody>
                         </table>
                     </div>
-                </mat-tab>
-
-                <!-- TAB 2: Individual Team Scores -->
-                <!-- TAB 2: Individual Team Scores -->
-                <mat-tab label="Individual Team Scores">
-                    <div class="text-center" style="margin-top: 20px;">
-                        <!-- Date Picker and Button -->
-                        <mat-form-field appearance="outline">
-                            <mat-label>Select Date</mat-label>
-                            <input matInput [matDatepicker]="picker" placeholder="Choose a date" [(ngModel)]="initialDate" [ngModelOptions]="{standalone: true}">
-                            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                            <mat-datepicker #picker></mat-datepicker>
-                        </mat-form-field>
-
-                        <button class="ml-2" (click)="getTeamScores()" mat-raised-button color="primary">
-                            Get Date's Scores
-                        </button>
-
-                        <!-- Grouped Team Scores -->
-                        <div class="d-flex flex-wrap justify-content-center mt-4">
-                            <!-- Loop through grouped team scores -->
-                            <mat-card *ngFor="let teamGroup of groupScoresByTeam()" class="score-card mx-3 my-3">
-                                <mat-card-header>
-                                    <mat-card-title>
-                                        {{ teamGroup[0].teamName }}
-                                    </mat-card-title>
-                                    <mat-card-subtitle>
-                                        Games Played on {{ initialDate | date: 'mediumDate' }}
-                                    </mat-card-subtitle>
-                                </mat-card-header>
-
-                                <mat-divider></mat-divider>
-
-                                <!-- Table for Team's Game Details -->
-                                <mat-card-content>
-                                    <table mat-table [dataSource]="teamGroup" class="mat-elevation-z2">
-
-                                        <!-- Score Column -->
-                                        <ng-container matColumnDef="teamScore">
-                                            <th mat-header-cell *matHeaderCellDef> Team Score </th>
-                                            <td mat-cell *matCellDef="let game">
-                                                {{ game.teamScore }}
-                                            </td>
-                                        </ng-container>
-
-                                        <!-- Win/Loss Column -->
-                                        <ng-container matColumnDef="wonGame">
-                                            <th mat-header-cell *matHeaderCellDef> Result </th>
-                                            <td mat-cell *matCellDef="let game">
-                                                <span [ngClass]="game.wonGame ? 'win-badge' : 'loss-badge'">
-                                                    {{ game.wonGame ? 'Win' : 'Loss' }}
-                                                </span>
-                                            </td>
-                                        </ng-container>
-
-                                        <!-- Date Column -->
-                                        <ng-container matColumnDef="date">
-                                            <th mat-header-cell *matHeaderCellDef> Date </th>
-                                            <td mat-cell *matCellDef="let game">
-                                                {{ game.date | date: 'short' }}
-                                            </td>
-                                        </ng-container>
-
-                                        <!-- Opponent Column -->
-                                        <ng-container matColumnDef="opponentsTeamName">
-                                            <th mat-header-cell *matHeaderCellDef> Opponent </th>
-                                            <td mat-cell *matCellDef="let game">
-                                                {{ game.opponentsTeamName }}
-                                            </td>
-                                        </ng-container>
-
-                                        <!-- Header and Rows -->
-                                        <tr mat-header-row *matHeaderRowDef="['teamScore', 'wonGame', 'date', 'opponentsTeamName']"></tr>
-                                        <tr mat-row *matRowDef="let row; columns: ['teamScore', 'wonGame', 'date', 'opponentsTeamName'];"></tr>
-                                    </table>
-                                </mat-card-content>
-                            </mat-card>
-                        </div>
-                    </div>
-                </mat-tab>
-
-
+                </mat-tab>-->
 
                 <!-- TAB 3: Enter Team Scores -->
                 <mat-tab *ngIf="userRole === 'Admin' || userRole === 'Manager'" label="Enter Team Scores">
@@ -194,7 +113,7 @@
                                     </mat-card>
                                 </div>
 
-                                <!-- Date and Password -->
+                                <!-- Date -->
                                 <div class="row justify-content-center mt-3">
                                     <mat-form-field appearance="outline" class="mx-2">
                                         <mat-label>Date</mat-label>
@@ -215,25 +134,6 @@
                         </div>
                     </div>
                 </mat-tab>
-
-
-                <!-- TAB 4: Add Team -->
-                <!--<mat-tab *ngIf="userRole === 'Admin' || userRole === 'Manager'" label="Add Team">
-        <h4 class="text-center mt-3">Add Team</h4>
-        <form [formGroup]="NewTeamForm" class="text-center">
-            <mat-form-field style="max-width:180px;" appearance="outline">
-                <mat-label>New Team Name</mat-label>
-                <input matInput placeholder="Team Name" type="text" formControlName="newTeamName" required />
-            </mat-form-field>
-            <br />
-            <mat-form-field style="max-width:180px; margin-top:10px;" appearance="outline">
-                <mat-label>Password</mat-label>
-                <input matInput placeholder="Password" type="password" formControlName="password" required />
-            </mat-form-field>
-            <br />
-            <button (click)="addTeam()" mat-raised-button color="primary" style="margin-top:10px;">Add Team</button>
-        </form>
-    </mat-tab>-->
 
                 <mat-tab label="League Teams">
                     <app-league-teams [leagueId]="leagueID" style="width: 100%;"></app-league-teams>

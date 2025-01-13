@@ -107,6 +107,10 @@ export class StatisticsService {
         return this.httpClient.get<LeagueTeamScoreDto[]>(url);
     }
 
+    public GetAvailableScoreDates(leagueName: string): Observable<string[]> {
+        return this.httpClient.get<string[]>(`${this.baseUrl}api/Statistics/available-dates/${leagueName}`);
+    }
+
     public UpdateTeamScores(leagueName: string): Observable<LeagueTeams[]> {
         const url = `${this.baseUrl}api/Statistics/UpdateTeamScores/${leagueName}`;
         return this.httpClient.get<LeagueTeams[]>(url);

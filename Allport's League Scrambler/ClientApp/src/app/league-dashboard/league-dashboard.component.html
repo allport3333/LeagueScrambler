@@ -15,15 +15,19 @@
                 <app-league-schedule [leagueId]="selectedLeagueId" style="width: 100%;"></app-league-schedule>
             </mat-tab>
 
+            <mat-tab label="Individual Team Scores">
+                <app-individual-team-scores></app-individual-team-scores>
+            </mat-tab>
+
             <!-- TAB #2: League Teams -->
             <mat-tab label="League Teams">
                 <app-league-teams [leagueId]="selectedLeagueId" style="width: 100%;"></app-league-teams>
             </mat-tab>
 
             <!-- TAB #3: Team Management (only if user is admin or manager) -->
-            <mat-tab *ngIf="isAdminOrManager" label="Team Management">
+            <!--<mat-tab *ngIf="isAdminOrManager" label="Team Management">
                 <app-team-management [leagueId]="selectedLeagueId" style="width: 100%;"></app-team-management>
-            </mat-tab>
+            </mat-tab>-->
         </mat-tab-group>
     </div>
 

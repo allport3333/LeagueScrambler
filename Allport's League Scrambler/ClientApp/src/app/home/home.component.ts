@@ -121,7 +121,7 @@ export class HomeComponent implements OnInit {
                                 // Fetch the player's ID for the user
                                 this.loginService.getUsersPlayer().subscribe((playerData) => {
                                     if (playerData && playerData.playerId) {
-                                        const playerProfileUrl = `/player-stats/${playerData.playerId}`;
+                                        const playerProfileUrl = `/player-stats-tabs/${playerData.playerId}`;
                                         this.router.navigate([playerProfileUrl]);
                                     } else {
                                         console.error('Player ID not found for the user.');

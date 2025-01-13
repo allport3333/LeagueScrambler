@@ -79,6 +79,6 @@ export class FetchDataComponent implements OnInit {
 
     // Navigate to the player's stats page
     goToPlayerStats(playerId: number) {
-        this.router.navigate(['/player-stats', playerId]); // Update route as needed
+        this.router.navigate(['/player-stats-tabs', playerId]); // Update route as needed
     }
 }

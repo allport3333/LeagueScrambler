@@ -33,6 +33,7 @@ import { LeagueTeamPlayerScoresComponent } from './league-team-player-scores/lea
 import { PlayerStatsTabsComponent } from './player-stats-tabs/player-stats-tabs.component';
 import { CombinedStatsTabComponent } from './combined-stats-tab/combined-stats-tab.component';
 import { LeagueTeamStandingsComponent } from './league-team-standings/league-team-standings.component';
+import { IndividualTeamScoresComponent } from './individual-team-scores/individual-team-scores.component';
 
 @NgModule({
     declarations: [
@@ -57,7 +58,8 @@ import { LeagueTeamStandingsComponent } from './league-team-standings/league-tea
         LeagueTeamPlayerScoresComponent,
         PlayerStatsTabsComponent,
         CombinedStatsTabComponent,
-        LeagueTeamStandingsComponent
+        LeagueTeamStandingsComponent,
+        IndividualTeamScoresComponent
 
     ],
     imports: [
