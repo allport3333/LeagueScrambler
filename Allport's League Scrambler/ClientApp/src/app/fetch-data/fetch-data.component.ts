@@ -22,7 +22,7 @@ export class FetchDataComponent implements OnInit {
     isMale1: boolean;
     leagueName: string;
     searchValue: string = '';
-
+    selectedLeagueId: number;
     displayedColumns: string[] = ['firstName', 'lastName'];
 
     PlayerForm = new FormGroup({
@@ -48,6 +48,7 @@ export class FetchDataComponent implements OnInit {
         // Listen for league changes
         this.leagueService.selectedLeague$.subscribe(selectedLeague => {
             if (selectedLeague) {
+                this.selectedLeagueId = selectedLeague.leagueId;
                 this.loadPlayersByLeague(selectedLeague.leagueId);
             }
         });

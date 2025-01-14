@@ -2,10 +2,15 @@
     <div class="tab-content d-flex flex-column align-items-center">
         <h5 class="mb-2">Player Standings</h5>
 
+        <div *ngIf="selectedLeagueId && selectedLeagueId == 27" style="display: flex; justify-content: center; align-items: center; ">
+            <img src="assets/img/logoww.jpg"
+                 style="width: 100%; max-width: 200px; height: auto; object-fit: contain;">
+        </div>
+
         <!-- Toggle Standings Type Button -->
         <button mat-raised-button color="primary"
                 (click)="toggleStandingsType()"
-                style="margin-bottom: 16px;">
+                style="margin-bottom: 16px; margin-top:20px">
             {{ standingsType === 'round' ? 'Show Standings by Matchup' : 'Show Standings by Round' }}
         </button>
 
@@ -59,7 +64,7 @@
 
         <!-- Standings Table -->
         <div class="card" style="margin: 20px; padding: 20px; max-width: 100%; overflow-x: auto;">
-            <mat-tab-group >
+            <mat-tab-group>
                 <!-- Male Standings Tab -->
                 <mat-tab label="Men's Standings">
                     <table class="table table-bordered table-striped compact-table"

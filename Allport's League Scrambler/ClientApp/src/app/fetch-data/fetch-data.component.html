@@ -7,6 +7,11 @@
     <div style="display: flex; flex-direction: column; align-items: center; margin: 20px;">
         <h1 style="margin-bottom: 10px;">Player List</h1>
 
+        <div *ngIf="selectedLeagueId && selectedLeagueId == 27" style="display: flex; justify-content: center; align-items: center;">
+            <img src="assets/img/logoww.jpg"
+                 style="width: 100%; max-width: 200px; height: auto; object-fit: contain;">
+        </div>
+
         <!-- Search Bar -->
         <mat-form-field appearance="outline" class="search-bar">
             <mat-label>Search Players</mat-label>
