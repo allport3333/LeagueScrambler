@@ -37,7 +37,7 @@ export class SignInComponent implements OnInit {
     player: Player | null = null;
     isPlayerSignedIn: boolean = false;  // Track if the player is signed in
     currentPlayerId: number;  
-
+    dayOfWeekSetting: string = 'Sunday';
     PlayerForm = new FormGroup({
         firstName: new FormControl(),
         lastName: new FormControl(),
@@ -162,12 +162,33 @@ export class SignInComponent implements OnInit {
 
         this.playerService.getSignInLockStatus(this.selectedLeague.id).subscribe(
             (status) => {
-                this.isSignInLocked = status;
+                const currentDayInEST = this.getCurrentDayInEST();
+
+
+                if (status === true) {
+                    this.isSignInLocked = true;
+                } else {
+                    // Backend says unlocked; check the day of the week
+                    this.isSignInLocked = currentDayInEST !== this.dayOfWeekSetting;
+                }
             },
             (error) => {
                 console.error('Error loading sign-in lock status:', error);
             }
         );
+    }
+
+
+    // Helper function to get the current day of the week in EST
+    private getCurrentDayInEST(): string {
+        const nowUTC = new Date();
+
+        // Get timezone offset for EST (UTC-5 or UTC-4 during DST)
+        const estTime = new Date(nowUTC.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+
+        // Return the day name (e.g., 'Monday')
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        return daysOfWeek[estTime.getDay()];
     }
 
 
@@ -348,7 +369,12 @@ export class SignInComponent implements OnInit {
         this.players = [];
         this.playerSignIn = []; 
         this.signedInDataSource.data = this.playerSignIn;
-
+        this.loginService.getSettingValue('dayOfLeague', this.selectedLeague.id).subscribe(
+            (dayOfLeague) => {
+                this.dayOfWeekSetting = dayOfLeague;
+                this.loadSignInLockStatus();     
+            });
+   
         this.loadPlayers()
             .then(() => this.loadSignedInPlayers())
             .catch((error) => console.error('Error during league selection:', error));

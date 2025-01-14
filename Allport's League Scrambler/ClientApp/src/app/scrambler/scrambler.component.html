@@ -888,6 +888,14 @@
                                                     </mat-select>
                                                 </mat-form-field>
 
+                                                <mat-form-field appearance="outline" style="width: 300px; margin-bottom: 20px;">
+                                                    <mat-label>Percent of Score for Subs</mat-label>
+                                                    <mat-select [(value)]="subScorePercent" (selectionChange)="onSubScorePercentChange($event.value)">
+                                                        <mat-option *ngFor="let percent of [100, 90, 80, 70, 60, 50]" [value]="percent">
+                                                            {{ percent }}%
+                                                        </mat-option>
+                                                    </mat-select>
+                                                </mat-form-field>
                                                 <!-- Save Button -->
                                                 <div>
                                                     <button mat-raised-button color="primary" (click)="saveSettings()">Save Settings</button>

@@ -38,6 +38,7 @@ export class ScramblerComponent implements OnInit {
     searchedPlayers: any[] = [];
     selectedPlayer: any = null;
     searchTermDelete: string = '';
+    leagueDay: string = 'Monday'; 
     searchedPlayersToDelete: any[] = [];
     selectedPlayerToDelete: any = null;
     private originalStandings: PlayerScoreGroup[] | null = null;
@@ -855,6 +856,7 @@ export class ScramblerComponent implements OnInit {
             { settingName: 'dropLowest', settingValue: this.dropLowest },
             { settingName: 'numberOfSubsAllowed', settingValue: this.numberOfSubsAllowed },
             { settingName: 'subScorePercent', settingValue: this.subScorePercent },
+            { settingName: 'dayOfLeague', settingValue: this.leagueDay },
         ];
 
         // Create an array of promises for each setting update
@@ -1339,6 +1341,9 @@ export class ScramblerComponent implements OnInit {
         this.calculateTeamsNeeded();
     }
 
+    onLeagueDayChange(selectedDay: string): void {
+        this.leagueDay = selectedDay;
+    }
 
     deletePlayerLogic() {
         // Get the selected player's first and last name from the form controls

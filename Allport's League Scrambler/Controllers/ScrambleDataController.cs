@@ -484,9 +484,9 @@ namespace Allport_s_League_Scrambler.Controllers
                     var newTeam = new KingQueenTeam
                     {
                         LeagueID = leagueId,
-                        DateOfTeam = DateTime.Now,                
+                        DateOfTeam = DateTime.Now,
                         ScrambleNumber = scrambleNumber,
-                        ScrambleWithScoresToBeSaved = false       
+                        ScrambleWithScoresToBeSaved = false
                     };
 
                     // Add and save the team so we can get its ID
@@ -1184,59 +1184,59 @@ namespace Allport_s_League_Scrambler.Controllers
             {
 
 
-            // Step 6: Normalize each player's scores
-            var playerScores = unfilteredPlayerScores.Select(player =>
-            {
-                var summedScoresByScramble = player.Scores
-                    .GroupBy(score => score.ScrambleNumber)
-                    .ToDictionary(
-                        group => group.Key,
-                        group => new
-                        {
-                            ScrambleNumber = group.Key,
-                            Score = group.Sum(s => s.Score),
-                            RoundWon = group.Sum(s => s.RoundWon),
-                            IsSubScore = group.Any(s => s.IsSubScore ?? false)
-                        }
-                    );
-
-                var normalizedScores = scrambleWithRoundIds
-                    .Select(scramble =>
-                    {
-                        if (summedScoresByScramble.TryGetValue(scramble.ScrambleNumber, out var existingScore))
-                        {
-                            return new
-                            {
-                                ScrambleNumber = scramble.ScrambleNumber,
-                                RoundId = scramble.RoundId,
-                                Score = existingScore.Score,
-                                RoundWon = existingScore.RoundWon,
-                                IsSubScore = existingScore.IsSubScore
-                            };
-                        }
-                        else
-                        {
-                            return new
-                            {
-                                ScrambleNumber = scramble.ScrambleNumber,
-                                RoundId = scramble.RoundId,
-                                Score = 0,
-                                RoundWon = 0,
-                                IsSubScore = false
-                            };
-                        }
-                    })
-                    .OrderBy(score => score.ScrambleNumber)
-                    .ToList();
-
-                return new
+                // Step 6: Normalize each player's scores
+                var playerScores = unfilteredPlayerScores.Select(player =>
                 {
-                    PlayerId = player.PlayerId,
-                    PlayerName = player.PlayerName,
-                    IsMale = player.IsMale,
-                    Scores = normalizedScores
-                };
-            }).ToList();
+                    var summedScoresByScramble = player.Scores
+                        .GroupBy(score => score.ScrambleNumber)
+                        .ToDictionary(
+                            group => group.Key,
+                            group => new
+                            {
+                                ScrambleNumber = group.Key,
+                                Score = group.Sum(s => s.Score),
+                                RoundWon = group.Sum(s => s.RoundWon),
+                                IsSubScore = group.Any(s => s.IsSubScore ?? false)
+                            }
+                        );
+
+                    var normalizedScores = scrambleWithRoundIds
+                        .Select(scramble =>
+                        {
+                            if (summedScoresByScramble.TryGetValue(scramble.ScrambleNumber, out var existingScore))
+                            {
+                                return new
+                                {
+                                    ScrambleNumber = scramble.ScrambleNumber,
+                                    RoundId = scramble.RoundId,
+                                    Score = existingScore.Score,
+                                    RoundWon = existingScore.RoundWon,
+                                    IsSubScore = existingScore.IsSubScore
+                                };
+                            }
+                            else
+                            {
+                                return new
+                                {
+                                    ScrambleNumber = scramble.ScrambleNumber,
+                                    RoundId = scramble.RoundId,
+                                    Score = 0,
+                                    RoundWon = 0,
+                                    IsSubScore = false
+                                };
+                            }
+                        })
+                        .OrderBy(score => score.ScrambleNumber)
+                        .ToList();
+
+                    return new
+                    {
+                        PlayerId = player.PlayerId,
+                        PlayerName = player.PlayerName,
+                        IsMale = player.IsMale,
+                        Scores = normalizedScores
+                    };
+                }).ToList();
 
                 return Ok(new { playerScores, maxRounds = validRounds.Select(round => round.ScrambleNumber).Distinct().Count() });
             }
@@ -1408,60 +1408,100 @@ namespace Allport_s_League_Scrambler.Controllers
             var context = new DataContext();
             var newLeague = new LeagueType();
             var newUserLeague = new UserLeague();
-            var leagueExists = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+            var leagueExists = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
 
             var username = User.Identity.Name; // Assuming the username is in the claim
 
-
             if (leagueExists == null)
             {
+                // Create new league
                 newLeague = new LeagueType()
                 {
                     LeagueName = leagueName
                 };
 
-
                 context.Leagues.Add(newLeague);
                 context.SaveChanges();
 
+                // Retrieve the newly created league ID
+                var newLeagueId = newLeague.ID;
 
+                // Insert default league settings
+                var defaultSettings = new List<LeagueSettings>
+                            {
+                                new LeagueSettings
+                                {
+                                    LeagueId = newLeagueId,
+                                    SettingName = "subScorePercent",
+                                    SettingValue = "50"
+                                },
+                                new LeagueSettings
+                                {
+                                    LeagueId = newLeagueId,
+                                    SettingName = "numberOfSubsAllowed",
+                                    SettingValue = "100"
+                                },
+                                new LeagueSettings
+                                {
+                                    LeagueId = newLeagueId,
+                                    SettingName = "dropLowest",
+                                    SettingValue = "0"
+                                },
+                                new LeagueSettings
+                                {
+                                    LeagueId = newLeagueId,
+                                    SettingName = "dayOfLeague",
+                                    SettingValue = "Monday"
+                                }
+                            };
 
+                context.LeagueSettings.AddRange(defaultSettings);
+                context.SaveChanges();
+
+                // Associate the user with the new league
                 if (username != null)
                 {
-                    var newRetrievedLeague = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
-                    var retrievedUser = context.Users.Where(x => x.LoginName == username).FirstOrDefault();
-                    newUserLeague = new UserLeague()
+                    var retrievedUser = context.Users.FirstOrDefault(x => x.LoginName == username);
+                    if (retrievedUser != null)
                     {
-                        LeagueTypeId = newRetrievedLeague.ID,
-                        UserId = retrievedUser.UserId
+                        newUserLeague = new UserLeague()
+                        {
+                            LeagueTypeId = newLeagueId,
+                            UserId = retrievedUser.UserId
+                        };
 
-                    };
-                    context.UserLeagues.Add(newUserLeague);
-                    context.SaveChanges();
+                        context.UserLeagues.Add(newUserLeague);
+                        context.SaveChanges();
+                    }
                 }
 
                 return newLeague;
-
             }
             else
             {
+                // League already exists, associate user with it
                 if (username != null)
                 {
-                    var newRetrievedLeague = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
-                    var retrievedUser = context.Users.Where(x => x.LoginName == username).FirstOrDefault();
-                    newUserLeague = new UserLeague()
+                    var existingLeague = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
+                    var retrievedUser = context.Users.FirstOrDefault(x => x.LoginName == username);
+
+                    if (retrievedUser != null && existingLeague != null)
                     {
-                        LeagueTypeId = newRetrievedLeague.ID,
-                        UserId = retrievedUser.UserId
+                        newUserLeague = new UserLeague()
+                        {
+                            LeagueTypeId = existingLeague.ID,
+                            UserId = retrievedUser.UserId
+                        };
 
-                    };
-                    context.UserLeagues.Add(newUserLeague);
-                    context.SaveChanges();
+                        context.UserLeagues.Add(newUserLeague);
+                        context.SaveChanges();
+                    }
                 }
-                return newLeague;
-            }
 
+                return leagueExists;
+            }
         }
+
 
     }
 }
