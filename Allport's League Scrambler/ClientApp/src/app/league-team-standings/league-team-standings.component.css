@@ -10,7 +10,7 @@
 
 /* Adjusted Total Points column (15px wider) */
 .total-points-column, .mat-column-totalPoints {
-    width: 75px !important; /* Increased from 60px to 75px */
+    width: 75px !important;
     min-width: 75px !important;
     max-width: 75px !important;
     text-align: center !important;
@@ -40,4 +40,44 @@ mat-table {
     overflow-x: auto !important;
     white-space: nowrap !important;
     table-layout: fixed !important;
+}
+
+/* Alternating row colors for better readability */
+mat-row:nth-child(even) {
+    background-color: #f5f5f5 !important; /* Light grey */
+}
+
+mat-row:nth-child(odd) {
+    background-color: #ffffff !important; /* White */
+}
+
+/* Division header backgrounds */
+.gold-division-header {
+    background-color: gold !important;
+    color: black !important;
+    text-align: center !important;
+    padding: 10px 0 !important;
+    font-weight: bold !important;
+}
+
+.silver-division-header {
+    background-color: silver !important;
+    color: black !important;
+    text-align: center !important;
+    padding: 10px 0 !important;
+    font-weight: bold !important;
+}
+
+.bronze-division-header {
+    background-color: #cd7f32 !important; /* Bronze color */
+    color: white !important;
+    text-align: center !important;
+    padding: 10px 0 !important;
+    font-weight: bold !important;
+}
+
+.default-header {
+    background-color: #e0e0e0;
+    color: #333;
+    font-weight: bold;
 }

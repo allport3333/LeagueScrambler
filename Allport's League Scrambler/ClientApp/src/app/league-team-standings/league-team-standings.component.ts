@@ -33,6 +33,20 @@ export class LeagueTeamStandingsComponent implements OnInit {
             this.processDivisions();
         });
     }
+
+    getDivisionHeaderClass(divisionName: string): string {
+        if (divisionName.toLowerCase().includes('gold')) {
+            return 'gold-division-header';
+        } else if (divisionName.toLowerCase().includes('silver')) {
+            return 'silver-division-header';
+        } else if (divisionName.toLowerCase().includes('bronze')) {
+            return 'bronze-division-header';
+        } else {
+            return 'default-header';
+        }
+    }
+
+
     processDivisions() {
         if (!this.standings.length) {
             this.divisions = { general: [] }; // Default to an empty "general" group if no data

@@ -5,6 +5,7 @@ import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 import { FormControl } from '@angular/forms';
 import { startWith, map } from 'rxjs/operators';
+import { MatSnackBar } from '@angular/material';
 
 @Component({
     selector: 'app-team-management',
@@ -31,7 +32,7 @@ export class TeamManagementComponent implements OnInit {
     selectedPlayer: Player | null = null;
     loadingData = false;
 
-    constructor(private statisticsService: StatisticsService, private playerService: PlayerService) { }
+    constructor(private statisticsService: StatisticsService, private playerService: PlayerService, private snackBar: MatSnackBar) { }
 
     ngOnInit(): void {
         // If we have a leagueId at start, load data
@@ -137,22 +138,62 @@ export class TeamManagementComponent implements OnInit {
     // *** ADD PLAYER TO TEAM ***
     addPlayerToTeam(): void {
         if (!this.selectedTeamId) {
-            alert('Please select a team first.');
+            this.snackBar.open('Please select a team first.', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'center',
+                verticalPosition: 'top',
+                panelClass: ['warning-snackbar']
+            });
             return;
         }
         if (!this.selectedPlayer) {
-            alert('Please select a player from the dropdown.');
+            this.snackBar.open('Please select a player from the dropdown.', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'center',
+                verticalPosition: 'top',
+                panelClass: ['warning-snackbar']
+            });
+            return;
+        }
+
+        // Find the selected team by ID to get the team name
+        const selectedTeam = this.teams.find(team => team.id === this.selectedTeamId);
+
+        if (!selectedTeam) {
+            this.snackBar.open('Selected team not found.', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'center',
+                verticalPosition: 'top',
+                panelClass: ['error-snackbar']
+            });
             return;
         }
 
         this.statisticsService.AddPlayerToLeagueTeam(this.selectedTeamId, this.selectedPlayer.id)
             .subscribe({
                 next: () => {
-                    alert(`Player ${this.selectedPlayer.firstName} added to team #${this.selectedTeamId}`);
+                    this.snackBar.open(
+                        `Player ${this.selectedPlayer.firstName} was added to ${selectedTeam.teamName}.`,
+                        'Close',
+                        {
+                            duration: 3000,
+                            horizontalPosition: 'center',
+                            verticalPosition: 'top',
+                            panelClass: ['success-snackbar']
+                        }
+                    );
                     this.selectedPlayer = null;
                     this.playerCtrl.setValue(''); // Clear input
                 },
-                error: (err) => console.error('Error adding player to team:', err)
+                error: (err) => {
+                    console.error('Error adding player to team:', err);
+                    this.snackBar.open('Error adding player to the team.', 'Close', {
+                        duration: 3000,
+                        horizontalPosition: 'center',
+                        verticalPosition: 'top',
+                        panelClass: ['error-snackbar']
+                    });
+                }
             });
     }
 

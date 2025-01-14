@@ -6,7 +6,10 @@
         <!-- Iterate over divisions -->
         <div *ngFor="let division of divisions | keyvalue" style="flex: 1 1 45%; min-width: 300px; max-width: 500px;">
             <mat-card style="padding: 10px;">
-                <h3 style="text-align: center;">{{ division.key }}</h3>
+                <!-- Dynamic Header Color Based on Division Name -->
+                <h3 [ngClass]="getDivisionHeaderClass(division.key)" style="text-align: center; padding: 10px; border-radius: 5px;">
+                    {{ division.key }}
+                </h3>
 
                 <!-- Scrollable container to prevent overflow -->
                 <div style="overflow-x: auto; width: 100%;">
@@ -14,33 +17,42 @@
                         <!-- Rank Column -->
                         <ng-container matColumnDef="rank">
                             <mat-header-cell *matHeaderCellDef class="small-column"> Rank </mat-header-cell>
-                            <mat-cell *matCellDef="let team" class="small-column"> {{ team.rank }} </mat-cell>
+                            <mat-cell *matCellDef="let team; let i = index" [ngClass]="{'alt-row': i % 2 !== 0}" class="small-column">
+                                {{ team.rank }}
+                            </mat-cell>
                         </ng-container>
 
-                        <!-- Rank Column (Small) -->
+                        <!-- Team Name Column -->
                         <ng-container matColumnDef="teamName">
                             <mat-header-cell *matHeaderCellDef class="wide-column"> Team Name </mat-header-cell>
-                            <mat-cell *matCellDef="let team" class="wide-column"> {{ team.teamName }} </mat-cell>
+                            <mat-cell *matCellDef="let team; let i = index" [ngClass]="{'alt-row': i % 2 !== 0}" class="wide-column">
+                                {{ team.teamName }}
+                            </mat-cell>
                         </ng-container>
 
                         <!-- Wins Column -->
                         <ng-container matColumnDef="wins">
                             <mat-header-cell *matHeaderCellDef class="small-column"> Wins </mat-header-cell>
-                            <mat-cell *matCellDef="let team" class="small-column"> {{ team.wins }} </mat-cell>
+                            <mat-cell *matCellDef="let team; let i = index" [ngClass]="{'alt-row': i % 2 !== 0}" class="small-column">
+                                {{ team.wins }}
+                            </mat-cell>
                         </ng-container>
 
                         <!-- Losses Column -->
                         <ng-container matColumnDef="losses">
                             <mat-header-cell *matHeaderCellDef class="small-column"> Losses </mat-header-cell>
-                            <mat-cell *matCellDef="let team" class="small-column"> {{ team.losses }} </mat-cell>
+                            <mat-cell *matCellDef="let team; let i = index" [ngClass]="{'alt-row': i % 2 !== 0}" class="small-column">
+                                {{ team.losses }}
+                            </mat-cell>
                         </ng-container>
 
                         <!-- Total Points Column -->
                         <ng-container matColumnDef="totalPoints">
                             <mat-header-cell *matHeaderCellDef class="total-points-column"> Total Points </mat-header-cell>
-                            <mat-cell *matCellDef="let team" class="total-points-column"> {{ team.totalPoints }} </mat-cell>
+                            <mat-cell *matCellDef="let team; let i = index" [ngClass]="{'alt-row': i % 2 !== 0}" class="total-points-column">
+                                {{ team.totalPoints }}
+                            </mat-cell>
                         </ng-container>
-
 
                         <!-- Header Row -->
                         <mat-header-row *matHeaderRowDef="['rank', 'teamName', 'wins', 'losses', 'totalPoints']"></mat-header-row>
