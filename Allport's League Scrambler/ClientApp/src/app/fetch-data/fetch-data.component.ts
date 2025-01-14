@@ -1,10 +1,11 @@
-import { Component, Inject, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatTableDataSource, MatSort } from '@angular/material';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 import { Router } from '@angular/router';
 import { FormGroup, FormControl } from '@angular/forms';
+import { LeagueService } from '../services/league.service';
 
 @Component({
     selector: 'app-fetch-data',
@@ -12,14 +13,18 @@ import { FormGroup, FormControl } from '@angular/forms';
     styleUrls: ['./fetch-data.component.less']
 })
 export class FetchDataComponent implements OnInit {
-    players: Player[];
-    loading: boolean;
+    players: Player[] = [];
+    malePlayersDataSource = new MatTableDataSource<Player>();
+    femalePlayersDataSource = new MatTableDataSource<Player>();
+    loading: boolean = false;
     player: Player;
     addedPlayer: Player;
     isMale1: boolean;
     leagueName: string;
-    dataSource = new MatTableDataSource();
-    displayedColumns: string[] = ['firstName', 'lastName', 'gender', 'isSub'];
+    searchValue: string = '';
+
+    displayedColumns: string[] = ['firstName', 'lastName'];
+
     PlayerForm = new FormGroup({
         firstName: new FormControl(),
         lastName: new FormControl(),
@@ -32,34 +37,66 @@ export class FetchDataComponent implements OnInit {
 
     constructor(
         private http: HttpClient,
-        private router: Router, // Added router
-        public playerService: PlayerService
+        private router: Router,
+        public playerService: PlayerService,
+        public leagueService: LeagueService
     ) { }
 
-    ngOnInit() {
+    ngOnInit(): void {
         this.loading = true;
-        this.playerService.GetPlayers().subscribe(
-            (result) => {
+
+        // Listen for league changes
+        this.leagueService.selectedLeague$.subscribe(selectedLeague => {
+            if (selectedLeague) {
+                this.loadPlayersByLeague(selectedLeague.leagueId);
+            }
+        });
+    }
+
+    // Load players and separate into male and female tables
+    private loadPlayersByLeague(leagueId: number): void {
+        this.playerService.GetPlayersByLeague(leagueId).subscribe(
+            (result: Player[]) => {
                 this.players = result;
-                this.dataSource = new MatTableDataSource(result);
-                this.dataSource.sort = this.sort;
+
+                // Split players by gender
+                this.malePlayersDataSource = new MatTableDataSource(result.filter(player => player.gender === 'Male'));
+                this.femalePlayersDataSource = new MatTableDataSource(result.filter(player => player.gender === 'Female'));
+
+                this.malePlayersDataSource.sort = this.sort;
+                this.femalePlayersDataSource.sort = this.sort;
+
                 this.loading = false;
             },
-            (error) => console.error(error)
+            (error) => {
+                console.error('Error loading players:', error);
+                this.loading = false;
+            }
         );
     }
 
-    applyFilter(filterValue: string) {
-        this.dataSource.filter = filterValue.trim().toLowerCase();
+    // Filter both tables
+    applyFilter(filterValue: string): void {
+        this.searchValue = filterValue.trim().toLowerCase();
+        this.malePlayersDataSource.filter = this.searchValue;
+        this.femalePlayersDataSource.filter = this.searchValue;
     }
 
-    onSubmitClick() {
+    // Clear search filter
+    clearSearch(): void {
+        this.searchValue = '';
+        this.applyFilter('');
+    }
+
+    // Submit a new player
+    onSubmitClick(): void {
         if (this.PlayerForm.controls['isMale'].value === 'Female') {
             this.isMale1 = false;
         } else if (this.PlayerForm.controls['isMale'].value === 'Male') {
             this.isMale1 = true;
         }
-        const newplayer: Player = {
+
+        const newPlayer: Player = {
             id: 0,
             firstName: this.PlayerForm.controls['firstName'].value,
             lastName: this.PlayerForm.controls['lastName'].value,
@@ -68,17 +105,26 @@ export class FetchDataComponent implements OnInit {
             isSub: this.PlayerForm.controls['isSub'].value
         };
 
-        this.playerService.AddPlayer(newplayer, this.PlayerForm.controls['leagueName'].value).subscribe(
+        this.playerService.AddPlayer(newPlayer, this.PlayerForm.controls['leagueName'].value).subscribe(
             (result) => {
                 this.player = result;
-                this.players.push(newplayer);
+                this.players.push(result);
+
+                // Add new player to the correct data source
+                if (result.gender === 'Male') {
+                    this.malePlayersDataSource.data = [...this.malePlayersDataSource.data, result];
+                } else if (result.gender === 'Female') {
+                    this.femalePlayersDataSource.data = [...this.femalePlayersDataSource.data, result];
+                }
+
+                this.PlayerForm.reset();
             },
-            (error) => console.error(error)
+            (error) => console.error('Error adding player:', error)
         );
     }
 
     // Navigate to the player's stats page
-    goToPlayerStats(playerId: number) {
-        this.router.navigate(['/player-stats-tabs', playerId]); // Update route as needed
+    goToPlayerStats(playerId: number): void {
+        this.router.navigate(['/player-stats-tabs', playerId]);
     }
 }

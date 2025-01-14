@@ -366,20 +366,27 @@ export class SignInComponent implements OnInit {
 
     onLeagueSelect(league: Leagues) {
         this.selectedLeague = league;
+
+        // Reset all related data
         this.players = [];
-        this.playerSignIn = []; 
+        this.playerSignIn = [];
         this.signedInDataSource.data = this.playerSignIn;
+        this.isPlayerSignedIn = false; // Reset sign-in status for new league
+
+        // Load day of the week setting for sign-in lock
         this.loginService.getSettingValue('dayOfLeague', this.selectedLeague.id).subscribe(
             (dayOfLeague) => {
                 this.dayOfWeekSetting = dayOfLeague;
-                this.loadSignInLockStatus();     
-            });
-   
+                this.loadSignInLockStatus();
+            }
+        );
+
+        // Load players and signed-in players, then update sign-in status
         this.loadPlayers()
             .then(() => this.loadSignedInPlayers())
+            .then(() => this.updatePlayerSignInStatus()) // Check if the player is signed in for the selected league
             .catch((error) => console.error('Error during league selection:', error));
     }
-
     updateGenderCounts(): void {
         const signedInPlayers = this.signedInDataSource.data;
         this.maleCount = signedInPlayers.filter((player: Player) => player.gender === 'Male').length;
@@ -387,46 +394,68 @@ export class SignInComponent implements OnInit {
         this.loadSignInLockStatus();
     }
 
+    private updatePlayerSignInStatus(): void {
+        if (this.userRole === 'Player' && this.currentPlayerId) {
+            // Check if the current player is in the signed-in list
+            this.isPlayerSignedIn = this.playerSignIn.some(
+                (player) => player.playerId === this.currentPlayerId
+            );
+        }
+    }
+
     loadSignedInPlayers(): Promise<void> {
         return new Promise((resolve, reject) => {
-            const today = new Date().toISOString().split('T')[0]; // Get current date without time
+            // Get the current date
+            const today = new Date().toISOString().split('T')[0];
+
+            // Debug: Check if selectedLeague is defined
+            if (!this.selectedLeague || !this.selectedLeague.id) {
+                reject('No league selected.');
+                return;
+            }
 
             this.playerService.getSignedInPlayers(this.selectedLeague.id, today).subscribe(
                 (signedInPlayers) => {
-                    // Sort signed-in players alphabetically
-                    signedInPlayers.sort((a, b) => {
-                        if (a.firstName.toLowerCase() < b.firstName.toLowerCase()) return -1;
-                        if (a.firstName.toLowerCase() > b.firstName.toLowerCase()) return 1;
-                        return 0;
-                    });
+                    if (signedInPlayers && signedInPlayers.length !== 0) {
+                        // Sort signed-in players alphabetically
+                        signedInPlayers.sort((a, b) => {
+                            if (a.firstName.toLowerCase() < b.firstName.toLowerCase()) return -1;
+                            if (a.firstName.toLowerCase() > b.firstName.toLowerCase()) return 1;
+                            return 0;
+                        });
 
-                    this.playerSignIn = signedInPlayers;
-                    this.signedInDataSource.data = [...this.playerSignIn];
+                        this.playerSignIn = signedInPlayers;
+                        this.signedInDataSource.data = [...this.playerSignIn];
 
-                    // Filter out signed-in players from the available players list
-                    const signedInPlayerIds = this.playerSignIn.map(player => player.playerId);
-                    this.players = this.players.filter(player => !signedInPlayerIds.includes(player.id));
-                    this.dataSource.data = [...this.players];
-                    this.filteredPlayers = [...this.players];
+                        // Filter out signed-in players from the available players list
+                        const signedInPlayerIds = this.playerSignIn.map(player => player.playerId);
+                        this.players = this.players.filter(player => !signedInPlayerIds.includes(player.id));
+                        this.dataSource.data = [...this.players];
+                        this.filteredPlayers = [...this.players];
 
-                    this.updateGenderCounts();
+                        this.updateGenderCounts();
 
-                    // Check if the current player is already signed in
-                    if (this.userRole === 'Player' && this.currentPlayerId) {
-                        this.isPlayerSignedIn = this.playerSignIn.some(
-                            (player) => player.playerId === this.currentPlayerId
-                        );
+                        // Check if the current player is already signed in
+                        if (this.userRole === 'Player' && this.currentPlayerId) {
+                            this.isPlayerSignedIn = this.playerSignIn.some(
+                                (player) => player.playerId === this.currentPlayerId
+                            );
+                        }
+
+                        resolve();
+                    } else {
+                        this.playerSignIn = [];
+                        this.signedInDataSource.data = [];
+                        resolve();
                     }
-
-                    resolve(); // Resolve when done
                 },
                 (error) => {
-                    console.error('Error loading signed-in players:', error);
                     reject(error);
                 }
             );
         });
     }
+
 
 
 

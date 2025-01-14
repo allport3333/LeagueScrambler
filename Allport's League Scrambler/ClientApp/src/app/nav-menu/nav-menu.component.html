@@ -52,12 +52,6 @@
                 </li>
 
                 <li *ngIf="userRole === 'Admin' || userRole === 'Manager'" class="nav-item" [routerLinkActive]='["link-active"]'>
-                    <a [routerLink]='["/fetch-data"]' class="nav-link" (click)='collapse()'>
-                        <span class='fas fa-database'></span> Players
-                    </a>
-                </li>
-
-                <li *ngIf="userRole === 'Admin' || userRole === 'Manager'" class="nav-item" [routerLinkActive]='["link-active"]'>
                     <a [routerLink]='["/team-scores"]' class="nav-link" (click)='collapse()'>
                         <span class='fas fa-database'></span> Team Management
                     </a>
@@ -72,6 +66,12 @@
                 <li *ngIf="userRole === 'Admin' || userRole === 'Manager' || userRole === 'Player'" class="nav-item" [routerLinkActive]='["link-active"]'>
                     <a [routerLink]='["/standings"]' class="nav-link" (click)='collapse()'>
                         <span class='fas fa-trophy'></span> K/Q Standings
+                    </a>
+                </li>
+
+                <li *ngIf="loggedIn" class="nav-item" [routerLinkActive]='["link-active"]'>
+                    <a [routerLink]='["/fetch-data"]' class="nav-link" (click)='collapse()'>
+                        <span class='fas fa-database'></span> Players
                     </a>
                 </li>
 
