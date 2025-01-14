@@ -460,6 +460,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 return NotFound(new { message = "No linked leagues found for this user." });
             }
 
+            userLeagues = userLeagues.OrderByDescending(x => x.ID).ToList();
+
             return Ok(userLeagues);
         }
 
