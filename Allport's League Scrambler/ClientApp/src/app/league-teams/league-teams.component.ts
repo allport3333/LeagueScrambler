@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { StatisticsService } from '../services/statistics.service';
 import { TeamWithPlayersDto } from '../data-models/DTOs';
+import { TeamUpdateService } from '../services/team-update.service';
 
 @Component({
     selector: 'app-league-teams',
@@ -13,12 +14,17 @@ export class LeagueTeamsComponent implements OnInit {
     teams: TeamWithPlayersDto[] = [];
     loading = false;
 
-    constructor(private statsService: StatisticsService) { }
+    constructor(private statsService: StatisticsService,
+        private teamUpdateService: TeamUpdateService) { }
 
     ngOnInit(): void {
         if (this.leagueId) {
             this.loadTeamsWithPlayers();
         }
+
+        this.teamUpdateService.teamUpdated$.subscribe(() => {
+            this.loadTeamsWithPlayers();
+        });
     }
 
     // If leagueId can change after init, handle it:

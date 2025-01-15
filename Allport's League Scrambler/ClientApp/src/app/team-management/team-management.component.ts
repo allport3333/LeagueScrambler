@@ -6,6 +6,7 @@ import { PlayerService } from '../services/player.service';
 import { FormControl } from '@angular/forms';
 import { startWith, map } from 'rxjs/operators';
 import { MatSnackBar } from '@angular/material';
+import { TeamUpdateService } from '../services/team-update.service';
 
 @Component({
     selector: 'app-team-management',
@@ -32,7 +33,8 @@ export class TeamManagementComponent implements OnInit {
     selectedPlayer: Player | null = null;
     loadingData = false;
 
-    constructor(private statisticsService: StatisticsService, private playerService: PlayerService, private snackBar: MatSnackBar) { }
+    constructor(private statisticsService: StatisticsService, private playerService: PlayerService, private snackBar: MatSnackBar,
+        private teamUpdateService: TeamUpdateService) { }
 
     ngOnInit(): void {
         // If we have a leagueId at start, load data
@@ -108,6 +110,7 @@ export class TeamManagementComponent implements OnInit {
         this.statisticsService.AddLeagueTeam(this.leagueId, this.newTeamName, this.newTeamDivision).subscribe({
             next: (newTeam) => {
                 alert(`Created new team: ${newTeam.teamName} in division: ${newTeam.division}`);
+                this.teamUpdateService.notifyTeamUpdate();
                 this.loadTeams();
                 this.newTeamName = '';
                 this.newTeamDivision = 'Silver'; // Reset to default
@@ -183,6 +186,7 @@ export class TeamManagementComponent implements OnInit {
                         }
                     );
                     this.selectedPlayer = null;
+                    this.teamUpdateService.notifyTeamUpdate();
                     this.playerCtrl.setValue(''); // Clear input
                 },
                 error: (err) => {
