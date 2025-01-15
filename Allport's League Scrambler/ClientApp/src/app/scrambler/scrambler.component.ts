@@ -215,6 +215,15 @@ export class ScramblerComponent implements OnInit {
                                         } else {
                                             this.processStandings(this.lastResult, this.getCurrentOptions()); // Call processStandings otherwise
                                         }
+
+                                        // Corrected: Fetch dayOfLeague after standingsType is processed
+                                        this.loginService.getSettingValue('dayOfLeague', this.leagueId).subscribe(
+                                            (dayOfLeagueValue) => {
+                                                this.leagueDay = dayOfLeagueValue || 'Monday'; // Default to 'Monday'
+                                            },
+                                            (error) => console.error('Error fetching dayOfLeague:', error)
+                                        );
+
                                     },
                                     (error) => console.error('Error fetching standingsType:', error)
                                 );
@@ -228,6 +237,7 @@ export class ScramblerComponent implements OnInit {
             (error) => console.error('Error fetching numberOfSubsAllowed:', error)
         );
     }
+
 
     private parseValueAsNumber(value: any, defaultValue: number): number {
         if (typeof value === 'number') {
@@ -857,6 +867,7 @@ export class ScramblerComponent implements OnInit {
             { settingName: 'numberOfSubsAllowed', settingValue: this.numberOfSubsAllowed },
             { settingName: 'subScorePercent', settingValue: this.subScorePercent },
             { settingName: 'dayOfLeague', settingValue: this.leagueDay },
+            { settingName: 'standingsType', settingValue: this.standingsType },
         ];
 
         // Create an array of promises for each setting update
@@ -879,6 +890,9 @@ export class ScramblerComponent implements OnInit {
     }
 
 
+    onStandingsTypeChange(selectedType: string): void {
+        this.standingsType = selectedType as 'round' | 'matchup';
+    }
 
     private processStandings(
         result: any,

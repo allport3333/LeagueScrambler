@@ -888,12 +888,22 @@
                                                     </mat-select>
                                                 </mat-form-field>
 
+                                                <!-- Day of the League -->
                                                 <mat-form-field appearance="outline" style="width: 300px; margin-bottom: 20px;">
-                                                    <mat-label>Percent of Score for Subs</mat-label>
-                                                    <mat-select [(value)]="subScorePercent" (selectionChange)="onSubScorePercentChange($event.value)">
-                                                        <mat-option *ngFor="let percent of [100, 90, 80, 70, 60, 50]" [value]="percent">
-                                                            {{ percent }}%
+                                                    <mat-label>Day of the League</mat-label>
+                                                    <mat-select [(value)]="leagueDay" (selectionChange)="onLeagueDayChange($event.value)">
+                                                        <mat-option *ngFor="let day of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']" [value]="day">
+                                                            {{ day }}
                                                         </mat-option>
+                                                    </mat-select>
+                                                </mat-form-field>
+
+                                                <!-- Standings Type -->
+                                                <mat-form-field appearance="outline" style="width: 300px; margin-bottom: 20px;">
+                                                    <mat-label>Standings Type</mat-label>
+                                                    <mat-select [(value)]="standingsType" (selectionChange)="onStandingsTypeChange($event.value)">
+                                                        <mat-option value="matchup">Matchup</mat-option>
+                                                        <mat-option value="round">Round</mat-option>
                                                     </mat-select>
                                                 </mat-form-field>
                                                 <!-- Save Button -->
