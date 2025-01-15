@@ -39,6 +39,7 @@ namespace Allport_s_League_Scrambler.Models
         public string TeamName { get; set; }
         public int TotalWins { get; set; }
         public int TotalLosses { get; set; }
+        public string Division { get; set; }
 
         public List<PlayerDtoFullName> Players { get; set; }
     }

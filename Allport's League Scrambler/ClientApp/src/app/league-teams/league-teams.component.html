@@ -5,51 +5,74 @@
 
 <!-- If teams are loaded and not empty -->
 <div *ngIf="!loading && teams.length > 0" style="padding: 16px; overflow-x: hidden;">
-    <div style="
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-evenly;
-      gap: 20px;
-    ">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-evenly; gap: 20px;">
+
         <!-- Repeat a card for each team -->
         <mat-card *ngFor="let team of teams"
                   style="
-        flex: 1 1 calc(25% - 20px);
-        min-width: 250px;
-        max-width: 300px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-        border-radius: 8px;
-        transition: transform 0.2s, box-shadow 0.2s;
-      "
+                      flex: 1 1 calc(25% - 20px);
+                      min-width: 250px;
+                      max-width: 300px;
+                      margin-bottom: 20px;
+                      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+                      border-radius: 8px;
+                      transition: transform 0.2s, box-shadow 0.2s;
+                  "
                   (mouseenter)="team.hovered = true"
                   (mouseleave)="team.hovered = false"
                   [ngStyle]="{
-        transform: team.hovered ? 'scale(1.03)' : 'scale(1)',
-        boxShadow: team.hovered ? '0 4px 12px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.2)'
-      }">
+                      'background-color': team.division === 'Gold' ? '#FFF8DC' :
+                                         team.division === 'Silver' ? '#E0E0E0' :
+                                         team.division === 'Bronze' ? '#F5F5DC' : 'white',
+                      'border-left': team.division === 'Gold' ? '6px solid #FFD700' :
+                                     team.division === 'Silver' ? '6px solid #C0C0C0' :
+                                     team.division === 'Bronze' ? '6px solid #CD7F32' : 'none',
+                      transform: team.hovered ? 'scale(1.03)' : 'scale(1)',
+                      boxShadow: team.hovered ? '0 4px 12px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.2)'
+                  }">
+
+            <!-- Team Header -->
             <mat-card-header>
-                <mat-card-title>{{ team.teamName }}</mat-card-title>
-                <mat-card-subtitle>
+                <mat-card-title style="font-weight: bold; text-align: center;">
+                    {{ team.teamName }}
+                </mat-card-title>
+                <mat-card-subtitle style="text-align: center;">
                     Wins: {{ team.totalWins }} | Losses: {{ team.totalLosses }}
                 </mat-card-subtitle>
             </mat-card-header>
 
+            <!-- Team Players List -->
             <mat-card-content>
                 <ul style="list-style-type: none; padding: 0; margin: 0;">
                     <li *ngFor="let player of team.players"
                         [ngStyle]="{
-              'background-color': player.backgroundColor,
-              'padding': '6px 10px',
-              'border-radius': '4px',
-              'margin-bottom': '6px',
-              'display': 'block',
-              'text-align': 'center'
-            }">
+                            'background-color': player.backgroundColor,
+                            'padding': '6px 10px',
+                            'border-radius': '4px',
+                            'margin-bottom': '6px',
+                            'display': 'block',
+                            'text-align': 'center'
+                        }">
                         {{ player.fullName }}
                     </li>
                 </ul>
             </mat-card-content>
+
+            <!-- Division Badge -->
+            <div class="division-chip-container">
+                <mat-chip *ngIf="team.division"
+                          [ngStyle]="{
+                  'background-color': team.division === 'Gold' ? '#FFF8DC' :
+                                     team.division === 'Silver' ? '#E0E0E0' :
+                                     team.division === 'Bronze' ? '#F5F5DC' : '#E0E0E0',
+                  'color': '#000',
+                  'font-weight': 'bold',
+                  'margin-top': '10px'
+              }">
+                    {{ team.division }} Division
+                </mat-chip>
+            </div>
+
         </mat-card>
     </div>
 </div>

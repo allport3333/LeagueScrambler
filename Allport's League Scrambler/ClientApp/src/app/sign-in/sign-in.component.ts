@@ -391,7 +391,9 @@ export class SignInComponent implements OnInit {
         const signedInPlayers = this.signedInDataSource.data;
         this.maleCount = signedInPlayers.filter((player: Player) => player.gender === 'Male').length;
         this.femaleCount = signedInPlayers.filter((player: Player) => player.gender === 'Female').length;
-        this.loadSignInLockStatus();
+        if (this.userRole == 'player') {
+            this.loadSignInLockStatus();
+        }
     }
 
     private updatePlayerSignInStatus(): void {

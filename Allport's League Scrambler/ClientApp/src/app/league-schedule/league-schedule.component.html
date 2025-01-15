@@ -25,35 +25,54 @@
                 </h3>
                 <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
                     <mat-card *ngFor="let match of week.matches"
-                              style="
-                                  flex: 1 1 calc(33% - 20px);
-                                  min-width: 250px;
-                                  max-width: 300px;
-                                  margin-bottom: 20px;
-                                  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-                                  border-radius: 8px;
-                                  transition: transform 0.2s, box-shadow 0.2s;
-                              "
+                              [ngStyle]="{
+              'background-color': match.division === 'Gold' ? '#FFF8DC' :
+                                 match.division === 'Silver' ? '#E0E0E0' :
+                                 match.division === 'Bronze' ? '#F5F5DC' : 'white',
+              'border-left': match.division === 'Gold' ? '6px solid #FFD700' :
+                              match.division === 'Silver' ? '6px solid #C0C0C0' :
+                              match.division === 'Bronze' ? '6px solid #CD7F32' : 'none',
+              'flex': '1 1 calc(33% - 20px)',
+              'min-width': '250px',
+              'max-width': '300px',
+              'margin-bottom': '20px',
+              'box-shadow': '0 2px 6px rgba(0, 0, 0, 0.2)',
+              'border-radius': '8px',
+              'transition': 'transform 0.2s, box-shadow 0.2s'
+          }"
                               (mouseenter)="match.hovered = true"
                               (mouseleave)="match.hovered = false"
-                              [ngStyle]="{
-                                  transform: match.hovered ? 'scale(1.03)' : 'scale(1)',
-                                  boxShadow: match.hovered
-                                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
-                                      : '0 2px 6px rgba(0, 0, 0, 0.2)'
-                              }">
+                              [style.transform]="match.hovered ? 'scale(1.03)' : 'scale(1)'"
+                              [style.boxShadow]="match.hovered ? '0 4px 12px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.2)'">
+
+                        <!-- Match Header -->
                         <mat-card-header style="text-align: center; display: flex; flex-direction: column;">
-                            <mat-card-title style="text-align: center;">
+                            <mat-card-title style="text-align: center; font-weight: bold;">
                                 {{ match.team1Name }}
                             </mat-card-title>
-                            <mat-card-subtitle style="text-align: center;">
+                            <mat-card-subtitle style="text-align: center; font-size: 14px; color: gray;">
                                 vs
                             </mat-card-subtitle>
-                            <mat-card-title style="text-align: center;">
+                            <mat-card-title style="text-align: center; font-weight: bold;">
                                 {{ match.team2Name }}
                             </mat-card-title>
                         </mat-card-header>
+
+                        <!-- Division Tag -->
+                        <mat-chip *ngIf="match.division"
+                                  [ngStyle]="{
+                  'background-color': match.division === 'Gold' ? '#FFF8DC' :
+                                     match.division === 'Silver' ? '#E0E0E0' :
+                                     match.division === 'Bronze' ? '#F5F5DC' : '#E0E0E0',
+                  'color': '#000',
+                  'font-weight': 'bold',
+                  'margin-top': '10px'
+              }"
+                                  style="align-self: center;">
+                            {{ match.division }} Division
+                        </mat-chip>
                     </mat-card>
+
                 </div>
             </div>
         </mat-tab>

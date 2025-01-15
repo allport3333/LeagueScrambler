@@ -5,31 +5,10 @@
 
 <div class="row justify-content-center" *ngIf="!loading">
     <div class="col-10">
-        <mat-card class="mt-2" style="background-color: lightgray;">
-            <mat-tab-group>
-                <!-- TAB 1: Team Scores -->
-                <!--<mat-tab label="Team Scores">
-                    <div class="d-flex justify-content-center">
-                        <table *ngIf="teams != null" class="table" style="max-width:600px;">
-                            <thead>
-                                <tr>
-                                    <th>Team Name</th>
-                                    <th>Total Wins</th>
-                                    <th>Total Losses</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr *ngFor="let singleTeam of teams">
-                                    <td>{{ singleTeam.teamName }}</td>
-                                    <td>{{ singleTeam.totalWins }}</td>
-                                    <td>{{ singleTeam.totalLosses }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </mat-tab>-->
+        <mat-card class="mt-2" style="box-shadow: none; padding: 0;">
+            <mat-tab-group mat-stretch-tabs>
 
-                <!-- TAB 3: Enter Team Scores -->
+                <!-- TAB 1: Enter Team Scores -->
                 <mat-tab *ngIf="userRole === 'Admin' || userRole === 'Manager'" label="Enter Team Scores">
                     <div class="container-fluid">
                         <!-- Loading Spinner -->
@@ -117,10 +96,7 @@
                                 <div class="row justify-content-center mt-3">
                                     <mat-form-field appearance="outline" class="mx-2">
                                         <mat-label>Date</mat-label>
-                                        <input matInput
-                                               [matDatepicker]="picker"
-                                               formControlName="date"
-                                               required>
+                                        <input matInput [matDatepicker]="picker" formControlName="date" required>
                                         <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
                                         <mat-datepicker #picker></mat-datepicker>
                                     </mat-form-field>
@@ -135,11 +111,12 @@
                     </div>
                 </mat-tab>
 
+                <!-- TAB 2: League Teams -->
                 <mat-tab label="League Teams">
                     <app-league-teams [leagueId]="leagueID" style="width: 100%;"></app-league-teams>
                 </mat-tab>
 
-                <!-- TAB #3: Team Management (only if user is admin or manager) -->
+                <!-- TAB 3: Team Management -->
                 <mat-tab *ngIf="userRole === 'Admin' || userRole === 'Manager'" label="Team Management">
                     <app-team-management [leagueId]="leagueID" style="width: 150%;"></app-team-management>
                 </mat-tab>

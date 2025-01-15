@@ -10,6 +10,7 @@ export interface TeamWithPlayersDto {
     totalWins: number;
     totalLosses: number;
     players: PlayerDto[];
+    division: string;
 }
 
 export interface Match {
@@ -17,6 +18,7 @@ export interface Match {
     team1Name: string;
     team2Name: string;
     matchDescription: string;
+    division: string;
 }
 
 export interface WeekSchedule {

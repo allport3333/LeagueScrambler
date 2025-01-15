@@ -455,7 +455,8 @@ namespace Allport_s_League_Scrambler.Controllers
                         {
                             Team1Name = _context.LeagueTeam.FirstOrDefault(t => t.Id == m.Team1Id).TeamName,
                             Team2Name = _context.LeagueTeam.FirstOrDefault(t => t.Id == m.Team2Id).TeamName,
-                            MatchDescription = m.MatchDescription
+                            MatchDescription = m.MatchDescription,
+                            Division = _context.LeagueTeam.FirstOrDefault(t => t.Id == m.Team1Id).Division,
                         }).ToList()
                     })
                     .ToList();
@@ -483,7 +484,7 @@ namespace Allport_s_League_Scrambler.Controllers
                         TeamName = team.TeamName,
                         TotalWins = team.TotalWins,
                         TotalLosses = team.TotalLosses,
-
+                        Division = team.Division,
                         // 3) Query LeagueTeamPlayer to get players for this specific team
                         Players = _context.LeagueTeamPlayer
                             .Where(ltp => ltp.LeagueTeamId == team.Id)

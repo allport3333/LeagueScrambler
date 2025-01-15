@@ -887,7 +887,9 @@ export class ScramblerComponent implements OnInit {
         if (result != null && result.message != 'No valid rounds found in the league.') {
             // Save the original scores only once
             if (!this.originalStandings) {
-                this.originalStandings = JSON.parse(JSON.stringify(result.playerScores)); // Deep copy to preserve original data
+                if (result.playerScores != null) {
+                    this.originalStandings = JSON.parse(JSON.stringify(result.playerScores)); // Deep copy to preserve original data
+                }
             }
 
             // Reset standings to the original scores
