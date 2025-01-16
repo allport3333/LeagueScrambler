@@ -145,7 +145,7 @@ export class TeamManagementComponent implements OnInit {
                 duration: 3000,
                 horizontalPosition: 'center',
                 verticalPosition: 'top',
-                panelClass: ['warning-snackbar']
+                panelClass: ['custom-snackbar']
             });
             return;
         }
@@ -154,7 +154,7 @@ export class TeamManagementComponent implements OnInit {
                 duration: 3000,
                 horizontalPosition: 'center',
                 verticalPosition: 'top',
-                panelClass: ['warning-snackbar']
+                panelClass: ['custom-snackbar']
             });
             return;
         }
@@ -167,7 +167,7 @@ export class TeamManagementComponent implements OnInit {
                 duration: 3000,
                 horizontalPosition: 'center',
                 verticalPosition: 'top',
-                panelClass: ['error-snackbar']
+                panelClass: ['red-snackbar']
             });
             return;
         }
@@ -182,7 +182,7 @@ export class TeamManagementComponent implements OnInit {
                             duration: 3000,
                             horizontalPosition: 'center',
                             verticalPosition: 'top',
-                            panelClass: ['success-snackbar']
+                            panelClass: ['custom-snackbar']
                         }
                     );
                     this.selectedPlayer = null;
@@ -195,7 +195,7 @@ export class TeamManagementComponent implements OnInit {
                         duration: 3000,
                         horizontalPosition: 'center',
                         verticalPosition: 'top',
-                        panelClass: ['error-snackbar']
+                        panelClass: ['red-snackbar']
                     });
                 }
             });

@@ -93,21 +93,20 @@ export class SignInComponent implements OnInit {
 
     togglePlayerSignIn(): void {
         if (this.isPlayerSignedIn) {
-            // Player is already signed in Remove them
             const signedInPlayer = this.playerSignIn.find(
                 (p) => p.playerId === this.currentPlayerId
             );
 
             if (signedInPlayer) {
-                this.unselectPlayer(signedInPlayer);
+                this.unselectPlayer(signedInPlayer, true);  // Pass `true` to skip confirmation
                 this.isPlayerSignedIn = false;
             }
         } else {
-            // Player is not signed in Add them
             this.signInPlayer(this.player);
             this.isPlayerSignedIn = true;
         }
     }
+
 
     private loadPlayerIdForUser(): void {
         this.loginService.getUsersPlayer().subscribe(
@@ -149,6 +148,7 @@ export class SignInComponent implements OnInit {
                 duration: 3000,
                 horizontalPosition: 'center',
                 verticalPosition: 'top',
+                panelClass: ['red-snackbar']
             });
         }
     }
@@ -210,6 +210,7 @@ export class SignInComponent implements OnInit {
                     duration: 3000,
                     horizontalPosition: 'center',
                     verticalPosition: 'top',
+                    panelClass: ['custom-snackbar']
                 });
             },
             (error) => {
@@ -220,6 +221,7 @@ export class SignInComponent implements OnInit {
                     duration: 3000,
                     horizontalPosition: 'center',
                     verticalPosition: 'top',
+                    panelClass: ['red-snackbar']
                 });
             }
         );
@@ -265,6 +267,7 @@ export class SignInComponent implements OnInit {
                 duration: 3000,
                 horizontalPosition: 'center',
                 verticalPosition: 'top',
+                panelClass: ['red-snackbar']
             });
             return;
         }
@@ -275,6 +278,7 @@ export class SignInComponent implements OnInit {
                 duration: 3000,
                 horizontalPosition: 'center',
                 verticalPosition: 'top',
+                panelClass: ['red-snackbar']
             });
             return;
         }
@@ -282,40 +286,55 @@ export class SignInComponent implements OnInit {
         // Proceed to sign in the player
         this.signInPlayer(player);
 
-        // Remove player from the available list after signing in
-        this.players = this.players.filter(p => p.id !== player.id);
-        this.filteredPlayers = this.filteredPlayers.filter(p => p.id !== player.id);
-        this.dataSource.data = [...this.players];
     }
 
-    unselectPlayer(player: any): void {
+    unselectPlayer(player: any, isFromButton: boolean = false): void {
         if (this.isSignInLocked) {
             this.snackBar.open('Sign-in is currently locked.', 'Close', {
                 duration: 3000,
                 horizontalPosition: 'center',
                 verticalPosition: 'top',
+                panelClass: ['red-snackbar']
             });
             return;
         }
 
-        // Allow only Admin/Manager or the player themselves to unselect
         if (this.userRole === 'Player' && player.playerId !== this.playerId) {
             this.snackBar.open('You can only remove yourself from the sign-in list.', 'Close', {
                 duration: 3000,
                 horizontalPosition: 'center',
                 verticalPosition: 'top',
+                panelClass: ['red-snackbar']
             });
             return;
         }
 
-        // Proceed with unselecting the player
+        // Show confirmation if NOT from the button
+        if (!isFromButton) {
+            const snackBarRef = this.snackBar.open(
+                `Remove ${player.firstName} ${player.lastName} from sign-in?`,
+                'Confirm',
+                {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: ['custom-snackbar']
+                }
+            );
+
+            snackBarRef.onAction().subscribe(() => {
+                this.removePlayerFromSignIn(player);
+            });
+        } else {
+            this.removePlayerFromSignIn(player);
+        }
+    }
+
+    private removePlayerFromSignIn(player: any): void {
         this.playerService.deleteSignInPlayer(player.playerSignInId).subscribe(
             () => {
-                // Remove player from signed-in list
                 this.playerSignIn = this.playerSignIn.filter(p => p.playerSignInId !== player.playerSignInId);
                 this.signedInDataSource.data = [...this.playerSignIn];
 
-                // Restore player back to the available list
                 const restoredPlayer = {
                     id: player.playerId,
                     firstName: player.firstName,
@@ -324,8 +343,6 @@ export class SignInComponent implements OnInit {
                 };
 
                 this.players.push(restoredPlayer);
-
-                // Sort available players alphabetically
                 this.players.sort((a, b) => {
                     const nameA = `${a.firstName.toLowerCase()} ${a.lastName.toLowerCase()}`;
                     const nameB = `${b.firstName.toLowerCase()} ${b.lastName.toLowerCase()}`;
@@ -334,26 +351,27 @@ export class SignInComponent implements OnInit {
 
                 this.dataSource.data = [...this.players];
                 this.filteredPlayers = [...this.players];
-
-                // Update gender counts
                 this.updateGenderCounts();
 
                 this.snackBar.open(`${player.firstName} ${player.lastName} has been removed.`, 'Close', {
                     duration: 3000,
                     horizontalPosition: 'center',
                     verticalPosition: 'top',
+                    panelClass: ['custom-snackbar']
                 });
             },
             (error) => {
-                console.error('Error removing player from PlayerSignIn:', error);
+                console.error('Error removing player:', error);
                 this.snackBar.open('Error removing player from sign-in.', 'Close', {
                     duration: 3000,
                     horizontalPosition: 'center',
                     verticalPosition: 'top',
+                    panelClass: ['red-snackbar']
                 });
             }
         );
     }
+
 
 
     applyFilter(filterValue: string) {
@@ -461,9 +479,13 @@ export class SignInComponent implements OnInit {
 
 
 
-    signInPlayer(player: any): void {
+    signInPlayer(player: any, isFromButton: boolean = false): void {
         if (!this.selectedLeague) {
-            alert('Please select a league before signing in players.');
+            this.snackBar.open('Please select a league before signing in players.', 'Close', {
+                horizontalPosition: 'center',
+                verticalPosition: 'top',
+                panelClass: ['custom-snackbar']
+            });
             return;
         }
 
@@ -474,9 +496,30 @@ export class SignInComponent implements OnInit {
             leagueId: this.selectedLeague.id
         };
 
+        // **Skip confirmation if triggered by the button**
+        if (isFromButton) {
+            this.executePlayerSignIn(playerSignIn, player);
+        } else {
+            // Show confirmation dialog for non-button actions
+            const snackBarRef = this.snackBar.open(
+                `Sign in ${player.firstName} ${player.lastName}?`,
+                'Confirm',
+                {
+                    horizontalPosition: 'center',
+                    verticalPosition: 'top',
+                    panelClass: ['custom-snackbar']
+                }
+            );
+
+            snackBarRef.onAction().subscribe(() => {
+                this.executePlayerSignIn(playerSignIn, player);
+            });
+        }
+    }
+
+    private executePlayerSignIn(playerSignIn: PlayerSignIn, player: any): void {
         this.playerService.signInPlayer(playerSignIn).subscribe(
             (result: PlayerSignInResult) => {
-                // Add signed-in player to the list
                 this.playerSignIn.push({
                     playerSignInId: result.playerSignInId,
                     dateTime: result.dateTime,
@@ -494,21 +537,26 @@ export class SignInComponent implements OnInit {
                     return nameA.localeCompare(nameB);
                 });
 
-                // Update the table data
                 this.signedInDataSource.data = [...this.playerSignIn];
-
-                // Update gender counts
                 this.updateGenderCounts();
 
-                this.snackBar.open(`${player.firstName} ${player.lastName} signed in!`, 'Close', {
+                this.snackBar.open(`${player.firstName} ${player.lastName} has been signed in.`, 'Close', {
                     duration: 3000,
                     horizontalPosition: 'center',
                     verticalPosition: 'top',
+                    panelClass: ['custom-snackbar']  // Custom styling
                 });
+
+
+                // Remove player from the available list after signing in
+                this.players = this.players.filter(p => p.id !== player.id);
+                this.filteredPlayers = this.filteredPlayers.filter(p => p.id !== player.id);
+                this.dataSource.data = [...this.players];
             },
             (error) => console.error('Error signing in player:', error)
         );
     }
+
 
 
     toggleAddPlayerForm() {

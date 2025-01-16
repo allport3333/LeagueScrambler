@@ -438,18 +438,18 @@ export class ScramblerComponent implements OnInit {
                                 this.femalePlayers1.splice(femaleIndex, 1);
                             }
 
-                            this.snackBar.open('Player deleted successfully!', 'Close', { duration: 3000 });
+                            this.snackBar.open('Player deleted successfully!', 'Close', { duration: 3000, panelClass: ['custom-snackbar'] });
                         } else {
-                            this.snackBar.open('Player not found in the league.', 'Close', { duration: 3000 });
+                            this.snackBar.open('Player not found in the league.', 'Close', { duration: 3000, panelClass: ['red-snackbar'] });
                         }
                     },
                     (error) => {
                         console.error(error);
-                        this.snackBar.open('An error occurred while deleting the player.', 'Close', { duration: 3000 });
+                        this.snackBar.open('An error occurred while deleting the player.', 'Close', { duration: 3000, panelClass: ['red-snackbar'] });
                     }
                 );
         } else {
-            this.snackBar.open('Please select a player to delete.', 'Close', { duration: 3000 });
+            this.snackBar.open('Please select a player to delete.', 'Close', { duration: 3000, panelClass: ['red-snackbar'] });
         }
     }
 
@@ -882,6 +882,7 @@ export class ScramblerComponent implements OnInit {
                     duration: 5000, // Optional: Auto-close after 5 seconds
                     verticalPosition: 'top',
                     horizontalPosition: 'center',
+                    panelClass: ['custom-snackbar']
                 });
             })
             .catch(error => {
@@ -1528,6 +1529,7 @@ export class ScramblerComponent implements OnInit {
         config.verticalPosition = 'top'; // Set the vertical position to center
         config.horizontalPosition = 'center'; // Set the horizontal position to center
         config.duration = 5000;
+        config.panelClass = 'custom-snackbar';
         if (error) {
             this.snackBar.open(message, 'Close', {
                 duration: 5000,

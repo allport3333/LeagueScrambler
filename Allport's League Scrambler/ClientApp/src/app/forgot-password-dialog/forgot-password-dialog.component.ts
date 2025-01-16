@@ -48,7 +48,8 @@ export class ForgotPasswordDialogComponent {
             this.snackBar.open(message, 'Close', {
                 verticalPosition: 'top',
                 horizontalPosition: 'center',
-                duration: 5000 // Adjust the duration as needed, 
+                duration: 5000, // Adjust the duration as needed, 
+                panelClass: ['custom-snackbar']
             });    
         }
 

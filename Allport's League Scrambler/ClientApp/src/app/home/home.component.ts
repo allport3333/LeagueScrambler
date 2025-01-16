@@ -96,7 +96,7 @@ export class HomeComponent implements OnInit {
     showNotification(message: string): void {
         this.snackBar.open(message, 'Close', {
             duration: 5000, // Adjust the duration as needed
-            panelClass: ['mat-snack-bar-container-custom'], // You can create a custom CSS class for the notification container
+            panelClass: ['custom-snackbar']
         });
     }
 
@@ -378,7 +378,7 @@ export class HomeComponent implements OnInit {
         const config = new MatSnackBarConfig();
         config.verticalPosition = 'top'; // Set the vertical position to center
         config.horizontalPosition = 'center'; // Set the horizontal position to center
-
+        config.panelClass = 'custom-snackbar';
         if (error) {
             this.snackBar.open(message, 'Close', {
                 verticalPosition: 'top',

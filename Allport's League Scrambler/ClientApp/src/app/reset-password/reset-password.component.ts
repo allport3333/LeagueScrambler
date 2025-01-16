@@ -34,6 +34,7 @@ export class ResetPasswordComponent {
                         verticalPosition: 'top',
                         horizontalPosition: 'center',
                         duration: 5000, // Adjust the duration as needed
+                        panelClass: ['custom-snackbar']
                     });
 
                     this.router.navigate([''], { queryParams: { toggleLoginForm: 'true' } });
