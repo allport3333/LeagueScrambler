@@ -102,7 +102,7 @@ export class SignInComponent implements OnInit {
                 this.isPlayerSignedIn = false;
             }
         } else {
-            this.signInPlayer(this.player);
+            this.signInPlayer(this.player, true);
             this.isPlayerSignedIn = true;
         }
     }
