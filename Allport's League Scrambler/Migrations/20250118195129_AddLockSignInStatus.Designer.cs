@@ -4,14 +4,16 @@ using Allport_s_League_Scrambler.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Allport_s_League_Scrambler.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250118195129_AddLockSignInStatus")]
+    partial class AddLockSignInStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -174,13 +176,9 @@ namespace Allport_s_League_Scrambler.Migrations
 
                     b.Property<int>("LeagueId");
 
-                    b.Property<int?>("LeagueTypeID");
-
                     b.Property<bool>("SignInLocked");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LeagueTypeID");
 
                     b.ToTable("LeagueSignInLocked","dbo");
                 });
@@ -518,13 +516,6 @@ namespace Allport_s_League_Scrambler.Migrations
                         .WithMany()
                         .HasForeignKey("LeagueId")
                         .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Allport_s_League_Scrambler.Models.LeagueSignInLocked", b =>
-                {
-                    b.HasOne("Allport_s_League_Scrambler.Models.LeagueType", "LeagueType")
-                        .WithMany()
-                        .HasForeignKey("LeagueTypeID");
                 });
 
             modelBuilder.Entity("Allport_s_League_Scrambler.Models.LeagueTeamPlayer", b =>

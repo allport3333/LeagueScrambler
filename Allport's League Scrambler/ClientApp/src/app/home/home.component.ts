@@ -203,7 +203,7 @@ export class HomeComponent implements OnInit {
             },
             (error) => {
                 // Handle registration error
-                this.showSnackBar('Registration failed', true); // Show fail message
+                this.showSnackBar('Registration failed, Username or email is already in use.', true); // Show fail message
             }
         );
     }

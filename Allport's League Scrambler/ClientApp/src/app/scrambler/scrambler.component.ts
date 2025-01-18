@@ -1528,11 +1528,11 @@ export class ScramblerComponent implements OnInit {
         const config = new MatSnackBarConfig();
         config.verticalPosition = 'top'; // Set the vertical position to center
         config.horizontalPosition = 'center'; // Set the horizontal position to center
-        config.duration = 5000;
+        config.duration = 3000;
         config.panelClass = 'custom-snackbar';
         if (error) {
             this.snackBar.open(message, 'Close', {
-                duration: 5000,
+                duration: 3000,
                 verticalPosition: 'top',
                 horizontalPosition: 'center',
                 panelClass: ['red-snackbar']

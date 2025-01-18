@@ -27,7 +27,7 @@ namespace Allport_s_League_Scrambler.Controllers
     {
         public string Email { get; set; }
     }
-    
+
     public class ResetPasswordRequest
     {
         public string Password { get; set; }
@@ -75,14 +75,26 @@ namespace Allport_s_League_Scrambler.Controllers
         public IActionResult GetLockSignInStatus(int leagueId)
         {
             var _context = new DataContext();
-            var today = DateTime.Today;
 
-            // Check if any sign-in for today's date and league is locked
-            bool isLocked = _context.PlayerSignIn
-                .Any(s => s.LeagueId == leagueId && s.DateTime.Date == today && s.LockedSignIn);
+            // Try to find an existing LeagueSignInLocked record
+            var leagueSignInLocked = _context.LeagueSignInLocked
+                .FirstOrDefault(s => s.LeagueId == leagueId);
 
-            return Ok(isLocked);
-        }       
+            if (leagueSignInLocked == null)
+            {
+                // Create a new entry with SignInLocked set to false
+                leagueSignInLocked = new LeagueSignInLocked
+                {
+                    LeagueId = leagueId,
+                    SignInLocked = false
+                };
+
+                _context.LeagueSignInLocked.Add(leagueSignInLocked);
+                _context.SaveChanges();
+            }
+
+            return Ok(leagueSignInLocked.SignInLocked);
+        }
 
         public class LockSignInRequest
         {
@@ -102,27 +114,48 @@ namespace Allport_s_League_Scrambler.Controllers
                 .Select(s => s.DateTime)
                 .FirstOrDefault();
 
-            if (latestDate != default)
+            //if (latestDate != default)
+            //{
+            //    // Get all sign-in records for that date and league
+            //    var signInsToUpdate = _context.PlayerSignIn
+            //        .Where(s => s.LeagueId == request.LeagueId && s.DateTime == latestDate)
+            //        .ToList();
+
+            //    if (signInsToUpdate.Any())
+            //    {
+            //        // Update LockedSignIn for all relevant records
+            //        foreach (var signIn in signInsToUpdate)
+            //        {
+            //            signIn.LockedSignIn = request.Locked;
+            //        }
+
+            //        _context.SaveChanges();                    
+            //    }
+            //}
+            //else
+            //{
+            var leagueSignInLocked = _context.LeagueSignInLocked
+                     .Where(s => s.LeagueId == request.LeagueId)
+                     .FirstOrDefault();
+
+            if (leagueSignInLocked != null)
             {
-                // Get all sign-in records for that date and league
-                var signInsToUpdate = _context.PlayerSignIn
-                    .Where(s => s.LeagueId == request.LeagueId && s.DateTime == latestDate)
-                    .ToList();
-
-                if (signInsToUpdate.Any())
-                {
-                    // Update LockedSignIn for all relevant records
-                    foreach (var signIn in signInsToUpdate)
-                    {
-                        signIn.LockedSignIn = request.Locked;
-                    }
-
-                    _context.SaveChanges();
-                    return Ok(request.Locked);  // Return the updated lock status
-                }
+                leagueSignInLocked.SignInLocked = request.Locked;
             }
+            else
+            {
+                var newLeagueSignInLocked = new LeagueSignInLocked
+                {
+                    LeagueId = request.LeagueId,
+                    SignInLocked = request.Locked
+                };
+                _context.LeagueSignInLocked.Add(newLeagueSignInLocked);
+            }
+            _context.SaveChanges();
 
-            return NotFound("No sign-in records found for this league to update.");
+            //}
+            return Ok(request.Locked);
+
         }
 
 
@@ -497,7 +530,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 var user = userModel.ToUser();
                 userData.PasswordHash = user.PasswordHash;
                 userData.PasswordSalt = user.PasswordSalt;
-                userData.ResetToken= null;
+                userData.ResetToken = null;
                 _context.Users.Update(userData);
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Password reset successful" });
