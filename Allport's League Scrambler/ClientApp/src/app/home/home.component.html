@@ -174,3 +174,26 @@
         <button mat-button color="warn" (click)="openClaimModal()">Search or Add New Player To Claim</button>
     </div>
 </div>
+
+<!-- Inline Confirm Claim Dialog -->
+<ng-template #confirmClaimDialog let-data>
+    <h2 mat-dialog-title>Confirm Player Claim</h2>
+    <mat-dialog-content>
+        <p>Do you want to claim {{ data.player.firstName }} {{ data.player.lastName }}?</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button mat-button color="warn" (click)="onCancelClaim()">Cancel</button>
+        <button mat-raised-button color="primary" (click)="onConfirmClaim()">Confirm</button>
+    </mat-dialog-actions>
+</ng-template>
+
+<ng-template #confirmationDialog let-data>
+    <h2 mat-dialog-title>Confirm Player Claim</h2>
+    <mat-dialog-content>
+        <p>{{ data.message }}</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button mat-button color="warn" (click)="onCancel()">Cancel</button>
+        <button mat-raised-button color="primary" (click)="onConfirm()">Confirm</button>
+    </mat-dialog-actions>
+</ng-template>

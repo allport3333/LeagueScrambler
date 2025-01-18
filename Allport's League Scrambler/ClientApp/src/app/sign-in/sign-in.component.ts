@@ -1,5 +1,5 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatTableDataSource, MatSort, MatSnackBar } from '@angular/material';
+import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { MatTableDataSource, MatSort, MatSnackBar, MatDialogRef, MatDialog } from '@angular/material';
 import { FormGroup, FormControl } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { PlayerService } from '../services/player.service';
@@ -18,6 +18,8 @@ import { AuthService } from '../auth.service';
     styleUrls: ['./sign-in.component.css']
 })
 export class SignInComponent implements OnInit {
+    @ViewChild('confirmationDialog') confirmationDialog!: TemplateRef<any>;
+    dialogRef!: MatDialogRef<any>;
     playerId: number | null = null;
     leaguesAvailable: Leagues[] = []; // Available leagues
     selectedLeague: Leagues | null = null; // Selected league
@@ -48,7 +50,7 @@ export class SignInComponent implements OnInit {
     @ViewChild(MatSort) sort: MatSort;
 
     constructor(private playerService: PlayerService, private loginService: LoginService, private authService: AuthService,
-        private leagueService: LeagueService, private http: HttpClient, private snackBar: MatSnackBar) { }
+        private leagueService: LeagueService, private http: HttpClient, private snackBar: MatSnackBar, private dialog: MatDialog) { }
 
     ngOnInit() {
         this.loadLeagues();
@@ -290,40 +292,20 @@ export class SignInComponent implements OnInit {
 
     unselectPlayer(player: any, isFromButton: boolean = false): void {
         if (this.isSignInLocked) {
-            this.snackBar.open('Sign-in is currently locked.', 'Close', {
-                duration: 3000,
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: ['red-snackbar']
-            });
+            this.openDialog('Sign-in is currently locked.');
             return;
         }
 
         if (this.userRole === 'Player' && player.playerId !== this.playerId) {
-            this.snackBar.open('You can only remove yourself from the sign-in list.', 'Close', {
-                duration: 3000,
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: ['red-snackbar']
-            });
+            this.openDialog('You can only remove yourself from the sign-in list.');
             return;
         }
 
-        // Show confirmation if NOT from the button
         if (!isFromButton) {
-            const snackBarRef = this.snackBar.open(
+            this.openConfirmationDialog(
                 `Remove ${player.firstName} ${player.lastName} from sign-in?`,
-                'Confirm',
-                {
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: ['custom-snackbar']
-                }
+                () => this.removePlayerFromSignIn(player)
             );
-
-            snackBarRef.onAction().subscribe(() => {
-                this.removePlayerFromSignIn(player);
-            });
         } else {
             this.removePlayerFromSignIn(player);
         }
@@ -353,26 +335,14 @@ export class SignInComponent implements OnInit {
                 this.filteredPlayers = [...this.players];
                 this.updateGenderCounts();
 
-                this.snackBar.open(`${player.firstName} ${player.lastName} has been removed.`, 'Close', {
-                    duration: 3000,
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: ['custom-snackbar']
-                });
+                this.openDialog(`${player.firstName} ${player.lastName} has been removed.`);
             },
             (error) => {
                 console.error('Error removing player:', error);
-                this.snackBar.open('Error removing player from sign-in.', 'Close', {
-                    duration: 3000,
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: ['red-snackbar']
-                });
+                this.openDialog('Error removing player from sign-in.');
             }
         );
     }
-
-
 
     applyFilter(filterValue: string) {
         const trimmedValue = filterValue.trim().toLowerCase();
@@ -476,88 +446,75 @@ export class SignInComponent implements OnInit {
         });
     }
 
-
-
-
     signInPlayer(player: any, isFromButton: boolean = false): void {
         if (!this.selectedLeague) {
-            this.snackBar.open('Please select a league before signing in players.', 'Close', {
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: ['custom-snackbar']
-            });
+            this.openDialog('Please select a league before signing in players.');
             return;
         }
 
         const playerSignIn: PlayerSignIn = {
-            playerSignInId: 0, // New record
-            dateTime: new Date().toISOString().split('T')[0], // Today's date
+            playerSignInId: 0,
+            dateTime: new Date().toISOString().split('T')[0],
             playerId: player.id,
             leagueId: this.selectedLeague.id
         };
 
-        // **Skip confirmation if triggered by the button**
         if (isFromButton) {
             this.executePlayerSignIn(playerSignIn, player);
         } else {
-            // Show confirmation dialog for non-button actions
-            const snackBarRef = this.snackBar.open(
+            this.openConfirmationDialog(
                 `Sign in ${player.firstName} ${player.lastName}?`,
-                'Confirm',
-                {
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: ['custom-snackbar']
-                }
+                () => this.executePlayerSignIn(playerSignIn, player)
             );
-
-            snackBarRef.onAction().subscribe(() => {
-                this.executePlayerSignIn(playerSignIn, player);
-            });
         }
     }
 
     private executePlayerSignIn(playerSignIn: PlayerSignIn, player: any): void {
         this.playerService.signInPlayer(playerSignIn).subscribe(
             (result: PlayerSignInResult) => {
-                this.playerSignIn.push({
-                    playerSignInId: result.playerSignInId,
-                    dateTime: result.dateTime,
-                    leagueId: result.leagueId,
-                    playerId: result.playerId,
-                    firstName: result.firstName,
-                    lastName: result.lastName,
-                    gender: result.gender
-                });
-
-                // Sort signed-in players alphabetically
-                this.playerSignIn.sort((a, b) => {
-                    const nameA = `${a.firstName.toLowerCase()} ${a.lastName.toLowerCase()}`;
-                    const nameB = `${b.firstName.toLowerCase()} ${b.lastName.toLowerCase()}`;
-                    return nameA.localeCompare(nameB);
-                });
-
+                this.playerSignIn.push(result);
                 this.signedInDataSource.data = [...this.playerSignIn];
-                this.updateGenderCounts();
-
-                this.snackBar.open(`${player.firstName} ${player.lastName} has been signed in.`, 'Close', {
-                    duration: 3000,
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: ['custom-snackbar']  // Custom styling
-                });
-
-
-                // Remove player from the available list after signing in
+                this.openDialog(`${player.firstName} ${player.lastName} has been signed in.`);
                 this.players = this.players.filter(p => p.id !== player.id);
                 this.filteredPlayers = this.filteredPlayers.filter(p => p.id !== player.id);
-                this.dataSource.data = [...this.players];
             },
             (error) => console.error('Error signing in player:', error)
         );
     }
 
+    openDialog(message: string): void {
+        this.dialogRef = this.dialog.open(this.confirmationDialog, {
+            width: '400px',
+            data: { message: message, confirm: false },
+            panelClass: 'custom-dialog'
+        });
 
+        this.dialogRef.afterClosed().subscribe(result => {
+            // Optional: Handle post-dialog actions here if needed
+        });
+    }
+
+    openConfirmationDialog(message: string, confirmCallback: () => void): void {
+        this.dialogRef = this.dialog.open(this.confirmationDialog, {
+            width: '400px',
+            data: { message: message, confirm: true },
+            panelClass: 'custom-dialog'
+        });
+
+        this.dialogRef.afterClosed().subscribe(result => {
+            if (result === 'confirm') {
+                confirmCallback();
+            }
+        });
+    }
+
+    onConfirm(): void {
+        this.dialogRef.close('confirm');
+    }
+
+    onCancel(): void {
+        this.dialogRef.close('cancel');
+    }
 
     toggleAddPlayerForm() {
         this.showAddPlayerForm = !this.showAddPlayerForm;

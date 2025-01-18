@@ -133,3 +133,17 @@
 
 
 </div>
+
+<!-- Confirmation/Notification Dialog Template -->
+<ng-template #confirmationDialog let-data>
+    <h2 mat-dialog-title>Confirmation</h2>
+    <mat-dialog-content>
+        <p>{{ data.message }}</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+        <button *ngIf="data.confirm" mat-button color="warn" (click)="onCancel()">Cancel</button>
+        <button mat-raised-button color="primary" (click)="onConfirm()">
+            {{ data.confirm ? 'Confirm' : 'OK' }}
+        </button>
+    </mat-dialog-actions>
+</ng-template>

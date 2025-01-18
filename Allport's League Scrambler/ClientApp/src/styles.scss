@@ -338,3 +338,66 @@ input {
     margin-left: 20px !important;
 }
 
+/* Dialog Container Styling */
+.custom-dialog .mat-dialog-container {
+    background-color: #212121 !important; /* Dark background */
+    color: #FFFFFF !important; /* White text */
+    font-size: 24px !important; /* Larger font */
+    font-weight: bold !important;
+    text-align: center !important;
+    padding: 30px 50px !important;
+    line-height: 1.5 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5) !important;
+    width: 700px !important;
+    max-width: 90vw !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* Dialog Title */
+.custom-dialog h2 {
+    font-size: 28px !important;
+    font-weight: bold !important;
+    margin-bottom: 20px !important;
+}
+
+/* Dialog Content */
+.custom-dialog .mat-dialog-content {
+    font-size: 24px !important;
+    margin-bottom: 20px !important;
+}
+
+/* Ensure buttons are side by side */
+.custom-dialog .mat-dialog-actions {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 20px !important; /* Space between buttons */
+    width: 100% !important;
+    flex-wrap: nowrap !important; /* Prevent stacking */
+}
+
+/* Cancel Button Styling */
+.custom-dialog .mat-dialog-actions button[color="warn"] {
+    background-color: #4E342E !important; /* Dark brown */
+    color: #FFC107 !important; /* Yellow text */
+    font-weight: bold !important;
+    font-size: 18px !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    border: 2px solid #FFC107 !important;
+}
+
+/* Confirm Button Styling */
+.custom-dialog .mat-dialog-actions button[color="primary"] {
+    background-color: #1E88E5 !important; /* Blue */
+    color: #FFC107 !important; /* Yellow text */
+    font-weight: bold !important;
+    font-size: 18px !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    border: 2px solid #FFC107 !important;
+}

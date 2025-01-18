@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, ViewChild, TemplateRef } from '@angular/core';
 import { LoginService } from '../services/login.service';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -17,6 +17,8 @@ import { PlayerService } from '../services/player.service';
     styleUrls: ['./home.component.less']
 })
 export class HomeComponent implements OnInit {
+    @ViewChild('confirmClaimDialog') confirmClaimDialog!: TemplateRef<any>;
+    @ViewChild('confirmationDialog') confirmationDialog!: TemplateRef<any>;
     loginUsername: string = '';
     loginPassword: string = '';
     registerUsername: string = '';
@@ -31,6 +33,7 @@ export class HomeComponent implements OnInit {
     isLoggedIn: boolean = false;
     registerForm: FormGroup; 
     dialogRef: MatDialogRef<ForgotPasswordDialogComponent>; 
+    claimDialogRef!: MatDialogRef<any>;
     showPlayerClaimModal = false;
     showSpecificPlayerClaimModal = false;
     players = [];
@@ -272,31 +275,39 @@ export class HomeComponent implements OnInit {
 
 
     confirmClaimPlayer(player: any) {
-        const snackBarRef = this.snackBar.open(
-            `Claim ${player.firstName} ${player.lastName}?`,
-            'Confirm',
-            {
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: ['custom-snackbar'],
-            }
-        );
+        this.selectedPlayer = player;
 
-        // Handle "Confirm" action
-        snackBarRef.onAction().subscribe(() => {
-            this.claimPlayer(player); // If the user clicks "Confirm," claim the player
+        this.claimDialogRef = this.dialog.open(this.confirmClaimDialog, {
+            width: '700px',
+            panelClass: 'custom-dialog',  // Apply custom styling
+            data: { player: player }
         });
 
-        // Handle snackbar dismissal
-        snackBarRef.afterDismissed().subscribe((event) => {
-            if (!event.dismissedByAction) {
-                // If dismissed without clicking "Confirm," open the generic claim modal
+        this.claimDialogRef.afterClosed().subscribe(result => {
+            if (result === 'confirm') {
+                this.claimPlayer(player);
+            } else {
                 this.openClaimModal();
             }
         });
     }
 
+    onConfirmClaim(): void {
+        this.claimDialogRef.close('confirm');
+    }
 
+    // Cancel button in the dialog
+    onCancelClaim(): void {
+        this.claimDialogRef.close('cancel');
+    }
+
+    onConfirm(): void {
+        this.dialogRef.close('confirm');
+    }
+
+    onCancel(): void {
+        this.dialogRef.close('cancel');
+    }
 
 
     openClaimModal() {
@@ -365,7 +376,26 @@ export class HomeComponent implements OnInit {
         this.selectedPlayer = player;
         this.searchTerm = `${player.firstName} ${player.lastName}`; // Display the selected player in the input
         this.filteredPlayers = []; // Clear the dropdown
-        this.claimPlayer(player);
+
+        // Open confirmation dialog before claiming the player
+        this.openConfirmationDialog(
+            `Do you want to claim ${player.firstName} ${player.lastName}?`,
+            () => this.claimPlayer(player) // Claim player if confirmed
+        );
+    }
+
+    openConfirmationDialog(message: string, confirmCallback: () => void): void {
+        this.dialogRef = this.dialog.open(this.confirmationDialog, {
+            width: '400px',
+            data: { message: message, confirm: true },
+            panelClass: 'custom-dialog'
+        });
+
+        this.dialogRef.afterClosed().subscribe(result => {
+            if (result === 'confirm') {
+                confirmCallback();  // Execute claim if confirmed
+            }
+        });
     }
 
     cancel() {
@@ -378,6 +408,7 @@ export class HomeComponent implements OnInit {
         const config = new MatSnackBarConfig();
         config.verticalPosition = 'top'; // Set the vertical position to center
         config.horizontalPosition = 'center'; // Set the horizontal position to center
+        config.duration = 3000;
         config.panelClass = 'custom-snackbar';
         if (error) {
             this.snackBar.open(message, 'Close', {
