@@ -782,7 +782,10 @@ namespace Allport_s_League_Scrambler.Controllers
                                               kqt.ScrambleNumber,
                                               kqt.DateOfTeam,
                                               kqt.Id // Include KingQueenTeamId for filtering teammates
-                                          }).ToListAsync();
+                                          })
+                                          .OrderBy(x => x.DateOfTeam) // First, order by DateOfTeam
+                                          .ThenBy(x => x.RoundNumber)
+                                          .ToListAsync();
 
             // Fetch team members for the player's teams
             var playerTeamIds = individualRounds.Select(r => r.Id).Distinct();

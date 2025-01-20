@@ -22,10 +22,10 @@
         <mat-card class="responsive-card">
             <h3 style="margin-bottom: 10px;">Individual Rounds</h3>
             <mat-table [dataSource]="performanceStats.individualRoundsWithDividers" class="mat-elevation-z8">
-                <ng-container matColumnDef="matchupNumber">
+                <!--<ng-container matColumnDef="matchupNumber">
                     <mat-header-cell *matHeaderCellDef> Matchup Number </mat-header-cell>
                     <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? row.scrambleNumber : '' }} </mat-cell>
-                </ng-container>
+                </ng-container>-->
 
                 <ng-container matColumnDef="roundNumber">
                     <mat-header-cell *matHeaderCellDef> Round Number </mat-header-cell>
@@ -47,10 +47,10 @@
                     <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? (row.roundWon ? 'Yes' : 'No') : '' }} </mat-cell>
                 </ng-container>
 
-                <mat-header-row *matHeaderRowDef="['roundNumber', 'date', 'matchupNumber', 'score', 'won']"></mat-header-row>
+                <mat-header-row *matHeaderRowDef="['roundNumber', 'date', 'score', 'won']"></mat-header-row>
 
                 <!-- Data Row -->
-                <mat-row *matRowDef="let row; columns: ['roundNumber', 'date', 'matchupNumber', 'score', 'won']"
+                <mat-row *matRowDef="let row; columns: ['roundNumber', 'date', 'score', 'won']"
                          [style.height]="row.type === 'divider' ? '0px' : ''"
                          [style.padding]="row.type === 'divider' ? '0' : ''"
                          [style.marginBottom]="row.type === 'divider' ? '-25px' : ''"
