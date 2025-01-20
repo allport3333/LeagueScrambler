@@ -22,6 +22,7 @@ import { PlayerScoreGroup, PlayerScoresResponse } from '../data-models/playerSco
 import { KingQueenPlayer } from '../data-models/kingQueenPlayer.model';
 import { LeagueService } from '../services/league.service';
 import { KingQueenTeamsResponse } from '../data-models/kingQueenTeamsResponse';
+import { Subject } from 'rxjs';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
@@ -118,6 +119,7 @@ export class ScramblerComponent implements OnInit {
     topPlayerCount: number;
     lowPlayerCount: number;
     randomPlayerCount: number;
+    private selectedListChanged: Subject<void> = new Subject<void>();
     numberOfPlayersNeededTwo: number;
     numberOfPlayersNeededThree: number;
     numberOfPlayersNeededFour: number;
@@ -172,11 +174,14 @@ export class ScramblerComponent implements OnInit {
 
     constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, public leagueService: LeagueService, public loginService: LoginService, private snackBar: MatSnackBar) {
         this.teamSize = 4;
-
+        this.selectedListChanged.subscribe(() => {
+            this.setTeamCount();
+        });
     }
 
-
-
+    updateSelectedList(): void {
+        this.selectedListChanged.next(); // Notify listeners
+    }
 
     toggleTeamSorting(): void {
         this.showTeamSorting = !this.showTeamSorting;
@@ -1257,6 +1262,14 @@ export class ScramblerComponent implements OnInit {
         return this.selectedList.filter(player => !player.isMale).length;
     }
 
+    onOptionClick(player: any): void {
+
+        // Call your team count logic
+        this.setTeamCount();
+
+    }
+
+
     hideShowEverything() {
         this.hideEverything = !this.hideEverything;
 
@@ -1272,6 +1285,7 @@ export class ScramblerComponent implements OnInit {
 
     deselectAllPlayers() {
         this.selectedList = [];
+        this.updateSelectedList();
         this.calculateTeamsNeeded();
     }
 
@@ -1282,7 +1296,7 @@ export class ScramblerComponent implements OnInit {
         }
 
         this.selectedList = [];
-
+        this.updateSelectedList();
         const today = new Date(); // Get current date without time
         this.playerService.getSelectedPlayersAsPlayers(this.leagueId, today).subscribe(
             (fetchedPlayers: Player[]) => {
@@ -1323,6 +1337,7 @@ export class ScramblerComponent implements OnInit {
 
                 // Trigger Angular change detection to refresh UI
                 this.selectedList = [...this.selectedList];
+                this.updateSelectedList();
             },
             (error) => {
                 console.error('Error fetching selected players:', error);
@@ -1355,6 +1370,7 @@ export class ScramblerComponent implements OnInit {
         this.femalePlayerCount = this.femalePlayers1.filter(player => !/open/i.test(player.firstName)).length;
 
         this.calculateTeamsNeeded();
+        this.updateSelectedList();
     }
 
     onLeagueDayChange(selectedDay: string): void {
@@ -2112,6 +2128,7 @@ export class ScramblerComponent implements OnInit {
         if (selectedTeamSize) {
             this.numberOfTeams = null;
         }
+        this.setTeamCount();
     }
 
 
