@@ -477,6 +477,7 @@ export class SignInComponent implements OnInit {
                 this.openDialog(`${player.firstName} ${player.lastName} has been signed in.`);
                 this.players = this.players.filter(p => p.id !== player.id);
                 this.filteredPlayers = this.filteredPlayers.filter(p => p.id !== player.id);
+                this.updateGenderCounts();
             },
             (error) => console.error('Error signing in player:', error)
         );
