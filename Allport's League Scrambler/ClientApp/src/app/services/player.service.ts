@@ -143,8 +143,9 @@ export class PlayerService {
         return this.httpClient.get<PlayerSignInResult[]>(this.baseUrl + 'api/ScrambleData/GetSignedInPlayers', { params });
     }
 
-    public getSelectedPlayersAsPlayers(leagueId: number, date: string): Observable<Player[]> {
-        const url = `${this.baseUrl}api/ScrambleData/GetSignedInPlayersAsPlayers?leagueId=${leagueId}&date=${date}`;
+    public getSelectedPlayersAsPlayers(leagueId: number, date: Date): Observable<Player[]> {
+        const formattedDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`; // Format as MM/dd/yyyy
+        const url = `${this.baseUrl}api/ScrambleData/GetSignedInPlayersAsPlayers?leagueId=${leagueId}&date=${formattedDate}`;
         return this.httpClient.get<Player[]>(url);
     }
 

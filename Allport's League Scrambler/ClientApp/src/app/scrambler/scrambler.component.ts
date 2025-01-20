@@ -1283,8 +1283,7 @@ export class ScramblerComponent implements OnInit {
 
         this.selectedList = [];
 
-        const today = new Date().toISOString().split('T')[0]; // Get current date without time
-
+        const today = new Date(); // Get current date without time
         this.playerService.getSelectedPlayersAsPlayers(this.leagueId, today).subscribe(
             (fetchedPlayers: Player[]) => {
 

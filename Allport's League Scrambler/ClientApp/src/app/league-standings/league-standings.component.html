@@ -93,7 +93,7 @@
                                         {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                     </mat-icon>
                                 </th>
-                                <th style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                <th *ngIf="standingsType == 'round'" style="min-width: 80px; padding: 4px; cursor: pointer;"
                                     (click)="sortStandings('totalWins')">
                                     Total Wins
                                     <mat-icon *ngIf="sortColumn === 'totalWins'">
@@ -116,7 +116,7 @@
                                 <td style="padding: 2px;">{{ player.playerName }}</td>
                                 <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                 <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
-                                <td style="padding: 2px;">{{ player.totalWins }}</td>
+                                <td *ngIf="standingsType == 'round'"  style="padding: 2px;">{{ player.totalWins }}</td>
                                 <td *ngFor="let score of player.scores.slice().reverse()"
                                     [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
                                     [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
@@ -157,7 +157,7 @@
                                         {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                     </mat-icon>
                                 </th>
-                                <th style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                <th *ngIf="standingsType == 'round'"  style="min-width: 80px; padding: 4px; cursor: pointer;"
                                     (click)="sortStandings('totalWins')">
                                     Total Wins
                                     <mat-icon *ngIf="sortColumn === 'totalWins'">
@@ -180,7 +180,7 @@
                                 <td style="padding: 2px;">{{ player.playerName }}</td>
                                 <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                 <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
-                                <td style="padding: 2px;">{{ player.totalWins }}</td>
+                                <td *ngIf="standingsType == 'round'"  style="padding: 2px;">{{ player.totalWins }}</td>
                                 <td *ngFor="let score of player.scores.slice().reverse()"
                                     [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
                                     [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"

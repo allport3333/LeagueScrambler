@@ -37,6 +37,7 @@ export class HomeComponent implements OnInit {
     showPlayerClaimModal = false;
     showSpecificPlayerClaimModal = false;
     players = [];
+    filteredReturnedPlayers = [];
     filteredPlayers = [];
     searchTerm = '';
     selectedPlayer: any;
@@ -262,6 +263,7 @@ export class HomeComponent implements OnInit {
             (players) => {
                 this.players = players || []; // Handle null or empty response
                 this.filteredPlayers = this.players;
+                this.filteredReturnedPlayers = this.players;
                 this.showSpecificPlayerClaimModal = true; // Always show the specific claim modal
             },
             (error) => {
@@ -355,7 +357,7 @@ export class HomeComponent implements OnInit {
     claimPlayer(player: any) {
         this.playerService.claimPlayer({ userId: this.userId, playerId: player.id }).subscribe(
             () => {
-                this.showSnackBar(`${player.firstName} ${player.lastName} has been claimed successfully!`, false);
+                this.showSnackBar(`${player.firstName} ${player.lastName} has been claimed successfully! Please Log In`, false);
                 this.closeModal();
             },
             () => {

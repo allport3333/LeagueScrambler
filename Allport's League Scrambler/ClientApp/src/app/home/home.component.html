@@ -157,21 +157,28 @@
     <div class="modal-content">
         <h2>We Found Matching Players</h2>
 
-        <div *ngIf="filteredPlayers.length > 0">
+        <div *ngIf="filteredReturnedPlayers.length > 0">
             <p>Select a player to claim or choose to proceed without claiming:</p>
             <ul>
-                <li *ngFor="let player of filteredPlayers">
+                <li *ngFor="let player of filteredReturnedPlayers">
                     {{ player.firstName }} {{ player.lastName }}
-                    <button mat-button (click)="confirmClaimPlayer(player)">Claim</button>
+                    <button style="background-color: lightblue;" mat-button (click)="confirmClaimPlayer(player)">Claim</button>
                 </li>
             </ul>
         </div>
 
-        <div *ngIf="filteredPlayers.length === 0">
+        <div *ngIf="filteredReturnedPlayers.length === 0">
             <p>No matching players were found.</p>
         </div>
 
-        <button mat-button color="warn" (click)="openClaimModal()">Search or Add New Player To Claim</button>
+        <button mat-button
+                color="warn"
+                (click)="openClaimModal()"
+                style="white-space: normal; text-align: center; word-wrap: break-word; max-width: 100%; padding: 8px; background-color: lightgrey;"
+                >
+            Search or Add New Player To Claim
+        </button>
+
     </div>
 </div>
 

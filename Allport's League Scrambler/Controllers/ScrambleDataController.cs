@@ -920,14 +920,30 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpGet("GetSignedInPlayersAsPlayers")]
         public async Task<IActionResult> GetSignedInPlayersAsPlayers(int leagueId, string date)
         {
-            var context = new DataContext();
+            try
+            {
 
-            // Fetch PlayerSignIn records for the given leagueId and date
-            var signedInPlayers = await context.PlayerSignIn
-                .Where(x => x.LeagueId == leagueId && x.DateTime.Date == DateTime.Parse(date).Date)
-                .ToListAsync();
+                var context = new DataContext();
 
-            if (!signedInPlayers.Any())
+                // Attempt to parse the date string dynamically
+                if (!DateTime.TryParse(date, out var inputDate))
+                {
+                    return BadRequest("Invalid date format. Please provide a valid date.");
+                }
+
+                // Convert to Eastern Time if needed
+                var easternTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+                var easternDateTime = TimeZoneInfo.ConvertTime(inputDate, easternTimeZone);
+
+                // Use only the date part for comparison
+                var inputDateOnly = easternDateTime.Date;
+
+                // Query the database
+                var signedInPlayers = await context.PlayerSignIn
+                    .Where(x => x.LeagueId == leagueId && x.DateTime.Date == inputDateOnly)
+                    .ToListAsync();
+
+                if (!signedInPlayers.Any())
             {
                 return Ok(new List<Player>()); // Return empty list if no records found
             }
@@ -950,8 +966,13 @@ namespace Allport_s_League_Scrambler.Controllers
                 Gender = player.IsMale ? "Male" : "Female",
                 IsSub = player.IsSub
             }).ToList();
-
-            return Ok(playerList);
+                return Ok(playerList);
+            }
+            catch (Exception ex)
+            {
+                var e = ex;
+                throw;
+            }
         }
 
         [HttpGet("GetSignedInPlayers")]

@@ -49,9 +49,9 @@ export class LeagueStandingsComponent implements OnInit {
             (role) => {
                 this.userRole = role.role;
                 // Fetch settings and standings only if leagueName is provided
-                if (this.leagueName) {
-                    this.awaitSettingsAndInitialize();
-                }
+                //if (this.leagueName) {
+                //    this.awaitSettingsAndInitialize();
+                //}
             },
             (error) => {
                 console.error('ngOnInit: Error fetching user role:', error);
@@ -68,6 +68,7 @@ export class LeagueStandingsComponent implements OnInit {
             if (selectedLeague) {
                 this.selectedLeagueId = selectedLeague.leagueId;
                 this.leagueName = selectedLeague.leagueName;
+                console.log('hitting shi now 3');
                 this.initializeSettings();
             } else {
                 console.warn('No league selected.');
@@ -124,12 +125,15 @@ export class LeagueStandingsComponent implements OnInit {
                                             this.retrievedStandingsType = newStandingsType;
 
                                             if (this.retrievedStandingsType !== this.standingsType) {
+                                                console.log('hitting shi now 1');
                                                 this.toggleStandingsType(); // Call toggleStandingsType if it changed
-                                            } else {
+                                            }
+                                            else {
                                                 if (this.lastResult != null) {
                                                     this.processStandings(this.lastResult, this.getCurrentOptions());
                                                 }
                                                 else {
+                                                    console.log('hitting shi now 2');
                                                     this.initializeStandings();
                                                 } // Call processStandings otherwise
                                             }
@@ -180,28 +184,41 @@ export class LeagueStandingsComponent implements OnInit {
 
 
     toggleStandingsType(): void {
+        console.log('Current standingsType:', this.standingsType);
+
         if (this.standingsType === 'round') {
+            console.log('Switching standingsType to: matchup');
             this.standingsType = 'matchup';
-            // Fetch matchup-based standings
+
+            console.log('Fetching matchup-based standings for league:', this.leagueName);
             this.playerService.getStandingsByLeagueMatchup(this.leagueName).subscribe(
                 (result: PlayerScoresResponse) => {
+                    console.log('Matchup standings result:', result);
                     this.lastResult = result;
+                    console.log('Processing standings with options:', this.getCurrentOptions());
                     this.processStandings(result, this.getCurrentOptions());
                 },
                 error => console.error('Error fetching matchup standings:', error)
             );
         } else {
+            console.log('Switching standingsType to: round');
             this.standingsType = 'round';
-            // Fetch round-based standings
+
+            console.log('Fetching round-based standings for league:', this.leagueName);
             this.playerService.getStandingsByLeague(this.leagueName).subscribe(
                 (result: PlayerScoresResponse) => {
+                    console.log('Round standings result:', result);
                     this.lastResult = result;
+                    console.log('Processing standings with options:', this.getCurrentOptions());
                     this.processStandings(result, this.getCurrentOptions());
                 },
                 error => console.error('Error fetching round standings:', error)
             );
         }
+
+        console.log('Updated standingsType:', this.standingsType);
     }
+
 
     onNumberOfSubsChange(value: number): void {
         this.numberOfSubsAllowed = value;
@@ -246,7 +263,7 @@ export class LeagueStandingsComponent implements OnInit {
             this.femaleStandings = null;
             return;
         }
-
+        console.log('result', result);
         // Save original data for reference
         if (!this.originalStandings) {
             this.originalStandings = JSON.parse(JSON.stringify(result.playerScores));
@@ -316,11 +333,29 @@ export class LeagueStandingsComponent implements OnInit {
                         return;
                     }
                 }).sort((a, b) => {
-                    // Sort by total wins descending, then by total score descending
-                    if (b.totalWins !== a.totalWins) {
+                    if (this.standingsType == 'matchup') {
+                        // Sort by totalScore descending
+                        if (b.totalScore !== a.totalScore) {
+                            return b.totalScore - a.totalScore;
+                        }
+
+                        // If totalScore is the same, sort by totalScoreBeforeReduction descending
+                        if (b.totalScoreBeforeReduction !== a.totalScoreBeforeReduction) {
+                            return b.totalScoreBeforeReduction - a.totalScoreBeforeReduction;
+                        }
+
+                        // If totalScoreBeforeReduction is also the same, sort by totalWins descending
                         return b.totalWins - a.totalWins;
                     }
-                    return b.totalScore - a.totalScore;
+                    else {
+                        // Sort by totalScore descending
+                        if (b.totalScore !== a.totalScore) {
+                            return b.totalScore - a.totalScore;
+                        }
+
+                        // If totalScoreBeforeReduction is also the same, sort by totalWins descending
+                        return b.totalWins - a.totalWins;
+                    }
                 });
 
             this.maleStandings = transformStandings(this.maleStandings);
