@@ -289,24 +289,25 @@ namespace Allport_s_League_Scrambler.Controllers
 
             // Teammate stats
             var teammateStats = _context.LeagueTeamPlayer
-                .Where(tp => tp.PlayerId == playerId)
+                .Where(tp => tp.PlayerId == playerId) // Find the LeagueTeamId for the given player
+                .Select(tp => tp.LeagueTeamId)
+                .Distinct() // Ensure only one LeagueTeamId is retrieved
                 .Join(_context.LeagueTeamPlayer,
-                      tp => tp.LeagueTeamId,
+                      team => team,
                       other => other.LeagueTeamId,
-                      (tp, other) => new { tp, other })
-                .Where(joined => joined.other.PlayerId != playerId && joined.tp.LeagueTeamId == leagueId)
-                .GroupBy(joined => joined.other.PlayerId)
-                .Select(g => new
+                      (team, other) => new { TeamPlayer = team, Teammate = other }) // Join to find teammates
+                .Where(joined => joined.Teammate.PlayerId != playerId) // Exclude the original player
+                .Select(joined => new
                 {
-                    TeammateId = g.Key,
-                    TeammateName = _context.Players
-                        .Where(p => p.Id == g.Key)
+                    PlayerId = joined.Teammate.PlayerId,
+                    PlayerName = _context.Players
+                        .Where(p => p.Id == joined.Teammate.PlayerId)
                         .Select(p => p.FirstName + " " + p.LastName)
-                        .FirstOrDefault(),
-                    GamesPlayedTogether = g.Count(),
-                    WinsTogether = scores.Count(s => s.Score.WonGame && s.Score.LeagueTeamId == g.First().tp.LeagueTeamId)
+                        .FirstOrDefault()
                 })
+                .Distinct()
                 .ToList();
+
 
             // Total unique opponents
             var totalOpponents = scores

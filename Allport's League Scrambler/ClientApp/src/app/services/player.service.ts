@@ -42,6 +42,10 @@ export class PlayerService {
         return this.httpClient.get<Player>(`${this.baseUrl}api/Login/GetPlayerByPlayerId`);
     }
 
+    public getPlayerByPlayerIdVariable(playerId: number): Observable<Player> {
+        return this.httpClient.get<Player>(`${this.baseUrl}api/Login/GetPlayerByPlayerIdVariable/${playerId}`);
+    }
+
     public setSignInLockStatus(locked: boolean, leagueId: number): Observable<boolean> {
         return this.httpClient.post<boolean>(`${this.baseUrl}api/Login/SetLockSignInStatus`, {
             locked: locked,

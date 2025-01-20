@@ -1,6 +1,8 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { StatisticsService } from '../services/statistics.service';
 import { LeagueService } from '../services/league.service';
+import { ActivatedRoute } from '@angular/router';
+import { PlayerService } from '../services/player.service';
 
 @Component({
     selector: 'app-combined-stats-tab',
@@ -26,8 +28,9 @@ export class CombinedStatsTabComponent implements OnInit {
         opponentStats: [],
         teammateStats: []
     };
+    playerName: string;
 
-    constructor(private statisticsService: StatisticsService, private leagueService: LeagueService) { }
+    constructor(private playerService: PlayerService, private statisticsService: StatisticsService, private leagueService: LeagueService, private route: ActivatedRoute) { }
 
     ngOnInit() {
         this.leagueService.selectedLeague$.subscribe(selectedLeague => {
@@ -37,6 +40,23 @@ export class CombinedStatsTabComponent implements OnInit {
             }
         });
         this.loadCombinedStats();
+        this.route.params.subscribe(params => {
+            this.playerId = +params['playerId']; // Extract playerId from the route
+            this.getPlayerName(); // Fetch and set the player's name
+            this.loadCombinedStats();  // Reload data for the new player
+        });
+    }
+
+    getPlayerName(): void {
+        this.playerService.getPlayerByPlayerIdVariable(this.playerId).subscribe(
+            (player: any) => {
+                this.playerName = `${player.firstName} ${player.lastName}`; // Set the full name
+            },
+            error => {
+                console.error('Error fetching player details:', error);
+                this.playerName = 'Unknown Player'; // Default name in case of an error
+            }
+        );
     }
 
     loadCombinedStats() {

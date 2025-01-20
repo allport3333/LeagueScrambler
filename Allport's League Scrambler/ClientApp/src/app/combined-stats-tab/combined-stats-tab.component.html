@@ -1,6 +1,6 @@
 <div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
     <h2 style="text-align: center; color: #3f51b5; font-weight: bold;">League Player Stats</h2>
-
+    <h2 style="text-align: center;">{{ playerName }}</h2>
     <!-- Responsive Card Grid -->
     <div class="card-grid">
         <!-- Overview Section -->
@@ -102,28 +102,22 @@
         <!-- Teammate Stats Section -->
         <mat-card class="stat-card">
             <mat-card-header>
-                <mat-card-title class="centered-title">Teammate Stats</mat-card-title>
+                <mat-card-title class="centered-title">Teammates</mat-card-title>
             </mat-card-header>
             <mat-divider></mat-divider>
             <mat-card-content>
                 <mat-table [dataSource]="combinedStats.teammateStats" class="styled-table mat-elevation-z8">
                     <ng-container matColumnDef="teammate">
                         <mat-header-cell *matHeaderCellDef> Teammate </mat-header-cell>
-                        <mat-cell *matCellDef="let stat"> {{ stat.teammateName }} </mat-cell>
+                        <mat-cell *matCellDef="let stat">
+                            <a [routerLink]="['/player-stats-tabs', stat.playerId]" style="text-decoration: none; color: inherit;">
+                                {{ stat.playerName }}
+                            </a>
+                        </mat-cell>
                     </ng-container>
 
-                    <ng-container matColumnDef="gamesPlayed">
-                        <mat-header-cell *matHeaderCellDef> Games Together </mat-header-cell>
-                        <mat-cell *matCellDef="let stat"> {{ stat.gamesPlayedTogether }} </mat-cell>
-                    </ng-container>
-
-                    <ng-container matColumnDef="winsTogether">
-                        <mat-header-cell *matHeaderCellDef> Wins Together </mat-header-cell>
-                        <mat-cell *matCellDef="let stat"> {{ stat.winsTogether }} </mat-cell>
-                    </ng-container>
-
-                    <mat-header-row *matHeaderRowDef="['teammate', 'gamesPlayed', 'winsTogether']"></mat-header-row>
-                    <mat-row *matRowDef="let row; columns: ['teammate', 'gamesPlayed', 'winsTogether']"></mat-row>
+                    <mat-header-row *matHeaderRowDef="['teammate']"></mat-header-row>
+                    <mat-row *matRowDef="let row; columns: ['teammate']"></mat-row>
                 </mat-table>
             </mat-card-content>
         </mat-card>

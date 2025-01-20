@@ -66,10 +66,10 @@
             <h3 style="margin-bottom: 10px;">Matchup Totals</h3>
             <mat-table [dataSource]="performanceStats.scrambleTotals" class="mat-elevation-z8">
                 <!-- Matchup Number Column -->
-                <ng-container matColumnDef="matchupNumber">
-                    <mat-header-cell *matHeaderCellDef> Matchup Number </mat-header-cell>
-                    <mat-cell *matCellDef="let matchup">
-                        {{ matchup.scrambleNumber }}
+                <ng-container matColumnDef="weekNumber">
+                    <mat-header-cell *matHeaderCellDef> Week Number </mat-header-cell>
+                    <mat-cell *matCellDef="let matchup; let i = index">
+                        {{ i + 1 }}
                     </mat-cell>
                 </ng-container>
 
@@ -90,17 +90,17 @@
                 </ng-container>
 
                 <!-- Header Row -->
-                <mat-header-row *matHeaderRowDef="['matchupNumber', 'totalScore', 'wins']"></mat-header-row>
+                <mat-header-row *matHeaderRowDef="['weekNumber', 'totalScore', 'wins']"></mat-header-row>
 
                 <!-- Data Row with Hover Effect -->
-                <mat-row *matRowDef="let matchup; columns: ['matchupNumber', 'totalScore', 'wins']"
+                <mat-row *matRowDef="let matchup; let i = index; columns: ['weekNumber', 'totalScore', 'wins']"
                          class="hover-effect"
-                         (click)="toggleTeam(matchup.scrambleNumber)">
+                         (click)="toggleTeam(matchup.scrambleNumber, i + 1)">
                 </mat-row>
             </mat-table>
             <!-- Conditional Team Table -->
             <div *ngIf="expandedMatchup" style="margin-top: 20px;">
-                <h3 style="text-align: center;">Team for Matchup {{ expandedMatchup }}</h3>
+                <h3 style="text-align: center;">Team for Matchup {{ weekNumber }}</h3>
                 <mat-table [dataSource]="getTeamForMatchup(expandedMatchup)" class="mat-elevation-z8">
                     <!-- Player Name Column -->
                     <ng-container matColumnDef="playerName">

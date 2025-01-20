@@ -291,6 +291,33 @@ namespace Allport_s_League_Scrambler.Controllers
             return Ok(player);
         }
 
+        [HttpGet("GetPlayerByPlayerIdVariable/{playerId}")]
+        public IActionResult GetPlayerByPlayerIdVariable(int playerId)
+        {
+            var _context = new DataContext();
+
+            // Get the full Player details
+            var player = _context.Players
+                .Where(p => p.Id == playerId)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.FirstName,
+                    p.LastName,
+                    p.IsMale,
+                    p.Gender,
+                    p.IsSub
+                })
+                .FirstOrDefault();
+
+            if (player == null)
+            {
+                return NotFound("Player not found.");
+            }
+
+            return Ok(player);
+        }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {

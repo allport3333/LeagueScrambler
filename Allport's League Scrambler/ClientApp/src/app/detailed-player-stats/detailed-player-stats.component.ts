@@ -16,6 +16,7 @@ export class DetailedPlayerStatsComponent implements OnInit {
     playerStats: any;
     displayedColumns: string[] = ['playerName', 'winsTogether', 'count'];
     expandedMatchup: number | null = null;
+    weekNumber: number;
     player: any;
     playerLeagues: any[] = [];
     performanceStats: any = {
@@ -59,7 +60,10 @@ export class DetailedPlayerStatsComponent implements OnInit {
                 this.loadDetailedPerformanceStats(this.selectedLeagueId); // Load data for the selected league
             }
         });
-
+        this.route.params.subscribe(params => {
+            this.playerId = +params['playerId']; // Extract playerId from the route
+            this.loadDetailedPerformanceStats(this.selectedLeagueId);
+        });
         // Initial call to loadPlayerStats for the playerId in the route
         this.loadPlayerStats(this.playerId);
     }
@@ -152,7 +156,8 @@ export class DetailedPlayerStatsComponent implements OnInit {
         this.performanceStats.individualRoundsWithDividers = roundsWithDividers;
     }
 
-    toggleTeam(scrambleNumber: number): void {
+    toggleTeam(scrambleNumber: number, weekNumber: number): void {
+        this.weekNumber = weekNumber;
         this.expandedMatchup = this.expandedMatchup === scrambleNumber ? null : scrambleNumber;
     }
 

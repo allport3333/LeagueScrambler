@@ -68,7 +68,6 @@ export class LeagueStandingsComponent implements OnInit {
             if (selectedLeague) {
                 this.selectedLeagueId = selectedLeague.leagueId;
                 this.leagueName = selectedLeague.leagueName;
-                console.log('hitting shi now 3');
                 this.initializeSettings();
             } else {
                 console.warn('No league selected.');
@@ -125,7 +124,6 @@ export class LeagueStandingsComponent implements OnInit {
                                             this.retrievedStandingsType = newStandingsType;
 
                                             if (this.retrievedStandingsType !== this.standingsType) {
-                                                console.log('hitting shi now 1');
                                                 this.toggleStandingsType(); // Call toggleStandingsType if it changed
                                             }
                                             else {
@@ -133,7 +131,6 @@ export class LeagueStandingsComponent implements OnInit {
                                                     this.processStandings(this.lastResult, this.getCurrentOptions());
                                                 }
                                                 else {
-                                                    console.log('hitting shi now 2');
                                                     this.initializeStandings();
                                                 } // Call processStandings otherwise
                                             }
@@ -184,39 +181,29 @@ export class LeagueStandingsComponent implements OnInit {
 
 
     toggleStandingsType(): void {
-        console.log('Current standingsType:', this.standingsType);
 
         if (this.standingsType === 'round') {
-            console.log('Switching standingsType to: matchup');
             this.standingsType = 'matchup';
 
-            console.log('Fetching matchup-based standings for league:', this.leagueName);
             this.playerService.getStandingsByLeagueMatchup(this.leagueName).subscribe(
                 (result: PlayerScoresResponse) => {
-                    console.log('Matchup standings result:', result);
                     this.lastResult = result;
-                    console.log('Processing standings with options:', this.getCurrentOptions());
                     this.processStandings(result, this.getCurrentOptions());
                 },
                 error => console.error('Error fetching matchup standings:', error)
             );
         } else {
-            console.log('Switching standingsType to: round');
             this.standingsType = 'round';
 
-            console.log('Fetching round-based standings for league:', this.leagueName);
             this.playerService.getStandingsByLeague(this.leagueName).subscribe(
                 (result: PlayerScoresResponse) => {
-                    console.log('Round standings result:', result);
                     this.lastResult = result;
-                    console.log('Processing standings with options:', this.getCurrentOptions());
                     this.processStandings(result, this.getCurrentOptions());
                 },
                 error => console.error('Error fetching round standings:', error)
             );
         }
 
-        console.log('Updated standingsType:', this.standingsType);
     }
 
 
@@ -263,7 +250,6 @@ export class LeagueStandingsComponent implements OnInit {
             this.femaleStandings = null;
             return;
         }
-        console.log('result', result);
         // Save original data for reference
         if (!this.originalStandings) {
             this.originalStandings = JSON.parse(JSON.stringify(result.playerScores));

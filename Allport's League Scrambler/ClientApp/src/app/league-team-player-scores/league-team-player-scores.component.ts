@@ -2,6 +2,8 @@ import { Component, Input, OnInit } from '@angular/core';
 import { StatisticsService } from '../services/statistics.service';
 import { MatTableDataSource } from '@angular/material/table';
 import { LeagueService } from '../services/league.service';
+import { ActivatedRoute } from '@angular/router';
+import { PlayerService } from '../services/player.service';
 
 @Component({
     selector: 'app-league-team-player-scores',
@@ -11,7 +13,7 @@ import { LeagueService } from '../services/league.service';
 export class LeagueTeamPlayerScoresComponent implements OnInit {
     @Input() playerId!: number;
     @Input() leagueId!: number;
-
+    playerName: string;
     leagueScores: any[] = [];
     displayedColumns: string[] = ['date', 'opponentTeam', 'teamScore', 'wonGame'];
     dataSource = new MatTableDataSource([]);
@@ -21,7 +23,7 @@ export class LeagueTeamPlayerScoresComponent implements OnInit {
         totalLosses: 0
     };
 
-    constructor(private statisticsService: StatisticsService, private leagueService: LeagueService) { }
+    constructor(private statisticsService: StatisticsService, private leagueService: LeagueService, private route: ActivatedRoute, private playerService: PlayerService) { }
 
     ngOnInit() {
         if (this.playerId && this.leagueId) {
@@ -34,6 +36,24 @@ export class LeagueTeamPlayerScoresComponent implements OnInit {
                 this.loadLeagueScores(this.playerId, this.leagueId); // Load data for the selected league
             }
         });
+
+        this.route.params.subscribe(params => {
+            this.playerId = +params['playerId']; // Extract playerId from the route
+            this.getPlayerName(); // Fetch and set the player's name
+            this.loadLeagueScores(this.playerId, this.leagueId);  // Reload data for the new player
+        });
+    }
+
+    getPlayerName(): void {
+        this.playerService.getPlayerByPlayerIdVariable(this.playerId).subscribe(
+            (player: any) => {
+                this.playerName = `${player.firstName} ${player.lastName}`; // Set the full name
+            },
+            error => {
+                console.error('Error fetching player details:', error);
+                this.playerName = 'Unknown Player'; // Default name in case of an error
+            }
+        );
     }
 
     groupScoresByDate() {
