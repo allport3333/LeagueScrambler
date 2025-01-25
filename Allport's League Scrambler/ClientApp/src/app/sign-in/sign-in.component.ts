@@ -373,6 +373,7 @@ export class SignInComponent implements OnInit {
         this.loadPlayers()
             .then(() => this.loadSignedInPlayers())
             .then(() => this.updatePlayerSignInStatus()) // Check if the player is signed in for the selected league
+            .then(() => this.updateGenderCounts()) // Update gender counts after updating sign-in status
             .catch((error) => console.error('Error during league selection:', error));
     }
     updateGenderCounts(): void {

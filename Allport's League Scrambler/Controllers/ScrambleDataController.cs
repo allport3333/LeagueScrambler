@@ -916,6 +916,42 @@ namespace Allport_s_League_Scrambler.Controllers
             return Ok(scrambleNumbers);
         }
 
+        [HttpGet("GetTopPlayers")]
+        public IActionResult GetTopPlayers(int leagueId, int? maxPlayers = null)
+        {
+            var _context = new DataContext();
+
+            // Query KingQueenTopPlayer, ordered by Rank ascending
+            var query = _context.KingQueenTopPlayer
+                .Where(kqt => kqt.LeagueId == leagueId)
+                .OrderBy(kqt => kqt.Rank) // Sort by rank
+                .ToList(); // Materialize the query to a list for further processing
+
+            // Limit to maxPlayers after materializing the list, if maxPlayers is specified
+            if (maxPlayers.HasValue)
+            {
+                query = query.Take(maxPlayers.Value).ToList();
+            }
+
+            var topPlayers = query
+                .Join(
+                    _context.Players,
+                    kqt => kqt.PlayerId,
+                    p => p.Id,
+                    (kqt, p) => new {
+                        p.Id,
+                        p.FirstName,
+                        p.LastName,
+                        p.IsMale,
+                        p.Gender,
+                        IsTopPlayer = true
+                    }
+                )
+                .ToList();
+
+            return Ok(topPlayers);
+        }
+
 
         [HttpGet("GetSignedInPlayersAsPlayers")]
         public async Task<IActionResult> GetSignedInPlayersAsPlayers(int leagueId, string date)

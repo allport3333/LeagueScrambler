@@ -110,44 +110,64 @@
             </mat-card>
 
             <div class="row justify-content-center mt-3">
-                <div *ngIf="!hideInputOptions" class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                <!-- Scramble Players Button -->
+                <div *ngIf="!hideInputOptions" class="col-12 mb-4 text-center">
                     <button (click)="scramblePlayers(false)"
                             mat-raised-button
-                            color="primary"
-                            class="w-100"
+                            class="w-50 py-3 scramble-button"
                             matTooltip="Button is disabled because no players are selected."
                             [matTooltipDisabled]="selectedList && selectedList.length > 0"
-                            [disabled]="!selectedList || selectedList.length === 0">
+                            [disabled]="!selectedList || selectedList.length === 0"
+                            [ngClass]="{'enabled' : selectedList && selectedList.length > 0,
+                                            'disabled': !selectedList || selectedList.length === 0
+                                            }">
                         Scramble Players
                     </button>
                 </div>
-                <div class="d-flex align-items-center justify-content-center mb-3">
-                    <button mat-raised-button color="primary" [matMenuTriggerFor]="resetMenu" class="w-100">
-                        Reset Players
-                    </button>
 
-                    <mat-menu #resetMenu="matMenu">
-                        <button mat-menu-item (click)="reset()">
-                            <span>Reset All Players</span>
+
+                <!-- Reset Players Menu -->
+                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                    <div class="d-flex flex-column align-items-center">
+                        <button mat-raised-button color="primary" [matMenuTriggerFor]="resetMenu" class="w-100">
+                            Reset Players
                         </button>
-                        <button mat-menu-item (click)="resetTopPlayers()">
-                            <span>Reset Top Players</span>
-                        </button>
-                        <button mat-menu-item (click)="resetLowPlayers()">
-                            <span>Reset Low Players</span>
-                        </button>
-                        <button mat-menu-item (click)="resetByePlayers()">
-                            <span>Reset Bye Players</span>
-                        </button>
-                    </mat-menu>
+                        <mat-menu #resetMenu="matMenu">
+                            <button mat-menu-item (click)="reset()">
+                                <span>Reset All Players</span>
+                            </button>
+                            <button mat-menu-item (click)="resetTopPlayers()">
+                                <span>Reset Top Players</span>
+                            </button>
+                            <button mat-menu-item (click)="resetLowPlayers()">
+                                <span>Reset Low Players</span>
+                            </button>
+                            <button mat-menu-item (click)="resetByePlayers()">
+                                <span>Reset Bye Players</span>
+                            </button>
+                        </mat-menu>
+                    </div>
                 </div>
 
+                <!-- Apply Top Players Button -->
+                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                    <button mat-raised-button
+                            color="primary"
+                            class="w-100"
+                            (click)="applyTopPlayers()">
+                        Apply Top Players
+                    </button>
+                </div>
+
+                <!-- Show/Hide Player List Button -->
                 <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
                     <button (click)="hidePlayerList()" mat-raised-button color="primary" class="w-100">
                         {{ hidePlayers ? 'Show Player List' : 'Hide Player List' }}
                     </button>
                 </div>
             </div>
+
+
 
             <div class="text-center mt-3" *ngIf="hideInputOptions">
                 <button *ngIf="!lockedResults" style="margin-top:10px; margin-left: 10px" (click)="scramblePlayers(false)" mat-raised-button color="primary">Scramble Players</button>
@@ -160,8 +180,8 @@
     <div class="row">
         <div class="col-12">
             <mat-card class=" ml-3 mt-2 " style="background-color:lightgray; ">
-
                 <mat-tab-group mat-align-tabs="center" #tabGroup (selectedTabChange)="onTabChange($event)">
+
                     <mat-tab label="Select Players" *ngIf="selectedLeague">
                         <div class="container-fluid">
                             <div class="row">
@@ -474,15 +494,17 @@
                                 </div>
 
                                 <br />
-                                <button mat-raised-button
-                                        color="primary"
-                                        [disabled]="!allowScrambleWithNoDuplicates && (!selectedList || selectedList.length === 0)"
-                                        [ngStyle]="{'opacity': allowScrambleWithNoDuplicates ? '1' : '0.5'}"
-                                        matTooltip="{{ getTooltipText() }}"
+                                <button (click)="scramblePlayers(true)"
+                                        mat-raised-button
+                                        class="w-50 py-3 scramble-button"
+                                        matTooltip="Scramble With No Duplicate Teams"
                                         [matTooltipDisabled]="allowScrambleWithNoDuplicates"
-                                        (click)="scramblePlayers(true)">
+                                        [disabled]="!allowScrambleWithNoDuplicates && (!selectedList || selectedList.length === 0)"
+                                        [ngClass]="{'enabled' : allowScrambleWithNoDuplicates && selectedList && selectedList.length > 0,
+                        'disabled': !allowScrambleWithNoDuplicates || !selectedList || selectedList.length === 0}">
                                     Scramble With No Duplicate Teams
                                 </button>
+
 
                             </div>
                         </mat-card>
@@ -1835,15 +1857,44 @@
                 <ng-container *ngFor="let j of [0, 2, 4, 6, 8, 10]">
                     <ng-container *ngIf="listOfTeams[i + j] && listOfTeams[i + j + 1]">
                         <!-- Matchup Block -->
-                        <div style="width: 48%; border: 1px solid black; padding: 5px; margin-bottom: 10px; box-sizing: border-box;">
+                        <div style="width: 48%; border: 1px solid black; padding: 5px; margin-bottom: 10px; box-sizing: border-box; position: relative;">
                             <!-- Teams Side by Side -->
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; position: relative;">
+                                <!-- Square Box (Court Number Placeholder) -->
+                                <div style="
+                                            position: absolute;
+                                            top: -22px;
+                                            left: 50%;
+                                            transform: translate(-50%, 0);
+                                            display: flex;
+                                            flex-direction: column;
+                                            align-items: center;
+                                        ">
+                                    <!-- Label "Court" -->
+                                    <span style="
+                                                font-size: 12px;
+                                                margin-bottom: 2px;
+                                                text-align: center;
+                                            ">
+                                        Court
+                                    </span>
+                                    <!-- Box -->
+                                    <div style="
+                                                width: 40px;
+                                                height: 40px;
+                                                background-color: white;
+                                                border: 1px solid black;
+                                            ">
+                                    </div>
+                                </div>
+
+
                                 <!-- Team A -->
                                 <div style="width: 48%; border-right: 1px solid black; padding-right: 5px;">
                                     <h4 style="text-align: center; margin: 5px 0; font-size: 10px;">
                                         {{ "Team A (Team " + (i + j + 1) + ")" }}
                                     </h4>
-                                    <table class="table table-bordered" style="width: 100%; font-size: 8px;">
+                                    <table class="table table-bordered" style="width: 100%; font-size: 10px;">
                                         <thead>
                                             <tr>
                                                 <th>Player Name</th>
@@ -1851,7 +1902,7 @@
                                         </thead>
                                         <tbody>
                                             <tr *ngFor="let player of listOfTeams[i + j]?.players">
-                                                <td style="font-size: 14px; padding: 5px;">{{ player.firstName }} {{ player.lastName }}</td>
+                                                <td style="font-size: 16px; padding: 5px;">{{ player.firstName }} {{ player.lastName }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -1862,7 +1913,7 @@
                                     <h4 style="text-align: center; margin: 5px 0; font-size: 10px;">
                                         {{ "Team B (Team " + (i + j + 2) + ")" }}
                                     </h4>
-                                    <table class="table table-bordered" style="width: 100%; font-size: 8px;">
+                                    <table class="table table-bordered" style="width: 100%; font-size: 10px;">
                                         <thead>
                                             <tr>
                                                 <th>Player Name</th>
@@ -1870,7 +1921,7 @@
                                         </thead>
                                         <tbody>
                                             <tr *ngFor="let player of listOfTeams[i + j + 1]?.players">
-                                                <td style="font-size: 14px; padding: 5px;">{{ player.firstName }} {{ player.lastName }}</td>
+                                                <td style="font-size: 16px; padding: 5px;">{{ player.firstName }} {{ player.lastName }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -1878,30 +1929,33 @@
                             </div>
 
                             <!-- Scores -->
-                            <div style="margin-top: 5px; text-align: center;">
-                                <h5 style="font-size: 10px;">Scores</h5>
-                                <table class="table table-bordered" style="width: 100%; font-size: 8px; margin: 0 auto;">
+                            <div style="margin-top: -14px; text-align: center;">
+                                <!-- Adjust spacing for the Scores heading -->
+                                <h5 style="font-size: 12px; margin-bottom: 5px;">Scores</h5>
+                                <!-- Adjust table size and spacing -->
+                                <table class="table table-bordered" style="width: 100%; font-size: 10px; margin: 0 auto; border-collapse: collapse;">
                                     <thead>
                                         <tr>
-                                            <th>Team</th>
-                                            <th *ngFor="let round of [].constructor(selectedRounds); let index = index">Game {{ index + 1 }}</th>
-                                            <th>Total</th>
+                                            <th style="padding: 5px;">Team</th>
+                                            <th *ngFor="let round of [].constructor(selectedRounds); let index = index" style="padding:5px;">Game {{ index + 1 }}</th>
+                                            <th style="padding: 5px;">Total</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>Team A</td>
-                                            <td *ngFor="let round of [].constructor(selectedRounds)" style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="padding: 5px;">Team<br />A</td>
+                                            <td *ngFor="let round of [].constructor(selectedRounds)" style="height: 18px; padding: 5px;">&nbsp;</td>
+                                            <td style="height: 18px; padding: 5px;">&nbsp;</td>
                                         </tr>
                                         <tr>
-                                            <td>Team B</td>
-                                            <td *ngFor="let round of [].constructor(selectedRounds)" style="height: 15px; padding: 3px;">&nbsp;</td>
-                                            <td style="height: 15px; padding: 3px;">&nbsp;</td>
+                                            <td style="padding: 5px;">Team<br />B</td>
+                                            <td *ngFor="let round of [].constructor(selectedRounds)" style="height: 18px; padding: 5px;">&nbsp;</td>
+                                            <td style="height: 18px; padding: 5px;">&nbsp;</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
+
                         </div>
                     </ng-container>
                 </ng-container>

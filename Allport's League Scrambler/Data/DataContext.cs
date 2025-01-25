@@ -32,6 +32,7 @@ namespace Allport_s_League_Scrambler.Data
         public virtual DbSet<LeagueTeamPlayer> LeagueTeamPlayer { get; set; }
         public virtual DbSet<LeagueSchedule> LeagueSchedule { get; set; }
         public virtual DbSet<LeagueSignInLocked> LeagueSignInLocked { get; set; }
+        public virtual DbSet<KingQueenTopPlayer> KingQueenTopPlayer { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -93,7 +94,8 @@ namespace Allport_s_League_Scrambler.Data
             modelBuilder.Entity<PlayerSignIn>().ToTable("PlayerSignIn", "dbo");
             modelBuilder.Entity<UserRoles>().ToTable("UserRoles", "dbo");
             modelBuilder.Entity<UsersPlayer>().ToTable("UsersPlayer", "dbo");
-            modelBuilder.Entity<LeagueSignInLocked>().ToTable("LeagueSignInLocked", "dbo");
+            modelBuilder.Entity<LeagueSignInLocked>().ToTable("LeagueSignInLocked", "dbo"); 
+            modelBuilder.Entity<KingQueenTopPlayer>().ToTable("KingQueenTopPlayer", "dbo");
         }
 
     }

@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, Inject, OnInit, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatSelectionListChange, MatTabGroup, MatTabChangeEvent } from '@angular/material';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -172,7 +172,7 @@ export class ScramblerComponent implements OnInit {
         passwordLeague: new FormControl()
     });
 
-    constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, public playerService: PlayerService, public leagueService: LeagueService, public loginService: LoginService, private snackBar: MatSnackBar) {
+    constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, private cdr: ChangeDetectorRef, public playerService: PlayerService, public leagueService: LeagueService, public loginService: LoginService, private snackBar: MatSnackBar) {
         this.teamSize = 4;
         this.selectedListChanged.subscribe(() => {
             this.setTeamCount();
@@ -1289,6 +1289,42 @@ export class ScramblerComponent implements OnInit {
         this.calculateTeamsNeeded();
     }
 
+    applyTopPlayers(): void {
+        const maxPlayers = this.teamCount;
+        this.playerService.getTopPlayersForLeague(this.leagueId, maxPlayers).subscribe(
+            (topPlayers: Player[]) => {
+                // 1) Reset all players in your arrays (male & female) to isTopPlayer = false
+                this.malePlayers1.forEach(m => m.isTopPlayer = false);
+                this.femalePlayers1.forEach(f => f.isTopPlayer = false);
+
+                // 2) Clear out totalTopPlayers & displayTopPlayers since we'll repopulate
+                this.totalTopPlayers = [];
+                this.displayTopPlayers = [];
+
+                // 3) For each returned top player, find it in local arrays and call your addPlayerToTopPlayerList
+                topPlayers.forEach(returnedTopP => {
+                    // Look in malePlayers
+                    const maleMatch = this.malePlayers1.find(m => m.id === returnedTopP.id);
+                    if (maleMatch) {
+                        this.addPlayerToTopPlayerList(maleMatch);
+                    }
+
+                    // Look in femalePlayers
+                    const femaleMatch = this.femalePlayers1.find(f => f.id === returnedTopP.id);
+                    if (femaleMatch) {
+                        this.addPlayerToTopPlayerList(femaleMatch);
+                    }
+                });
+
+                console.log('Top players applied successfully:', this.totalTopPlayers);
+            },
+            (error) => {
+                console.error('Error fetching top players:', error);
+            }
+        );
+    }
+
+
     fetchSelectedList(): void {
         if (!this.selectedLeague) {
             console.error('No league selected. Cannot fetch selected players.');
@@ -1570,7 +1606,7 @@ export class ScramblerComponent implements OnInit {
     maleScramble2(bracketTeamPlayers) {
         let randomMalePlayer;
         let players;
-        let maxIterations = 1000; // Set a reasonable maximum number of iterations
+        let maxIterations = 100000; // Set a reasonable maximum number of iterations
         let iterations = 0;
 
         while (iterations < maxIterations) {
@@ -1628,7 +1664,7 @@ export class ScramblerComponent implements OnInit {
     femaleScramble2(bracketTeamPlayers) {
         let randomFemalePlayer;
         let players;
-        let maxIterations = 500; // Set a reasonable maximum number of iterations
+        let maxIterations = 100000; // Set a reasonable maximum number of iterations
         let iterations = 0;
 
         while (iterations < maxIterations) {
@@ -2152,6 +2188,7 @@ export class ScramblerComponent implements OnInit {
         // Deselect the other mat-select when one is selected
         this.teamSizeSelected = true;
         this.numberOfTeamsSelected = false;
+        this.teamCount = selectedNumberOfTeams;
         if (selectedNumberOfTeams) {
             this.teamSize = null;
         }
@@ -2681,9 +2718,6 @@ export class ScramblerComponent implements OnInit {
 
     async scramblePlayers(nonDuplicates: boolean = false) {
         this.scrambleSelected = false;
-        if (nonDuplicates) {
-            this.allowScrambleWithNoDuplicates = false;
-        }
         this.showSaveRoundScores = false;
         this.totalTopPlayers = this.displayTopPlayers;
         this.totalLowPlayers = this.displayLowPlayers;
@@ -2807,6 +2841,12 @@ export class ScramblerComponent implements OnInit {
                 }
             } catch (error) {
                 console.error('Error generating scramble:', error);
+            } finally {
+
+                if (nonDuplicates) {
+                    this.allowScrambleWithNoDuplicates = false;
+                }
+                this.cdr.detectChanges();
             }
         }
     }

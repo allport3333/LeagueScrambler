@@ -152,7 +152,10 @@ export class PlayerService {
         const url = `${this.baseUrl}api/ScrambleData/GetSignedInPlayersAsPlayers?leagueId=${leagueId}&date=${formattedDate}`;
         return this.httpClient.get<Player[]>(url);
     }
-
+    public getTopPlayersForLeague(leagueId: number, maxPlayers: number): Observable<Player[]> {
+        const url = `${this.baseUrl}api/ScrambleData/GetTopPlayers?leagueId=${leagueId}&maxPlayers=${maxPlayers}`;
+        return this.httpClient.get<Player[]>(url);
+    }
 
     public GetPlayersByLeague(leagueID: number) {
         return this.httpClient.get<any[]>(this.baseUrl + 'api/ScrambleData/GetPlayers/' + leagueID);

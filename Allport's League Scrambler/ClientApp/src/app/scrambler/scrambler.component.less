@@ -63,3 +63,28 @@ table {
 td {
     overflow: visible; /* Ensure dropdown in table cell is not clipped */
 }
+
+.scramble-button {
+    font-size: 1.2rem; /* Slightly larger font size */
+    border-radius: 8px; /* Rounded corners */
+    font-weight: bold; /* Bold text for emphasis */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2); /* Add shadow for popping effect */
+    transition: all 0.2s ease; /* Smooth transition for background and shadow */
+}
+
+.scramble-button.enabled {
+    background-color: #98D0A7 !important; /* Light green when enabled */
+    color: #ffffff !important; /* White text for contrast */
+}
+
+.scramble-button.enabled:hover {
+    transform: scale(1.05); /* Slightly enlarge on hover */
+    box-shadow: 0px 6px 8px rgba(0, 0, 0, 0.3); /* Stronger shadow on hover */
+}
+
+.scramble-button.disabled {
+    background-color: #b0b0b0 !important; /* Grey background when disabled */
+    color: #ffffff !important; /* White text for contrast */
+    cursor: not-allowed; /* Show 'not-allowed' cursor */
+    box-shadow: none; /* Remove shadow when disabled */
+}
