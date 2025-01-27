@@ -12,4 +12,5 @@ export interface Player {
     isLowPlayer?: boolean;
     isSubScore?: boolean;
     isUsed?: boolean;
+    rank?: number;
 }

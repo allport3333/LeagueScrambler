@@ -397,7 +397,8 @@ export class SignInComponent implements OnInit {
     loadSignedInPlayers(): Promise<void> {
         return new Promise((resolve, reject) => {
             // Get the current date
-            const today = new Date().toISOString().split('T')[0];
+            const now = new Date(); // Current local time
+            console.log('Current Date (Local Time):', now);
 
             // Debug: Check if selectedLeague is defined
             if (!this.selectedLeague || !this.selectedLeague.id) {
@@ -405,7 +406,7 @@ export class SignInComponent implements OnInit {
                 return;
             }
 
-            this.playerService.getSignedInPlayers(this.selectedLeague.id, today).subscribe(
+            this.playerService.getSignedInPlayers(this.selectedLeague.id, now).subscribe(
                 (signedInPlayers) => {
                     if (signedInPlayers && signedInPlayers.length !== 0) {
                         // Sort signed-in players alphabetically
@@ -453,9 +454,11 @@ export class SignInComponent implements OnInit {
             return;
         }
 
+        const now = new Date(); // Current local time
+        console.log('now', now);
         const playerSignIn: PlayerSignIn = {
             playerSignInId: 0,
-            dateTime: new Date().toISOString().split('T')[0],
+            dateTime: now, // Extract the local date part
             playerId: player.id,
             leagueId: this.selectedLeague.id
         };

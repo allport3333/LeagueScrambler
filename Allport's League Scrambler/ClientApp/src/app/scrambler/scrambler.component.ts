@@ -1301,22 +1301,21 @@ export class ScramblerComponent implements OnInit {
                 this.totalTopPlayers = [];
                 this.displayTopPlayers = [];
 
-                // 3) For each returned top player, find it in local arrays and call your addPlayerToTopPlayerList
-                topPlayers.forEach(returnedTopP => {
-                    // Look in malePlayers
-                    const maleMatch = this.malePlayers1.find(m => m.id === returnedTopP.id);
-                    if (maleMatch) {
-                        this.addPlayerToTopPlayerList(maleMatch);
-                    }
+                const filteredTopPlayers = topPlayers.filter(tp =>
+                    this.selectedList.some(selected => selected.id === tp.id)
+                );
 
-                    // Look in femalePlayers
-                    const femaleMatch = this.femalePlayers1.find(f => f.id === returnedTopP.id);
-                    if (femaleMatch) {
-                        this.addPlayerToTopPlayerList(femaleMatch);
+                const limitedTopPlayers = filteredTopPlayers.slice(0, this.teamCount);
+
+                // 3) For each returned top player, find it in local arrays and call your addPlayerToTopPlayerList
+                limitedTopPlayers.forEach(returnedTopP => {
+                    // Attempt to find a match in the selectedList
+                    const matchedPlayer = this.selectedList.find(sp => sp.id === returnedTopP.id);
+                    if (matchedPlayer) {
+                        this.addPlayerToTopPlayerList(matchedPlayer);
                     }
                 });
 
-                console.log('Top players applied successfully:', this.totalTopPlayers);
             },
             (error) => {
                 console.error('Error fetching top players:', error);

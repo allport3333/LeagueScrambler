@@ -139,13 +139,17 @@ export class PlayerService {
         );
     }
 
-    public getSignedInPlayers(leagueId: number, date: string): Observable<PlayerSignInResult[]> {
+    public getSignedInPlayers(leagueId: number, date: Date): Observable<PlayerSignInResult[]> {
+        // Format the date in local time zone as 'YYYY-MM-DD'
+        const formattedDateTime = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ` +
+            `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
         const params = new HttpParams()
             .set('leagueId', leagueId.toString())
-            .set('date', date);
+            .set('date', formattedDateTime); // Use the locally formatted date
 
         return this.httpClient.get<PlayerSignInResult[]>(this.baseUrl + 'api/ScrambleData/GetSignedInPlayers', { params });
     }
+
 
     public getSelectedPlayersAsPlayers(leagueId: number, date: Date): Observable<Player[]> {
         const formattedDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`; // Format as MM/dd/yyyy
@@ -232,6 +236,7 @@ export class PlayerService {
     }
 
     public signInPlayer(playerSignIn: PlayerSignIn): Observable<any> {
+        console.log('playerSignIn', playerSignIn);
         return this.httpClient.post<PlayerSignIn>(this.baseUrl + 'api/ScrambleData/SignInPlayer', playerSignIn);
     }
 

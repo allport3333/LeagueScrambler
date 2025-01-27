@@ -708,7 +708,7 @@ namespace Allport_s_League_Scrambler.Controllers
             }
 
             // Ensure the DateTime only includes the date
-            playerSignIn.DateTime = playerSignIn.DateTime.Date;
+            playerSignIn.DateTime = playerSignIn.DateTime.ToLocalTime();
 
             // Add the player sign-in record to the database
             context.PlayerSignIn.Add(playerSignIn);
@@ -924,14 +924,8 @@ namespace Allport_s_League_Scrambler.Controllers
             // Query KingQueenTopPlayer, ordered by Rank ascending
             var query = _context.KingQueenTopPlayer
                 .Where(kqt => kqt.LeagueId == leagueId)
-                .OrderBy(kqt => kqt.Rank) // Sort by rank
-                .ToList(); // Materialize the query to a list for further processing
+                .OrderBy(kqt => kqt.Rank);
 
-            // Limit to maxPlayers after materializing the list, if maxPlayers is specified
-            if (maxPlayers.HasValue)
-            {
-                query = query.Take(maxPlayers.Value).ToList();
-            }
 
             var topPlayers = query
                 .Join(
@@ -944,7 +938,8 @@ namespace Allport_s_League_Scrambler.Controllers
                         p.LastName,
                         p.IsMale,
                         p.Gender,
-                        IsTopPlayer = true
+                        IsTopPlayer = true,
+                        kqt.Rank
                     }
                 )
                 .ToList();
