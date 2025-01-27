@@ -81,8 +81,18 @@ export class ScramblerComponent implements OnInit {
     selectedList: Player[] = new Array();
     selectedRetrieveScrambleList: KingQueenTeam[] = new Array();
     malePlayers1: Player[] = new Array();
-    femalePlayers1: Player[] = new Array();;
-    queriedPlayers: Player[] = new Array();;
+    femalePlayers1: Player[] = new Array();
+    fourPlayerTeams: number;
+    threePlayerTeams: number;
+    twoPlayerTeams: number;
+    fivePlayerTeams: number;
+    sixPlayerTeams: number;
+    tenPlayerTeams: number;
+    ninePlayerTeams: number;
+    sevenPlayerTeams: number;
+    eightPlayerTeams: number;
+    leftoverPlayers: number;
+    queriedPlayers: Player[] = new Array();
     queriedScrambles: KingQueenTeam[] = new Array();;
     leaguesAvailable: Leagues[] = [];
     leagueId: number;
@@ -128,6 +138,7 @@ export class ScramblerComponent implements OnInit {
     teamSize: number;
     numberOfTeams: number;
     innerTabIndex: number = 0;
+    maxTeamSize: number;
     scrambleNumber: number;
     containsMale: boolean = false;
     numberOfTeamsSelected: boolean = false;
@@ -1136,6 +1147,54 @@ export class ScramblerComponent implements OnInit {
 
         this.teamsNeededFour = Math.floor(totalPlayers / 4);
         this.remainderFour = totalPlayers % 4;
+
+
+
+
+        this.fourPlayerTeams = 0;
+        this.threePlayerTeams = 0;
+        this.twoPlayerTeams = 0;
+        this.fivePlayerTeams = 0;
+        this.sixPlayerTeams = 0;
+        this.sevenPlayerTeams = 0;
+        this.eightPlayerTeams = 0;
+        this.ninePlayerTeams = 0;
+        this.tenPlayerTeams = 0;
+        // 1) Basic details
+        const totalTeams = this.teamCount; // e.g., 14 or 16, etc.
+        // Edge case: If totalTeams is 0 or negative, abort to avoid division errors
+        if (totalTeams <= 0) {
+            console.warn('teamCount is zero or negative. Cannot distribute players.');
+            return;
+        }
+
+        // 2) Base players per team + leftover players
+        const basePlayersPerTeam = Math.floor(totalPlayers / totalTeams);
+        this.leftoverPlayers = totalPlayers % totalTeams;
+
+        // 3) Create an array for the size of each team (start everyone at `basePlayersPerTeam`)
+        const forcedTeamSizes = new Array(totalTeams).fill(basePlayersPerTeam);
+
+        // 4) Distribute leftover players (one per team) until we run out of leftover
+        const maxTeamSize = this.maxTeamSize !== null && this.maxTeamSize !== undefined ? this.maxTeamSize : 4; // Default max team size to 10
+        for (let i = 0; i < forcedTeamSizes.length && this.leftoverPlayers > 0; i++) {
+            if (forcedTeamSizes[i] < maxTeamSize) {
+                forcedTeamSizes[i]++;
+                this.leftoverPlayers--;
+                i = i === forcedTeamSizes.length - 1 ? -1 : i; // Reset to start if leftover remains and not all teams are filled
+            }
+        }
+
+        // 5) Count how many teams ended up with 2 to 10 players
+        this.twoPlayerTeams = forcedTeamSizes.filter(size => size === 2).length;
+        this.threePlayerTeams = forcedTeamSizes.filter(size => size === 3).length;
+        this.fourPlayerTeams = forcedTeamSizes.filter(size => size === 4).length;
+        this.fivePlayerTeams = forcedTeamSizes.filter(size => size === 5).length;
+        this.sixPlayerTeams = forcedTeamSizes.filter(size => size === 6).length;
+        this.sevenPlayerTeams = forcedTeamSizes.filter(size => size === 7).length;
+        this.eightPlayerTeams = forcedTeamSizes.filter(size => size === 8).length;
+        this.ninePlayerTeams = forcedTeamSizes.filter(size => size === 9).length;
+        this.tenPlayerTeams = forcedTeamSizes.filter(size => size === 10).length;
     }
 
 
@@ -2157,6 +2216,7 @@ export class ScramblerComponent implements OnInit {
 
 
     updateNumberOfTeams(selectedTeamSize: number): void {
+        this.maxTeamSize = selectedTeamSize;
         this.numberOfTeamsSelected = true;
         this.teamSizeSelected = false;
         // Deselect the other mat-select when one is selected
@@ -2164,6 +2224,7 @@ export class ScramblerComponent implements OnInit {
             this.numberOfTeams = null;
         }
         this.setTeamCount();
+        
     }
 
 
@@ -2184,6 +2245,7 @@ export class ScramblerComponent implements OnInit {
 
 
     updateTeamSize(selectedNumberOfTeams: number): void {
+        this.maxTeamSize = null;
         // Deselect the other mat-select when one is selected
         this.teamSizeSelected = true;
         this.numberOfTeamsSelected = false;
@@ -2191,6 +2253,7 @@ export class ScramblerComponent implements OnInit {
         if (selectedNumberOfTeams) {
             this.teamSize = null;
         }
+        this.calculateTeamsNeeded();
     }
 
 
@@ -2694,6 +2757,7 @@ export class ScramblerComponent implements OnInit {
 
             }
         }
+        this.calculateTeamsNeeded();
     }
 
     getPlayerClass(player: Player): string {

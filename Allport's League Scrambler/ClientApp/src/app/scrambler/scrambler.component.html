@@ -4,21 +4,21 @@
             <mat-card style="background-color:lightgray; " class="ml-1 mt-2">
                 <div class="row">
                     <!--<div class="col">
-                        <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
-                            <h4>Select League</h4>
-                            <div class="mt-1">
-                                <mat-form-field>
-                                    <mat-label>League</mat-label>
-                                    <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" (selectionChange)="selectLeague()">
-                                        <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
-                                            {{league.leagueName}}
-                                        </mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            </div>
-                        </mat-card>
-                    </div>-->
-                    <div class="col text-center">
+        <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
+            <h4>Select League</h4>
+            <div class="mt-1">
+                <mat-form-field>
+                    <mat-label>League</mat-label>
+                    <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" (selectionChange)="selectLeague()">
+                        <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
+                            {{league.leagueName}}
+                        </mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </div>
+        </mat-card>
+    </div>-->
+                    <div class="col text-center mt-2">
                         <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
                             <h4>Max Team Size</h4>
                             <div class="mt-1">
@@ -32,13 +32,9 @@
                                 </mat-form-field>
                                 <p [style.color]="teamSizeSelected ? '#999' : 'red'" style="font-size: 12px; margin-top: 5px;">Deselected when number of teams selected.</p>
                             </div>
-                            <!-- Add display for team count -->
-                            <div *ngIf="teamSizeSelected && this.teamCount !== undefined && selectedList.length > 0" class="mt-3">
-                                <h5>Number of Teams: {{ teamCount }}</h5>
-                            </div>
                         </mat-card>
                     </div>
-                    <div class="col text-center">
+                    <div class="col text-center mt-2">
                         <mat-card style="background-color: lightgray;" class="d-flex flex-column align-items-center">
                             <h4>Number of Teams</h4>
                             <div class="mt-1">
@@ -92,11 +88,104 @@
                                             Add {{ 4 - remainderFour }} more player(s) for even teams.
                                         </p>
                                     </div>
+
                                 </div>
+
+
                             </div>
 
                         </mat-card>
 
+                    </div>
+                    <div class="col text-center mt-2" *ngIf="teamCount">
+                        <mat-card style="background-color: lightgray;" class="d-flex flex-column align-items-center">
+                            <h4>Team Breakdown</h4>
+                            <div class="d-flex justify-content-center align-items-center mt-3" style="gap: 20px;">
+                                <!-- 10 Player Teams -->
+                                <div *ngIf="tenPlayerTeams > 0" style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">10 Player Teams</p>
+                                    <p [ngStyle]="{'color': (tenPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        {{ tenPlayerTeams }}
+                                    </p>
+                                </div>
+
+                                <!-- 9 Player Teams -->
+                                <div *ngIf="ninePlayerTeams > 0" style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">9 Player Teams</p>
+                                    <p [ngStyle]="{'color': (ninePlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        {{ ninePlayerTeams }}
+                                    </p>
+                                </div>
+
+                                <!-- 8 Player Teams -->
+                                <div *ngIf="eightPlayerTeams > 0" style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">8 Player Teams</p>
+                                    <p [ngStyle]="{'color': (eightPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        {{ eightPlayerTeams }}
+                                    </p>
+                                </div>
+
+                                <!-- 7 Player Teams -->
+                                <div *ngIf="sevenPlayerTeams > 0" style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">7 Player Teams</p>
+                                    <p [ngStyle]="{'color': (sevenPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        {{ sevenPlayerTeams }}
+                                    </p>
+                                </div>
+
+                                <!-- 6 Player Teams -->
+                                <div *ngIf="sixPlayerTeams > 0" style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">6 Player Teams</p>
+                                    <p [ngStyle]="{'color': (sixPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        {{ sixPlayerTeams }}
+                                    </p>
+                                </div>
+
+                                <!-- 5 Player Teams -->
+                                <div *ngIf="fivePlayerTeams > 0" style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">5 Player Teams</p>
+                                    <p [ngStyle]="{'color': (fivePlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        {{ fivePlayerTeams }}
+                                    </p>
+                                </div>
+
+                                <!-- 4 Player Teams -->
+                                <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">4 Player Teams</p>
+                                    <p [ngStyle]="{'color': (fourPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        {{ fourPlayerTeams }}
+                                    </p>
+                                </div>
+
+                                <!-- 3 Player Teams -->
+                                <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">3 Player Teams</p>
+                                    <p [ngStyle]="{'color': (threePlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        {{ threePlayerTeams }}
+                                    </p>
+                                </div>
+
+                                <!-- 2 Player Teams -->
+                                <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">2 Player Teams</p>
+                                    <p [ngStyle]="{'color': (twoPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        {{ twoPlayerTeams }}
+                                    </p>
+                                </div>
+
+
+                            </div>
+                            <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 10px; text-align: center;" class="mt-3">
+                                <div *ngIf="this.teamCount !== undefined && selectedList.length > 0" >
+                                    <h5>Number of Teams: {{ teamCount }}</h5>
+                                </div>
+                                <div *ngIf="leftoverPlayers > 0">
+                                    <p  style="color: red; font-size: 12px;">
+                                        Not all teams are full. {{ leftoverPlayers }} player(s) remain unassigned.
+                                    </p>
+                                </div>
+                            </div>
+                        </mat-card>
                     </div>
                 </div>
 
