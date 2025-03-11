@@ -19,9 +19,8 @@ import { PlayerService } from '../services/player.service';
 export class HomeComponent implements OnInit {
     @ViewChild('confirmClaimDialog') confirmClaimDialog!: TemplateRef<any>;
     @ViewChild('confirmationDialog') confirmationDialog!: TemplateRef<any>;
-    loginUsername: string = '';
+    loginEmail: string = '';
     loginPassword: string = '';
-    registerUsername: string = '';
     registerEmail: string = '';
     registerPassword: string = '';
     confirmPassword: string = '';
@@ -53,7 +52,6 @@ export class HomeComponent implements OnInit {
 
     ngOnInit() {
         this.registerForm = this.fb.group({
-            registerUsername: ['', Validators.required],
             registerEmail: ['', [Validators.required, Validators.email]],
             registerPassword: ['', Validators.required],
             confirmPassword: ['', Validators.required],
@@ -105,7 +103,7 @@ export class HomeComponent implements OnInit {
     }
 
     login() {
-        this.loginService.login(this.loginUsername, this.loginPassword).subscribe(
+        this.loginService.login(this.loginEmail, this.loginPassword).subscribe(
             (response) => {
                 this.authService.setLoggedIn(true);
 
@@ -185,7 +183,6 @@ export class HomeComponent implements OnInit {
         // If the control reaches here, the form is valid, and passwords match
         // Proceed with registration
         this.loginService.register(
-            this.registerForm.get('registerUsername').value,
             this.registerForm.get('registerEmail').value,
             password,
             this.registerForm.get('registerFirstName').value,
@@ -193,8 +190,8 @@ export class HomeComponent implements OnInit {
         ).subscribe(
             (response) => {
                 // After a successful registration, show the snackbar.
-                const username = this.registerForm.get('registerUsername').value;
-                const snackbarMessage = `Registration successful for ${username}`;
+                const email = this.registerForm.get('registerEmail').value;
+                const snackbarMessage = `Registration successful for ${email}`;
                 this.userId = response.userId;
                 this.showLoginForm = true;
                 this.showRegistrationForm = false;
@@ -204,7 +201,7 @@ export class HomeComponent implements OnInit {
             },
             (error) => {
                 // Handle registration error
-                this.showSnackBar('Registration failed, Username or email is already in use.', true); // Show fail message
+                this.showSnackBar('Registration failed, Email is already in use.', true); // Show fail message
             }
         );
     }

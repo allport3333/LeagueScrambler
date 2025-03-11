@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Models;
@@ -1455,104 +1456,77 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
-        public LeagueType AddNewLeague(string leagueName)
+        public IActionResult AddNewLeague(string leagueName)
         {
-            var context = new DataContext();
-            var newLeague = new LeagueType();
-            var newUserLeague = new UserLeague();
-            var leagueExists = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
+            var email = User.FindFirst(ClaimTypes.Email)?.Value; // Get the email from the claims
 
-            var username = User.Identity.Name; // Assuming the username is in the claim
+            if (string.IsNullOrEmpty(email))
+            {
+                return Unauthorized(new { message = "Email claim not found." });
+            }
+
+            var context = new DataContext(); // Ensure proper disposal of DataContext
+
+            var leagueExists = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
+            var retrievedUser = context.Users.FirstOrDefault(x => x.Email == email);
+
+            if (retrievedUser == null)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+
+            LeagueType league;
 
             if (leagueExists == null)
             {
                 // Create new league
-                newLeague = new LeagueType()
+                league = new LeagueType()
                 {
                     LeagueName = leagueName
                 };
 
-                context.Leagues.Add(newLeague);
+                context.Leagues.Add(league);
                 context.SaveChanges();
 
                 // Retrieve the newly created league ID
-                var newLeagueId = newLeague.ID;
+                var newLeagueId = league.ID;
 
                 // Insert default league settings
                 var defaultSettings = new List<LeagueSettings>
-                            {
-                                new LeagueSettings
-                                {
-                                    LeagueId = newLeagueId,
-                                    SettingName = "subScorePercent",
-                                    SettingValue = "50"
-                                },
-                                new LeagueSettings
-                                {
-                                    LeagueId = newLeagueId,
-                                    SettingName = "numberOfSubsAllowed",
-                                    SettingValue = "100"
-                                },
-                                new LeagueSettings
-                                {
-                                    LeagueId = newLeagueId,
-                                    SettingName = "dropLowest",
-                                    SettingValue = "0"
-                                },
-                                new LeagueSettings
-                                {
-                                    LeagueId = newLeagueId,
-                                    SettingName = "dayOfLeague",
-                                    SettingValue = "Monday"
-                                }
-                            };
+        {
+            new LeagueSettings { LeagueId = newLeagueId, SettingName = "subScorePercent", SettingValue = "50" },
+            new LeagueSettings { LeagueId = newLeagueId, SettingName = "numberOfSubsAllowed", SettingValue = "100" },
+            new LeagueSettings { LeagueId = newLeagueId, SettingName = "dropLowest", SettingValue = "0" },
+            new LeagueSettings { LeagueId = newLeagueId, SettingName = "dayOfLeague", SettingValue = "Monday" }
+        };
 
                 context.LeagueSettings.AddRange(defaultSettings);
                 context.SaveChanges();
-
-                // Associate the user with the new league
-                if (username != null)
-                {
-                    var retrievedUser = context.Users.FirstOrDefault(x => x.LoginName == username);
-                    if (retrievedUser != null)
-                    {
-                        newUserLeague = new UserLeague()
-                        {
-                            LeagueTypeId = newLeagueId,
-                            UserId = retrievedUser.UserId
-                        };
-
-                        context.UserLeagues.Add(newUserLeague);
-                        context.SaveChanges();
-                    }
-                }
-
-                return newLeague;
             }
             else
             {
-                // League already exists, associate user with it
-                if (username != null)
-                {
-                    var existingLeague = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
-                    var retrievedUser = context.Users.FirstOrDefault(x => x.LoginName == username);
-
-                    if (retrievedUser != null && existingLeague != null)
-                    {
-                        newUserLeague = new UserLeague()
-                        {
-                            LeagueTypeId = existingLeague.ID,
-                            UserId = retrievedUser.UserId
-                        };
-
-                        context.UserLeagues.Add(newUserLeague);
-                        context.SaveChanges();
-                    }
-                }
-
-                return leagueExists;
+                league = leagueExists;
             }
+
+            // Check if the user is already associated with the league
+            var userLeagueExists = context.UserLeagues
+                .Any(ul => ul.LeagueTypeId == league.ID && ul.UserId == retrievedUser.UserId);
+
+            if (!userLeagueExists)
+            {
+                var newUserLeague = new UserLeague
+                {
+                    LeagueTypeId = league.ID,
+                    UserId = retrievedUser.UserId
+                };
+
+                context.UserLeagues.Add(newUserLeague);
+                context.SaveChanges();
+            }
+
+            return Ok(league);
         }
+
 
 
     }

@@ -25,9 +25,9 @@ export class LoginService {
     private getUsersPlayerUrl = this.baseUrl + 'api/Login/GetUsersPlayer';
     private forgotPasswordUrl = this.baseUrl + 'api/Login/forgotpassword'; // Define your password recovery endpoint
     private resetPasswordUrl = this.baseUrl + 'api/Login/resetpassword'; // Define your password recovery endpoint
-    login(username: string, password: string) {
+    login(email: string, password: string) {
         const loginData = {
-            username: username,
+            email: email,
             password: password
         };
 
@@ -52,9 +52,8 @@ export class LoginService {
     }
 
     // Method for user registration
-    register(userName: string, email: string, password: string, firstName: string, lastName: string) {
+    register(email: string, password: string, firstName: string, lastName: string) {
         const registerData = {
-            loginName: userName,
             email: email,
             password: password,
             firstName: firstName,

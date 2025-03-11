@@ -17,6 +17,12 @@
         </button>
     </div>
 
+    <div class="text-center mt-3" *ngIf="userRole === 'Admin' || userRole === 'Manager'">
+        <button mat-raised-button color="primary" (click)="fetchSignedInPlayers()">
+            {{ 'Fetch Signed-In Players' }}
+        </button>
+    </div>
+
     <!-- Add Player Form -->
     <div *ngIf="showAddPlayerForm" class="mt-4">
         <h4>Add New Player</h4>

@@ -385,6 +385,14 @@ export class SignInComponent implements OnInit {
         }
     }
 
+    fetchSignedInPlayers(): void {
+        this.loadPlayers()
+            .then(() => this.loadSignedInPlayers())
+            .then(() => this.updatePlayerSignInStatus()) // Check if the player is signed in for the selected league
+            .then(() => this.updateGenderCounts()) // Update gender counts after updating sign-in status
+            .catch((error) => console.error('Error during player sign in retrieval:', error));
+    }
+
     private updatePlayerSignInStatus(): void {
         if (this.userRole === 'Player' && this.currentPlayerId) {
             // Check if the current player is in the signed-in list

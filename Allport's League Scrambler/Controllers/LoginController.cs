@@ -55,9 +55,9 @@ namespace Allport_s_League_Scrambler.Controllers
                 var _context = new DataContext();
 
                 // Check if the username or email is already taken
-                if (await _context.Users.AnyAsync(u => u.LoginName == registrationModel.LoginName || u.Email == registrationModel.Email))
+                if (await _context.Users.AnyAsync(u => u.Email == registrationModel.Email))
                 {
-                    return BadRequest(new { message = "Username or email already in use." });
+                    return BadRequest(new { message = "Email already in use." });
                 }
                 registrationModel.UserRoleId = 3;
                 var user = registrationModel.ToUser(); // Convert RegistrationModel to User
@@ -324,7 +324,7 @@ namespace Allport_s_League_Scrambler.Controllers
             if (ModelState.IsValid)
             {
                 var _context = new DataContext();
-                var userInfo = await _context.Users.FirstOrDefaultAsync(u => u.LoginName == loginModel.Username);
+                var userInfo = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginModel.Email);
 
                 if (userInfo == null)
                 {
@@ -361,7 +361,6 @@ namespace Allport_s_League_Scrambler.Controllers
                 var claims = new List<Claim>
                  {
                      new Claim(ClaimTypes.NameIdentifier, userInfo.UserId.ToString()), // Unique user identifier
-                     new Claim(ClaimTypes.Name, userInfo.LoginName), // User's login name or username
                      new Claim(ClaimTypes.Email, userInfo.Email), // User's email address
                      new Claim("FirstName", userInfo.FirstName), // User's first name
                      new Claim("LastName", userInfo.LastName), // User's last name
@@ -425,20 +424,23 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpGet("getuserinfo")]
         public async Task<IActionResult> GetUserInfo()
         {
-            var te = _httpContextAccessor.HttpContext.User.Identity.Name;
-            var username = User.Identity.Name; // Assuming the username is in the claim
+            var email = User.FindFirst(ClaimTypes.Email)?.Value; // Get the email from the claims
 
-            var _context = new DataContext(); // Create a new instance of DataContext
+            if (string.IsNullOrEmpty(email))
+            {
+                return Unauthorized(new { message = "Email claim not found." });
+            }
 
-            // Fetch user-related data (e.g., linked leagues) from the database
+            var _context = new DataContext(); // Use 'using' to properly dispose of the context
+
+            // Fetch user-related data using email
             var userData = await _context.Users
-                .Where(u => u.LoginName == username)
+                .Where(u => u.Email == email)
                 .Select(u => new
                 {
                     u.UserId,
-                    u.LoginName,
+                    u.Email,
                     // Include other user-related properties
-                    // You can also include linked leagues data in this projection
                 })
                 .FirstOrDefaultAsync();
 
@@ -450,25 +452,28 @@ namespace Allport_s_League_Scrambler.Controllers
             return Ok(userData);
         }
 
+
         [HttpGet("getuserleagues")]
         public async Task<IActionResult> GetUserLeagues()
         {
-            var te = _httpContextAccessor.HttpContext.User.Identity.Name;
-            var username = User.Identity.Name; // Assuming the username is in the claim
+            var email = User.FindFirst(ClaimTypes.Email)?.Value; // Get the email from the claims
 
-            var _context = new DataContext(); // Create a new instance of DataContext
+            if (string.IsNullOrEmpty(email))
+            {
+                return Unauthorized(new { message = "Email claim not found." });
+            }
 
-            // Fetch user-related data (e.g., linked leagues) from the database
+            var _context = new DataContext(); // Ensure proper disposal of DataContext
+
+            // Fetch user-related data including linked leagues
             var userData = await _context.Users
-                .Where(u => u.LoginName == username)
+                .Where(u => u.Email == email)
                 .Select(u => new
                 {
                     u.UserId,
-                    u.LoginName,
+                    u.Email,
                     u.IsAdmin,
                     u.UserRoleId
-                    // Include other user-related properties
-                    // You can also include linked leagues data in this projection
                 })
                 .FirstOrDefaultAsync();
             var userLeagues = new List<LeagueType>();
@@ -550,7 +555,6 @@ namespace Allport_s_League_Scrambler.Controllers
                     Email = userData.Email,
                     FirstName = userData.FirstName,
                     LastName = userData.LastName,
-                    LoginName = userData.LoginName,
                     Password = request.Password,
                     UserRoleId = 3
                 };

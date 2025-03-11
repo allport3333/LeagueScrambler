@@ -7,7 +7,6 @@ namespace Allport_s_League_Scrambler.Models
     public class User
     {
         public int UserId { get; set; } // Unique user identifier
-        public string LoginName { get; set; } // User's login name or username
         public byte[] PasswordHash { get; set; } // Hashed password
         public byte[] PasswordSalt { get; set; } // Password salt
         public string ResetToken { get; set; } // User's Reset Token

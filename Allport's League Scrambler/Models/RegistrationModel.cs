@@ -7,7 +7,6 @@ namespace Allport_s_League_Scrambler.Models
 {
     public class RegistrationModel
     {
-        public string LoginName { get; set; }
         public string Email { get; set; }
         public string Password { get; set; } // Plain text password
         public string FirstName { get; set; }
@@ -23,7 +22,6 @@ namespace Allport_s_League_Scrambler.Models
 
             return new User
             {
-                LoginName = LoginName,
                 Email = Email,
                 PasswordHash = passwordHash,
                 PasswordSalt = salt,
