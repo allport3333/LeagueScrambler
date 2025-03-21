@@ -41,6 +41,7 @@ export class HomeComponent implements OnInit {
     searchTerm = '';
     selectedPlayer: any;
     showAddPlayerForm = false;
+    isEmailValid: boolean = true;
 
     constructor(private loginService: LoginService, private leagueService: LeagueService, public playerService: PlayerService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: FormBuilder) {
         this.route.queryParams.subscribe((queryParams) => {
@@ -48,6 +49,11 @@ export class HomeComponent implements OnInit {
                 this.toggleLoginForm();
             }
         });
+    }
+
+    validateEmail(): void {
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        this.isEmailValid = emailPattern.test(this.loginEmail);
     }
 
     ngOnInit() {

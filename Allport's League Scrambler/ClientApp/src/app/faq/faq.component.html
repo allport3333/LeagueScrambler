@@ -1,0 +1,14 @@
+<div class="faq-container">
+    <h2>Frequently Asked Questions</h2>
+
+    <div class="faq-item" *ngFor="let item of faqItems; let i = index">
+        <div class="faq-question" (click)="toggleItem(i)">
+            {{ item.question }}
+            <span class="arrow" [class.expanded]="item.expanded">&#9660;</span>
+        </div>
+
+        <div class="faq-answer" *ngIf="item.expanded">
+            {{ item.answer }}
+        </div>
+    </div>
+</div>

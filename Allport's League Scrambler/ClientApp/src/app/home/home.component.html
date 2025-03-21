@@ -19,14 +19,16 @@
         <h2>Login</h2>
         <div>
             <label for="loginEmail">Email:</label>
-            <input type="text" id="loginEmail" [(ngModel)]="loginEmail" placeholder="Enter your Email Address">
+            <input type="text" id="loginEmail" [(ngModel)]="loginEmail" placeholder="Enter your Email Address"
+                   (input)="validateEmail()" [ngClass]="{'error': !isEmailValid && loginEmail?.length > 0}">
+            <div *ngIf="!isEmailValid && loginEmail?.length > 0" class="error-message">Please enter a valid email address.</div>
         </div>
         <div>
             <label for="loginPassword">Password:</label>
             <input type="password" id="loginPassword" [(ngModel)]="loginPassword" placeholder="Enter your password">
         </div>
         <br />
-        <button (click)="login()" style="margin-right: 10px;">Submit</button>
+        <button (click)="login()" [disabled]="!isEmailValid">Submit</button>
         <button (click)="cancel()">Cancel</button>
     </div>
 

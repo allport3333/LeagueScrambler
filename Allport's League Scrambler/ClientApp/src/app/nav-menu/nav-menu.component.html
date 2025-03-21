@@ -81,6 +81,12 @@
                     </a>
                 </li>
 
+                <li class="nav-item" [routerLinkActive]="['link-active']">
+                    <a [routerLink]="['/faq']" class="nav-link" (click)="collapse()">
+                        <span class="fas fa-user"></span> F.A.Q
+                    </a>
+                </li>
+
                 <!-- Profile and Logout (Visible in collapse on small screens) -->
                 <li *ngIf="loggedIn && playerId" class="nav-item d-lg-none" [routerLinkActive]="['link-active']">
                     <a [routerLink]="['/player-stats-tabs', playerId]" class="nav-link" (click)="collapse()">
