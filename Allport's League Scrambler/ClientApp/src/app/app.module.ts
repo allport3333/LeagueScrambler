@@ -35,6 +35,7 @@ import { CombinedStatsTabComponent } from './combined-stats-tab/combined-stats-t
 import { LeagueTeamStandingsComponent } from './league-team-standings/league-team-standings.component';
 import { IndividualTeamScoresComponent } from './individual-team-scores/individual-team-scores.component';
 import { FaqComponent } from './faq/faq.component';
+import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
 
 @NgModule({
     declarations: [
@@ -61,7 +62,8 @@ import { FaqComponent } from './faq/faq.component';
         CombinedStatsTabComponent,
         LeagueTeamStandingsComponent,
         IndividualTeamScoresComponent,
-        FaqComponent
+        FaqComponent,
+        KqmatchupsComponent
 
     ],
     imports: [
@@ -111,7 +113,8 @@ import { FaqComponent } from './faq/faq.component';
             { path: 'standings', component: LeagueStandingsComponent },
             { path: 'player-stats-tabs/:playerId', component: PlayerStatsTabsComponent },
             { path: 'league-dashboard', component: LeagueDashboardComponent },
-            { path: 'faq', component: FaqComponent }
+            { path: 'faq', component: FaqComponent },
+            { path: 'kqmatchups', component: KqmatchupsComponent }
         ]),
         BrowserAnimationsModule
     ],

@@ -69,6 +69,12 @@
                     </a>
                 </li>
 
+                <li *ngIf="userRole === 'Admin' || userRole === 'Manager' || userRole === 'Player'" class="nav-item" [routerLinkActive]='["link-active"]'>
+                    <a [routerLink]='["/kqmatchups"]' class="nav-link" (click)='collapse()'>
+                        <span class='fas fa-trophy'></span> K/Q Matchups
+                    </a>
+                </li>
+
                 <li *ngIf="loggedIn" class="nav-item" [routerLinkActive]='["link-active"]'>
                     <a [routerLink]='["/fetch-data"]' class="nav-link" (click)='collapse()'>
                         <span class='fas fa-database'></span> Players

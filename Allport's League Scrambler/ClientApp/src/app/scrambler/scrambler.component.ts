@@ -93,7 +93,7 @@ export class ScramblerComponent implements OnInit {
     eightPlayerTeams: number;
     leftoverPlayers: number;
     queriedPlayers: Player[] = new Array();
-    queriedScrambles: KingQueenTeam[] = new Array();;
+    queriedScrambles: KingQueenTeam[] = new Array();
     leaguesAvailable: Leagues[] = [];
     leagueId: number;
     selectedLeagueDto: Leagues;

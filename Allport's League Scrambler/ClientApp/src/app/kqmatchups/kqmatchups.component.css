@@ -1,0 +1,136 @@
+/************************************
+ * Container for all matchups 
+ ************************************/
+.matchups-container {
+    max-width: 1200px; /* So it doesn't stretch too wide on large screens */
+    margin: 2rem auto; /* center the container itself */
+    padding: 0 1rem;
+}
+
+/************************************
+ * Each "match row"
+ ************************************/
+.match-row {
+    margin-bottom: 3rem; /* space below each row */
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 2rem; /* space under each row’s content */
+}
+
+/************************************
+ * Center the "Match #X" heading
+ ************************************/
+.match-header {
+    text-align: center;
+    margin-bottom: 2rem; /* space between heading and teams */
+    font-weight: bold;
+}
+
+/************************************
+ * Container that holds both teams side by side
+ ************************************/
+.teams-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center; /* horizontally center the row of teams */
+    align-items: flex-start; /* top-align the team cards (or center if you want them middle-aligned) */
+    gap: 3rem; /* space between Team 1 and Team 2 */
+    flex-wrap: wrap; /* if screen too narrow, they'll stack, but on wide screens side by side */
+}
+
+/************************************
+ * Team card styling
+ ************************************/
+.team-card {
+    width: 250px; /* or 300px, to fix each card’s width */
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background-color: #fafafa;
+    padding: 1rem;
+    text-align: center; /* center the card’s contents */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+    /************************************
+ * Team card headings
+ ************************************/
+    .team-card h4 {
+        margin-bottom: 1rem;
+    }
+
+/************************************
+ * Players list 
+ ************************************/
+.players-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+}
+
+    .players-list li {
+        margin-bottom: 0.5rem;
+    }
+
+/************************************
+ * "Sub" badge 
+ ************************************/
+.sub-score-badge {
+    background-color: #ffcc00;
+    color: #000;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    font-size: 0.8rem;
+}
+
+/************************************
+ * Scores
+ ************************************/
+.scores-list {
+    margin-top: 0.5rem;
+}
+
+.score-item {
+    margin: 0.25rem 0;
+}
+
+/* Show a "WON" badge if they won that round */
+.won-badge {
+    background-color: #4caf50;
+    color: #fff;
+    margin-left: 0.5rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+/************************************
+ * Bye Players at bottom
+ ************************************/
+.bye-players {
+    margin-top: 2rem;
+    text-align: center;
+}
+.extended-background-blue-lastName,
+.extended-background-pink-lastName {
+    position: relative;
+    /* Increase padding so there's more room for the name before wrapping */
+    padding-left: 10px; /* left padding */
+    padding-right: 120px; /* right padding; increased from 80px */
+    padding-top: 5px;
+    padding-bottom: 5px;
+    /* A little space between each <li> so they don't blend together */
+    margin-bottom: 8px; /* or 10px, etc. */
+    /* Keep the name on one line as long as possible before wrapping */
+    white-space: nowrap;
+    /* Or ensure the box is wide enough before wrapping (optional) */
+    min-width: 220px; /* adjust as needed */
+}
+
+/* Different background colors for male vs. female */
+.extended-background-blue-lastName {
+    background-color: lightblue;
+}
+
+.extended-background-pink-lastName {
+    background-color: pink;
+}
