@@ -1,11 +1,11 @@
 <div class="container" style="margin-top: 20px; text-align: center;">
     <h2>League Dashboard</h2>
 
-    <p *ngIf="selectedLeagueId && selectedLeagueId != 27">
+    <p *ngIf="selectedLeagueId && (selectedLeagueId != 27 && selectedLeagueId != 33)">
         ({{ selectedLeagueName }})
     </p>
 
-    <div *ngIf="selectedLeagueId && selectedLeagueId == 27" style="display: flex; justify-content: center; align-items: center; ">
+    <div *ngIf="selectedLeagueId && (selectedLeagueId == 27 || selectedLeagueId == 33)" style="display: flex; justify-content: center; align-items: center; ">
         <img src="assets/img/logoww.jpg"
              style="width: 100%; max-width: 200px; height: auto; object-fit: contain;">
     </div>

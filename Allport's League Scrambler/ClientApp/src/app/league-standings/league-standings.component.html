@@ -2,7 +2,8 @@
     <div class="tab-content d-flex flex-column align-items-center">
         <h5 class="mb-2">Player Standings</h5>
 
-        <div *ngIf="selectedLeagueId && selectedLeagueId == 27" style="display: flex; justify-content: center; align-items: center; ">
+        <div *ngIf="selectedLeagueId && (selectedLeagueId == 27 || selectedLeagueId == 33)"
+             style="display: flex; justify-content: center; align-items: center;">
             <img src="assets/img/logoww.jpg"
                  style="width: 100%; max-width: 200px; height: auto; object-fit: contain;">
         </div>
