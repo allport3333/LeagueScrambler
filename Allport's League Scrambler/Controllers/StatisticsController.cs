@@ -19,18 +19,29 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             List<LeagueTeam> teams = new List<LeagueTeam>();
             var context = new DataContext();
-            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+
             try
             {
-                teams = context.LeagueTeam.Where(x => x.LeagueID == league.ID).ToList();
+                var league = context.Leagues
+                    .FirstOrDefault(x => x.LeagueName == leagueName);
+
+                if (league == null)
+                {
+                    return teams;
+                }
+
+                // Order: Gold, then Silver, then Bronze, then anything else
+                teams = context.LeagueTeam
+                    .Where(x => x.LeagueID == league.ID)
+                    .OrderBy(x => x.Division.ToLower() != "gold")
+                    .ThenBy(x => x.Division.ToLower() != "silver")
+                    .ThenBy(x => x.Division.ToLower() != "bronze")
+                    .ToList();
             }
             catch (Exception)
             {
-
                 return teams;
             }
-
-
 
             return teams;
         }
@@ -40,20 +51,24 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             List<LeagueTeam> teams = new List<LeagueTeam>();
             var context = new DataContext();
+
             try
             {
-                teams = context.LeagueTeam.Where(x => x.LeagueID == leagueId).ToList();
+                teams = context.LeagueTeam
+                    .Where(x => x.LeagueID == leagueId)
+                    .OrderBy(x => x.Division.ToLower() != "gold")
+                    .ThenBy(x => x.Division.ToLower() != "silver")
+                    .ThenBy(x => x.Division.ToLower() != "bronze")
+                    .ToList();
             }
             catch (Exception)
             {
-
                 return teams;
             }
 
-
-
             return teams;
         }
+
 
         [HttpGet("league-team-scores/{playerId}/{leagueId}")]
         public IActionResult GetLeagueTeamScores(int playerId, int leagueId)
@@ -497,6 +512,10 @@ namespace Allport_s_League_Scrambler.Controllers
                             })
                             .ToList()
                     })
+                    // 4) Order the results by division
+                    .OrderBy(x => x.Division == "Gold" ? 1 :
+                                  x.Division == "Silver" ? 2 :
+                                  x.Division == "Bronze" ? 3 : 4)
                     .ToList();
 
                 return results;

@@ -589,35 +589,34 @@ export class ScramblerComponent implements OnInit {
 
         this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
             if (selectedLeague.leagueId !== null && selectedLeague.leagueName !== null) {
-                this.leagueId = selectedLeague.leagueId;                
-                this.selectedLeague = selectedLeague.leagueName; // Use leagueName as needed
+                this.leagueId = selectedLeague.leagueId;
+                this.selectedLeague = selectedLeague.leagueName;
                 this.selectedLeagueDto = {
                     id: selectedLeague.leagueId,
                     leagueName: selectedLeague.leagueName
                 };
 
-
                 this.onLeagueChanged();
+            } else {
+                this.playerService.GetAllMalePlayers().subscribe(
+                    (result) => {
+                        this.malePlayers1 = result;
+                        this.malePlayerCount = result.length;
+                    },
+                    (error) => console.error(error)
+                );
+
+                this.playerService.GetAllFemalePlayers().subscribe(
+                    (result) => {
+                        this.femalePlayers1 = result;
+                        this.femalePlayerCount = result.length;
+                        this.awaitSettingsAndInitialize();
+                    },
+                    (error) => console.error(error)
+                );
             }
         });
 
-        // Fetch all male players
-        this.playerService.GetAllMalePlayers().subscribe(
-            (result) => {
-                this.malePlayers1 = result;
-                this.malePlayerCount = result.length;
-            },
-            (error) => console.error(error)
-        );
-
-        // Fetch all female players
-        this.playerService.GetAllFemalePlayers().subscribe(
-            (result) => {
-                this.femalePlayers1 = result;
-                this.femalePlayerCount = result.length;
-            },
-            (error) => console.error(error)
-        );
 
         // Fetch number of brackets
         this.playerService.GetNumberOfBrackets().subscribe(
