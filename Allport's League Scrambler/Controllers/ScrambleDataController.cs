@@ -253,17 +253,52 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
-        public Player AddPlayer([FromBody] Player player, string leagueName)
+        public Player AddPlayer([FromBody] Player player, string leagueName, [FromQuery] int leagueDivisionId = 0)
         {
             var context = new DataContext();
-            var playerExists = context.Players.Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName).FirstOrDefault();
+
+            if (player == null)
+            {
+                return null;
+            }
+
+            int? divisionIdToSave = null;
+            if (leagueDivisionId > 0)
+            {
+                divisionIdToSave = leagueDivisionId;
+            }
+
+            var existingLeague = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+            if (existingLeague == null)
+            {
+                return null;
+            }
+
+            var playerExists = context.Players
+                .Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName)
+                .FirstOrDefault();
 
             if (playerExists != null)
             {
-                var existingLeague = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
-                var linkExists = context.PlayersLeagues.Where(x => x.LeagueID == existingLeague.ID && x.PlayerID == playerExists.Id).FirstOrDefault();
+                var linkExists = context.PlayersLeagues
+                    .Where(x => x.LeagueID == existingLeague.ID && x.PlayerID == playerExists.Id)
+                    .FirstOrDefault();
+
                 if (linkExists != null)
                 {
+                    // If they re-add and chose a division, update it
+                    if (divisionIdToSave.HasValue)
+                    {
+                        linkExists.LeagueDivisionId = divisionIdToSave.Value;
+                    }
+
+                    // Also allow updating IsSub
+                    if (player.IsSub.HasValue)
+                    {
+                        linkExists.IsSub = player.IsSub;
+                    }
+
+                    context.SaveChanges();
                     return playerExists;
                 }
                 else
@@ -272,8 +307,8 @@ namespace Allport_s_League_Scrambler.Controllers
                     {
                         PlayerID = playerExists.Id,
                         LeagueID = existingLeague.ID,
-                        IsSub = player.IsSub
-
+                        IsSub = player.IsSub,
+                        LeagueDivisionId = divisionIdToSave
                     };
 
                     context.PlayersLeagues.Add(addNewLink);
@@ -283,6 +318,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 }
             }
 
+            // Create new Player
             var newPlayer = new Player()
             {
                 FirstName = player.FirstName,
@@ -290,25 +326,33 @@ namespace Allport_s_League_Scrambler.Controllers
                 IsMale = player.IsMale,
                 Gender = player.Gender
             };
+
             context.Players.Add(newPlayer);
             context.SaveChanges();
 
-            var addedPlayer = context.Players.Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName).FirstOrDefault();
-            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
+            var addedPlayer = context.Players
+                .Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName)
+                .FirstOrDefault();
+
+            if (addedPlayer == null)
+            {
+                return null;
+            }
+
             var addedPlayersLeagues = new PlayersLeague()
             {
-                LeagueID = league.ID,
+                LeagueID = existingLeague.ID,
                 PlayerID = addedPlayer.Id,
-                IsSub = player.IsSub
+                IsSub = player.IsSub,
+                LeagueDivisionId = divisionIdToSave
             };
 
             context.PlayersLeagues.Add(addedPlayersLeagues);
-
             context.SaveChanges();
 
-            return player;
-
+            return addedPlayer;
         }
+
 
         [HttpPost("[action]")]
         public IActionResult AddPlayerWithoutLeague([FromBody] Player player)
@@ -933,7 +977,8 @@ namespace Allport_s_League_Scrambler.Controllers
                     _context.Players,
                     kqt => kqt.PlayerId,
                     p => p.Id,
-                    (kqt, p) => new {
+                    (kqt, p) => new
+                    {
                         p.Id,
                         p.FirstName,
                         p.LastName,
@@ -976,28 +1021,28 @@ namespace Allport_s_League_Scrambler.Controllers
                     .ToListAsync();
 
                 if (!signedInPlayers.Any())
-            {
-                return Ok(new List<Player>()); // Return empty list if no records found
-            }
+                {
+                    return Ok(new List<Player>()); // Return empty list if no records found
+                }
 
-            // Fetch the corresponding Player objects
-            var playerIds = signedInPlayers.Select(x => x.PlayerId).Distinct().ToList();
-            var players = await context.Players
-                .Where(p => playerIds.Contains(p.Id))
-                .OrderBy(p => p.FirstName)
-                .ThenBy(p => p.LastName)
-                .ToListAsync();
+                // Fetch the corresponding Player objects
+                var playerIds = signedInPlayers.Select(x => x.PlayerId).Distinct().ToList();
+                var players = await context.Players
+                    .Where(p => playerIds.Contains(p.Id))
+                    .OrderBy(p => p.FirstName)
+                    .ThenBy(p => p.LastName)
+                    .ToListAsync();
 
-            // Map and enrich the data for the frontend
-            var playerList = players.Select(player => new Player
-            {
-                Id = player.Id,
-                FirstName = player.FirstName,
-                LastName = player.LastName,
-                IsMale = player.IsMale,
-                Gender = player.IsMale ? "Male" : "Female",
-                IsSub = player.IsSub
-            }).ToList();
+                // Map and enrich the data for the frontend
+                var playerList = players.Select(player => new Player
+                {
+                    Id = player.Id,
+                    FirstName = player.FirstName,
+                    LastName = player.LastName,
+                    IsMale = player.IsMale,
+                    Gender = player.IsMale ? "Male" : "Female",
+                    IsSub = player.IsSub
+                }).ToList();
                 return Ok(playerList);
             }
             catch (Exception ex)
@@ -1052,7 +1097,6 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             var context = new DataContext();
 
-            // Step 1: Get the LeagueID for the given leagueName
             var leagueId = await context.Leagues
                 .Where(league => league.LeagueName == leagueName)
                 .Select(league => league.ID)
@@ -1063,12 +1107,11 @@ namespace Allport_s_League_Scrambler.Controllers
                 return BadRequest(new { message = "League not found." });
             }
 
-            // Step 2: Retrieve KingQueenTeams for the league
             var kingQueenTeams = await context.KingQueenTeam
                 .Where(team => team.LeagueID == leagueId && team.ScrambleWithScoresToBeSaved == true)
-                .Include(team => team.KingQueenRoundScores) // Include round scores to validate rounds
+                .Include(team => team.KingQueenRoundScores)
                 .Include(team => team.KingQueenPlayers)
-                .ThenInclude(player => player.Player)
+                    .ThenInclude(player => player.Player)
                 .ToListAsync();
 
             if (!kingQueenTeams.Any())
@@ -1076,14 +1119,13 @@ namespace Allport_s_League_Scrambler.Controllers
                 return Ok(new { message = "No teams found in the league." });
             }
 
-            // Step 3: Identify unique rounds using ScrambleNumber and RoundId
             var validRounds = kingQueenTeams
                 .SelectMany(team => team.KingQueenRoundScores.Select(score => new
                 {
-                    ScrambleNumber = team.ScrambleNumber, // ScrambleNumber from KingQueenTeam
-                    RoundId = score.RoundId,// RoundId from KingQueenRoundScores
+                    ScrambleNumber = team.ScrambleNumber,
+                    RoundId = score.RoundId,
                 }))
-                .Distinct() // Ensure unique ScrambleNumber + RoundId combinations
+                .Distinct()
                 .OrderBy(round => round.ScrambleNumber)
                 .ThenBy(round => round.RoundId)
                 .ToList();
@@ -1093,53 +1135,121 @@ namespace Allport_s_League_Scrambler.Controllers
                 return Ok(new { message = "No valid rounds found in the league." });
             }
 
-            // Step 4: Build player scores based on valid rounds
-            var playerScores = kingQueenTeams
-            .SelectMany(team => team.KingQueenPlayers, (team, player) => new
-            {
-                PlayerId = player.PlayerId,
-                PlayerName = player.Player.FirstName + " " + player.Player.LastName,
-                IsMale = player.Player.IsMale,
-                Scores = team.KingQueenRoundScores.Select(score => new
+            var leagueDivisionLookupRows = await (
+                from pl in context.PlayersLeagues
+                join ld in context.LeagueDivision on pl.LeagueDivisionId equals ld.Id into ldJoin
+                from ld in ldJoin.DefaultIfEmpty()
+                where pl.LeagueID == leagueId
+                select new
                 {
-                    RoundId = score.RoundId,
-                    Score = score.RoundScore,
-                    ScrambleNumber = team.ScrambleNumber,
-                    RoundWon = (bool)score.RoundWon ? 1 : 0,
-                    IsSubScore = player.isSubScore // Assign IsSubScore here per score
-                }).ToList()
-            })
-            .GroupBy(playerData => new { playerData.PlayerId, playerData.PlayerName, playerData.IsMale })
-            .Select(group => new
-            {
-                PlayerId = group.Key.PlayerId,
-                PlayerName = group.Key.PlayerName,
-                IsMale = group.Key.IsMale,
-                Scores = validRounds.Select(round => new
-                {
-                    RoundId = round.RoundId,
-                    ScrambleNumber = round.ScrambleNumber,
-                    IsSubScore = group
-                        .SelectMany(player => player.Scores)
-                        .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.IsSubScore ?? false, // Use per-score IsSubScore
-                    Score = group.SelectMany(player => player.Scores)
-                                 .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.Score ?? 0, // Assign 0 for missing scores
-                    RoundWon = group.SelectMany(player => player.Scores)
-                                    .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)?.RoundWon ?? 0 // Assign 0 if missing
-                })
-                .OrderBy(score => score.ScrambleNumber)
-                .ThenBy(score => score.RoundId)
-                .ToList()
-            })
-            .ToList();
+                    PlayerId = pl.PlayerID,
+                    LeagueDivisionId = pl.LeagueDivisionId,
+                    LeagueDivisionCode = ld != null ? ld.Code : null,
+                    LeagueDivisionName = ld != null ? ld.Name : null
+                }
+            ).ToListAsync();
 
-            // Step 5: Calculate the total number of unique rounds
+            var playerDivisionLookup = new Dictionary<int, (int LeagueDivisionId, string LeagueDivisionCode, string LeagueDivisionName)>();
+
+            for (int i = 0; i < leagueDivisionLookupRows.Count; i++)
+            {
+                var row = leagueDivisionLookupRows[i];
+
+                int divisionId = 0;
+                string divisionCode = "Unassigned";
+                string divisionName = "Unassigned";
+
+                if (row.LeagueDivisionId.HasValue)
+                {
+                    divisionId = row.LeagueDivisionId.Value;
+                }
+
+                if (!string.IsNullOrWhiteSpace(row.LeagueDivisionCode))
+                {
+                    divisionCode = row.LeagueDivisionCode;
+                }
+
+                if (!string.IsNullOrWhiteSpace(row.LeagueDivisionName))
+                {
+                    divisionName = row.LeagueDivisionName;
+                }
+
+                if (!playerDivisionLookup.ContainsKey(row.PlayerId))
+                {
+                    playerDivisionLookup.Add(row.PlayerId, (divisionId, divisionCode, divisionName));
+                }
+            }
+
+            var playerScores = kingQueenTeams
+                .SelectMany(team => team.KingQueenPlayers, (team, player) => new
+                {
+                    PlayerId = player.PlayerId,
+                    PlayerName = player.Player.FirstName + " " + player.Player.LastName,
+                    IsMale = player.Player.IsMale,
+                    Scores = team.KingQueenRoundScores.Select(score => new
+                    {
+                        RoundId = score.RoundId,
+                        Score = score.RoundScore,
+                        ScrambleNumber = team.ScrambleNumber,
+                        RoundWon = (bool)score.RoundWon ? 1 : 0,
+                        IsSubScore = player.isSubScore
+                    }).ToList()
+                })
+                .GroupBy(playerData => new { playerData.PlayerId, playerData.PlayerName, playerData.IsMale })
+                .Select(group => new
+                {
+                    PlayerId = group.Key.PlayerId,
+                    PlayerName = group.Key.PlayerName,
+                    IsMale = group.Key.IsMale,
+
+                    LeagueDivisionId = playerDivisionLookup.ContainsKey(group.Key.PlayerId)
+                        ? playerDivisionLookup[group.Key.PlayerId].LeagueDivisionId
+                        : 0,
+
+                    LeagueDivisionCode = playerDivisionLookup.ContainsKey(group.Key.PlayerId)
+                        ? playerDivisionLookup[group.Key.PlayerId].LeagueDivisionName
+                        : "Unassigned",
+
+                    LeagueDivisionName = playerDivisionLookup.ContainsKey(group.Key.PlayerId)
+                        ? playerDivisionLookup[group.Key.PlayerId].LeagueDivisionName
+                        : "Unassigned",
+
+                    Scores = validRounds.Select(round => new
+                    {
+                        RoundId = round.RoundId,
+                        ScrambleNumber = round.ScrambleNumber,
+
+                        IsSubScore = group
+                            .SelectMany(player => player.Scores)
+                            .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId) != null
+                            && group
+                                .SelectMany(player => player.Scores)
+                                .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId).IsSubScore == true,
+
+                        Score = group.SelectMany(player => player.Scores)
+                                     .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId) != null
+                            ? group.SelectMany(player => player.Scores)
+                                   .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId).Score
+                            : 0,
+
+                        RoundWon = group.SelectMany(player => player.Scores)
+                                        .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId) != null
+                            ? group.SelectMany(player => player.Scores)
+                                   .FirstOrDefault(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId).RoundWon
+                            : 0
+                    })
+                    .OrderBy(score => score.ScrambleNumber)
+                    .ThenBy(score => score.RoundId)
+                    .ToList()
+                })
+                .ToList();
+
             var maxRounds = validRounds.Count;
 
-            // Step 6: Return the result
             return Ok(new { playerScores, maxRounds });
-
         }
+
+
 
         [HttpGet("GetByLeagueMatchup/{leagueName}")]
         public async Task<IActionResult> GetStandingsByLeagueMatchup(string leagueName)

@@ -1,3 +1,5 @@
+/* league-standings.component.ts */
+
 import { Component, Input, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PlayerScoresResponse, PlayerScoreGroup } from '../data-models/playerScoresResponse';
@@ -11,31 +13,37 @@ import { LoginService } from '../services/login.service';
     styleUrls: ['./league-standings.component.css']
 })
 export class LeagueStandingsComponent implements OnInit {
-    @Input() leagueName: string | null = null;  // or leagueId: number
-    maleStandings: PlayerScoreGroup[] = [];
-    femaleStandings: PlayerScoreGroup[] = [];
+    @Input() leagueName: string | null = null;
+
+    maleStandings: PlayerScoreGroup[] | null = [];
+    femaleStandings: PlayerScoreGroup[] | null = [];
     standingsRounds: number[] = [];
-    standings: PlayerScoreGroup[] = [];
+    standings: PlayerScoreGroup[] | null = [];
     retrievedStandingsType: string;
 
-    // Sorting
     sortColumn: string = '';
     sortDirection: 'asc' | 'desc' = 'asc';
 
-    // Type Options
     standingsType: 'round' | 'matchup' = 'round';
 
-    // Sub / Score Options
-    numberOfSubsAllowed: number = 100;  // default
-    subScorePercent: number = 100;      // default
-    dropLowest: number = 0;            // default
+    numberOfSubsAllowed: number = 100;
+    subScorePercent: number = 100;
+    dropLowest: number = 0;
 
-    // Internal tracking
     lastResult: PlayerScoresResponse | null = null;
     originalStandings: PlayerScoreGroup[] | null = null;
     playerLoading: boolean = false;
     selectedLeagueId: number;
-    userRole: string; // To store the role of the user
+    userRole: string;
+
+    // Division support
+    divisions: { leagueDivisionId: number; leagueDivisionCode: string }[] = [];
+    selectedDivisionId: number = 0; // 0 means "Overall" tab
+    mainTabIndex: number = 0;       // 0 = Overall, 1+ = a division tab
+
+    divisionMaleStandings: { [divisionId: number]: PlayerScoreGroup[] } = {};
+    divisionFemaleStandings: { [divisionId: number]: PlayerScoreGroup[] } = {};
+
     constructor(
         private playerService: PlayerService,
         private snackBar: MatSnackBar,
@@ -44,27 +52,28 @@ export class LeagueStandingsComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
-        // Fetch user role
         this.loginService.getUsersRole().subscribe(
             (role) => {
                 this.userRole = role.role;
-                // Fetch settings and standings only if leagueName is provided
-                //if (this.leagueName) {
-                //    this.awaitSettingsAndInitialize();
-                //}
             },
             (error) => {
                 console.error('ngOnInit: Error fetching user role:', error);
             }
         );
 
-        // Subscribe to selected league changes
         this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
             this.standings = null;
             this.originalStandings = null;
             this.maleStandings = null;
             this.femaleStandings = null;
             this.lastResult = null;
+
+            this.divisions = [];
+            this.selectedDivisionId = 0;
+            this.mainTabIndex = 0;
+            this.divisionMaleStandings = {};
+            this.divisionFemaleStandings = {};
+
             if (selectedLeague) {
                 this.selectedLeagueId = selectedLeague.leagueId;
                 this.leagueName = selectedLeague.leagueName;
@@ -73,28 +82,36 @@ export class LeagueStandingsComponent implements OnInit {
                 console.warn('No league selected.');
             }
         });
-
     }
 
-
-
     initializeStandings(): void {
-
         this.playerLoading = true;
+
         this.playerService.getStandingsByLeague(this.leagueName).subscribe(
             (result: PlayerScoresResponse) => {
                 if (result != null) {
                     this.lastResult = result;
+
                     this.processStandings(result, this.getCurrentOptions());
-                    this.sortStandingsWithUpdates('totalScoreBeforeReduction');
+
+                    // Default sort
+                    this.sortStandingsWithUpdates('totalScore');
+
                     this.playerLoading = false;
-                }
-                else {
+                } else {
                     this.standings = null;
                     this.originalStandings = null;
                     this.maleStandings = null;
                     this.femaleStandings = null;
                     this.lastResult = null;
+
+                    this.divisions = [];
+                    this.selectedDivisionId = 0;
+                    this.mainTabIndex = 0;
+                    this.divisionMaleStandings = {};
+                    this.divisionFemaleStandings = {};
+
+                    this.playerLoading = false;
                 }
             },
             error => {
@@ -106,7 +123,6 @@ export class LeagueStandingsComponent implements OnInit {
 
     private initializeSettings(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-
             this.loginService.getSettingValue('numberOfSubsAllowed', this.selectedLeagueId).subscribe(
                 (numberOfSubsAllowedValue) => {
                     this.numberOfSubsAllowed = this.parseValueAsNumber(numberOfSubsAllowedValue, 100);
@@ -124,45 +140,42 @@ export class LeagueStandingsComponent implements OnInit {
                                             this.retrievedStandingsType = newStandingsType;
 
                                             if (this.retrievedStandingsType !== this.standingsType) {
-                                                this.toggleStandingsType(); // Call toggleStandingsType if it changed
-                                            }
-                                            else {
+                                                this.toggleStandingsType();
+                                            } else {
                                                 if (this.lastResult != null) {
                                                     this.processStandings(this.lastResult, this.getCurrentOptions());
-                                                }
-                                                else {
+                                                } else {
                                                     this.initializeStandings();
-                                                } // Call processStandings otherwise
+                                                }
                                             }
 
-                                            resolve(); // All settings fetched, resolve promise
+                                            resolve();
                                         },
                                         (error) => {
                                             console.error('Error fetching standingsType:', error);
-                                            resolve(); // Resolve even if error occurs
+                                            resolve();
                                         }
                                     );
                                 },
                                 (error) => {
                                     console.error('Error fetching subScorePercent:', error);
-                                    resolve(); // Resolve even if error occurs
+                                    resolve();
                                 }
                             );
                         },
                         (error) => {
                             console.error('Error fetching dropLowest:', error);
-                            resolve(); // Resolve even if error occurs
+                            resolve();
                         }
                     );
                 },
                 (error) => {
                     console.error('Error fetching numberOfSubsAllowed:', error);
-                    resolve(); // Resolve even if error occurs
+                    resolve();
                 }
             );
         });
     }
-
 
     private parseValueAsNumber(value: any, defaultValue: number): number {
         if (typeof value === 'number') {
@@ -175,13 +188,7 @@ export class LeagueStandingsComponent implements OnInit {
         return defaultValue;
     }
 
-    private async awaitSettingsAndInitialize(): Promise<void> {
-        await this.initializeSettings(); // Wait for settings initialization
-    }
-
-
     toggleStandingsType(): void {
-
         if (this.standingsType === 'round') {
             this.standingsType = 'matchup';
 
@@ -189,6 +196,7 @@ export class LeagueStandingsComponent implements OnInit {
                 (result: PlayerScoresResponse) => {
                     this.lastResult = result;
                     this.processStandings(result, this.getCurrentOptions());
+                    this.sortStandingsWithUpdates('totalScore');
                 },
                 error => console.error('Error fetching matchup standings:', error)
             );
@@ -199,13 +207,12 @@ export class LeagueStandingsComponent implements OnInit {
                 (result: PlayerScoresResponse) => {
                     this.lastResult = result;
                     this.processStandings(result, this.getCurrentOptions());
+                    this.sortStandingsWithUpdates('totalScore');
                 },
                 error => console.error('Error fetching round standings:', error)
             );
         }
-
     }
-
 
     onNumberOfSubsChange(value: number): void {
         this.numberOfSubsAllowed = value;
@@ -225,7 +232,6 @@ export class LeagueStandingsComponent implements OnInit {
         this.sortStandingsWithUpdates('totalScore');
     }
 
-    // Provide current scoreboard settings
     private getCurrentOptions(): {
         dropLowestNumber: number;
         numberOfSubsAllowed: number;
@@ -238,168 +244,539 @@ export class LeagueStandingsComponent implements OnInit {
         };
     }
 
-
     private processStandings(
         result: PlayerScoresResponse | null,
         options: { dropLowestNumber: number; numberOfSubsAllowed: number; subScorePercent: number }
     ): void {
-        if (!result || !result.playerScores) {
+        if (result == null || result.playerScores == null) {
             this.standings = null;
             this.originalStandings = null;
             this.maleStandings = null;
             this.femaleStandings = null;
+
+            this.divisions = [];
+            this.selectedDivisionId = 0;
+            this.mainTabIndex = 0;
+            this.divisionMaleStandings = {};
+            this.divisionFemaleStandings = {};
             return;
         }
-        // Save original data for reference
-        if (!this.originalStandings) {
+
+        if (this.originalStandings == null) {
             this.originalStandings = JSON.parse(JSON.stringify(result.playerScores));
         }
 
-        this.standings = JSON.parse(JSON.stringify(result.playerScores)); // fresh copy each time
-        if (this.standings && this.standings.length > 0) {
-            this.maleStandings = this.standings.filter(player => player.isMale);
-            this.femaleStandings = this.standings.filter(player => !player.isMale);
+        this.standings = JSON.parse(JSON.stringify(result.playerScores));
 
-            // Transform each subset
-            const transformStandings = (standings: PlayerScoreGroup[]) =>
-                standings.map(player => {
-                    const updatedScores = player.scores.map(s => ({ ...s, isDropped: false, isReduced: false }));
+        if (this.standings == null || this.standings.length === 0) {
+            this.maleStandings = [];
+            this.femaleStandings = [];
+            this.divisions = [];
+            this.selectedDivisionId = 0;
+            this.mainTabIndex = 0;
+            this.divisionMaleStandings = {};
+            this.divisionFemaleStandings = {};
+            return;
+        }
 
-                    // #1: Sort subScores so only [numberOfSubsAllowed] remain full, rest get reduced
-                    const subScores = updatedScores.filter(score => score.isSubScore);
-                    // Sort subScores by e.g. roundId or any logic you desire
-                    subScores.forEach((subScore, i) => {
-                        const isReduced = i >= options.numberOfSubsAllowed;
-                        const index = updatedScores.findIndex(s => s === subScore);
-                        if (index !== -1) {
-                            const newScore = isReduced
-                                ? (updatedScores[index].score * options.subScorePercent) / 100
-                                : updatedScores[index].score;
-                            updatedScores[index] = {
-                                ...updatedScores[index],
-                                score: newScore,
-                                isReduced
-                            };
+        const allPlayers = this.standings;
+
+        const male: PlayerScoreGroup[] = [];
+        const female: PlayerScoreGroup[] = [];
+
+        for (let i = 0; i < allPlayers.length; i++) {
+            const p = allPlayers[i];
+            if (p != null) {
+                if (p.isMale === true) {
+                    male.push(p);
+                } else {
+                    female.push(p);
+                }
+            }
+        }
+
+        const transformStandings = (input: PlayerScoreGroup[]) => {
+            const output: PlayerScoreGroup[] = [];
+
+            for (let i = 0; i < input.length; i++) {
+                const player = input[i];
+
+                const updatedScores: any[] = [];
+                for (let j = 0; j < player.scores.length; j++) {
+                    const s: any = player.scores[j];
+                    const copy = { ...s, isDropped: false, isReduced: false };
+                    updatedScores.push(copy);
+                }
+
+                const subScores: any[] = [];
+                for (let j = 0; j < updatedScores.length; j++) {
+                    const s: any = updatedScores[j];
+                    if (s.isSubScore === true) {
+                        subScores.push(s);
+                    }
+                }
+
+                for (let j = 0; j < subScores.length; j++) {
+                    const subScore = subScores[j];
+
+                    let isReduced = false;
+                    if (j >= options.numberOfSubsAllowed) {
+                        isReduced = true;
+                    }
+
+                    let index = -1;
+                    for (let k = 0; k < updatedScores.length; k++) {
+                        if (updatedScores[k] === subScore) {
+                            index = k;
+                            break;
                         }
-                    });
+                    }
 
-                    // #2: Drop the lowest [dropLowestNumber] scores
-                    const sortedByScore = [...updatedScores].sort((a, b) => a.score - b.score);
-                    if (sortedByScore != null) {
-                        const toDrop = sortedByScore.slice(0, options.dropLowestNumber);
-                        toDrop.forEach(dropItem => {
-                            const dropIndex = updatedScores.findIndex(s => s === dropItem);
-                            if (dropIndex !== -1) {
-                                updatedScores[dropIndex] = { ...updatedScores[dropIndex], isDropped: true };
-                            }
-                        });
-                    
+                    if (index !== -1) {
+                        let newScore = updatedScores[index].score;
 
+                        if (isReduced === true) {
+                            newScore = (updatedScores[index].score * options.subScorePercent) / 100;
+                        }
 
-                    // #3: Recompute totals
-                    const totalScore = updatedScores
-                        .filter(s => !s.isDropped)
-                        .reduce((acc, s) => acc + s.score, 0);
-
-                    const totalWins = updatedScores
-                        .filter(s => !s.isDropped)
-                        .reduce((acc, s) => acc + (s.roundWon ? 1 : 0), 0);
-
-                    const totalScoreBeforeReduction = player.scores.reduce((acc, s) => acc + s.score, 0);
-
-                    return {
-                        ...player,
-                        scores: updatedScores,
-                        totalScore,
-                        totalWins,
-                        totalScoreBeforeReduction,
+                        updatedScores[index] = {
+                            ...updatedScores[index],
+                            score: newScore,
+                            isReduced: isReduced
                         };
                     }
-                    else {
-                        return;
-                    }
-                }).sort((a, b) => {
-                    if (this.standingsType == 'matchup') {
-                        // Sort by totalScore descending
-                        if (b.totalScore !== a.totalScore) {
-                            return b.totalScore - a.totalScore;
+                }
+
+                const sortedByScore = [...updatedScores].sort((a, b) => a.score - b.score);
+
+                const toDrop = sortedByScore.slice(0, options.dropLowestNumber);
+                for (let j = 0; j < toDrop.length; j++) {
+                    const dropItem = toDrop[j];
+
+                    let dropIndex = -1;
+                    for (let k = 0; k < updatedScores.length; k++) {
+                        if (updatedScores[k] === dropItem) {
+                            dropIndex = k;
+                            break;
                         }
-
-                        // If totalScore is the same, sort by totalScoreBeforeReduction descending
-                        if (b.totalScoreBeforeReduction !== a.totalScoreBeforeReduction) {
-                            return b.totalScoreBeforeReduction - a.totalScoreBeforeReduction;
-                        }
-
-                        // If totalScoreBeforeReduction is also the same, sort by totalWins descending
-                        return b.totalWins - a.totalWins;
                     }
-                    else {
-                        // Sort by totalScore descending
-                        if (b.totalScore !== a.totalScore) {
-                            return b.totalScore - a.totalScore;
-                        }
 
-                        // If totalScoreBeforeReduction is also the same, sort by totalWins descending
-                        return b.totalWins - a.totalWins;
+                    if (dropIndex !== -1) {
+                        updatedScores[dropIndex] = { ...updatedScores[dropIndex], isDropped: true };
                     }
-                });
+                }
 
-            this.maleStandings = transformStandings(this.maleStandings);
-            this.femaleStandings = transformStandings(this.femaleStandings);
+                let totalScore = 0;
+                let totalWins = 0;
 
-            // Build array of round numbers
-            this.standingsRounds = [];
-            for (let i = 0; i < result.maxRounds; i++) {
-                this.standingsRounds.push(i + 1);
+                for (let j = 0; j < updatedScores.length; j++) {
+                    const s: any = updatedScores[j];
+                    if (s.isDropped !== true) {
+                        totalScore = totalScore + s.score;
+
+                        if (s.roundWon === true) {
+                            totalWins = totalWins + 1;
+                        }
+                    }
+                }
+
+                let totalScoreBeforeReduction = 0;
+                for (let j = 0; j < player.scores.length; j++) {
+                    totalScoreBeforeReduction = totalScoreBeforeReduction + (player.scores[j] as any).score;
+                }
+
+                const updatedPlayer: any = {
+                    ...player,
+                    scores: updatedScores,
+                    totalScore: totalScore,
+                    totalWins: totalWins,
+                    totalScoreBeforeReduction: totalScoreBeforeReduction
+                };
+
+                output.push(updatedPlayer);
+            }
+
+            output.sort((a: any, b: any) => {
+                if (this.standingsType === 'matchup') {
+                    if (b.totalScore !== a.totalScore) {
+                        return b.totalScore - a.totalScore;
+                    }
+
+                    if (b.totalScoreBeforeReduction !== a.totalScoreBeforeReduction) {
+                        return b.totalScoreBeforeReduction - a.totalScoreBeforeReduction;
+                    }
+
+                    return b.totalWins - a.totalWins;
+                } else {
+                    if (b.totalScore !== a.totalScore) {
+                        return b.totalScore - a.totalScore;
+                    }
+
+                    return b.totalWins - a.totalWins;
+                }
+            });
+
+            return output;
+        };
+
+        this.maleStandings = transformStandings(male);
+        this.femaleStandings = transformStandings(female);
+
+        // Rebuild combined standings (used for division extraction)
+        const combined: PlayerScoreGroup[] = [];
+        if (this.maleStandings != null) {
+            for (let i = 0; i < this.maleStandings.length; i++) {
+                combined.push(this.maleStandings[i]);
+            }
+        }
+        if (this.femaleStandings != null) {
+            for (let i = 0; i < this.femaleStandings.length; i++) {
+                combined.push(this.femaleStandings[i]);
+            }
+        }
+        this.standings = combined;
+
+        this.standingsRounds = [];
+        for (let i = 0; i < result.maxRounds; i++) {
+            this.standingsRounds.push(i + 1);
+        }
+
+        // Build only ASSIGNED divisions (no "Unassigned" tab)
+        this.buildDivisionsFromStandings();
+        this.buildDivisionStandings();
+
+        // Keep whatever tab you were on, but make sure selectedDivisionId matches it
+        if (this.mainTabIndex === 0) {
+            this.selectedDivisionId = 0;
+        } else {
+            const divisionIndex = this.mainTabIndex - 1;
+            if (divisionIndex >= 0 && divisionIndex < this.divisions.length) {
+                this.selectedDivisionId = this.divisions[divisionIndex].leagueDivisionId;
+            } else {
+                this.mainTabIndex = 0;
+                this.selectedDivisionId = 0;
             }
         }
     }
 
-    // Sorting
+    private buildDivisionsFromStandings(): void {
+        this.divisions = [];
+
+        if (this.standings == null) {
+            return;
+        }
+
+        const seen: { [id: number]: boolean } = {};
+
+        for (let i = 0; i < this.standings.length; i++) {
+            const player: any = this.standings[i];
+
+            if (player != null) {
+                const divisionId = player.leagueDivisionId;
+                const divisionCode = player.leagueDivisionCode;
+
+                // Ignore unassigned or missing division ids
+                if (divisionId == null) {
+                    continue;
+                }
+                if (divisionId === 0) {
+                    continue;
+                }
+
+                if (seen[divisionId] === true) {
+                    continue;
+                }
+
+                seen[divisionId] = true;
+
+                let label = '';
+                if (divisionCode != null && divisionCode !== '') {
+                    label = divisionCode;
+                } else {
+                    label = 'Division ' + divisionId;
+                }
+
+                this.divisions.push({
+                    leagueDivisionId: divisionId,
+                    leagueDivisionCode: label
+                });
+            }
+        }
+
+        // Optional: stable sort by label
+        this.divisions = this.divisions.slice().sort((a, b) => {
+            const aVal = a.leagueDivisionCode.toLowerCase();
+            const bVal = b.leagueDivisionCode.toLowerCase();
+            if (aVal > bVal) { return 1; }
+            if (aVal < bVal) { return -1; }
+            return 0;
+        });
+    }
+
+    private buildDivisionStandings(): void {
+        this.divisionMaleStandings = {};
+        this.divisionFemaleStandings = {};
+
+        if (this.standings == null) {
+            return;
+        }
+
+        for (let i = 0; i < this.divisions.length; i++) {
+            const divisionId = this.divisions[i].leagueDivisionId;
+
+            const divisionPlayers: PlayerScoreGroup[] = [];
+
+            for (let j = 0; j < this.standings.length; j++) {
+                const player: any = this.standings[j];
+
+                if (player != null) {
+                    if (player.leagueDivisionId === divisionId) {
+                        divisionPlayers.push(this.standings[j]);
+                    }
+                }
+            }
+
+            const male: PlayerScoreGroup[] = [];
+            const female: PlayerScoreGroup[] = [];
+
+            for (let k = 0; k < divisionPlayers.length; k++) {
+                const p = divisionPlayers[k];
+                if (p != null) {
+                    if (p.isMale === true) {
+                        male.push(p);
+                    } else {
+                        female.push(p);
+                    }
+                }
+            }
+
+            this.divisionMaleStandings[divisionId] = male;
+            this.divisionFemaleStandings[divisionId] = female;
+        }
+    }
+
+    // Outer tab group: Overall + Divisions
+    onMainTabChange(event: any): void {
+        if (event == null) {
+            return;
+        }
+
+        const index = event.index;
+        if (index == null) {
+            return;
+        }
+
+        this.mainTabIndex = index;
+
+        // Overall tab
+        if (index === 0) {
+            this.selectedDivisionId = 0;
+
+            if (this.sortColumn != null && this.sortColumn !== '') {
+                this.sortStandingsWithUpdates(this.sortColumn);
+            } else {
+                this.sortStandingsWithUpdates('totalScore');
+            }
+
+            return;
+        }
+
+        // Division tab
+        const divisionIndex = index - 1;
+
+        if (divisionIndex < 0) {
+            this.mainTabIndex = 0;
+            this.selectedDivisionId = 0;
+            return;
+        }
+
+        if (this.divisions == null) {
+            this.mainTabIndex = 0;
+            this.selectedDivisionId = 0;
+            return;
+        }
+
+        if (divisionIndex >= this.divisions.length) {
+            this.mainTabIndex = 0;
+            this.selectedDivisionId = 0;
+            return;
+        }
+
+        this.selectedDivisionId = this.divisions[divisionIndex].leagueDivisionId;
+
+        if (this.sortColumn != null && this.sortColumn !== '') {
+            this.sortStandingsWithUpdates(this.sortColumn);
+        } else {
+            this.sortStandingsWithUpdates('totalScore');
+        }
+    }
+
+    // Sorting (applies to Overall tab OR currently selected division tab)
     sortStandings(column: string) {
         if (this.sortColumn === column) {
-            // toggle direction
-            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            if (this.sortDirection === 'asc') {
+                this.sortDirection = 'desc';
+            } else {
+                this.sortDirection = 'asc';
+            }
         } else {
             this.sortColumn = column;
             this.sortDirection = 'desc';
         }
-        this.sortMaleStandings(column);
-        this.sortFemaleStandings(column);
+
+        this.applySort(column);
     }
 
     sortStandingsWithUpdates(column: string) {
+        this.sortColumn = column;
         this.sortDirection = 'desc';
-        this.sortMaleStandings(column);
-        this.sortFemaleStandings(column);
+        this.applySort(column);
     }
 
-    private sortMaleStandings(column: string) {
-        if (this.maleStandings) {
-            this.maleStandings = [...this.maleStandings].sort((a, b) => {
-                const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
-                const valueB = column === 'playerName' ? b[column].toLowerCase() : b[column];
-                if (this.sortDirection === 'asc') {
-                    return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
-                } else {
-                    return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
-                }
-            });
+    private applySort(column: string): void {
+        // Overall
+        if (this.selectedDivisionId === 0) {
+            this.sortOverallMale(column);
+            this.sortOverallFemale(column);
+            return;
         }
- 
+
+        // Division
+        this.sortSelectedDivisionMale(column);
+        this.sortSelectedDivisionFemale(column);
     }
 
-    private sortFemaleStandings(column: string) {
-        if (this.femaleStandings) {
-            this.femaleStandings = [...this.femaleStandings].sort((a, b) => {
-                const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
-                const valueB = column === 'playerName' ? b[column].toLowerCase() : b[column];
-                if (this.sortDirection === 'asc') {
-                    return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
-                } else {
-                    return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
-                }
-            });
+    private sortOverallMale(column: string) {
+        if (this.maleStandings == null) {
+            return;
         }
+
+        this.maleStandings = [...this.maleStandings].sort((a: any, b: any) => {
+            let valueA: any = a[column];
+            let valueB: any = b[column];
+
+            if (column === 'playerName') {
+                valueA = a[column].toLowerCase();
+                valueB = b[column].toLowerCase();
+            }
+
+            if (this.sortDirection === 'asc') {
+                if (valueA > valueB) { return 1; }
+                if (valueA < valueB) { return -1; }
+                return 0;
+            } else {
+                if (valueA < valueB) { return 1; }
+                if (valueA > valueB) { return -1; }
+                return 0;
+            }
+        });
+    }
+
+    private sortOverallFemale(column: string) {
+        if (this.femaleStandings == null) {
+            return;
+        }
+
+        this.femaleStandings = [...this.femaleStandings].sort((a: any, b: any) => {
+            let valueA: any = a[column];
+            let valueB: any = b[column];
+
+            if (column === 'playerName') {
+                valueA = a[column].toLowerCase();
+                valueB = b[column].toLowerCase();
+            }
+
+            if (this.sortDirection === 'asc') {
+                if (valueA > valueB) { return 1; }
+                if (valueA < valueB) { return -1; }
+                return 0;
+            } else {
+                if (valueA < valueB) { return 1; }
+                if (valueA > valueB) { return -1; }
+                return 0;
+            }
+        });
+    }
+
+    private sortSelectedDivisionMale(column: string) {
+        const divisionId = this.selectedDivisionId;
+
+        if (divisionId == null) {
+            return;
+        }
+
+        if (divisionId === 0) {
+            return;
+        }
+
+        if (this.divisionMaleStandings == null) {
+            return;
+        }
+
+        const list = this.divisionMaleStandings[divisionId];
+        if (list == null) {
+            return;
+        }
+
+        this.divisionMaleStandings[divisionId] = [...list].sort((a: any, b: any) => {
+            let valueA: any = a[column];
+            let valueB: any = b[column];
+
+            if (column === 'playerName') {
+                valueA = a[column].toLowerCase();
+                valueB = b[column].toLowerCase();
+            }
+
+            if (this.sortDirection === 'asc') {
+                if (valueA > valueB) { return 1; }
+                if (valueA < valueB) { return -1; }
+                return 0;
+            } else {
+                if (valueA < valueB) { return 1; }
+                if (valueA > valueB) { return -1; }
+                return 0;
+            }
+        });
+    }
+
+    private sortSelectedDivisionFemale(column: string) {
+        const divisionId = this.selectedDivisionId;
+
+        if (divisionId == null) {
+            return;
+        }
+
+        if (divisionId === 0) {
+            return;
+        }
+
+        if (this.divisionFemaleStandings == null) {
+            return;
+        }
+
+        const list = this.divisionFemaleStandings[divisionId];
+        if (list == null) {
+            return;
+        }
+
+        this.divisionFemaleStandings[divisionId] = [...list].sort((a: any, b: any) => {
+            let valueA: any = a[column];
+            let valueB: any = b[column];
+
+            if (column === 'playerName') {
+                valueA = a[column].toLowerCase();
+                valueB = b[column].toLowerCase();
+            }
+
+            if (this.sortDirection === 'asc') {
+                if (valueA > valueB) { return 1; }
+                if (valueA < valueB) { return -1; }
+                return 0;
+            } else {
+                if (valueA < valueB) { return 1; }
+                if (valueA > valueB) { return -1; }
+                return 0;
+            }
+        });
     }
 }

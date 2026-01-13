@@ -1,3 +1,5 @@
+<!-- league-standings.component.html -->
+
 <mat-card style="margin-top: 20px; margin-bottom: 20px;">
     <div class="tab-content d-flex flex-column align-items-center">
         <h5 class="mb-2">Player Standings</h5>
@@ -8,16 +10,13 @@
                  style="width: 100%; max-width: 200px; height: auto; object-fit: contain;">
         </div>
 
-        <!-- Toggle Standings Type Button -->
         <button mat-raised-button color="primary"
                 (click)="toggleStandingsType()"
                 style="margin-bottom: 16px; margin-top:20px">
             {{ standingsType === 'round' ? 'Show Standings by Matchup' : 'Show Standings by Round' }}
         </button>
 
-        <!-- Dropdown Container for Subs, Sub Score Percent, Drop Lowest -->
         <div class="dropdown-container" [hidden]="userRole !== 'Admin' && userRole !== 'Manager'">
-            <!-- Number of Subs Allowed -->
             <mat-form-field appearance="outline" style="width: 200px;">
                 <mat-label>Number of Subs Allowed</mat-label>
                 <mat-select [(value)]="numberOfSubsAllowed"
@@ -29,7 +28,6 @@
                 </mat-select>
             </mat-form-field>
 
-            <!-- Percent of Score for Subs -->
             <mat-form-field appearance="outline" style="width: 200px;">
                 <mat-label>Percent of Score for Subs</mat-label>
                 <mat-select [(value)]="subScorePercent"
@@ -40,7 +38,6 @@
                 </mat-select>
             </mat-form-field>
 
-            <!-- Drop Lowest Scores -->
             <mat-form-field appearance="outline" style="width: 200px;">
                 <mat-label>Drop Lowest Scores</mat-label>
                 <mat-select [(value)]="dropLowest"
@@ -53,7 +50,6 @@
             </mat-form-field>
         </div>
 
-        <!-- Key / Legend -->
         <div style="margin-bottom: 10px; text-align: center;">
             <div style="font-weight: bold; margin-bottom: 5px;">Key:</div>
             <div>
@@ -63,137 +59,282 @@
             </div>
         </div>
 
-        <!-- Standings Table -->
         <div class="card" style="margin: 20px; padding: 20px; max-width: 100%; overflow-x: auto;">
-            <mat-tab-group>
-                <!-- Male Standings Tab -->
-                <mat-tab label="Men's Standings">
-                    <table class="table table-bordered table-striped compact-table"
-                           style="width: 100%; table-layout: auto; font-size: 0.75rem;">
-                        <thead>
-                            <tr>
-                                <th style="min-width: 50px; padding: 4px;">Place</th>
-                                <th style="min-width: 135px; padding: 4px; cursor: pointer;"
-                                    (click)="sortStandings('playerName')">
-                                    Player Name
-                                    <mat-icon *ngIf="sortColumn === 'playerName'">
-                                        {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                    </mat-icon>
-                                </th>
-                                <th style="min-width: 80px; padding: 4px; cursor: pointer;"
-                                    (click)="sortStandings('totalScore')">
-                                    King Queen Score
-                                    <mat-icon *ngIf="sortColumn === 'totalScore'">
-                                        {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                    </mat-icon>
-                                </th>
-                                <th style="min-width: 80px; padding: 4px; cursor: pointer;"
-                                    (click)="sortStandings('totalScoreBeforeReduction')">
-                                    Total Points
-                                    <mat-icon *ngIf="sortColumn === 'totalScoreBeforeReduction'">
-                                        {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                    </mat-icon>
-                                </th>
-                                <th *ngIf="standingsType == 'round'" style="min-width: 80px; padding: 4px; cursor: pointer;"
-                                    (click)="sortStandings('totalWins')">
-                                    Total Wins
-                                    <mat-icon *ngIf="sortColumn === 'totalWins'">
-                                        {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                    </mat-icon>
-                                </th>
-                                <th *ngFor="let round of standingsRounds.slice().reverse()"
-                                    style="min-width: 70px; padding: 4px; text-align: center;">
-                                    <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
-                                    <span>{{ round }}</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let player of maleStandings; let i = index">
-                                <td [ngStyle]="{ 'background-color': 'lightblue' }"
-                                    style="padding: 2px; text-align: center; font-weight: bold;">
-                                    {{ i + 1 }}
-                                </td>
-                                <td style="padding: 2px;">{{ player.playerName }}</td>
-                                <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
-                                <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
-                                <td *ngIf="standingsType == 'round'"  style="padding: 2px;">{{ player.totalWins }}</td>
-                                <td *ngFor="let score of player.scores.slice().reverse()"
-                                    [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
-                                    [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
-                                    [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
-                                    style="padding: 2px; min-width: 70px;">
-                                    {{ score.score }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+            <!-- OUTER TABS: Overall + one tab per ASSIGNED division -->
+            <mat-tab-group (selectedTabChange)="onMainTabChange($event)" mat-align-tabs="center">
+
+                <!-- OVERALL TAB (always shown) -->
+                <mat-tab label="Overall">
+                    <mat-tab-group mat-align-tabs="center">
+
+                        <mat-tab label="Men's Standings">
+                            <table class="table table-bordered table-striped compact-table"
+                                   style="width: 100%; table-layout: auto; font-size: 0.75rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width: 50px; padding: 4px;">Place</th>
+                                        <th style="min-width: 135px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('playerName')">
+                                            Player Name
+                                            <mat-icon *ngIf="sortColumn === 'playerName'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalScore')">
+                                            King Queen Score
+                                            <mat-icon *ngIf="sortColumn === 'totalScore'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalScoreBeforeReduction')">
+                                            Total Points
+                                            <mat-icon *ngIf="sortColumn === 'totalScoreBeforeReduction'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th *ngIf="standingsType == 'round'" style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalWins')">
+                                            Total Wins
+                                            <mat-icon *ngIf="sortColumn === 'totalWins'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th *ngFor="let round of standingsRounds.slice().reverse()"
+                                            style="min-width: 70px; padding: 4px; text-align: center;">
+                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
+                                            <span>{{ round }}</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let player of maleStandings; let i = index">
+                                        <td [ngStyle]="{ 'background-color': 'lightblue' }"
+                                            style="padding: 2px; text-align: center; font-weight: bold;">
+                                            {{ i + 1 }}
+                                        </td>
+                                        <td style="padding: 2px;">{{ player.playerName }}</td>
+                                        <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
+                                        <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
+                                        <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
+                                        <td *ngFor="let score of player.scores.slice().reverse()"
+                                            [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
+                                            [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
+                                            [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
+                                            style="padding: 2px; min-width: 70px;">
+                                            {{ score.score }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </mat-tab>
+
+                        <mat-tab label="Women's Standings">
+                            <table class="table table-bordered table-striped compact-table"
+                                   style="width: 100%; table-layout: auto; font-size: 0.75rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width: 50px; padding: 4px;">Place</th>
+                                        <th style="min-width: 135px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('playerName')">
+                                            Player Name
+                                            <mat-icon *ngIf="sortColumn === 'playerName'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalScore')">
+                                            King Queen Score
+                                            <mat-icon *ngIf="sortColumn === 'totalScore'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalScoreBeforeReduction')">
+                                            Total Points
+                                            <mat-icon *ngIf="sortColumn === 'totalScoreBeforeReduction'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th *ngIf="standingsType == 'round'" style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalWins')">
+                                            Total Wins
+                                            <mat-icon *ngIf="sortColumn === 'totalWins'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th *ngFor="let round of standingsRounds.slice().reverse()"
+                                            style="min-width: 70px; padding: 4px; text-align: center;">
+                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
+                                            <span>{{ round }}</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let player of femaleStandings; let i = index">
+                                        <td [ngStyle]="{ 'background-color': 'lightblue' }"
+                                            style="padding: 2px; text-align: center; font-weight: bold;">
+                                            {{ i + 1 }}
+                                        </td>
+                                        <td style="padding: 2px;">{{ player.playerName }}</td>
+                                        <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
+                                        <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
+                                        <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
+                                        <td *ngFor="let score of player.scores.slice().reverse()"
+                                            [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
+                                            [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
+                                            [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
+                                            style="padding: 2px; min-width: 70px;">
+                                            {{ score.score }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </mat-tab>
+
+                    </mat-tab-group>
                 </mat-tab>
 
-                <!-- Female Standings Tab -->
-                <mat-tab label="Women's Standings">
-                    <table class="table table-bordered table-striped compact-table"
-                           style="width: 100%; table-layout: auto; font-size: 0.75rem;">
-                        <thead>
-                            <tr>
-                                <th style="min-width: 50px; padding: 4px;">Place</th>
-                                <th style="min-width: 135px; padding: 4px; cursor: pointer;"
-                                    (click)="sortStandings('playerName')">
-                                    Player Name
-                                    <mat-icon *ngIf="sortColumn === 'playerName'">
-                                        {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                    </mat-icon>
-                                </th>
-                                <th style="min-width: 80px; padding: 4px; cursor: pointer;"
-                                    (click)="sortStandings('totalScore')">
-                                    King Queen Score
-                                    <mat-icon *ngIf="sortColumn === 'totalScore'">
-                                        {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                    </mat-icon>
-                                </th>
-                                <th style="min-width: 80px; padding: 4px; cursor: pointer;"
-                                    (click)="sortStandings('totalScoreBeforeReduction')">
-                                    Total Points
-                                    <mat-icon *ngIf="sortColumn === 'totalScoreBeforeReduction'">
-                                        {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                    </mat-icon>
-                                </th>
-                                <th *ngIf="standingsType == 'round'"  style="min-width: 80px; padding: 4px; cursor: pointer;"
-                                    (click)="sortStandings('totalWins')">
-                                    Total Wins
-                                    <mat-icon *ngIf="sortColumn === 'totalWins'">
-                                        {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                    </mat-icon>
-                                </th>
-                                <th *ngFor="let round of standingsRounds.slice().reverse()"
-                                    style="min-width: 70px; padding: 4px; text-align: center;">
-                                    <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
-                                    <span>{{ round }}</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let player of femaleStandings; let i = index">
-                                <td [ngStyle]="{ 'background-color': 'lightblue' }"
-                                    style="padding: 2px; text-align: center; font-weight: bold;">
-                                    {{ i + 1 }}
-                                </td>
-                                <td style="padding: 2px;">{{ player.playerName }}</td>
-                                <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
-                                <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
-                                <td *ngIf="standingsType == 'round'"  style="padding: 2px;">{{ player.totalWins }}</td>
-                                <td *ngFor="let score of player.scores.slice().reverse()"
-                                    [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
-                                    [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
-                                    [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
-                                    style="padding: 2px; min-width: 70px;">
-                                    {{ score.score }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- DIVISION TABS (only assigned divisions show up here) -->
+                <mat-tab *ngFor="let div of divisions" [label]="div.leagueDivisionCode">
+                    <mat-tab-group mat-align-tabs="center">
+
+                        <mat-tab label="Men's Standings"
+                                 *ngIf="divisionMaleStandings[div.leagueDivisionId] && divisionMaleStandings[div.leagueDivisionId].length > 0">
+                            <table class="table table-bordered table-striped compact-table"
+                                   style="width: 100%; table-layout: auto; font-size: 0.75rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width: 50px; padding: 4px;">Place</th>
+                                        <th style="min-width: 135px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('playerName')">
+                                            Player Name
+                                            <mat-icon *ngIf="sortColumn === 'playerName'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalScore')">
+                                            King Queen Score
+                                            <mat-icon *ngIf="sortColumn === 'totalScore'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalScoreBeforeReduction')">
+                                            Total Points
+                                            <mat-icon *ngIf="sortColumn === 'totalScoreBeforeReduction'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th *ngIf="standingsType == 'round'" style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalWins')">
+                                            Total Wins
+                                            <mat-icon *ngIf="sortColumn === 'totalWins'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th *ngFor="let round of standingsRounds.slice().reverse()"
+                                            style="min-width: 70px; padding: 4px; text-align: center;">
+                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
+                                            <span>{{ round }}</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let player of divisionMaleStandings[div.leagueDivisionId]; let i = index">
+                                        <td [ngStyle]="{ 'background-color': 'lightblue' }"
+                                            style="padding: 2px; text-align: center; font-weight: bold;">
+                                            {{ i + 1 }}
+                                        </td>
+                                        <td style="padding: 2px;">{{ player.playerName }}</td>
+                                        <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
+                                        <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
+                                        <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
+                                        <td *ngFor="let score of player.scores.slice().reverse()"
+                                            [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
+                                            [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
+                                            [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
+                                            style="padding: 2px; min-width: 70px;">
+                                            {{ score.score }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </mat-tab>
+
+                        <mat-tab label="Women's Standings"
+                                 *ngIf="divisionFemaleStandings[div.leagueDivisionId] && divisionFemaleStandings[div.leagueDivisionId].length > 0">
+                            <table class="table table-bordered table-striped compact-table"
+                                   style="width: 100%; table-layout: auto; font-size: 0.75rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width: 50px; padding: 4px;">Place</th>
+                                        <th style="min-width: 135px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('playerName')">
+                                            Player Name
+                                            <mat-icon *ngIf="sortColumn === 'playerName'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalScore')">
+                                            King Queen Score
+                                            <mat-icon *ngIf="sortColumn === 'totalScore'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalScoreBeforeReduction')">
+                                            Total Points
+                                            <mat-icon *ngIf="sortColumn === 'totalScoreBeforeReduction'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th *ngIf="standingsType == 'round'" style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                            (click)="sortStandings('totalWins')">
+                                            Total Wins
+                                            <mat-icon *ngIf="sortColumn === 'totalWins'">
+                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
+                                            </mat-icon>
+                                        </th>
+                                        <th *ngFor="let round of standingsRounds.slice().reverse()"
+                                            style="min-width: 70px; padding: 4px; text-align: center;">
+                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
+                                            <span>{{ round }}</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let player of divisionFemaleStandings[div.leagueDivisionId]; let i = index">
+                                        <td [ngStyle]="{ 'background-color': 'lightblue' }"
+                                            style="padding: 2px; text-align: center; font-weight: bold;">
+                                            {{ i + 1 }}
+                                        </td>
+                                        <td style="padding: 2px;">{{ player.playerName }}</td>
+                                        <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
+                                        <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
+                                        <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
+                                        <td *ngFor="let score of player.scores.slice().reverse()"
+                                            [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
+                                            [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
+                                            [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
+                                            style="padding: 2px; min-width: 70px;">
+                                            {{ score.score }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </mat-tab>
+
+                    </mat-tab-group>
                 </mat-tab>
+
+
             </mat-tab-group>
+
         </div>
     </div>
 </mat-card>

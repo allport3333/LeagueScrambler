@@ -33,6 +33,21 @@ namespace Allport_s_League_Scrambler.Models
         public bool IsMale { get; set; }
     }
 
+    public class AddPlayerToLeagueRequest
+    {
+        public Player Player { get; set; }
+        public int LeagueDivisionId { get; set; }  // 0 means "No Division"
+    }
+
+    public class AddLeagueDivisionRequest
+    {
+        public int LeagueId { get; set; }
+        public string Code { get; set; }
+        public string Name { get; set; }
+        public int SortOrder { get; set; }
+        public string Password { get; set; }
+    }
+
     public class TeamWithPlayersDto
     {
         public int Id { get; set; }
@@ -49,6 +64,32 @@ namespace Allport_s_League_Scrambler.Models
         public int Id { get; set; }
         public string FullName { get; set; }
         public bool IsMale { get; set; }
+    }
+
+    public class PlayerScoresResponseDto
+    {
+        public int MaxRounds { get; set; }
+        public List<PlayerScoreGroupDto> PlayerScores { get; set; }
+    }
+
+    public class PlayerScoreGroupDto
+    {
+        public int PlayerId { get; set; }
+        public string PlayerName { get; set; }
+        public bool IsMale { get; set; }
+
+        public int LeagueDivisionId { get; set; }
+        public string LeagueDivisionCode { get; set; }
+
+        public List<PlayerRoundScoreDto> Scores { get; set; }
+    }
+
+    public class PlayerRoundScoreDto
+    {
+        public int RoundId { get; set; }
+        public int Score { get; set; }
+        public bool RoundWon { get; set; }
+        public bool IsSubScore { get; set; }
     }
 
 }

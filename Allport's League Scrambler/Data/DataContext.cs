@@ -33,6 +33,8 @@ namespace Allport_s_League_Scrambler.Data
         public virtual DbSet<LeagueSchedule> LeagueSchedule { get; set; }
         public virtual DbSet<LeagueSignInLocked> LeagueSignInLocked { get; set; }
         public virtual DbSet<KingQueenTopPlayer> KingQueenTopPlayer { get; set; }
+        public virtual DbSet<LeagueDivision> LeagueDivision { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)

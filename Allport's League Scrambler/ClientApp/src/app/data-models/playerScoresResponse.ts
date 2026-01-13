@@ -9,6 +9,8 @@ export interface PlayerScoreGroup {
     playerName: string;
     scores: RoundScore[];
     totalScore: number;
+    leagueDivisionId: number;
+    leagueDivisionCode: string;
 }
 
 export interface RoundScore {

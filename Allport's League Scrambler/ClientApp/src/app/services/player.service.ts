@@ -106,8 +106,24 @@ export class PlayerService {
         return this.httpClient.post(this.baseUrl + '/api/ScrambleData/AddPlayerWithoutLeague', player);
     }
 
-    public AddPlayer(player: Player, leagueName: string) {
-        return this.httpClient.post<Player>(this.baseUrl + 'api/ScrambleData/AddPlayer/' + leagueName, player);
+    public AddPlayer(player: any, leagueName: string, leagueDivisionId?: number): Observable<any> {
+        let divisionId = 0;
+        if (leagueDivisionId != null) {
+            divisionId = leagueDivisionId;
+        }
+        return this.httpClient.post<any>(
+            `${this.baseUrl}api/ScrambleData/AddPlayer/${leagueName}?leagueDivisionId=${divisionId}`,
+            player
+        );
+    }
+
+
+    public getLeagueDivisions(leagueName: string): Observable<any[]> {
+        return this.httpClient.get<any[]>(`${this.baseUrl}api/LeagueDivision/GetByLeague/${leagueName}`);
+    }
+
+    public addLeagueDivision(payload: any): Observable<any> {
+        return this.httpClient.post<any>(`${this.baseUrl}api/LeagueDivision/Add`, payload);
     }
 
     public saveKingQueenTeams(
@@ -177,7 +193,7 @@ export class PlayerService {
         const options = { headers: headers };
         return this.httpClient.post<KingQueenTeamsResponse>(
             `${this.baseUrl}api/ScrambleData/GetKingQueenTeamsByScrambleNumbers/${leagueName}`, scrambleNumbers, options
-            
+
         );
     }
 

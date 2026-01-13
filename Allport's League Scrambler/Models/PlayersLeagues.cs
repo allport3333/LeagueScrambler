@@ -12,7 +12,11 @@ namespace Allport_s_League_Scrambler.Models
         public int PlayerID { get; set; }
         public bool? IsSub { get; set; }
 
+        public int? LeagueDivisionId { get; set; }
+        public LeagueDivision LeagueDivision { get; set; }
+
         public LeagueType LeagueType { get; set; }
         public Player Player { get; set; }
     }
+
 }

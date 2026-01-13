@@ -5,7 +5,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatChipsModule } from '@angular/material';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
-import { FormGroup, FormControl } from '@angular/forms';
+import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { forEach } from '@angular/router/src/utils/collection';
 import { Team } from '../data-models/teams.model';
 import { Leagues } from '../data-models/leagues.model';
@@ -35,11 +35,14 @@ export class ScramblerComponent implements OnInit {
     selectedRounds: number = 5; // Default to 5 rounds
     processedStandings: { playerName: string; scores: { roundId: number; score: number | string }[] }[] = [];
     rounds: number[] = [];
+    divisionsLoading: boolean = false;
+    divisionsLoadedOnce: boolean = false;
     searchTerm: string = '';
     searchedPlayers: any[] = [];
+    LeagueDivisionForm: FormGroup;
     selectedPlayer: any = null;
     searchTermDelete: string = '';
-    leagueDay: string = 'Monday'; 
+    leagueDay: string = 'Monday';
     searchedPlayersToDelete: any[] = [];
     selectedPlayerToDelete: any = null;
     private originalStandings: PlayerScoreGroup[] | null = null;
@@ -95,6 +98,9 @@ export class ScramblerComponent implements OnInit {
     queriedPlayers: Player[] = new Array();
     queriedScrambles: KingQueenTeam[] = new Array();
     leaguesAvailable: Leagues[] = [];
+    leagueDivisionsForSelectedLeague: { id: number; code: string; name: string; sortOrder: number }[] = [];
+    selectedLeagueDivisionIdForAddPlayer: number = 0;   // used when adding an existing/new player
+    selectedLeagueDivisionIdForNewPlayer: number = 0;
     leagueId: number;
     selectedLeagueDto: Leagues;
     gendersPossible: Gender[] = [{ value: 'Female', isMale: false }, { value: 'Male', isMale: true }];
@@ -183,10 +189,27 @@ export class ScramblerComponent implements OnInit {
         passwordLeague: new FormControl()
     });
 
-    constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string, private cdr: ChangeDetectorRef, public playerService: PlayerService, public leagueService: LeagueService, public loginService: LoginService, private snackBar: MatSnackBar) {
+    constructor(
+        http: HttpClient,
+        @Inject('BASE_URL') baseUrl: string,
+        private cdr: ChangeDetectorRef,
+        public playerService: PlayerService,
+        public leagueService: LeagueService,
+        public loginService: LoginService,
+        private snackBar: MatSnackBar
+    ) {
         this.teamSize = 4;
+
         this.selectedListChanged.subscribe(() => {
             this.setTeamCount();
+        });
+
+        // Add Division form (no FormBuilder)
+        this.LeagueDivisionForm = new FormGroup({
+            code: new FormControl('', [Validators.required]),
+            name: new FormControl('', [Validators.required]),
+            sortOrder: new FormControl(1, [Validators.required]),
+            passwordDivision: new FormControl('')
         });
     }
 
@@ -350,17 +373,126 @@ export class ScramblerComponent implements OnInit {
         }
     }
 
+
+
+    leagueDivisions: LeagueDivisionDto[] = [];
+    selectedLeagueDivisionId: number = 0;
+
+    loadDivisionsForSelectedLeague(): void {
+        this.divisionsLoading = true;
+        this.divisionsLoadedOnce = true;
+
+        this.leagueDivisionsForSelectedLeague = [];
+        this.selectedLeagueDivisionIdForAddPlayer = 0;
+        this.selectedLeagueDivisionIdForNewPlayer = 0;
+
+        if (this.selectedLeagueDto == null) {
+            this.divisionsLoading = false;
+            return;
+        }
+
+        if (this.selectedLeagueDto.leagueName == null) {
+            this.divisionsLoading = false;
+            return;
+        }
+
+        if (this.selectedLeagueDto.leagueName === '') {
+            this.divisionsLoading = false;
+            return;
+        }
+
+        this.playerService.getLeagueDivisions(this.selectedLeagueDto.leagueName).subscribe(
+            (result: any[]) => {
+                const mapped: { id: number; code: string; name: string; sortOrder: number }[] = [];
+
+                if (result != null) {
+                    for (let i = 0; i < result.length; i++) {
+                        const r: any = result[i];
+
+                        let id = 0;
+                        let code = '';
+                        let name = '';
+                        let sortOrder = 0;
+
+                        if (r != null) {
+                            if (r.id != null) {
+                                id = r.id;
+                            }
+                            if (r.code != null) {
+                                code = r.code;
+                            }
+                            if (r.name != null) {
+                                name = r.name;
+                            }
+                            if (r.sortOrder != null) {
+                                sortOrder = r.sortOrder;
+                            }
+                        }
+
+                        if (name === '') {
+                            name = code;
+                        }
+
+                        mapped.push({
+                            id: id,
+                            code: code,
+                            name: name,
+                            sortOrder: sortOrder
+                        });
+                    }
+                }
+
+                this.leagueDivisionsForSelectedLeague = mapped;
+
+                this.selectedLeagueDivisionIdForAddPlayer = 0;
+                this.selectedLeagueDivisionIdForNewPlayer = 0;
+
+                this.divisionsLoading = false;
+            },
+            (error) => {
+                console.error('loadDivisionsForSelectedLeague error', error);
+
+                this.leagueDivisionsForSelectedLeague = [];
+                this.selectedLeagueDivisionIdForAddPlayer = 0;
+                this.selectedLeagueDivisionIdForNewPlayer = 0;
+
+                this.divisionsLoading = false;
+            }
+        );
+    }
+
+
+    onLeagueSelected(league: Leagues): void {
+        this.selectedLeagueDto = league;
+
+        if (this.selectedLeagueDto != null) {
+            this.leagueName = this.selectedLeagueDto.leagueName;
+            this.leagueId = this.selectedLeagueDto.id;
+            this.loadDivisionsForSelectedLeague();
+
+        }
+
+    }
+
+    /*
+    Now update addExistingPlayer() to send division id.
+    */
     addExistingPlayer() {
         if (this.selectedPlayer && this.selectedLeague) {
+
+            let leagueDivisionId = 0;
+            if (this.selectedLeagueDivisionIdForAddPlayer != null) {
+                leagueDivisionId = this.selectedLeagueDivisionIdForAddPlayer;
+            }
+
             this.playerService
-                .AddPlayer(this.selectedPlayer, this.selectedLeague)
+                .AddPlayer(this.selectedPlayer, this.selectedLeague, leagueDivisionId)
                 .subscribe(
                     (result) => {
                         this.player = result;
                         this.containsFemale = false;
                         this.containsMale = false;
 
-                        // Check if the player already exists
                         for (var i = 0; i < this.malePlayers1.length; i++) {
                             if (
                                 this.malePlayers1[i].firstName === result.firstName &&
@@ -370,6 +502,7 @@ export class ScramblerComponent implements OnInit {
                                 break;
                             }
                         }
+
                         for (var i = 0; i < this.femalePlayers1.length; i++) {
                             if (
                                 this.femalePlayers1[i].firstName === result.firstName &&
@@ -390,7 +523,7 @@ export class ScramblerComponent implements OnInit {
                                 this.femalePlayers1.push(result);
                                 this.femalePlayers1.sort((a, b) => a.lastName.localeCompare(b.lastName));
                             }
-                            // Show success message
+
                             this.showSnackBar("Player added successfully!");
                         }
                     },
@@ -402,6 +535,55 @@ export class ScramblerComponent implements OnInit {
         } else {
             this.showSnackBar("Please select a player and a league.");
         }
+    }
+
+    addLeagueDivision(): void {
+        if (this.selectedLeagueDto == null) {
+            this.showSnackBar('Please select a league first.');
+            return;
+        }
+
+        if (this.LeagueDivisionForm == null) {
+            this.showSnackBar('Division form is not ready.');
+            return;
+        }
+
+        if (this.LeagueDivisionForm.invalid) {
+            this.showSnackBar('Please fill out Code, Name, and Sort Order.');
+            return;
+        }
+
+        const code = this.LeagueDivisionForm.get('code').value;
+        const name = this.LeagueDivisionForm.get('name').value;
+        const sortOrder = this.LeagueDivisionForm.get('sortOrder').value;
+        const passwordDivision = this.LeagueDivisionForm.get('passwordDivision').value;
+
+        const payload = {
+            leagueId: this.selectedLeagueDto.id,
+            code: code,
+            name: name,
+            sortOrder: sortOrder,
+            password: passwordDivision
+        };
+
+        this.playerService.addLeagueDivision(payload).subscribe(
+            (result) => {
+                this.showSnackBar('Division added successfully!');
+
+                this.LeagueDivisionForm.patchValue({
+                    code: '',
+                    name: '',
+                    sortOrder: 1,
+                    passwordDivision: ''
+                });
+
+                this.loadDivisionsForSelectedLeague();
+            },
+            (error) => {
+                console.error('addLeagueDivision error', error);
+                this.showSnackBar('An error occurred while adding the division.');
+            }
+        );
     }
 
     displayPlayer(player: any): string {
@@ -595,6 +777,7 @@ export class ScramblerComponent implements OnInit {
                     id: selectedLeague.leagueId,
                     leagueName: selectedLeague.leagueName
                 };
+                this.loadDivisionsForSelectedLeague();
 
                 this.onLeagueChanged();
             } else {
@@ -702,6 +885,7 @@ export class ScramblerComponent implements OnInit {
         if (selectedLeague) {
             this.selectedLeagueDto = selectedLeague;
             this.leagueId = selectedLeague.id;
+            this.loadDivisionsForSelectedLeague();
         }
 
         // Fetch players for the selected league
@@ -740,6 +924,9 @@ export class ScramblerComponent implements OnInit {
         if (selectedLeague) {
             this.selectedLeagueDto = selectedLeague;
             this.leagueId = selectedLeague.id;
+
+
+            console.log('load1');
         }
 
         this.playerService.SelectLeague(this.selectedLeague).subscribe((result) => {
@@ -1021,6 +1208,99 @@ export class ScramblerComponent implements OnInit {
         }
         this.playerLoading = false;
     }
+
+    applyTopPlayersFromMaleStandings(): void {
+        const maxPlayers = this.teamCount;
+
+        if (maxPlayers == null || maxPlayers <= 0) {
+            console.error('applyTopPlayersFromMaleStandings: teamCount is not set or invalid.');
+            return;
+        }
+
+        if (this.malePlayers1 != null) {
+            this.malePlayers1.forEach(m => m.isTopPlayer = false);
+        }
+
+        if (this.femalePlayers1 != null) {
+            this.femalePlayers1.forEach(f => f.isTopPlayer = false);
+        }
+
+        this.totalTopPlayers = [];
+        this.displayTopPlayers = [];
+
+        if (this.maleStandings == null || this.maleStandings.length === 0) {
+            console.error('applyTopPlayersFromMaleStandings: maleStandings is empty. Standings may not be loaded yet.');
+            return;
+        }
+
+        if (this.selectedList == null || this.selectedList.length === 0) {
+            console.error('applyTopPlayersFromMaleStandings: selectedList is empty.');
+            return;
+        }
+
+        const selectedTopPlayers: Player[] = [];
+
+        for (let i = 0; i < this.maleStandings.length; i++) {
+            if (selectedTopPlayers.length >= maxPlayers) {
+                break;
+            }
+
+            const standingPlayer = this.maleStandings[i];
+            if (standingPlayer == null) {
+                continue;
+            }
+
+            let matchedPlayer: Player = null;
+
+            for (let j = 0; j < this.selectedList.length; j++) {
+                const sp = this.selectedList[j];
+
+                if (sp != null && sp.id === standingPlayer.playerId) {
+                    matchedPlayer = sp;
+                    break;
+                }
+            }
+
+            if (matchedPlayer != null) {
+
+                if (matchedPlayer.isMale !== true) {
+                    continue;
+                }
+
+                let alreadyAdded = false;
+
+                for (let k = 0; k < selectedTopPlayers.length; k++) {
+                    if (selectedTopPlayers[k] != null && selectedTopPlayers[k].id === matchedPlayer.id) {
+                        alreadyAdded = true;
+                        break;
+                    }
+                }
+
+                if (!alreadyAdded) {
+                    selectedTopPlayers.push(matchedPlayer);
+                }
+            }
+        }
+
+        for (let i = 0; i < selectedTopPlayers.length; i++) {
+            const p = selectedTopPlayers[i];
+            if (p != null) {
+                this.addPlayerToTopPlayerList(p);
+            }
+        }
+
+        if (selectedTopPlayers.length < maxPlayers) {
+            console.log(
+                'applyTopPlayersFromMaleStandings: Not enough eligible males found in selectedList using standings order. Needed: ' +
+                maxPlayers +
+                ', Found: ' +
+                selectedTopPlayers.length
+            );
+        }
+    }
+
+
+
 
     // This method should be called whenever a new `result` is received
     setNewStandings(result: any): void {
@@ -2040,30 +2320,23 @@ export class ScramblerComponent implements OnInit {
                 // Initialize your list of teams
                 this.listOfTeams = [];
                 this.listOfRetrievedScrambleNumbers = [];
-                let matchups = response.kingQueenTeams;
-                if (matchups.length > 0 && matchups[0].kingQueenTeam.kingQueenRoundScores) {
+                const matchups = response.kingQueenTeams || [];
+
+                if (matchups.length > 0 && matchups[0].kingQueenTeam && matchups[0].kingQueenTeam.kingQueenRoundScores) {
                     this.selectedRounds = matchups[0].kingQueenTeam.kingQueenRoundScores.length;
                 }
+
                 // Map the retrieved matchups into listOfTeams
                 matchups.forEach((matchup) => {
                     matchup.players.forEach((player) => {
-                        // kingQueenPlayers might be null/undefined, so default to empty array
                         const kqPlayers = matchup.kingQueenTeam.kingQueenPlayers || [];
 
-                        let matchingKQPlayer: KingQueenPlayer | null = null;
-                        for (const kqp of kqPlayers) {
-                            if (kqp.playerId === player.id) {
-                                matchingKQPlayer = kqp;
-                                break; // Stop once we find the match
-                            }
-                        }
-
+                        const matchingKQPlayer = kqPlayers.find(kqp => kqp.playerId === player.id);
                         if (matchingKQPlayer) {
                             player.isSubScore = matchingKQPlayer.isSubScore;
                         }
                     });
 
-                    // 2. Build your Team object now that each Player is updated
                     const team: Team = {
                         players: matchup.players,
                         maleCount: matchup.players.filter((player) => player.isMale).length,
@@ -2074,19 +2347,26 @@ export class ScramblerComponent implements OnInit {
                         sortingId: null
                     };
 
-                    // 3. Push the team into your list
                     this.listOfTeams.push(team);
                     this.retrievedListOfTeams.push(team);
                 });
-                this.byePlayers = response.byePlayers;
+
+                // Assign stable sortingId values so the dropdown shows meaningful options
+                this.listOfTeams = this.listOfTeams.map((t, idx) => ({ ...t, sortingId: idx + 1 }));
+                this.retrievedListOfTeams = this.retrievedListOfTeams.map((t, idx) => ({ ...t, sortingId: idx + 1 }));
+
+                this.byePlayers = response.byePlayers || [];
 
                 this.listOfRetrievedScrambleNumbers.push(scramble.scrambleNumber);
+
                 // Initialize rounds and scores after data is fully loaded
                 this.initializeRounds();
                 this.initializeScores();
+
+                // Ensure Angular updates the view immediately
+                this.cdr.detectChanges();
             },
             (error) => {
-                // Handle any errors
                 console.error('Error retrieving matchups:', error);
             }
         );
@@ -2149,13 +2429,15 @@ export class ScramblerComponent implements OnInit {
         this.retrievedPlayersBefore = true;
         this.allowScrambleWithNoDuplicates = true;
         this.showSaveRoundScores = false;
+
         this.playerService.getMultipleKingQueenTeamsByScrambleNumbers(this.selectedLeague, this.listOfScrambleNumbers).subscribe(
             (response) => {
-                // Initialize your list of teams
                 this.listOfRetrievedScrambleNumbers = [];
                 this.listOfTeams = [];
                 this.retrievedListOfTeams = [];
-                let matchups = response.kingQueenTeams
+
+                const matchups = response.kingQueenTeams || [];
+
                 // Map the retrieved matchups into listOfTeams
                 matchups.forEach((matchup) => {
                     const team: Team = {
@@ -2170,11 +2452,18 @@ export class ScramblerComponent implements OnInit {
                     this.listOfTeams.push(team);
                     this.retrievedListOfTeams.push(team);
                 });
+
+                // Assign stable sortingId values
+                this.listOfTeams = this.listOfTeams.map((t, idx) => ({ ...t, sortingId: idx + 1 }));
+                this.retrievedListOfTeams = this.retrievedListOfTeams.map((t, idx) => ({ ...t, sortingId: idx + 1 }));
+
                 this.listOfRetrievedScrambleNumbers = [...this.listOfScrambleNumbers];
-                this.byePlayers = response.byePlayers;
+                this.byePlayers = response.byePlayers || [];
+
+                // Ensure view updates
+                this.cdr.detectChanges();
             },
             (error) => {
-                // Handle any errors
                 console.error('Error retrieving matchups:', error);
             }
         );
@@ -2223,7 +2512,7 @@ export class ScramblerComponent implements OnInit {
             this.numberOfTeams = null;
         }
         this.setTeamCount();
-        
+
     }
 
 
@@ -2914,3 +3203,7 @@ export class ScramblerComponent implements OnInit {
     }
 }
 
+export interface LeagueDivisionDto {
+    id: number;
+    code: string;
+}
