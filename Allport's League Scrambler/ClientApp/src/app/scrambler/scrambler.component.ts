@@ -1238,15 +1238,37 @@ export class ScramblerComponent implements OnInit {
             return;
         }
 
-        const selectedTopPlayers: Player[] = [];
+        const isGold = (s: any): boolean => {
+            let code = '';
+            let name = '';
 
-        for (let i = 0; i < this.maleStandings.length; i++) {
-            if (selectedTopPlayers.length >= maxPlayers) {
-                break;
+            if (s != null && s.leagueDivisionCode != null) {
+                code = ('' + s.leagueDivisionCode).toUpperCase();
+            }
+            if (s != null && s.leagueDivisionName != null) {
+                name = ('' + s.leagueDivisionName).toUpperCase();
             }
 
-            const standingPlayer = this.maleStandings[i];
-            if (standingPlayer == null) {
+            if (code === 'GM') {
+                return true;
+            }
+
+            if (name === 'GOLD MALE') {
+                return true;
+            }
+
+            if (name.indexOf('GOLD') >= 0) {
+                return true;
+            }
+
+            return false;
+        };
+
+        const standingsEligible: any[] = [];
+
+        for (let i = 0; i < this.maleStandings.length; i++) {
+            const s: any = this.maleStandings[i];
+            if (s == null) {
                 continue;
             }
 
@@ -1254,32 +1276,206 @@ export class ScramblerComponent implements OnInit {
 
             for (let j = 0; j < this.selectedList.length; j++) {
                 const sp = this.selectedList[j];
-
-                if (sp != null && sp.id === standingPlayer.playerId) {
+                if (sp != null && sp.id === s.playerId) {
                     matchedPlayer = sp;
                     break;
                 }
             }
 
-            if (matchedPlayer != null) {
+            if (matchedPlayer == null) {
+                continue;
+            }
 
-                if (matchedPlayer.isMale !== true) {
-                    continue;
+            if (matchedPlayer.isMale !== true) {
+                continue;
+            }
+
+            standingsEligible.push(s);
+        }
+
+        // Sort by: 1) king/queen score (totalScore) desc
+        //          2) GOLD status (gold before non-gold) — even if gold total points are lower
+        //          3) totalScoreBeforeReduction desc
+        //          4) playerName as deterministic fallback
+        const sortedEligible = standingsEligible.slice().sort((a: any, b: any) => {
+            const aKq = a != null && a.totalScore != null ? a.totalScore : 0;
+            const bKq = b != null && b.totalScore != null ? b.totalScore : 0;
+
+            if (bKq !== aKq) {
+                return bKq - aKq;
+            }
+
+            const aGold = isGold(a);
+            const bGold = isGold(b);
+
+            if (aGold && !bGold) {
+                return -1; // a (gold) before b
+            }
+            if (!aGold && bGold) {
+                return 1; // b (gold) before a
+            }
+
+            const aTotal = a != null && a.totalScoreBeforeReduction != null ? a.totalScoreBeforeReduction : 0;
+            const bTotal = b != null && b.totalScoreBeforeReduction != null ? b.totalScoreBeforeReduction : 0;
+
+            if (bTotal !== aTotal) {
+                return bTotal - aTotal;
+            }
+
+            const nameA = (a.playerName || '').toLowerCase();
+            const nameB = (b.playerName || '').toLowerCase();
+            if (nameA > nameB) return 1;
+            if (nameA < nameB) return -1;
+            return 0;
+        });
+
+        const selectedTopPlayers: Player[] = [];
+
+        let idx = 0;
+
+        while (idx < sortedEligible.length && selectedTopPlayers.length < maxPlayers) {
+            const current = sortedEligible[idx];
+
+            const currentKq = current != null && current.totalScore != null ? current.totalScore : 0;
+            const currentTotal = current != null && current.totalScoreBeforeReduction != null ? current.totalScoreBeforeReduction : 0;
+
+            const tieGroup: any[] = [];
+            tieGroup.push(current);
+
+            let nextIdx = idx + 1;
+
+            // Group only exact ties on king/queen score and (after gold priority) total before reduction.
+            // This keeps gold priority enforced by the sort above, while still handling exact duplicates deterministically.
+            while (nextIdx < sortedEligible.length) {
+                const next = sortedEligible[nextIdx];
+
+                const nextKq = next != null && next.totalScore != null ? next.totalScore : 0;
+                const nextTotal = next != null && next.totalScoreBeforeReduction != null ? next.totalScoreBeforeReduction : 0;
+
+                // consider equal if both KQ and totalBeforeReduction match
+                if (nextKq === currentKq && nextTotal === currentTotal) {
+                    tieGroup.push(next);
+                    nextIdx++;
+                } else {
+                    break;
                 }
+            }
 
-                let alreadyAdded = false;
+            if (tieGroup.length === 1) {
+                const standingPlayer = tieGroup[0];
 
-                for (let k = 0; k < selectedTopPlayers.length; k++) {
-                    if (selectedTopPlayers[k] != null && selectedTopPlayers[k].id === matchedPlayer.id) {
-                        alreadyAdded = true;
+                let matchedPlayer: Player = null;
+
+                for (let j = 0; j < this.selectedList.length; j++) {
+                    const sp = this.selectedList[j];
+                    if (sp != null && sp.id === standingPlayer.playerId) {
+                        matchedPlayer = sp;
                         break;
                     }
                 }
 
-                if (!alreadyAdded) {
-                    selectedTopPlayers.push(matchedPlayer);
+                if (matchedPlayer != null && selectedTopPlayers.length < maxPlayers) {
+                    let alreadyAdded = false;
+
+                    for (let k = 0; k < selectedTopPlayers.length; k++) {
+                        if (selectedTopPlayers[k] != null && selectedTopPlayers[k].id === matchedPlayer.id) {
+                            alreadyAdded = true;
+                            break;
+                        }
+                    }
+
+                    if (!alreadyAdded) {
+                        selectedTopPlayers.push(matchedPlayer);
+                    }
                 }
             }
+            else {
+                // tieGroup contains exact KQ+total ties. Keep existing tie-resolution:
+                // prefer gold players within the tieGroup, otherwise randomize non-gold order.
+                const goldGroup: any[] = [];
+                const nonGoldGroup: any[] = [];
+
+                for (let t = 0; t < tieGroup.length; t++) {
+                    const s = tieGroup[t];
+                    if (isGold(s)) {
+                        goldGroup.push(s);
+                    }
+                    else {
+                        nonGoldGroup.push(s);
+                    }
+                }
+
+                for (let t = 0; t < goldGroup.length && selectedTopPlayers.length < maxPlayers; t++) {
+                    const standingPlayer = goldGroup[t];
+
+                    let matchedPlayer: Player = null;
+
+                    for (let j = 0; j < this.selectedList.length; j++) {
+                        const sp = this.selectedList[j];
+                        if (sp != null && sp.id === standingPlayer.playerId) {
+                            matchedPlayer = sp;
+                            break;
+                        }
+                    }
+
+                    if (matchedPlayer != null) {
+                        let alreadyAdded = false;
+
+                        for (let k = 0; k < selectedTopPlayers.length; k++) {
+                            if (selectedTopPlayers[k] != null && selectedTopPlayers[k].id === matchedPlayer.id) {
+                                alreadyAdded = true;
+                                break;
+                            }
+                        }
+
+                        if (!alreadyAdded) {
+                            selectedTopPlayers.push(matchedPlayer);
+                        }
+                    }
+                }
+
+                if (selectedTopPlayers.length < maxPlayers && nonGoldGroup.length > 0) {
+                    const shuffled = nonGoldGroup.slice();
+
+                    for (let a = shuffled.length - 1; a > 0; a--) {
+                        const r = Math.floor(Math.random() * (a + 1));
+                        const tmp = shuffled[a];
+                        shuffled[a] = shuffled[r];
+                        shuffled[r] = tmp;
+                    }
+
+                    for (let t = 0; t < shuffled.length && selectedTopPlayers.length < maxPlayers; t++) {
+                        const standingPlayer = shuffled[t];
+
+                        let matchedPlayer: Player = null;
+
+                        for (let j = 0; j < this.selectedList.length; j++) {
+                            const sp = this.selectedList[j];
+                            if (sp != null && sp.id === standingPlayer.playerId) {
+                                matchedPlayer = sp;
+                                break;
+                            }
+                        }
+
+                        if (matchedPlayer != null) {
+                            let alreadyAdded = false;
+
+                            for (let k = 0; k < selectedTopPlayers.length; k++) {
+                                if (selectedTopPlayers[k] != null && selectedTopPlayers[k].id === matchedPlayer.id) {
+                                    alreadyAdded = true;
+                                    break;
+                                }
+                            }
+
+                            if (!alreadyAdded) {
+                                selectedTopPlayers.push(matchedPlayer);
+                            }
+                        }
+                    }
+                }
+            }
+
+            idx = nextIdx;
         }
 
         for (let i = 0; i < selectedTopPlayers.length; i++) {
@@ -1291,15 +1487,13 @@ export class ScramblerComponent implements OnInit {
 
         if (selectedTopPlayers.length < maxPlayers) {
             console.log(
-                'applyTopPlayersFromMaleStandings: Not enough eligible males found in selectedList using standings order. Needed: ' +
+                'applyTopPlayersFromMaleStandings: Not enough eligible males found in selectedList using standings order + tie-division priority. Needed: ' +
                 maxPlayers +
                 ', Found: ' +
                 selectedTopPlayers.length
             );
         }
     }
-
-
 
 
     // This method should be called whenever a new `result` is received
@@ -1332,34 +1526,95 @@ export class ScramblerComponent implements OnInit {
     sortColumn: string = ''; // Currently sorted column
     sortDirection: 'asc' | 'desc' = 'asc'; // Track sort direction
 
-    // Sorting for male standings
     sortMaleStandings(column: string) {
 
+        const compare = (a: any, b: any): number => {
+            // Helper to get primary value
+            const getPrimary = (obj: any) => {
+                if (column === 'playerName') {
+                    return (obj.playerName || '').toLowerCase();
+                }
+                return obj[column] !== undefined && obj[column] !== null ? obj[column] : 0;
+            };
 
-        this.maleStandings = [...this.maleStandings].sort((a, b) => {
-            const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
-            const valueB = column === 'playerName' ? b[column].toLowerCase() : b[column];
+            const primaryA = getPrimary(a);
+            const primaryB = getPrimary(b);
 
-            if (this.sortDirection === 'asc') {
-                return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
-            } else {
-                return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+            // String comparison for playerName
+            if (column === 'playerName') {
+                if (primaryA > primaryB) return this.sortDirection === 'asc' ? 1 : -1;
+                if (primaryA < primaryB) return this.sortDirection === 'asc' ? -1 : 1;
+                return 0;
             }
-        });
+
+            // Numeric comparison for other columns
+            const numA = Number(primaryA) || 0;
+            const numB = Number(primaryB) || 0;
+
+            if (numA !== numB) {
+                return this.sortDirection === 'asc' ? (numA - numB) : (numB - numA);
+            }
+
+            // Tie-breaker #1: totalScoreBeforeReduction (use when primary equals)
+            const tieA = Number(a.totalScoreBeforeReduction || 0);
+            const tieB = Number(b.totalScoreBeforeReduction || 0);
+            if (tieA !== tieB) {
+                // always prefer higher totalScoreBeforeReduction when descending, and vice versa
+                return this.sortDirection === 'asc' ? (tieA - tieB) : (tieB - tieA);
+            }
+
+            // Tie-breaker #2: final fallback to playerName (stable, deterministic)
+            const nameA = (a.playerName || '').toLowerCase();
+            const nameB = (b.playerName || '').toLowerCase();
+            if (nameA > nameB) return 1;
+            if (nameA < nameB) return -1;
+            return 0;
+        };
+
+        this.maleStandings = [...this.maleStandings].sort(compare);
     }
 
     // Sorting for female standings
     sortFemaleStandings(column: string) {
-        this.femaleStandings = [...this.femaleStandings].sort((a, b) => {
-            const valueA = column === 'playerName' ? a[column].toLowerCase() : a[column];
-            const valueB = column === 'playerName' ? b[column].toLowerCase() : b[column];
+        const compare = (a: any, b: any): number => {
+            const getPrimary = (obj: any) => {
+                if (column === 'playerName') {
+                    return (obj.playerName || '').toLowerCase();
+                }
+                return obj[column] !== undefined && obj[column] !== null ? obj[column] : 0;
+            };
 
-            if (this.sortDirection === 'asc') {
-                return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
-            } else {
-                return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+            const primaryA = getPrimary(a);
+            const primaryB = getPrimary(b);
+
+            if (column === 'playerName') {
+                if (primaryA > primaryB) return this.sortDirection === 'asc' ? 1 : -1;
+                if (primaryA < primaryB) return this.sortDirection === 'asc' ? -1 : 1;
+                return 0;
             }
-        });
+
+            const numA = Number(primaryA) || 0;
+            const numB = Number(primaryB) || 0;
+
+            if (numA !== numB) {
+                return this.sortDirection === 'asc' ? (numA - numB) : (numB - numA);
+            }
+
+            // Tie-breaker: totalScoreBeforeReduction
+            const tieA = Number(a.totalScoreBeforeReduction || 0);
+            const tieB = Number(b.totalScoreBeforeReduction || 0);
+            if (tieA !== tieB) {
+                return this.sortDirection === 'asc' ? (tieA - tieB) : (tieB - tieA);
+            }
+
+            const nameA = (a.playerName || '').toLowerCase();
+            const nameB = (b.playerName || '').toLowerCase();
+            if (nameA > nameB) return 1;
+            if (nameA < nameB) return -1;
+            return 0;
+        };
+
+        this.femaleStandings = [...this.femaleStandings].sort(compare);
     }
 
 

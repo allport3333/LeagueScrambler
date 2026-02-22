@@ -4,20 +4,20 @@
             <mat-card style="background-color:lightgray; " class="ml-1 mt-2">
                 <div class="row">
                     <!--<div class="col">
-                        <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
-                            <h4>Select League</h4>
-                            <div class="mt-1">
-                                <mat-form-field>
-                                    <mat-label>League</mat-label>
-                                    <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" (selectionChange)="selectLeague()">
-                                        <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
-                                            {{league.leagueName}}
-                                        </mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            </div>
-                        </mat-card>
-                    </div>-->
+                <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
+                    <h4>Select League</h4>
+                    <div class="mt-1">
+                        <mat-form-field>
+                            <mat-label>League</mat-label>
+                            <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" (selectionChange)="selectLeague()">
+                                <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
+                                    {{league.leagueName}}
+                                </mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+                </mat-card>
+            </div>-->
                     <div class="col text-center mt-2">
                         <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
                             <h4>Max Team Size</h4>
@@ -197,8 +197,37 @@
                 </div>
 
             </mat-card>
-
             <div class="row justify-content-center mt-3">
+                <div class="col-12 mb-4 text-center">
+                    <!-- Fetch Button: match Scramble Players width / padding and use light-blue style -->
+                    <button mat-raised-button
+                            (click)="fetchSelectedList()"
+                            class="w-50 py-3 scramble-button light-blue-button">
+                        Fetch Signed In Players
+                    </button>
+                </div>
+            </div>
+            <div class="row justify-content-center mt-3">
+
+
+                <!-- Apply Top Players Button -->
+                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                    <button mat-raised-button
+                            color="primary"
+                            class="w-100"
+                            (click)="applyTopPlayers()">
+                        Apply Top Players
+                    </button>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
+                    <button mat-raised-button
+                            color="primary"
+                            class="w-100"
+                            (click)="applyTopPlayersFromMaleStandings()">
+                        Apply Top Players (Male Standings)
+                    </button>
+                </div>
                 <!-- Scramble Players Button -->
                 <div *ngIf="!hideInputOptions" class="col-12 mb-4 text-center">
                     <button (click)="scramblePlayers(false)"
@@ -236,25 +265,6 @@
                             </button>
                         </mat-menu>
                     </div>
-                </div>
-
-                <!-- Apply Top Players Button -->
-                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <button mat-raised-button
-                            color="primary"
-                            class="w-100"
-                            (click)="applyTopPlayers()">
-                        Apply Top Players
-                    </button>
-                </div>
-
-                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <button mat-raised-button
-                            color="primary"
-                            class="w-100"
-                            (click)="applyTopPlayersFromMaleStandings()">
-                        Apply Top Players (Male Standings)
-                    </button>
                 </div>
 
                 <!-- Show/Hide Player List Button -->
@@ -295,11 +305,6 @@
                                                     <span style="margin-left: 10px;"></span>
                                                     <button mat-raised-button color="warn" (click)="deselectAllPlayers()" style="font-size: 14px; padding: 5px; min-width: 80px;">
                                                         Deselect All
-                                                    </button>
-                                                    <span style="margin-left: 10px;"></span>
-                                                    <!-- Fetch Button -->
-                                                    <button mat-raised-button color="primary" (click)="fetchSelectedList()" style="font-size: 14px; padding: 5px; min-width: 80px;">
-                                                        Fetch Signed In Players
                                                     </button>
                                                 </div>
                                                 <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap;">

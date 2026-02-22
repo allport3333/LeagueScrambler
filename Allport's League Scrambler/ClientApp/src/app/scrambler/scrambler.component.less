@@ -88,3 +88,21 @@ td {
     cursor: not-allowed; /* Show 'not-allowed' cursor */
     box-shadow: none; /* Remove shadow when disabled */
 }
+/* Light blue variant for raised material buttons in this component */
+.light-blue-button.mat-raised-button {
+    background-color: #add8e6 !important; /* lightblue */
+    color: #000 !important;
+    box-shadow: none !important;
+}
+
+.light-blue-button.mat-raised-button:hover,
+.light-blue-button.mat-raised-button:focus {
+    background-color: #99cfe0 !important; /* slightly darker on hover/focus */
+    color: #000 !important;
+}
+
+/* Keep disabled appearance readable */
+.light-blue-button.mat-raised-button[disabled] {
+    background-color: #cfeaf2 !important;
+    color: rgba(0,0,0,0.5) !important;
+}
