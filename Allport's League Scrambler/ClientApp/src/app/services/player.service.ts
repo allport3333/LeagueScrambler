@@ -5,7 +5,7 @@ import { Player } from '../data-models/player.model';
 import { Leagues } from '../data-models/leagues.model';
 import { Password } from '../data-models/password.model';
 import { KingQueenTeamWithPlayers } from '../data-models/KingQueenTeamWithPlayers.model';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
 import { KingQueenTeamsResponse } from '../data-models/kingQueenTeamsResponse';
 import { KingQueenRoundScoresResponse } from '../data-models/kingQueenRoundScoresResponse';
@@ -15,6 +15,7 @@ import { PlayerScoresResponse, PlayerScoreGroup, RoundScore } from '../data-mode
 import { PlayerSignIn } from '../data-models/playerSignIn.model';
 import { PlayerSignInResult } from '../data-models/playerSignInResult.model';
 import { Team } from '../data-models/teams.model';
+import { map, catchError } from 'rxjs/operators';
 
 @Injectable({
     providedIn: 'root'
@@ -176,7 +177,15 @@ export class PlayerService {
         const url = `${this.baseUrl}api/ScrambleData/GetTopPlayers?leagueId=${leagueId}&maxPlayers=${maxPlayers}`;
         return this.httpClient.get<Player[]>(url);
     }
-
+    public hasTopPlayers(leagueId: number): Observable<boolean> {
+        return this.getTopPlayersForLeague(leagueId, 1).pipe(
+            map(players => Array.isArray(players) && players.length > 0),
+            catchError((err) => {
+                console.error('hasTopPlayers error', err);
+                return of(false);
+            })
+        );
+    }
     public GetPlayersByLeague(leagueID: number) {
         return this.httpClient.get<any[]>(this.baseUrl + 'api/ScrambleData/GetPlayers/' + leagueID);
     }

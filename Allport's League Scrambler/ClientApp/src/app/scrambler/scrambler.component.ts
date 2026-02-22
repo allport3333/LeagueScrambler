@@ -22,7 +22,7 @@ import { PlayerScoreGroup, PlayerScoresResponse } from '../data-models/playerSco
 import { KingQueenPlayer } from '../data-models/kingQueenPlayer.model';
 import { LeagueService } from '../services/league.service';
 import { KingQueenTeamsResponse } from '../data-models/kingQueenTeamsResponse';
-import { Subject } from 'rxjs';
+import { Subject, Observable } from 'rxjs';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
@@ -170,6 +170,14 @@ export class ScramblerComponent implements OnInit {
     maleStandings: PlayerScoreGroup[];
     retrievedStandingsType: string;
     showTeamSorting: boolean = false;
+    hasSignedInPlayersAvailable: boolean = false;
+    fetchClicked: boolean = false;
+    // Apply-top buttons state
+    applyClicked: boolean = false;
+    hasTopPlayersAvailable: boolean = false;
+    get applyButtonsEnabled(): boolean {
+        return !!(this.selectedList && this.selectedList.length > 0);
+    }
     PlayerForm = new FormGroup({
         firstName: new FormControl(),
         lastName: new FormControl(),
@@ -215,6 +223,7 @@ export class ScramblerComponent implements OnInit {
 
     updateSelectedList(): void {
         this.selectedListChanged.next(); // Notify listeners
+        this.applyClicked = false;
     }
 
     toggleTeamSorting(): void {
@@ -303,6 +312,25 @@ export class ScramblerComponent implements OnInit {
         this.showNewPlayerForm = !this.showNewPlayerForm;
     }
 
+    // Add this helper method somewhere in the class (e.g. after onLeagueChanged or near other helpers)
+    checkForSignedInPlayers(): void {
+        if (!this.leagueId) {
+            this.hasSignedInPlayersAvailable = false;
+            return;
+        }
+
+        const today = new Date();
+        this.playerService.getSelectedPlayersAsPlayers(this.leagueId, today).subscribe(
+            (players: Player[]) => {
+                this.hasSignedInPlayersAvailable = Array.isArray(players) && players.length > 0;
+            },
+            (error) => {
+                console.error('Error checking for signed-in players:', error);
+                this.hasSignedInPlayersAvailable = false;
+            }
+        );
+    }
+
     onPasswordInput(inputPassword: string): void {
         this.userInputPassword = inputPassword;
         if (
@@ -313,6 +341,10 @@ export class ScramblerComponent implements OnInit {
         } else if (!this.loggedIn) {
             this.isActionAllowed = false; // Disable button if password is incorrect
         }
+    }
+
+    public hasTopPlayers(leagueId: number): Observable<boolean> {
+        return this.playerService.hasTopPlayers(leagueId);
     }
 
     onSearchPlayer(event: any) {
@@ -469,7 +501,14 @@ export class ScramblerComponent implements OnInit {
             this.leagueName = this.selectedLeagueDto.leagueName;
             this.leagueId = this.selectedLeagueDto.id;
             this.loadDivisionsForSelectedLeague();
-
+            this.checkForSignedInPlayers();
+            this.playerService.hasTopPlayers(this.leagueId).subscribe(
+                available => this.hasTopPlayersAvailable = available,
+                err => {
+                    console.error('Error checking top players availability', err);
+                    this.hasTopPlayersAvailable = false;
+                }
+            );
         }
 
     }
@@ -888,6 +927,18 @@ export class ScramblerComponent implements OnInit {
             this.loadDivisionsForSelectedLeague();
         }
 
+        // Reset fetch state when switching leagues
+        this.fetchClicked = false;
+        this.checkForSignedInPlayers();
+        if (this.leagueId) {
+            this.playerService.hasTopPlayers(this.leagueId).subscribe(
+                available => this.hasTopPlayersAvailable = available,
+                err => {
+                    console.error('Error checking top players availability', err);
+                    this.hasTopPlayersAvailable = false;
+                }
+            );
+        }
         // Fetch players for the selected league
         this.playerService.SelectLeague(this.selectedLeague).subscribe((result) => {
             this.queriedPlayers = result;
@@ -924,10 +975,12 @@ export class ScramblerComponent implements OnInit {
         if (selectedLeague) {
             this.selectedLeagueDto = selectedLeague;
             this.leagueId = selectedLeague.id;
-
-
             console.log('load1');
         }
+
+        // Reset fetch state when selecting a league
+        this.fetchClicked = false;
+        this.checkForSignedInPlayers();
 
         this.playerService.SelectLeague(this.selectedLeague).subscribe((result) => {
             this.queriedPlayers = result;
@@ -1484,7 +1537,7 @@ export class ScramblerComponent implements OnInit {
                 this.addPlayerToTopPlayerList(p);
             }
         }
-
+        this.applyClicked = true;
         if (selectedTopPlayers.length < maxPlayers) {
             console.log(
                 'applyTopPlayersFromMaleStandings: Not enough eligible males found in selectedList using standings order + tie-division priority. Needed: ' +
@@ -1908,7 +1961,7 @@ export class ScramblerComponent implements OnInit {
                         this.addPlayerToTopPlayerList(matchedPlayer);
                     }
                 });
-
+                this.applyClicked = true;
             },
             (error) => {
                 console.error('Error fetching top players:', error);
@@ -1928,9 +1981,7 @@ export class ScramblerComponent implements OnInit {
         const today = new Date(); // Get current date without time
         this.playerService.getSelectedPlayersAsPlayers(this.leagueId, today).subscribe(
             (fetchedPlayers: Player[]) => {
-
                 fetchedPlayers.forEach(fetchedPlayer => {
-
                     let isAdded = false;
 
                     // Check in malePlayers1
@@ -1966,6 +2017,9 @@ export class ScramblerComponent implements OnInit {
                 // Trigger Angular change detection to refresh UI
                 this.selectedList = [...this.selectedList];
                 this.updateSelectedList();
+
+                // Mark that user has fetched signed-in players; button should become grey but remain clickable
+                this.fetchClicked = true;
             },
             (error) => {
                 console.error('Error fetching selected players:', error);

@@ -53,6 +53,17 @@ tr {
     .dropdown-container {
         justify-content: center; /* Centers items on smaller screens */
     }
+
+    .apply-top-wrapper {
+        flex-direction: column;
+        gap: 8px;
+        width: 100% !important; /* allow wrapper to grow to container on very small screens */
+    }
+
+    .apply-top-wrapper .apply-top-button {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
 }
 
 
@@ -105,4 +116,90 @@ td {
 .light-blue-button.mat-raised-button[disabled] {
     background-color: #cfeaf2 !important;
     color: rgba(0,0,0,0.5) !important;
+}
+
+/* Visual states for the fetch button.
+   - .enabled: green, clickable.
+   - .grey: grey appearance but clickable (no pointer-events suppression).
+   Avoid using a `.disabled` style that blocks pointer events; real disabling is controlled by the [disabled] binding. */
+
+.scramble-button.enabled {
+    background-color: #98D0A7 !important; /* match scramble green */
+    color: #ffffff !important;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+.scramble-button.enabled:hover {
+    transform: translateY(-1px);
+}
+
+.scramble-button.grey {
+    background-color: #b0b0b0 !important; /* grey look */
+    color: #ffffff !important;
+    box-shadow: 0px 2px 3px rgba(0,0,0,0.12) !important;
+    /* Important: do NOT set pointer-events: none here. That would prevent clicks even when visually grey. */
+}
+
+/* Keep a true disabled appearance when the disabled attribute is set (optional).
+   This selector only affects actual disabled state — it does not prevent us from showing a grey-but-clickable button. */
+button[disabled].scramble-button {
+    opacity: 0.7;
+    cursor: not-allowed;
+    box-shadow: none !important;
+}
+
+/* Apply-top button visuals */
+.apply-top-button.enabled {
+    background-color: #98D0A7 !important; /* same green as scramble */
+    color: #ffffff !important;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+.apply-top-button.enabled:hover {
+    transform: translateY(-1px);
+}
+
+/* Grey visual state — NOTE: does NOT block pointer events. real disabled/unclickable state is controlled by [disabled]. */
+.apply-top-button.grey {
+    background-color: #b0b0b0 !important;
+    color: #ffffff !important;
+    box-shadow: 0px 2px 3px rgba(0,0,0,0.12) !important;
+    /* do not set pointer-events:none here so button remains clickable when intended */
+}
+
+/* Keep a true disabled appearance when the disabled attribute is set */
+button[disabled].apply-top-button {
+    opacity: 0.7;
+    cursor: not-allowed;
+    box-shadow: none !important;
+}
+
+/* Layout: make wrapper equal to the combined width of two w-50 buttons (i.e. full w-50)
+   and place two apply buttons inside with a small gap. Buttons stay clickable when grey. */
+
+.apply-top-wrapper {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px; /* visual gap between the two buttons */
+    align-items: center;
+}
+
+/* Each apply button takes half the wrapper minus gap */
+.apply-top-wrapper .apply-top-button {
+    flex: 0 0 calc(50% - (16px / 2));
+    max-width: calc(50% - (16px / 2));
+    min-width: 0;
+}
+
+/* Reuse visuals already present — ensure grey does not block clicks */
+.apply-top-button.enabled {
+    background-color: #98D0A7 !important;
+    color: #ffffff !important;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+.apply-top-button.grey {
+    background-color: #b0b0b0 !important;
+    color: #ffffff !important;
+    box-shadow: 0px 2px 3px rgba(0,0,0,0.12) !important;
 }

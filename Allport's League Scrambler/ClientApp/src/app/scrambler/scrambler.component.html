@@ -4,20 +4,20 @@
             <mat-card style="background-color:lightgray; " class="ml-1 mt-2">
                 <div class="row">
                     <!--<div class="col">
-                <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
-                    <h4>Select League</h4>
-                    <div class="mt-1">
-                        <mat-form-field>
-                            <mat-label>League</mat-label>
-                            <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" (selectionChange)="selectLeague()">
-                                <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
-                                    {{league.leagueName}}
-                                </mat-option>
-                            </mat-select>
-                        </mat-form-field>
-                    </div>
-                </mat-card>
-            </div>-->
+                        <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
+                            <h4>Select League</h4>
+                            <div class="mt-1">
+                                <mat-form-field>
+                                    <mat-label>League</mat-label>
+                                    <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" (selectionChange)="selectLeague()">
+                                        <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
+                                            {{league.leagueName}}
+                                        </mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                            </div>
+                        </mat-card>
+                    </div>-->
                     <div class="col text-center mt-2">
                         <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
                             <h4>Max Team Size</h4>
@@ -198,35 +198,54 @@
 
             </mat-card>
             <div class="row justify-content-center mt-3">
-                <div class="col-12 mb-4 text-center">
-                    <!-- Fetch Button: match Scramble Players width / padding and use light-blue style -->
+                <div class="col-12 mb-3 text-center">
                     <button mat-raised-button
                             (click)="fetchSelectedList()"
-                            class="w-50 py-3 scramble-button light-blue-button">
+                            class="w-50 py-3 scramble-button"
+                            [ngClass]="{
+                    'enabled': hasSignedInPlayersAvailable && !fetchClicked,
+                    'grey': (!hasSignedInPlayersAvailable && !fetchClicked) || fetchClicked
+                }"
+                            [disabled]="!hasSignedInPlayersAvailable && !fetchClicked">
                         Fetch Signed In Players
                     </button>
                 </div>
             </div>
-            <div class="row justify-content-center mt-3">
+            <div class="row justify-content-center mt-1">
 
 
-                <!-- Apply Top Players Button -->
-                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <button mat-raised-button
-                            color="primary"
-                            class="w-100"
-                            (click)="applyTopPlayers()">
-                        Apply Top Players
-                    </button>
-                </div>
+                <!-- Replaced two separate col blocks with a single centered container that matches the combined width
+                of the Fetch (w-50) and Scramble (w-50) buttons. The two Apply buttons live side-by-side inside
+                a flex row with a gap. On small screens they wrap and become full width. -->
+                <div class="col-12 mb-3 text-center">
+                    <div class="apply-top-wrapper w-50 mx-auto d-flex">
+                        <button mat-raised-button
+                                class="apply-top-button scramble-button"
+                                (click)="applyTopPlayers()"
+                                [ngClass]="{
+                'enabled': applyButtonsEnabled && !applyClicked && hasTopPlayersAvailable,
+                'grey': applyClicked || (!applyButtonsEnabled && !applyClicked) || !hasTopPlayersAvailable
+            }"
+                                [disabled]="(!applyButtonsEnabled && !applyClicked) || !hasTopPlayersAvailable"
+                                [matTooltip]="!hasTopPlayersAvailable ? 'No top players configured for this league' : ''"
+                                [matTooltipDisabled]="hasTopPlayersAvailable">
+                            Apply Top Players
+                        </button>
 
-                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <button mat-raised-button
-                            color="primary"
-                            class="w-100"
-                            (click)="applyTopPlayersFromMaleStandings()">
-                        Apply Top Players (Male Standings)
-                    </button>
+                        <button mat-raised-button
+                                class="apply-top-button scramble-button"
+                                (click)="applyTopPlayersFromMaleStandings()"
+                                [ngClass]="{
+                                'enabled' : applyButtonsEnabled && !applyClicked && maleStandings && maleStandings.length>
+                            0,
+                            'grey': applyClicked || (!applyButtonsEnabled && !applyClicked) || !(maleStandings && maleStandings.length > 0)
+                            }"
+                            [disabled]="(!applyButtonsEnabled && !applyClicked) || !(maleStandings && maleStandings.length > 0)"
+                            [matTooltip]="!(maleStandings && maleStandings.length > 0) ? 'Male standings not available' : ''"
+                            [matTooltipDisabled]="maleStandings && maleStandings.length > 0">
+                            Apply Top Players (Male Standings)
+                        </button>
+                    </div>
                 </div>
                 <!-- Scramble Players Button -->
                 <div *ngIf="!hideInputOptions" class="col-12 mb-4 text-center">
