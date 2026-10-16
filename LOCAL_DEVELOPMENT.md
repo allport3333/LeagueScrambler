@@ -39,6 +39,10 @@ This document explains how the original LeagueScrambler functionality is preserv
 10. Confirm the admin cookie expires after six hours of inactivity, renews during active use, and that logout clears it.
 11. Validate the player claim, password recovery, and sign-in flows separately.
 12. Check Visual Studio build and Angular build logs. These have not been run by ChatGPT in this environment.
+13. As Admin or password-based administrator, check score updates, scrambles and sign-in locks across two leagues.
+14. As Manager, verify editing an assigned league works and an unassigned league returns HTTP 403.
+15. On an unlocked league, sign in a player from its roster. Then confirm a repeated same-day sign-in is rejected. Lock the league and confirm a new sign-in is blocked; unlock it and confirm sign-in works again.
+16. Confirm a player cannot be signed into a league they are not assigned to, even using a direct API request.
 
 ## Still required before the site goes public
 
