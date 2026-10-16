@@ -383,7 +383,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
 
-        [HttpGet("[action]/{leagueName}")]
+        [HttpPost("[action]/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
         public List<LeagueTeam> UpdateTeamScores(string leagueName)
         {
