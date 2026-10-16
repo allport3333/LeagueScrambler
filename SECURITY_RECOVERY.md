@@ -23,7 +23,9 @@ Read [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md). Copy the example environment 
 
 * Build the solution and Angular frontend in Visual Studio.
 * Run the manual test matrix in [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md), including public viewing, player login, Admin/Manager login, old password unlock, league creation, division creation, player changes, scrambles, and scores.
-* Check that anonymous users and ordinary Player accounts cannot mutate league data without administration rights.
+* Check that anonymous users and ordinary Player accounts cannot mutate league data without administration rights, except the limited, authenticated first-time player-profile creation and a player's removal of their own sign-in.
+* Confirm registration can create or claim a player and that the new account is signed in correctly.
+* Confirm password-only league creation assigns the league to a real Admin account, or produces a clear configuration error when no owner can be identified.
 * Confirm six-hour administration session expiry, active renewal, and logout behavior.
 * Verify the HTTPS certificate and reset-password links work at the eventual deployment hostname.
 * Rotate any existing passwords previously committed, and do not treat removal from the current branch as removal from Git history.
