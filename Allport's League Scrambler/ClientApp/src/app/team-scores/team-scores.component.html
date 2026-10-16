@@ -6,10 +6,18 @@
 <div class="row justify-content-center" *ngIf="!loading">
     <div class="col-10">
         <mat-card class="mt-2" style="box-shadow: none; padding: 0;">
+            <div *ngIf="!isActionAllowed" class="text-center mb-3">
+                <mat-form-field appearance="outline">
+                    <mat-label>Administration Password</mat-label>
+                    <input matInput type="password" [(ngModel)]="legacyPassword" [ngModelOptions]="{standalone: true}" />
+                </mat-form-field>
+                <button mat-raised-button type="button" color="primary"
+                        (click)="unlockAdministration()">Unlock Administration</button>
+            </div>
             <mat-tab-group mat-stretch-tabs>
 
                 <!-- TAB 1: Enter Team Scores -->
-                <mat-tab *ngIf="userRole === 'Admin' || userRole === 'Manager'" label="Enter Team Scores">
+                <mat-tab *ngIf="isActionAllowed" label="Enter Team Scores">
                     <div class="container-fluid">
                         <!-- Loading Spinner -->
                         <div [hidden]="!newTeamScoreLoading" class="loading-overlay">
@@ -117,7 +125,7 @@
                 </mat-tab>
 
                 <!-- TAB 3: Team Management -->
-                <mat-tab *ngIf="userRole === 'Admin' || userRole === 'Manager'" label="Team Management">
+                <mat-tab *ngIf="isActionAllowed" label="Team Management">
                     <app-team-management [leagueId]="leagueID" style="width: 150%;"></app-team-management>
                 </mat-tab>
 
