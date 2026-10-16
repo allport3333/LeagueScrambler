@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Models;
 
@@ -42,6 +43,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("Add")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult Add([FromBody] AddLeagueDivisionRequest request)
         {
             var context = new DataContext();
