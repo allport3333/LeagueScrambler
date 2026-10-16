@@ -58,7 +58,7 @@ export class PlayerService {
         return this.httpClient.get<Leagues[]>(this.baseUrl + 'api/ScrambleData/GetLeagues');
     }
 
-public GetAllMalePlayers() {
+    public GetAllMalePlayers() {
         return this.httpClient.get<Player[]>(this.baseUrl + 'api/ScrambleData/GetAllMalePlayers');
     }
 
