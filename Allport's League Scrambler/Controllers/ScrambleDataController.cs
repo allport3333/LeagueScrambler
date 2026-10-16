@@ -45,8 +45,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 }
             }
 
-            context.SaveChanges();
-
+            // This is a read endpoint; do not persist cosmetic gender formatting.
             return players;
         }
 
