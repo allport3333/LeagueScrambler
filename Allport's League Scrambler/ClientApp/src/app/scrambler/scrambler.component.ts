@@ -348,7 +348,7 @@ export class ScramblerComponent implements OnInit {
                 if (result && result.authorized) {
                     this.isActionAllowed = true;
                     this.userInputPassword = '';
-                    this.showSnackBar('Administration unlocked for 20 minutes.');
+                    this.showSnackBar('Administration unlocked for 6 hours. Your session renews while you stay active.');
                     if (afterUnlock) {
                         afterUnlock();
                     }
