@@ -853,11 +853,26 @@ namespace Allport_s_League_Scrambler.Controllers
 
         private async Task SendPasswordResetEmailAsync(string email, string resetToken)
         {
+            var publicBaseUrl = Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_PUBLIC_BASE_URL");
+            if (string.IsNullOrWhiteSpace(publicBaseUrl))
+            {
+                publicBaseUrl = "https://leaguescrambler.hopto.org";
+            }
+
+            if (!Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var publicUri) ||
+                publicUri.Scheme != Uri.UriSchemeHttps)
+            {
+                throw new InvalidOperationException(
+                    "LEAGUESCRAMBLER_PUBLIC_BASE_URL must be a valid HTTPS URL.");
+            }
+
+            var resetUrl = publicBaseUrl.TrimEnd('/') + "/resetpassword?token=" +
+                Uri.EscapeDataString(resetToken);
             var mail = new MailMessage
             {
-                From = new MailAddress("LeagueScrambler@gmail.com"), // Replace with the sender's email
+                From = new MailAddress("LeagueScrambler@gmail.com"),
                 Subject = "Password Reset For League Scrambler",
-                Body = $"Click the following link to reset your password for your login to LeagueScrambler: https://leaguescrambler.hopto.org/resetpassword?token={resetToken}",
+                Body = $"Click the following link to reset your password for your login to LeagueScrambler: {resetUrl}",
                 IsBodyHtml = false
             };
 
