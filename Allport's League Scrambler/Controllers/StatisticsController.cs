@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
@@ -352,6 +353,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("[action]")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult RecordLeagueTeamScore([FromBody] LeagueTeamScoreDto dto)
         {
             var _context = new DataContext();
@@ -382,6 +384,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpGet("[action]/{leagueName}")]
+        [Authorize(Roles = "Admin,Manager")]
         public List<LeagueTeam> UpdateTeamScores(string leagueName)
         {
             var _context = new DataContext();
@@ -525,6 +528,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("AddPlayerToLeagueTeam")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult AddPlayerToLeagueTeam(int leagueTeamId, int playerId)
         {
             using (var _context = new DataContext())
@@ -557,6 +561,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("AddTeam")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult AddTeam([FromBody] AddTeamRequest request)
         {
             var _context = new DataContext();
@@ -635,7 +640,7 @@ namespace Allport_s_League_Scrambler.Controllers
             var parsedDate = DateTime.Parse(date);
 
             var scores = _context.LeagueTeamScore
-                // If you must filter by league, you can do a join or check the team’s leagueID
+                // If you must filter by league, you can do a join or check the teamÂ’s leagueID
                 .Where(s => s.Date.Date == parsedDate.Date && s.LeagueTeam.LeagueID == league.ID)
                 .Include(s => s.LeagueTeam)
                 .Include(s => s.OpponentsTeam)
@@ -700,6 +705,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("SetTeamDivision")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult SetTeamDivision(int leagueTeamId, string division)
         {
             var _context = new DataContext();
