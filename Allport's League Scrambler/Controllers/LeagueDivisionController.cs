@@ -43,7 +43,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("Add")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult Add([FromBody] AddLeagueDivisionRequest request)
         {
             var context = new DataContext();
