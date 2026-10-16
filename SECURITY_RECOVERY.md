@@ -10,6 +10,8 @@ This security branch contains functionality preservation for legacy administrati
 4. Public `GetPassword` requests now receive HTTP 410. No Angular component uses that endpoint. Instead, entering the existing league administration password sends it to the server via `POST /api/Login/VerifyAdminPassword`.
 5. The verification endpoint checks the existing Passwords database table, applies basic per-IP throttling, and creates a separate, short-lived administration cookie (six hours of inactivity, renewed during active use). The actual administration password is not returned to the browser. The separate cookie preserves normal player login.
 6. Role-based league management policy supports Admin, Manager, and a temporary legacy administration credential. Score updates, player and league changes, division edits, and settings changes require the policy.
+7. Manager writes to existing leagues now additionally require a matching UserLeagues assignment (including scrambles, team scores, league settings, divisions, league sign-in locks and player changes). Admin and temporary password-based administration retain global access.
+8. The public sign-in endpoint now rejects requests for players outside the league, existing sign-ins on the same date, and leagues marked locked. It still permits sign-in without creating an account.
 7. Existing Angular screens now display password unlock controls before administration operations. Team Scores management can be unlocked as well.
 8. Score recalculation now uses POST because it changes stored standings. The Angular client has been updated accordingly.
 9. Password recovery links use HTTPS. Logout clears the temporary administration cookie as well as the ordinary login.
@@ -33,9 +35,19 @@ Read [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md). Copy the example environment 
 ## Remaining blockers before a public relaunch
 
 * Add anti-CSRF validation for every state-changing cookie-authenticated endpoint, including the legacy administration session.
-* Enforce per-league authorization instead of allowing all Admin/Manager/legacy administration sessions to access all league records.
+* Review and verify per-league authorization across all remaining database write paths. Manager write endpoints covered by this patch now check the existing UserLeagues assignment. Admin and password-based LegacyAdmin remain global as intended.
 * Replace the legacy administration password stored in plaintext in the Passwords table with a stronger server-stored password hash or migrate fully to account-based administration.
 * Review and secure remaining routes with state changes, including any GET handlers that write data.
 * Upgrade the out-of-support ASP.NET Core 2.2 and Angular 7 stack.
 * Add automated regression and authorization tests. No running server or database is connected to this review.
 * Investigate old SQL and token credentials embedded in prior public commits and assume they may have been exposed until proven retired or rotated.
+
+## Behavior to verify during functional testing
+
+* An anonymous visitor can sign in a player belonging to an unlocked league.
+* A locked league rejects all new player sign-ins even if a direct API request bypasses Angular.
+* The same player cannot sign in twice on the same date for the same league.
+* An Admin or LegacyAdmin can manage multiple leagues as before.
+* A Manager can edit an assigned league but receives HTTP 403 for a league absent from UserLeagues.
+* A Manager can create a new league and is linked to it; cannot take over an existing unassigned league.
+* The existing day-of-league UI restriction is still a client-side rule. Server-side enforcement of league-day scheduling requires a defined admin override policy; do not infer it from a missing/false lock row.
