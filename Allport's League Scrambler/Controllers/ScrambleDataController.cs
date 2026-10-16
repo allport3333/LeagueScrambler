@@ -267,7 +267,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public Player AddPlayer([FromBody] Player player, string leagueName, [FromQuery] int leagueDivisionId = 0)
         {
             var context = new DataContext();
@@ -370,7 +370,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("[action]")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult AddPlayerWithoutLeague([FromBody] Player player)
         {
             var context = new DataContext();
@@ -404,7 +404,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("SaveKingQueenRoundScores/{leagueName}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public async Task<IActionResult> SaveKingQueenRoundScores(
         [FromRoute] string leagueName,
         [FromBody] KingQueenRoundScoresRequest request)
@@ -459,7 +459,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public async Task<IActionResult> UpdateKingQueenPlayerSubStatus([FromBody] UpdateSubStatusDto dto)
         {
             var context = new DataContext();
@@ -515,7 +515,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("GenerateScramble/{leagueName}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult GenerateScramble([FromBody] KingQueenTeamsResponse request, string leagueName)
         {
             using (var context = new DataContext())
@@ -568,7 +568,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("[action]/{leagueName}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public KingQueenTeamsResponse SaveKingQueenTeams([FromBody] KingQueenTeamsResponse request, string leagueName)
         {
             using (var context = new DataContext())
@@ -802,7 +802,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("SaveCreatedTeamScores")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public async Task<IActionResult> SaveCreatedTeamScores([FromBody] List<TeamScoreDto> scores)
         {
             var context = new DataContext();
@@ -1095,7 +1095,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpDelete("SignInPlayer/{playerSignInId}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public async Task<IActionResult> DeleteSignInPlayer(int playerSignInId)
         {
             var context = new DataContext();
@@ -1629,7 +1629,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public Player DeletePlayer([FromBody] Player player, string leagueName)
         {
             var context = new DataContext();
@@ -1647,7 +1647,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult AddNewLeague(string leagueName)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value; // Get the email from the claims
