@@ -793,39 +793,67 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost("SignInPlayer")]
         public async Task<IActionResult> SignInPlayer([FromBody] PlayerSignIn playerSignIn)
         {
-            var context = new DataContext();
-            if (playerSignIn == null)
+            // This endpoint stays public so leagues can use the existing
+            // kiosk/player sign-in workflow without creating an account.
+            if (playerSignIn == null || playerSignIn.LeagueId <= 0 || playerSignIn.PlayerId <= 0)
             {
-                return BadRequest("Invalid data.");
+                return BadRequest("Invalid player or league.");
             }
 
-            // Ensure the DateTime only includes the date
-            playerSignIn.DateTime = playerSignIn.DateTime.ToLocalTime();
-
-            // Add the player sign-in record to the database
-            context.PlayerSignIn.Add(playerSignIn);
-            await context.SaveChangesAsync();
-
-            var player = await context.Players.FindAsync(playerSignIn.PlayerId);
-
-            if (player == null)
+            using (var context = new DataContext())
             {
-                return NotFound("Player not found.");
+                if (!await context.Leagues.AnyAsync(l => l.ID == playerSignIn.LeagueId))
+                {
+                    return NotFound("League not found.");
+                }
+
+                // Do not trust a posted player ID to belong to this league.
+                if (!await context.PlayersLeagues.AnyAsync(pl =>
+                    pl.LeagueID == playerSignIn.LeagueId && pl.PlayerID == playerSignIn.PlayerId))
+                {
+                    return BadRequest("Player does not belong to the selected league.");
+                }
+
+                if (await context.LeagueSignInLocked.AnyAsync(l =>
+                    l.LeagueId == playerSignIn.LeagueId && l.SignInLocked))
+                {
+                    return StatusCode(423, "Sign-in is currently locked for this league.");
+                }
+
+                // Keep the existing frontend's local-date behavior. Do not
+                // allow a browser to choose the database identity or lock flag.
+                playerSignIn.DateTime = playerSignIn.DateTime.ToLocalTime();
+                playerSignIn.PlayerSignInId = 0;
+                playerSignIn.LockedSignIn = false;
+
+                if (await context.PlayerSignIn.AnyAsync(signIn =>
+                    signIn.LeagueId == playerSignIn.LeagueId &&
+                    signIn.PlayerId == playerSignIn.PlayerId &&
+                    signIn.DateTime.Date == playerSignIn.DateTime.Date))
+                {
+                    return Conflict("This player is already signed in for this date.");
+                }
+
+                var player = await context.Players.FindAsync(playerSignIn.PlayerId);
+                if (player == null)
+                {
+                    return NotFound("Player not found.");
+                }
+
+                context.PlayerSignIn.Add(playerSignIn);
+                await context.SaveChangesAsync();
+
+                return Ok(new PlayerSignInResult
+                {
+                    PlayerSignInId = playerSignIn.PlayerSignInId,
+                    DateTime = playerSignIn.DateTime,
+                    LeagueId = playerSignIn.LeagueId,
+                    PlayerId = playerSignIn.PlayerId,
+                    FirstName = player.FirstName,
+                    LastName = player.LastName,
+                    Gender = player.IsMale ? "Male" : "Female"
+                });
             }
-
-            // Return the custom result
-            var result = new PlayerSignInResult
-            {
-                PlayerSignInId = playerSignIn.PlayerSignInId,
-                DateTime = playerSignIn.DateTime,
-                LeagueId = playerSignIn.LeagueId,
-                PlayerId = playerSignIn.PlayerId,
-                FirstName = player.FirstName,
-                LastName = player.LastName,
-                Gender = player.IsMale ? "Male" : "Female"
-            };
-
-            return Ok(result);
         }
 
         [HttpPost("SaveCreatedTeamScores")]
