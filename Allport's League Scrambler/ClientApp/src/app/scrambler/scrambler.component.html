@@ -1,4 +1,15 @@
 <div class="container-fluid" [hidden]="hideEverything">
+    <mat-card *ngIf="!isActionAllowed" class="m-2 text-center" style="background-color: #f3f3f3;">
+        <p>Viewing and previewing leagues is available without administration access.
+           To edit players, save scores, or update league settings, unlock administration.</p>
+        <mat-form-field appearance="outline">
+            <mat-label>Administration Password</mat-label>
+            <input matInput type="password" (input)="onPasswordInput($event.target.value)"
+                   (keyup.enter)="unlockAdminPassword()" />
+        </mat-form-field>
+        <button mat-raised-button type="button" color="primary" class="ml-2"
+                (click)="unlockAdminPassword()">Unlock Administration</button>
+    </mat-card>
     <div class="row">
         <div class="col-12">
             <mat-card style="background-color:lightgray; " class="ml-1 mt-2">
