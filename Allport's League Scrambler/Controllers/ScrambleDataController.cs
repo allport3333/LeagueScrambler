@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Allport_s_League_Scrambler.Data;
+using Allport_s_League_Scrambler.Security;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -276,13 +277,13 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("[action]/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
-        public Player AddPlayer([FromBody] Player player, string leagueName, [FromQuery] int leagueDivisionId = 0)
+        public IActionResult AddPlayer([FromBody] Player player, string leagueName, [FromQuery] int leagueDivisionId = 0)
         {
             var context = new DataContext();
 
             if (player == null)
             {
-                return null;
+                return NotFound();
             }
 
             int? divisionIdToSave = null;
@@ -294,8 +295,11 @@ namespace Allport_s_League_Scrambler.Controllers
             var existingLeague = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
             if (existingLeague == null)
             {
-                return null;
+                return NotFound();
             }
+
+            if (!LeagueAccess.CanManage(User, context, existingLeague.ID))
+                return Forbid();
 
             var playerExists = context.Players
                 .Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName)
@@ -322,7 +326,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     }
 
                     context.SaveChanges();
-                    return playerExists;
+                    return Ok(playerExists);
                 }
                 else
                 {
@@ -337,7 +341,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     context.PlayersLeagues.Add(addNewLink);
                     context.SaveChanges();
 
-                    return playerExists;
+                    return Ok(playerExists);
                 }
             }
 
@@ -359,7 +363,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             if (addedPlayer == null)
             {
-                return null;
+                return NotFound();
             }
 
             var addedPlayersLeagues = new PlayersLeague()
@@ -373,7 +377,7 @@ namespace Allport_s_League_Scrambler.Controllers
             context.PlayersLeagues.Add(addedPlayersLeagues);
             context.SaveChanges();
 
-            return addedPlayer;
+            return Ok(addedPlayer);
         }
 
 
@@ -442,6 +446,26 @@ namespace Allport_s_League_Scrambler.Controllers
                 return BadRequest("Invalid round scores data.");
             }
 
+            var league = context.Leagues.FirstOrDefault(l => l.LeagueName == leagueName);
+            if (league == null)
+                return NotFound("League not found.");
+            if (!LeagueAccess.CanManage(User, context, league.ID))
+                return Forbid();
+
+            foreach (var score in request.RoundScores)
+            {
+                var storedTeamId = score.Id > 0
+                    ? context.KingQueenRoundScores.Where(r => r.Id == score.Id)
+                        .Select(r => r.KingQueenTeamId).FirstOrDefault()
+                    : 0;
+                var targetTeamId = storedTeamId > 0 ? storedTeamId : score.KingQueenTeamId;
+                if (!context.KingQueenTeam.Any(t =>
+                    t.Id == targetTeamId && t.LeagueID == league.ID))
+                {
+                    return BadRequest("Score references a team outside the selected league.");
+                }
+            }
+
             try
             {
                 foreach (var score in request.RoundScores)
@@ -503,6 +527,12 @@ namespace Allport_s_League_Scrambler.Controllers
                 return NotFound("KingQueenPlayer not found");
             }
 
+            var leagueId = await context.KingQueenTeam
+                .Where(t => t.Id == kingQueenPlayer.KingQueenTeamId)
+                .Select(t => t.LeagueID).FirstOrDefaultAsync();
+            if (!LeagueAccess.CanManage(User, context, leagueId))
+                return Forbid();
+
             kingQueenPlayer.isSubScore = dto.IsSubScore;
 
             try
@@ -556,6 +586,9 @@ namespace Allport_s_League_Scrambler.Controllers
                     return NotFound("League does not exist.");
                 }
 
+                if (!LeagueAccess.CanManage(User, context, existingLeague.ID))
+                    return Forbid();
+
                 var leagueId = existingLeague.ID;
 
                 // 2) Determine next ScrambleNumber (if that's how you want to group these new teams)
@@ -596,7 +629,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("[action]/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
-        public KingQueenTeamsResponse SaveKingQueenTeams([FromBody] KingQueenTeamsResponse request, string leagueName)
+        public IActionResult SaveKingQueenTeams([FromBody] KingQueenTeamsResponse request, string leagueName)
         {
             using (var context = new DataContext())
             {
@@ -604,8 +637,11 @@ namespace Allport_s_League_Scrambler.Controllers
                     .FirstOrDefault(x => x.LeagueName == leagueName);
                 if (existingLeague == null)
                 {
-                    return null;
+                    return Ok((KingQueenTeamsResponse)null);
                 }
+
+                if (!LeagueAccess.CanManage(User, context, existingLeague.ID))
+                    return Forbid();
 
                 var leagueId = existingLeague.ID;
 
@@ -619,7 +655,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 // If 0, it means none exist, or everything is already true
                 if (latestScrambleNumber == 0)
                 {
-                    return null; // or handle "nothing to finalize"
+                    return Ok((KingQueenTeamsResponse)null); // or handle "nothing to finalize"
                 }
 
                 // 2) Get all teams for that scramble number
@@ -632,7 +668,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
                 if (teamsToFinalize.Count == 0)
                 {
-                    return null;
+                    return Ok((KingQueenTeamsResponse)null);
                 }
 
                 // 3) Mark them as finalized
@@ -697,11 +733,11 @@ namespace Allport_s_League_Scrambler.Controllers
                 }
 
                 // 7) Return
-                return new KingQueenTeamsResponse
+                return Ok(new KingQueenTeamsResponse
                 {
                     KingQueenTeams = results,
                     ByePlayers = savedByePlayers
-                };
+                });
             }
         }
 
@@ -865,6 +901,17 @@ namespace Allport_s_League_Scrambler.Controllers
             {
                 return BadRequest("No scores provided.");
             }
+
+            // Verify every requested league and existing team before any writes.
+            if (scores.Any(sc => sc.LeagueId <= 0 ||
+                !LeagueAccess.CanManage(User, context, sc.LeagueId) ||
+                !context.Leagues.Any(l => l.ID == sc.LeagueId)))
+                return Forbid();
+
+            if (scores.Any(sc => sc.KingQueenTeamId > 0 &&
+                !context.KingQueenTeam.Any(t =>
+                    t.Id == sc.KingQueenTeamId && t.LeagueID == sc.LeagueId)))
+                return BadRequest("One of the teams belongs to another league.");
 
             try
             {
@@ -1164,9 +1211,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             // Managers can remove entries; ordinary players can only remove
             // their own entry. This preserves the existing sign-in toggle.
-            bool isLeagueManager = User.IsInRole("Admin") ||
-                                   User.IsInRole("Manager") ||
-                                   User.IsInRole("LegacyAdmin");
+            bool isLeagueManager = LeagueAccess.CanManage(User, context, signInRecord.LeagueId);
             bool isOwnEntry = false;
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(userIdClaim, out var currentUserId))
@@ -1702,9 +1747,14 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("[action]/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
-        public Player DeletePlayer([FromBody] Player player, string leagueName)
+        public IActionResult DeletePlayer([FromBody] Player player, string leagueName)
         {
             var context = new DataContext();
+            var league = context.Leagues.FirstOrDefault(l => l.LeagueName == leagueName);
+            if (league == null)
+                return NotFound("League not found.");
+            if (!LeagueAccess.CanManage(User, context, league.ID))
+                return Forbid();
             var playerExists = context.Players.Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName).FirstOrDefault();
 
             var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
@@ -1714,7 +1764,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             context.SaveChanges();
 
-            return player;
+            return Ok(player);
 
         }
 
@@ -1771,6 +1821,12 @@ namespace Allport_s_League_Scrambler.Controllers
             }
 
             var leagueExists = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
+
+            // Managers can create new leagues, but not take over existing
+            // leagues they were never assigned to.
+            if (leagueExists != null &&
+                !LeagueAccess.CanManage(User, context, leagueExists.ID))
+                return Forbid();
 
             LeagueType league;
 
