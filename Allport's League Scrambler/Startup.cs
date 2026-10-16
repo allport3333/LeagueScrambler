@@ -23,7 +23,7 @@ namespace Allport_s_League_Scrambler
     {
         public Startup(IConfiguration configuration)
         {
-            DotEnv.Load();
+            DotEnv.Load(options: new DotEnvOptions(probeForEnv: true, probeLevelsToSearch: 6));
 
             Configuration = configuration;
         }
