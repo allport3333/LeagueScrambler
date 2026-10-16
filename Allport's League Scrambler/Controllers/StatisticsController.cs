@@ -353,7 +353,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("[action]")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult RecordLeagueTeamScore([FromBody] LeagueTeamScoreDto dto)
         {
             var _context = new DataContext();
@@ -384,7 +384,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpGet("[action]/{leagueName}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public List<LeagueTeam> UpdateTeamScores(string leagueName)
         {
             var _context = new DataContext();
@@ -528,7 +528,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("AddPlayerToLeagueTeam")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult AddPlayerToLeagueTeam(int leagueTeamId, int playerId)
         {
             using (var _context = new DataContext())
@@ -561,7 +561,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("AddTeam")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult AddTeam([FromBody] AddTeamRequest request)
         {
             var _context = new DataContext();
@@ -705,7 +705,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("SetTeamDivision")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult SetTeamDivision(int leagueTeamId, string division)
         {
             var _context = new DataContext();
