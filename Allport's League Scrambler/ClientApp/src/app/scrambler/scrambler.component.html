@@ -1118,13 +1118,18 @@
                                                     [disabled]="!isActionAllowed">
                                                 Add Existing Player
                                             </button>
-                                            <mat-form-field style="max-width: 300px" appearance="outline" *ngIf="!loggedIn">
+                                            <mat-form-field style="max-width: 300px" appearance="outline" *ngIf="!isActionAllowed">
                                                 <mat-label>Enter Password</mat-label>
                                                 <input matInput
                                                        type="password"
                                                        (input)="onPasswordInput($event.target.value)"
                                                        placeholder="Password">
                                             </mat-form-field>
+                                                     <button mat-raised-button color="primary" type="button"
+                                                             *ngIf="!isActionAllowed"
+                                                             (click)="unlockAdminPassword()">
+                                                         Unlock Administration
+                                                     </button>
                                         </div>
                                         <div class="tab-content d-flex flex-column align-items-center" style="margin-bottom:20px">
                                             <button mat-raised-button
@@ -1149,7 +1154,7 @@
                                                                 <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
                                                             </mat-form-field>
                                                             <br />
-                                                            <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!loggedIn">
+                                                            <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!isActionAllowed">
                                                                 <mat-label>Password:</mat-label>
                                                                 <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
                                                             </mat-form-field>
@@ -1213,13 +1218,18 @@
                                                             [disabled]="!isActionAllowed">
                                                         Delete Player
                                                     </button>
-                                                    <mat-form-field style="max-width: 300px" appearance="outline" *ngIf="!loggedIn">
+                                                    <mat-form-field style="max-width: 300px" appearance="outline" *ngIf="!isActionAllowed">
                                                         <mat-label>Enter Password</mat-label>
                                                         <input matInput
                                                                type="password"
                                                                (input)="onPasswordInput($event.target.value)"
                                                                placeholder="Password">
                                                     </mat-form-field>
+                                                     <button mat-raised-button color="primary" type="button"
+                                                             *ngIf="!isActionAllowed"
+                                                             (click)="unlockAdminPassword()">
+                                                         Unlock Administration
+                                                     </button>
                                                 </div>
                                             </div>
                                         </mat-card>
@@ -1237,7 +1247,7 @@
                                                         <mat-label>New League Name</mat-label>
                                                         <input matInput placeholder="League Name" type="text" formControlName="newLeagueName" required />
                                                     </mat-form-field>
-                                                    <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!loggedIn">
+                                                    <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!isActionAllowed">
                                                         <mat-label>Password</mat-label>
                                                         <input matInput placeholder="Password" type="password" formControlName="passwordLeague" required />
                                                     </mat-form-field>
@@ -1285,7 +1295,7 @@
                                                         <input matInput placeholder="1" type="number" formControlName="sortOrder" required />
                                                     </mat-form-field>
 
-                                                    <mat-form-field style="max-width: 220px" appearance="outline" *ngIf="!loggedIn">
+                                                    <mat-form-field style="max-width: 220px" appearance="outline" *ngIf="!isActionAllowed">
                                                         <mat-label>Password</mat-label>
                                                         <input matInput placeholder="Password" type="password" formControlName="passwordDivision" />
                                                     </mat-form-field>
