@@ -172,7 +172,24 @@ namespace Allport_s_League_Scrambler.Controllers
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync(); // Save changes to generate the UserId
 
-                // Return a success response with the generated UserId
+                // The registration page immediately offers to claim or create a player.
+                // Give this newly registered user an authenticated Player session so
+                // those actions no longer need unsafe anonymous write permissions.
+                var registrationClaims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                    new Claim(ClaimTypes.Email, user.Email),
+                    new Claim(ClaimTypes.Role, "Player"),
+                    new Claim("FirstName", user.FirstName ?? ""),
+                    new Claim("LastName", user.LastName ?? "")
+                };
+                var registrationIdentity = new ClaimsIdentity(
+                    registrationClaims, CookieAuthenticationDefaults.AuthenticationScheme);
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(registrationIdentity),
+                    new AuthenticationProperties { IsPersistent = false });
+
                 return Ok(new { message = "Registration successful.", userId = user.UserId });
             }
 
