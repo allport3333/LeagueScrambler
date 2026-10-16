@@ -142,7 +142,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 new AuthenticationProperties
                 {
                     IsPersistent = false,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(20)
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(6)
                 });
 
             return Ok(new { authorized = true });
