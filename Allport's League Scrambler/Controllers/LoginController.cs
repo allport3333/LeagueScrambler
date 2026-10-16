@@ -103,6 +103,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("SetLockSignInStatus")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult SetLockSignInStatus([FromBody] LockSignInRequest request)
         {
             var _context = new DataContext();
@@ -573,6 +574,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("updatesetting")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<bool> UpdateSettingAsync([FromBody] UpdateSettingRequest request)
         {
             var context = new DataContext();
@@ -731,7 +733,7 @@ namespace Allport_s_League_Scrambler.Controllers
             {
                 From = new MailAddress("LeagueScrambler@gmail.com"), // Replace with the sender's email
                 Subject = "Password Reset For League Scrambler",
-                Body = $"Click the following link to reset your password for your login to LeagueScrambler: http://leaguescrambler.hopto.org/resetpassword?token={resetToken}",
+                Body = $"Click the following link to reset your password for your login to LeagueScrambler: https://leaguescrambler.hopto.org/resetpassword?token={resetToken}",
                 IsBodyHtml = false
             };
 
