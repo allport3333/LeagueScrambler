@@ -69,6 +69,10 @@ namespace Allport_s_League_Scrambler.Controllers
             {
                 return Conflict("This account already has a player association.");
             }
+            if (context.UsersPlayer.Any(p => p.PlayerId == request.PlayerId))
+            {
+                return Conflict("This player is already associated with an account.");
+            }
 
             var userPlayer = new UsersPlayer
             {
@@ -369,10 +373,29 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("[action]")]
-        [Authorize(Policy = "LeagueManagement")]
+        [Authorize]
         public IActionResult AddPlayerWithoutLeague([FromBody] Player player)
         {
+            // Registration uses this endpoint before the new player has a league.
+            // It is never available anonymously, and existing player accounts
+            // cannot continually create unassociated profiles.
+            if (player == null || string.IsNullOrWhiteSpace(player.FirstName) ||
+                string.IsNullOrWhiteSpace(player.LastName))
+            {
+                return BadRequest("A first and last name are required.");
+            }
+            var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdValue, out var currentUserId))
+            {
+                return Unauthorized();
+            }
+
             var context = new DataContext();
+            bool isManager = User.IsInRole("Admin") || User.IsInRole("Manager");
+            if (!isManager && context.UsersPlayer.Any(up => up.UserId == currentUserId))
+            {
+                return Forbid();
+            }
 
             // Check if the player already exists
             var playerExists = context.Players
@@ -389,7 +412,7 @@ namespace Allport_s_League_Scrambler.Controllers
             {
                 FirstName = player.FirstName,
                 LastName = player.LastName,
-                IsMale = player.IsMale,
+                IsMale = string.Equals(player.Gender, "Male", StringComparison.OrdinalIgnoreCase),
                 Gender = player.Gender,
                 IsSub = player.IsSub
             };
