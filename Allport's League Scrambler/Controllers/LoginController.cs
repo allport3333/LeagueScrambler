@@ -498,16 +498,15 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            // Check if the user is authenticated
             if (User.Identity.IsAuthenticated)
             {
-                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); // Sign out the user
-                Response.Cookies.Delete("access_token"); // Delete the authentication cookie
-                return Ok(new { message = "Logout successful" });
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             }
 
-            // If the user is not authenticated, return an error
-            return BadRequest(new { message = "User is not authenticated." });
+            // Logging out must also clear temporary administration privileges.
+            await HttpContext.SignOutAsync("LeagueAdminPassword");
+            Response.Cookies.Delete("access_token");
+            return Ok(new { message = "Logout successful" });
         }
 
         // Function to validate password
