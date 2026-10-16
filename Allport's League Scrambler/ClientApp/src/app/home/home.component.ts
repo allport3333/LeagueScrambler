@@ -360,12 +360,19 @@ export class HomeComponent implements OnInit {
     claimPlayer(player: any) {
         this.playerService.claimPlayer({ userId: this.userId, playerId: player.id }).subscribe(
             () => {
-                // Registration already created a safe Player session. Reflect it
-                // in the SPA only after the player profile has been attached.
-                this.showLoginForm = false;
-                this.authService.setLoggedIn(true);
-                this.showSnackBar(`${player.firstName} ${player.lastName} has been claimed successfully! You're signed in.`, false);
-                this.closeModal();
+                // Registration establishes a temporary Player session so claim
+                // requests can be authorized. Restore the original UX after the
+                // claim: sign out that temporary session, then show the login form.
+                this.loginService.logout().subscribe(
+                    () => {
+                        this.authService.setLoggedIn(false);
+                        this.showLoginForm = true;
+                        this.showRegistrationForm = false;
+                        this.closeModal();
+                        this.showSnackBar(`${player.firstName} ${player.lastName} has been claimed successfully! Please log in.`, false);
+                    },
+                    () => this.showSnackBar('Player claimed, but automatic sign-out failed. Please log out and log back in.', true)
+                );
             },
             () => {
                 this.showSnackBar('Failed to claim player. Try again.', true);
