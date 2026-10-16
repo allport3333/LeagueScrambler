@@ -8,6 +8,7 @@ using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using System.Text;
 using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Authentication;
@@ -16,6 +17,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -39,12 +41,118 @@ namespace Allport_s_League_Scrambler.Controllers
         private readonly IConfiguration _config;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly SmtpClient _smtpClient;
+        private readonly IMemoryCache _adminPasswordAttempts;
 
-        public LoginController(IConfiguration config, IHttpContextAccessor httpContextAccessor, SmtpClient smtpClient)
+        public LoginController(IConfiguration config, IHttpContextAccessor httpContextAccessor, SmtpClient smtpClient, IMemoryCache adminPasswordAttempts)
         {
             _config = config;
             _httpContextAccessor = httpContextAccessor;
             _smtpClient = smtpClient; // Injected SMTP Client
+            _adminPasswordAttempts = adminPasswordAttempts;
+        }
+
+        // Compatibility bridge for the administration password used by the old Angular UI.
+        // Authentication is validated on the server; the stored password is never sent to clients.
+        public class AdminPasswordRequest
+        {
+            public string Password { get; set; }
+        }
+
+        private class AdminPasswordAttempt
+        {
+            public int Failures { get; set; }
+        }
+
+        [HttpPost("VerifyAdminPassword")]
+        public async Task<IActionResult> VerifyAdminPassword([FromBody] AdminPasswordRequest request)
+        {
+            if (request == null || string.IsNullOrEmpty(request.Password) || request.Password.Length > 256)
+            {
+                return BadRequest(new { message = "Enter the administration password." });
+            }
+
+            // A basic per-address throttle for the legacy password, until a stronger
+            // account-specific authentication system replaces this compatibility flow.
+            var remoteAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var cacheKey = "legacy-admin:" + remoteAddress;
+            var attempt = _adminPasswordAttempts.GetOrCreate(cacheKey, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+                return new AdminPasswordAttempt();
+            });
+
+            bool blocked;
+            lock (attempt)
+            {
+                blocked = attempt.Failures >= 8;
+            }
+            if (blocked)
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    new { message = "Too many attempts. Try again later." });
+            }
+
+            string savedPassword;
+            using (var context = new DataContext())
+            {
+                savedPassword = await context.Passwords
+                    .Select(p => p.password)
+                    .FirstOrDefaultAsync();
+            }
+
+            // Hash both values for a fixed-length comparison, avoiding early-exit
+            // character-by-character password comparison. Migration of the stored
+            // plaintext password to an adaptive password hash remains required.
+            bool valid = false;
+            using (var sha256 = SHA256.Create())
+            {
+                var provided = sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Password));
+                var expected = sha256.ComputeHash(Encoding.UTF8.GetBytes(savedPassword ?? ""));
+                int diff = 0;
+                for (int i = 0; i < provided.Length; i++)
+                {
+                    diff |= provided[i] ^ expected[i];
+                }
+                valid = !string.IsNullOrEmpty(savedPassword) && diff == 0;
+            }
+
+            if (!valid)
+            {
+                lock (attempt)
+                {
+                    attempt.Failures++;
+                }
+                return Unauthorized(new { message = "Incorrect administration password." });
+            }
+
+            lock (attempt)
+            {
+                attempt.Failures = 0;
+            }
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, "legacy-admin"),
+                new Claim(ClaimTypes.Role, "LegacyAdmin")
+            };
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(
+                claims, "LeagueAdminPassword"));
+
+            await HttpContext.SignInAsync("LeagueAdminPassword", principal,
+                new AuthenticationProperties
+                {
+                    IsPersistent = false,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(20)
+                });
+
+            return Ok(new { authorized = true });
+        }
+
+        [HttpGet("IsAdminPasswordAuthorized")]
+        public async Task<IActionResult> IsAdminPasswordAuthorized()
+        {
+            var result = await HttpContext.AuthenticateAsync("LeagueAdminPassword");
+            return Ok(result.Succeeded && result.Principal.IsInRole("LegacyAdmin"));
         }
 
         [HttpPost("register")]
@@ -103,7 +211,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("SetLockSignInStatus")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult SetLockSignInStatus([FromBody] LockSignInRequest request)
         {
             var _context = new DataContext();
@@ -574,7 +682,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("updatesetting")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Policy = "LeagueManagement")]
         public async Task<bool> UpdateSettingAsync([FromBody] UpdateSettingRequest request)
         {
             var context = new DataContext();
