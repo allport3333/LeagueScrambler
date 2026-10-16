@@ -8,6 +8,7 @@ using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
@@ -1117,7 +1118,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpDelete("SignInPlayer/{playerSignInId}")]
-        [Authorize(Policy = "LeagueManagement")]
+        [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme + ",LeagueAdminPassword")]
         public async Task<IActionResult> DeleteSignInPlayer(int playerSignInId)
         {
             var context = new DataContext();
@@ -1127,6 +1128,23 @@ namespace Allport_s_League_Scrambler.Controllers
             if (signInRecord == null)
             {
                 return NotFound($"PlayerSignIn record with ID {playerSignInId} not found.");
+            }
+
+            // Managers can remove entries; ordinary players can only remove
+            // their own entry. This preserves the existing sign-in toggle.
+            bool isLeagueManager = User.IsInRole("Admin") ||
+                                   User.IsInRole("Manager") ||
+                                   User.IsInRole("LegacyAdmin");
+            bool isOwnEntry = false;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdClaim, out var currentUserId))
+            {
+                isOwnEntry = await context.UsersPlayer.AnyAsync(
+                    up => up.UserId == currentUserId && up.PlayerId == signInRecord.PlayerId);
+            }
+            if (!isLeagueManager && !isOwnEntry)
+            {
+                return Forbid();
             }
 
             context.PlayerSignIn.Remove(signInRecord);
