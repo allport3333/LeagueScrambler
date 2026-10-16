@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Text;
 using Allport_s_League_Scrambler.Data;
+using Allport_s_League_Scrambler.Security;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -229,7 +230,12 @@ namespace Allport_s_League_Scrambler.Controllers
         [Authorize(Policy = "LeagueManagement")]
         public IActionResult SetLockSignInStatus([FromBody] LockSignInRequest request)
         {
+            if (request == null || request.LeagueId <= 0)
+                return BadRequest("Invalid league.");
+
             var _context = new DataContext();
+            if (!LeagueAccess.CanManage(User, _context, request.LeagueId))
+                return Forbid();
 
             // Get the latest sign-in date for the specified league
             var latestDate = _context.PlayerSignIn
@@ -697,14 +703,17 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("updatesetting")]
         [Authorize(Policy = "LeagueManagement")]
-        public async Task<bool> UpdateSettingAsync([FromBody] UpdateSettingRequest request)
+        public async Task<IActionResult> UpdateSettingAsync([FromBody] UpdateSettingRequest request)
         {
             var context = new DataContext();
 
             if (request == null || string.IsNullOrWhiteSpace(request.SettingName))
             {
-                return false;
+                return Ok(false);
             }
+
+            if (!LeagueAccess.CanManage(User, context, request.LeagueId))
+                return Forbid();
 
             // Check if the setting exists
             var setting = await context.LeagueSettings
@@ -732,7 +741,7 @@ namespace Allport_s_League_Scrambler.Controllers
             // Save changes to the database
             await context.SaveChangesAsync();
 
-            return true;
+            return Ok(true);
         }
 
 
