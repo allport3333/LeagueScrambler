@@ -1672,22 +1672,51 @@ namespace Allport_s_League_Scrambler.Controllers
         [Authorize(Policy = "LeagueManagement")]
         public IActionResult AddNewLeague(string leagueName)
         {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value; // Get the email from the claims
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            var context = new DataContext();
 
-            if (string.IsNullOrEmpty(email))
+            // Legacy password-based administration has a separate authorized
+            // cookie but no email claim. Assign new leagues to an actual admin
+            // account instead of failing or creating an ownerless league.
+            User retrievedUser = null;
+            if (!string.IsNullOrWhiteSpace(email))
             {
-                return Unauthorized(new { message = "Email claim not found." });
+                retrievedUser = context.Users.FirstOrDefault(x => x.Email == email);
             }
+            else
+            {
+                var legacyAuth = HttpContext.AuthenticateAsync("LeagueAdminPassword")
+                    .GetAwaiter().GetResult();
+                if (!legacyAuth.Succeeded || !legacyAuth.Principal.IsInRole("LegacyAdmin"))
+                {
+                    return Unauthorized(new { message = "Sign in or unlock administration." });
+                }
 
-            var context = new DataContext(); // Ensure proper disposal of DataContext
-
-            var leagueExists = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
-            var retrievedUser = context.Users.FirstOrDefault(x => x.Email == email);
+                var ownerEmail = Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_LEGACY_ADMIN_EMAIL");
+                if (!string.IsNullOrWhiteSpace(ownerEmail))
+                {
+                    retrievedUser = context.Users.FirstOrDefault(x => x.Email == ownerEmail);
+                }
+                else
+                {
+                    var admins = context.Users.Where(x => x.UserRoleId == 1).Take(2).ToList();
+                    if (admins.Count == 1)
+                    {
+                        retrievedUser = admins[0];
+                    }
+                }
+            }
 
             if (retrievedUser == null)
             {
-                return NotFound(new { message = "User not found." });
+                return BadRequest(new
+                {
+                    message = "A league owner could not be identified. Sign in with an Admin account, " +
+                        "or set LEAGUESCRAMBLER_LEGACY_ADMIN_EMAIL to an existing admin account email."
+                });
             }
+
+            var leagueExists = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
 
             LeagueType league;
 
