@@ -67,8 +67,8 @@ namespace Allport_s_League_Scrambler
                     options.Cookie.HttpOnly = true;
                     options.Cookie.SameSite = SameSiteMode.Strict;
                     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                    options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
-                    options.SlidingExpiration = false;
+                    options.ExpireTimeSpan = TimeSpan.FromHours(6);
+                    options.SlidingExpiration = true; // Renew the session during active league play.
                     options.Events.OnRedirectToLogin = context =>
                     {
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
