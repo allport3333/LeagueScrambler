@@ -25,6 +25,7 @@ namespace Allport_s_League_Scrambler.Data
 
 
 
+            string ConnStr = Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION");
             string provider = ConfigurationManager.AppSettings["provider"];
 
 
