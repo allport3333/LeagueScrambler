@@ -46,7 +46,10 @@ namespace Allport_s_League_Scrambler.Controllers
                 }
             }
 
-            // This is a read endpoint; do not persist cosmetic gender formatting.
+            // Preserve the original behavior for old records whose Gender field
+            // was populated when listing players. This write-in-GET should move
+            // into a separate data migration before public relaunch.
+            context.SaveChanges();
             return players;
         }
 
@@ -1688,7 +1691,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("[action]/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
-        public IActionResult AddNewLeague(string leagueName)
+        public async Task<IActionResult> AddNewLeague(string leagueName)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value;
             var context = new DataContext();
@@ -1703,8 +1706,7 @@ namespace Allport_s_League_Scrambler.Controllers
             }
             else
             {
-                var legacyAuth = HttpContext.AuthenticateAsync("LeagueAdminPassword")
-                    .GetAwaiter().GetResult();
+                var legacyAuth = await HttpContext.AuthenticateAsync("LeagueAdminPassword");
                 if (!legacyAuth.Succeeded || !legacyAuth.Principal.IsInRole("LegacyAdmin"))
                 {
                     return Unauthorized(new { message = "Sign in or unlock administration." });
