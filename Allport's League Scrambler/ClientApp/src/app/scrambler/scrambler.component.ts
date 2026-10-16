@@ -622,7 +622,6 @@ export class ScramblerComponent implements OnInit {
         const code = this.LeagueDivisionForm.get('code').value;
         const name = this.LeagueDivisionForm.get('name').value;
         const sortOrder = this.LeagueDivisionForm.get('sortOrder').value;
-        const passwordDivision = this.LeagueDivisionForm.get('passwordDivision').value;
 
         const payload = {
             leagueId: this.selectedLeagueDto.id,
