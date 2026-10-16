@@ -1694,7 +1694,12 @@ namespace Allport_s_League_Scrambler.Controllers
         [Authorize(Policy = "LeagueManagement")]
         public async Task<IActionResult> AddNewLeague(string leagueName)
         {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            // A Player cookie may coexist with the legacy administration cookie.
+            // Only an account that is itself Admin/Manager should become owner.
+            // Otherwise fall back to the explicitly configured legacy Admin.
+            var email = User.IsInRole("Admin") || User.IsInRole("Manager")
+                ? User.FindFirst(ClaimTypes.Email)?.Value
+                : null;
             var context = new DataContext();
 
             // Legacy password-based administration has a separate authorized
