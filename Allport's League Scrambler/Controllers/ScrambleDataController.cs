@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
@@ -15,15 +16,11 @@ namespace Allport_s_League_Scrambler.Controllers
     [Route("api/[controller]")]
     public class ScrambleDataController : Controller
     {
+        // Legacy endpoint intentionally disabled. Passwords must never be returned to clients.
         [HttpGet("[action]")]
-        public Password GetPassword()
+        public IActionResult GetPassword()
         {
-            Password password = new Password();
-            var context = new DataContext();
-            password = context.Passwords.FirstOrDefault();
-
-
-            return password;
+            return StatusCode(410, "Legacy password retrieval has been removed. Sign in as a league manager.");
         }
 
         [HttpGet("[action]")]
@@ -54,9 +51,26 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("claimPlayer")]
+        [Authorize]
         public IActionResult ClaimPlayer([FromBody] ClaimPlayerRequest request)
         {
+            var claimedUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (request == null || !int.TryParse(claimedUserId, out var authenticatedUserId) ||
+                authenticatedUserId != request.UserId)
+            {
+                return Forbid();
+            }
+
             var context = new DataContext();
+            if (!context.Players.Any(p => p.Id == request.PlayerId))
+            {
+                return NotFound();
+            }
+            if (context.UsersPlayer.Any(p => p.UserId == authenticatedUserId))
+            {
+                return Conflict("This account already has a player association.");
+            }
+
             var userPlayer = new UsersPlayer
             {
                 UserId = request.UserId,
@@ -253,6 +267,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
+        [Authorize(Roles = "Admin,Manager")]
         public Player AddPlayer([FromBody] Player player, string leagueName, [FromQuery] int leagueDivisionId = 0)
         {
             var context = new DataContext();
@@ -355,6 +370,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("[action]")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult AddPlayerWithoutLeague([FromBody] Player player)
         {
             var context = new DataContext();
@@ -388,6 +404,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("SaveKingQueenRoundScores/{leagueName}")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> SaveKingQueenRoundScores(
         [FromRoute] string leagueName,
         [FromBody] KingQueenRoundScoresRequest request)
@@ -442,6 +459,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateKingQueenPlayerSubStatus([FromBody] UpdateSubStatusDto dto)
         {
             var context = new DataContext();
@@ -497,6 +515,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("GenerateScramble/{leagueName}")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult GenerateScramble([FromBody] KingQueenTeamsResponse request, string leagueName)
         {
             using (var context = new DataContext())
@@ -549,6 +568,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("[action]/{leagueName}")]
+        [Authorize(Roles = "Admin,Manager")]
         public KingQueenTeamsResponse SaveKingQueenTeams([FromBody] KingQueenTeamsResponse request, string leagueName)
         {
             using (var context = new DataContext())
@@ -782,6 +802,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("SaveCreatedTeamScores")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> SaveCreatedTeamScores([FromBody] List<TeamScoreDto> scores)
         {
             var context = new DataContext();
@@ -1074,6 +1095,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpDelete("SignInPlayer/{playerSignInId}")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> DeleteSignInPlayer(int playerSignInId)
         {
             var context = new DataContext();
@@ -1607,6 +1629,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
+        [Authorize(Roles = "Admin,Manager")]
         public Player DeletePlayer([FromBody] Player player, string leagueName)
         {
             var context = new DataContext();
@@ -1624,6 +1647,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult AddNewLeague(string leagueName)
         {
             var email = User.FindFirst(ClaimTypes.Email)?.Value; // Get the email from the claims
