@@ -44,7 +44,7 @@ namespace Allport_s_League_Scrambler
                     options.LoginPath = "/"; // Set the login page
                     options.AccessDeniedPath = ""; // Set the access denied page
                     options.Cookie.HttpOnly = true; // Ensure cookies are only accessible via HTTP
-                    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow cookies over HTTP (for development)
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Require HTTPS for authentication cookies
                     options.Cookie.SameSite = SameSiteMode.Lax; // Adjust SameSite mode as needed
                     options.ExpireTimeSpan = TimeSpan.FromDays(30); // Set cookie expiration
                 });
