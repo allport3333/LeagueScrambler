@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Allport_s_League_Scrambler.Data;
+using Allport_s_League_Scrambler.Security;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -365,6 +366,15 @@ namespace Allport_s_League_Scrambler.Controllers
                 return BadRequest("Either the main team or the opponent team was not found.");
             }
 
+            if (mainTeam.LeagueID != oppTeam.LeagueID)
+            {
+                return BadRequest("Both teams must be in the same league.");
+            }
+            if (!LeagueAccess.CanManage(User, _context, mainTeam.LeagueID))
+            {
+                return Forbid();
+            }
+
             var newScore = new LeagueTeamScore
             {
                 LeagueTeamId = dto.TeamId,
@@ -385,13 +395,18 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("[action]/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
-        public List<LeagueTeam> UpdateTeamScores(string leagueName)
+        public IActionResult UpdateTeamScores(string leagueName)
         {
             var _context = new DataContext();
             var league = _context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
             if (league == null)
             {
-                return new List<LeagueTeam>();
+                return Ok(new List<LeagueTeam>());
+            }
+
+            if (!LeagueAccess.CanManage(User, _context, league.ID))
+            {
+                return Forbid();
             }
 
             var teams = _context.LeagueTeam
@@ -418,7 +433,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 .Where(x => x.LeagueID == league.ID)
                 .ToList();
 
-            return updatedTeams;
+            return Ok(updatedTeams);
         }
 
 
@@ -539,6 +554,11 @@ namespace Allport_s_League_Scrambler.Controllers
                 if (leagueTeam == null || player == null)
                     return BadRequest("LeagueTeam or Player not found.");
 
+                if (!LeagueAccess.CanManage(User, _context, leagueTeam.LeagueID))
+                {
+                    return Forbid();
+                }
+
                 // Check if the player is already on the team
                 var exists = _context.LeagueTeamPlayer
                     .Any(ltp => ltp.LeagueTeamId == leagueTeamId && ltp.PlayerId == playerId);
@@ -569,6 +589,9 @@ namespace Allport_s_League_Scrambler.Controllers
             var league = _context.Leagues.FirstOrDefault(x => x.ID == request.LeagueId);
             if (league == null)
                 return BadRequest("League not found.");
+
+            if (!LeagueAccess.CanManage(User, _context, request.LeagueId))
+                return Forbid();
 
             // Create new LeagueTeam
             var newTeam = new LeagueTeam
@@ -712,6 +735,9 @@ namespace Allport_s_League_Scrambler.Controllers
             var team = _context.LeagueTeam.FirstOrDefault(t => t.Id == leagueTeamId);
             if (team == null)
                 return NotFound("Team not found.");
+
+            if (!LeagueAccess.CanManage(User, _context, team.LeagueID))
+                return Forbid();
 
             team.Division = division; // e.g. "Silver" or "Gold"
             _context.SaveChanges();
