@@ -360,7 +360,11 @@ export class HomeComponent implements OnInit {
     claimPlayer(player: any) {
         this.playerService.claimPlayer({ userId: this.userId, playerId: player.id }).subscribe(
             () => {
-                this.showSnackBar(`${player.firstName} ${player.lastName} has been claimed successfully! Please Log In`, false);
+                // Registration already created a safe Player session. Reflect it
+                // in the SPA only after the player profile has been attached.
+                this.showLoginForm = false;
+                this.authService.setLoggedIn(true);
+                this.showSnackBar(`${player.firstName} ${player.lastName} has been claimed successfully! You're signed in.`, false);
                 this.closeModal();
             },
             () => {
