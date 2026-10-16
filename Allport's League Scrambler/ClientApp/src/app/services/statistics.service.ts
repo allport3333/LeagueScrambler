@@ -113,7 +113,7 @@ export class StatisticsService {
 
     public UpdateTeamScores(leagueName: string): Observable<LeagueTeams[]> {
         const url = `${this.baseUrl}api/Statistics/UpdateTeamScores/${leagueName}`;
-        return this.httpClient.get<LeagueTeams[]>(url);
+        return this.httpClient.post<LeagueTeams[]>(url, {});
     }
 
     public GetTeams(leagueName: string): Observable<LeagueTeams[]> {
