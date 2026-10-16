@@ -3,7 +3,6 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 
 import { Player } from '../data-models/player.model';
 import { Leagues } from '../data-models/leagues.model';
-import { Password } from '../data-models/password.model';
 import { KingQueenTeamWithPlayers } from '../data-models/KingQueenTeamWithPlayers.model';
 import { Observable, of } from 'rxjs';
 import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
@@ -59,11 +58,7 @@ export class PlayerService {
         return this.httpClient.get<Leagues[]>(this.baseUrl + 'api/ScrambleData/GetLeagues');
     }
 
-    public GetPassword() {
-        return this.httpClient.get<Password>(this.baseUrl + 'api/ScrambleData/GetPassword');
-    }
-
-    public GetAllMalePlayers() {
+public GetAllMalePlayers() {
         return this.httpClient.get<Player[]>(this.baseUrl + 'api/ScrambleData/GetAllMalePlayers');
     }
 
