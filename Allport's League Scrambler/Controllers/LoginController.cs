@@ -138,12 +138,10 @@ namespace Allport_s_League_Scrambler.Controllers
             var principal = new ClaimsPrincipal(new ClaimsIdentity(
                 claims, "LeagueAdminPassword"));
 
+            // Let CookieAuthenticationOptions.ExpireTimeSpan (six hours) control
+            // expiration so SlidingExpiration can renew an active league session.
             await HttpContext.SignInAsync("LeagueAdminPassword", principal,
-                new AuthenticationProperties
-                {
-                    IsPersistent = false,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(6)
-                });
+                new AuthenticationProperties { IsPersistent = false });
 
             return Ok(new { authorized = true });
         }
