@@ -15,7 +15,7 @@ This document explains how the original LeagueScrambler functionality is preserv
 
 * Regular Admin and Manager logins still grant management access.
 * On Scrambler and Team Scores, users who know the legacy administration password can enter it and select **Unlock Administration**.
-* The password is checked by `POST /api/Login/VerifyAdminPassword`, which creates a separate secure, HTTP-only administration session cookie that expires after 20 minutes.
+* The password is checked by `POST /api/Login/VerifyAdminPassword`, which creates a separate secure, HTTP-only administration session cookie that expires after six hours of inactivity and renews while you're actively using the site.
 * Legacy admin sessions do not replace ordinary player logins. After an unlock, users can add players, remove players, add leagues/divisions, save settings, enter scores, and save team scrambles subject to server permissions.
 * The old `GetPassword` endpoint is disabled. The web app no longer calls it.
 * Score recalculation now uses POST instead of a GET request with side effects.
@@ -32,7 +32,7 @@ This document explains how the original LeagueScrambler functionality is preserv
 7. Confirm an anonymous request without an unlock cannot modify scores, divisions, league settings, or leagues.
 8. Confirm a Player login alone cannot modify those resources.
 9. Confirm a wrong administration password is rejected and repeated failed attempts are throttled.
-10. Confirm the admin cookie expires and that logout clears it.
+10. Confirm the admin cookie expires after six hours of inactivity, renews during active use, and that logout clears it.
 11. Validate the player claim, password recovery, and sign-in flows separately.
 12. Check Visual Studio build and Angular build logs. These have not been run by ChatGPT in this environment.
 
