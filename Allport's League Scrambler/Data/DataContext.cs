@@ -39,12 +39,15 @@ namespace Allport_s_League_Scrambler.Data
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseSqlServer(@"Server=localhost;Database=LeagueScrambler;User Id=AllportDB;Password=Sephiroth3;");
-                //optionsBuilder.UseSqlServer(@"Server=localhost;Database=LeagueScrambler;Integrated Security=True;");
+                // Secrets must come from a local environment variable, never source control.
+                var connectionString = Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION");
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException(
+                        "Set LEAGUESCRAMBLER_DB_CONNECTION before starting LeagueScrambler.");
+                }
 
-                //optionsBuilder.UseSqlServer(System.Configuration.ConfigurationManager.
-                //    ConnectionStrings["LeagueDBConnectionString"].ConnectionString);
-                //optionsBuilder.UseSqlServer(@"workstation id=LeagueScrambler.mssql.somee.com;packet size=4096;user id=allport;pwd=Sephiroth3;data source=LeagueScrambler.mssql.somee.com;persist security info=False;initial catalog=LeagueScrambler");
+                optionsBuilder.UseSqlServer(connectionString);
             }
         }
 
