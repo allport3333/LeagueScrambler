@@ -23,10 +23,17 @@ This security branch contains functionality preservation for legacy administrati
 * Newly issued password reset links include an issuance timestamp plus 256 bits of random data, stored in the existing ResetToken text column. They expire after **one hour**; successful use clears the token.
 * Previously issued 64-character reset links will no longer work. Request a new password reset link after upgrading.
 * The reset page now clearly identifies expired/used links. The current API route, existing password hashing, and database schema remain unchanged.
-* Rate limiting for account login and password reset requests is still future work. This change does not substitute for a build or runtime check.
+* Login is limited to 12 failed attempts per source IP in 15 minutes; valid logins do not reset the failure count. Reset submissions allow 20 attempts per source IP per 15 minutes; password recovery requests allow 8 per source IP per 15 minutes plus a two-minute per-email cooldown.
+* Recovery always responds with the same account-neutral success message for known and unknown emails. Delivery failures are logged server-side and also give an account-neutral response after the prior token has been restored when possible.
+* These simple in-process protections reset on application restart, are not shared between servers, and don't substitute for robust edge rate limiting or runtime verification.
 
-* Password-reset emails are now sent only after the new token has been saved successfully, preventing emailed links from preceding database persistence. If sending the email fails, a conditional database rollback restores the prior reset token (only if no newer token replaced it). The request still reports an error so the user can retry.
+* Password-reset emails are now sent only after the new token has been saved successfully, preventing emailed links from preceding database persistence. If sending the email fails, a conditional database rollback restores the prior reset token (only if no newer token replaced it). The API now gives an account-neutral response even if delivery fails, to avoid exposing account existence; delivery failure is logged server-side, and the per-address cooldown is cleared to allow retry.
 * The reset-password Angular form now checks that the password and confirmation match before sending the API request, with an inline mismatch message.
+
+## Read-only requests
+
+* `GetLockSignInStatus/{leagueId}` no longer inserts a default unlocked record from a GET request. Missing lock rows still return `false`, and the existing protected POST setter creates rows when needed.
+* `ScrambleData/GetPlayers` read handlers still normalize and save historical Gender values as before. Do not change those writes without a planned data migration and database-backed verification.
 
 ## Manual steps required for development
 
