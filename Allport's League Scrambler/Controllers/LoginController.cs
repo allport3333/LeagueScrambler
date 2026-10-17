@@ -283,20 +283,10 @@ namespace Allport_s_League_Scrambler.Controllers
             var leagueSignInLocked = _context.LeagueSignInLocked
                 .FirstOrDefault(s => s.LeagueId == leagueId);
 
-            if (leagueSignInLocked == null)
-            {
-                // Create a new entry with SignInLocked set to false
-                leagueSignInLocked = new LeagueSignInLocked
-                {
-                    LeagueId = leagueId,
-                    SignInLocked = false
-                };
-
-                _context.LeagueSignInLocked.Add(leagueSignInLocked);
-                _context.SaveChanges();
-            }
-
-            return Ok(leagueSignInLocked.SignInLocked);
+            // A status read must not create a database record. A league with
+            // no lock record has historically been treated as unlocked; the
+            // authenticated SetLockSignInStatus endpoint creates it as needed.
+            return Ok(leagueSignInLocked?.SignInLocked ?? false);
         }
 
         public class LockSignInRequest
