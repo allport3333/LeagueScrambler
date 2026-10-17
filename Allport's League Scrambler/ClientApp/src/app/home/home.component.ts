@@ -151,7 +151,12 @@ export class HomeComponent implements OnInit {
                 });
             },
             (error) => {
-                this.showSnackBar('Login Failed', true); // Show fail message
+                this.showSnackBar(
+                    error.status === 429
+                        ? 'Too many login attempts. Please try again in 15 minutes.'
+                        : 'Login Failed',
+                    true
+                );
             }
         );
     }
