@@ -659,22 +659,62 @@ namespace Allport_s_League_Scrambler.Controllers
             return Ok(userLeagues);
         }
 
+        // The existing ResetToken text column stores both the issue time and
+        // 256 bits of cryptographically random material. No schema change is needed.
+        // Older untimed reset links are deliberately rejected.
+        private static readonly TimeSpan ResetTokenLifetime = TimeSpan.FromHours(1);
+
+        private static bool IsCurrentResetToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token) || token.Length > 128)
+            {
+                return false;
+            }
+
+            var parts = token.Split('.');
+            if (parts.Length != 3 || parts[0] != "v2" ||
+                parts[1].Length != 10 || parts[2].Length != 64 ||
+                !parts[1].All(c => c >= '0' && c <= '9') ||
+                !parts[2].All(c => (c >= '0' && c <= '9') ||
+                                   (c >= 'a' && c <= 'f')) ||
+                !long.TryParse(parts[1], out var issuedAtSeconds))
+            {
+                return false;
+            }
+
+            DateTimeOffset issuedAt;
+            try
+            {
+                issuedAt = DateTimeOffset.FromUnixTimeSeconds(issuedAtSeconds);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return false;
+            }
+
+            var elapsed = DateTimeOffset.UtcNow - issuedAt;
+            return elapsed >= TimeSpan.Zero && elapsed <= ResetTokenLifetime;
+        }
+
         [Route("resetpassword")]
         [HttpPost]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
+            // Reject missing, malformed, expired or legacy untimed tokens
+            // before querying the database. A null token must never match
+            // an account whose ResetToken column is null.
+            if (request == null || string.IsNullOrWhiteSpace(request.Password) ||
+                request.Password.Length < 6 || !IsCurrentResetToken(request.Token))
+            {
+                return BadRequest("Password reset failed: the link is invalid or expired.");
+            }
+
             try
             {
-                var _context = new DataContext(); // Create a new instance of DataContext
-                // Validate the request
-                if (request == null || string.IsNullOrWhiteSpace(request.Password))
-                {
-                    return BadRequest("Invalid request.");
-                }
-
+                var _context = new DataContext();
                 var userData = await _context.Users
-                                .Where(u => u.ResetToken == request.Token)
-                                .FirstOrDefaultAsync();
+                    .Where(u => u.ResetToken != null && u.ResetToken == request.Token)
+                    .FirstOrDefaultAsync();
                 if (userData == null)
                 {
                     return BadRequest("Password reset failed, token already used or invalid");
@@ -852,8 +892,10 @@ namespace Allport_s_League_Scrambler.Controllers
                 rng.GetBytes(tokenBytes);
             }
 
-            // Convert the byte array to a hexadecimal string
-            string token = BitConverter.ToString(tokenBytes).Replace("-", "").ToLower();
+            // Embed the issue time in the same token stored in User.ResetToken.
+            // The random value is still required to match the database exactly.
+            string randomPart = BitConverter.ToString(tokenBytes).Replace("-", "").ToLowerInvariant();
+            string token = "v2." + DateTimeOffset.UtcNow.ToUnixTimeSeconds() + "." + randomPart;
 
             return await Task.FromResult(token);
         }
@@ -879,7 +921,7 @@ namespace Allport_s_League_Scrambler.Controllers
             {
                 From = new MailAddress("LeagueScrambler@gmail.com"),
                 Subject = "Password Reset For League Scrambler",
-                Body = $"Click the following link to reset your password for your login to LeagueScrambler: {resetUrl}",
+                Body = $"Click the following link to reset your LeagueScrambler password: {resetUrl}\nThis link expires in one hour and can only be used once.",
                 IsBodyHtml = false
             };
 
