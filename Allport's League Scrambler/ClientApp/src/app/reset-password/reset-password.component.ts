@@ -18,11 +18,26 @@ export class ResetPasswordComponent {
         this.resetPasswordForm = this.formBuilder.group({
             password: ['', [Validators.required, Validators.minLength(6)]],
             confirmPassword: ['', [Validators.required]]
-        });
+        }, { validator: this.passwordsMatch });
         this.token = this.route.snapshot.queryParams['token'];
     }
 
+    // Validate both password fields together so a mismatch cannot submit.
+    private passwordsMatch(group: FormGroup): { [key: string]: boolean } | null {
+        const password = group.get('password');
+        const confirmation = group.get('confirmPassword');
+        return password && confirmation && password.value !== confirmation.value
+            ? { passwordMismatch: true }
+            : null;
+    }
+
     onSubmit() {
+        if (!this.resetPasswordForm.valid) {
+            this.resetPasswordForm.get('password').markAsTouched();
+            this.resetPasswordForm.get('confirmPassword').markAsTouched();
+            return;
+        }
+
         if (this.resetPasswordForm.valid) {
             const newPassword = this.resetPasswordForm.value.password;
 
