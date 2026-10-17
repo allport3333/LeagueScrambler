@@ -67,6 +67,8 @@ namespace Allport_s_League_Scrambler.Controllers
         // Simple in-process limits for this legacy single-server application.
         // They expire automatically, require no schema change, and do not trust
         // user-supplied forwarding headers for client identity.
+        private static readonly object RateCacheCreationLock = new object();
+
         private class RequestCounter
         {
             public int Count { get; set; }
@@ -83,11 +85,17 @@ namespace Allport_s_League_Scrambler.Controllers
         private RequestCounter GetRateCounter(string scope)
         {
             var remoteAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            return _adminPasswordAttempts.GetOrCreate("rate:" + scope + ":" + remoteAddress, entry =>
+            // MemoryCache.GetOrCreate is not an atomic factory under
+            // concurrency. Serialize first use so all requests for one key
+            // increment the same counter object.
+            lock (RateCacheCreationLock)
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
-                return new RequestCounter();
-            });
+                return _adminPasswordAttempts.GetOrCreate("rate:" + scope + ":" + remoteAddress, entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+                    return new RequestCounter();
+                });
+            }
         }
 
         private static bool TryUseRateSlot(RequestCounter counter, int maxRequests)
@@ -103,19 +111,17 @@ namespace Allport_s_League_Scrambler.Controllers
             }
         }
 
-        private static bool IsLoginBlocked(RequestCounter counter)
+        // Login attempts reserve a slot before password validation, then
+        // release it on success. Previously a check and later increment were
+        // separate operations, letting parallel requests bypass the limit.
+        private static void ReleaseRateSlot(RequestCounter counter)
         {
             lock (counter)
             {
-                return counter.Count >= 12;
-            }
-        }
-
-        private static void RecordFailedLogin(RequestCounter counter)
-        {
-            lock (counter)
-            {
-                counter.Count++;
+                if (counter.Count > 0)
+                {
+                    counter.Count--;
+                }
             }
         }
 
@@ -128,11 +134,14 @@ namespace Allport_s_League_Scrambler.Controllers
                 var normalized = email.Trim().ToUpperInvariant();
                 key = Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(normalized)));
             }
-            return _adminPasswordAttempts.GetOrCreate("recovery-address:" + key, entry =>
+            lock (RateCacheCreationLock)
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2);
-                return new RecoveryCooldown();
-            });
+                return _adminPasswordAttempts.GetOrCreate("recovery-address:" + key, entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2);
+                    return new RecoveryCooldown();
+                });
+            }
         }
 
         [HttpPost("VerifyAdminPassword")]
@@ -520,7 +529,7 @@ namespace Allport_s_League_Scrambler.Controllers
             }
 
             var loginAttempts = GetRateCounter("login");
-            if (IsLoginBlocked(loginAttempts))
+            if (!TryUseRateSlot(loginAttempts, 12))
             {
                 return StatusCode(StatusCodes.Status429TooManyRequests,
                     new { message = "Too many login attempts. Try again later." });
@@ -535,13 +544,10 @@ namespace Allport_s_League_Scrambler.Controllers
                 if (userInfo == null ||
                     !ValidatePassword(loginModel.Password, userInfo.PasswordHash, userInfo.PasswordSalt))
                 {
-                    RecordFailedLogin(loginAttempts);
+                    // Keep the reserved slot for each failed login.
                     return BadRequest(new { message = "Invalid email or password." });
                 }
 
-                // Successful logins must not reset the IP failure counter:
-                // otherwise an attacker with one valid account could bypass
-                // the limit while guessing other users' passwords.
                 string roleName;
 
                 switch (userInfo.UserRoleId)
@@ -585,6 +591,10 @@ namespace Allport_s_League_Scrambler.Controllers
                 };
 
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+
+                // Return only this successful request's reserved slot. Do not
+                // erase failed guesses from other requests sharing the IP.
+                ReleaseRateSlot(loginAttempts);
 
                 // Return a success response
                 return Ok(new { message = "Login successful" });
