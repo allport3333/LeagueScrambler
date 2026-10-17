@@ -25,6 +25,9 @@ This security branch contains functionality preservation for legacy administrati
 * The reset page now clearly identifies expired/used links. The current API route, existing password hashing, and database schema remain unchanged.
 * Rate limiting for account login and password reset requests is still future work. This change does not substitute for a build or runtime check.
 
+* Password-reset emails are now sent only after the new token has been saved successfully, preventing emailed links from preceding database persistence. A failed email still reports an error, and the user can request another link.
+* The reset-password Angular form now checks that the password and confirmation match before sending the API request, with an inline mismatch message.
+
 ## Manual steps required for development
 
 Read [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md). Copy the example environment values into a gitignored `.env`, supply your own SQL and SMTP connection details, launch with HTTPS, and load your existing development database. The application will not connect to SQL until you supply a connection string. No old published credential has been reused.
