@@ -17,6 +17,14 @@ This security branch contains functionality preservation for legacy administrati
 9. Password recovery links use HTTPS. Logout clears the temporary administration cookie as well as the ordinary login.
 10. HTTPS local Visual Studio launch settings and a safe `.env.example` have been added.
 
+## Password reset safety
+
+* The reset endpoint rejects missing, blank, malformed, expired, and legacy untimed tokens **before** querying the User table. A missing token cannot accidentally match an account with a null ResetToken.
+* Newly issued password reset links include an issuance timestamp plus 256 bits of random data, stored in the existing ResetToken text column. They expire after **one hour**; successful use clears the token.
+* Previously issued 64-character reset links will no longer work. Request a new password reset link after upgrading.
+* The reset page now clearly identifies expired/used links. The current API route, existing password hashing, and database schema remain unchanged.
+* Rate limiting for account login and password reset requests is still future work. This change does not substitute for a build or runtime check.
+
 ## Manual steps required for development
 
 Read [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md). Copy the example environment values into a gitignored `.env`, supply your own SQL and SMTP connection details, launch with HTTPS, and load your existing development database. The application will not connect to SQL until you supply a connection string. No old published credential has been reused.
