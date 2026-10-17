@@ -51,7 +51,7 @@ This document explains how the original LeagueScrambler functionality is preserv
 * Check invalid/modified, legacy (old-format), and expired tokens are rejected with a useful error.
 * Previously emailed reset links issued before this change intentionally require a new request. The ResetToken column does **not** need a new migration.
 
-* Check that a password reset email's new token is already stored before the link is received, and that an email delivery failure reports an error.
+* Check that a password reset email's new token is already stored before the link is received. Simulate an SMTP failure and confirm the API reports an error, a previously issued reset link remains usable, and a retry can issue a fresh link.
 * Confirm the password-reset form refuses mismatched password/confirmation values and successfully submits a matching pair.
 
 ## Still required before the site goes public
