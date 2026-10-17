@@ -935,60 +935,90 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost("forgotpassword")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email) ||
+                request.Email.Length > 320)
+            {
+                return BadRequest("Enter a valid email address.");
+            }
+
+            // Count every request, not only ones for registered accounts.
+            if (!TryUseRateSlot(GetRateCounter("forgot-password"), 8))
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    "Too many password reset requests. Try again later.");
+            }
+
+            // Limit email flooding to an address without revealing whether
+            // that address exists. The response is identical in both cases.
+            var cooldown = GetRecoveryCooldown(request.Email);
+            var requestedAt = DateTimeOffset.UtcNow;
+            lock (cooldown)
+            {
+                if (requestedAt - cooldown.LastRequest < TimeSpan.FromMinutes(2))
+                {
+                    return Ok(new { message = RecoveryAcceptedMessage });
+                }
+                cooldown.LastRequest = requestedAt;
+            }
+
             try
             {
-                var _context = new DataContext();
-                // Validate the request
-                if (request == null || string.IsNullOrWhiteSpace(request.Email))
-                {
-                    return BadRequest("Invalid request.");
-                }
-
-                // Check if the email exists in your database asynchronously
-                var userExists = await CheckEmailExistsAsync(request.Email);
-
+                var userExists = await CheckEmailExistsAsync(request.Email.Trim());
                 if (userExists != null)
                 {
-                    // Generate a password reset token asynchronously
                     string resetToken = await GenerateResetTokenAsync(request.Email);
                     string previousResetToken = userExists.ResetToken;
                     userExists.ResetToken = resetToken;
 
-                    // Persist the token before emailing it, so the recipient
-                    // cannot reach the reset endpoint before the token exists.
-                    _context.Users.Update(userExists);
-                    await _context.SaveChangesAsync();
+                    // A user must never receive a link before it is stored.
+                    using (var context = new DataContext())
+                    {
+                        context.Users.Update(userExists);
+                        await context.SaveChangesAsync();
+                    }
 
                     try
                     {
-                        await SendPasswordResetEmailAsync(request.Email, resetToken);
+                        await SendPasswordResetEmailAsync(userExists.Email, resetToken);
                     }
-                    catch
+                    catch (Exception sendError)
                     {
-                        // Restore a previously valid link if email delivery
-                        // fails. Only roll back our own token, not a different
-                        // reset request that may have completed concurrently.
-                        using (var rollbackContext = new DataContext())
+                        // Avoid leaking account existence through delivery
+                        // errors, and restore an earlier link if delivery failed.
+                        Console.Error.WriteLine("Password reset delivery failed: " + sendError.Message);
+                        try
                         {
-                            await rollbackContext.Database.ExecuteSqlCommandAsync(
-                                "UPDATE [dbo].[User] SET [ResetToken] = {0} " +
-                                "WHERE [UserId] = {1} AND [ResetToken] = {2}",
-                                (object)previousResetToken ?? DBNull.Value,
-                                userExists.UserId, resetToken);
+                            using (var rollbackContext = new DataContext())
+                            {
+                                await rollbackContext.Database.ExecuteSqlCommandAsync(
+                                    "UPDATE [dbo].[User] SET [ResetToken] = {0} " +
+                                    "WHERE [UserId] = {1} AND [ResetToken] = {2}",
+                                    (object)previousResetToken ?? DBNull.Value,
+                                    userExists.UserId, resetToken);
+                            }
                         }
-                        throw;
-                    }
+                        catch (Exception rollbackError)
+                        {
+                            Console.Error.WriteLine("Password reset rollback failed: " + rollbackError.Message);
+                        }
 
-                    return Ok(new { message = "Password reset successfully emailed." });
+                        lock (cooldown)
+                        {
+                            if (cooldown.LastRequest == requestedAt)
+                            {
+                                cooldown.LastRequest = DateTimeOffset.MinValue;
+                            }
+                        }
+                    }
                 }
-                else
-                {
-                    return BadRequest("Email not found.");
-                }
+
+                return Ok(new { message = RecoveryAcceptedMessage });
             }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+                Console.Error.WriteLine("Password recovery request failed: " + ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    "Unable to process password recovery right now.");
             }
         }
 
