@@ -51,6 +51,9 @@ This document explains how the original LeagueScrambler functionality is preserv
 * Check invalid/modified, legacy (old-format), and expired tokens are rejected with a useful error.
 * Previously emailed reset links issued before this change intentionally require a new request. The ResetToken column does **not** need a new migration.
 
+* Check that a password reset email's new token is already stored before the link is received, and that an email delivery failure reports an error.
+* Confirm the password-reset form refuses mismatched password/confirmation values and successfully submits a matching pair.
+
 ## Still required before the site goes public
 
 This is a compatibility and initial security patch. Additional work is required for CSRF protection on authenticated changes, authorization by league ownership, migrating the legacy administration password away from plaintext database storage, and upgrading unsupported ASP.NET Core 2.2 and Angular 7 dependencies. The project must not be deployed on the public internet until these issues have been reviewed and tested.
