@@ -66,6 +66,14 @@ This document explains how the original LeagueScrambler functionality is preserv
 * Test a database failure during reset issuance: the server should log it without indicating whether the target email is registered.
 * The counters are in-process and not shared between machines; they are basic protection, not proof of resilience against distributed abuse.
 
+## Highest-priority first-boot regression checks
+
+* Build the entire ASP.NET Core project and Angular frontend from `security/initial-hardening-oct-2026` before merging; do not test by modifying the master branch.
+* Sign in as Admin/Manager and verify editing an assigned league, creating/deleting a test player, and saving a new scramble and scores.
+* In an anonymous browser session, preview a scramble without unlocking administration: team previews should display, but `GenerateScramble` must not write team rows to SQL. Then unlock and verify the generated scramble can be saved.
+* Check ordinary and legacy-password administration login/logout, player registration and claiming, public player sign-in, signed-in player removal, league lock/unlock, and password recovery.
+* Confirm `LEAGUESCRAMBLER_DB_CONNECTION`, SMTP values, public HTTPS reset origin, IIS/HTTPS certificate, and reverse-proxy client IP handling before public access.
+
 ## Still required before the site goes public
 
 This is a compatibility and initial security patch. Additional work is required for CSRF protection on authenticated changes, authorization by league ownership, migrating the legacy administration password away from plaintext database storage, and upgrading unsupported ASP.NET Core 2.2 and Angular 7 dependencies. The project must not be deployed on the public internet until these issues have been reviewed and tested.
