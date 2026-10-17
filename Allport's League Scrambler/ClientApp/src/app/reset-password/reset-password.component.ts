@@ -38,32 +38,30 @@ export class ResetPasswordComponent {
             return;
         }
 
-        if (this.resetPasswordForm.valid) {
-            const newPassword = this.resetPasswordForm.value.password;
+        const newPassword = this.resetPasswordForm.value.password;
 
-            // Call the resetPassword function to send the new password to the backend
-            this.loginService.resetPassword(newPassword, this.token).subscribe(
-                (response) => {
-                    // Handle a successful password reset
-                    this.snackBar.open('Password reset successful', 'Close', {
-                        verticalPosition: 'top',
-                        horizontalPosition: 'center',
-                        duration: 5000, // Adjust the duration as needed
-                        panelClass: ['custom-snackbar']
-                    });
+        // Call the resetPassword function to send the new password to the backend
+        this.loginService.resetPassword(newPassword, this.token).subscribe(
+            (response) => {
+                // Handle a successful password reset
+                this.snackBar.open('Password reset successful', 'Close', {
+                    verticalPosition: 'top',
+                    horizontalPosition: 'center',
+                    duration: 5000, // Adjust the duration as needed
+                    panelClass: ['custom-snackbar']
+                });
 
-                    this.router.navigate([''], { queryParams: { toggleLoginForm: 'true' } });
-                },
-                (error) => {
-                    // Handle any errors that occur during the resetPassword API call
-                    this.snackBar.open('Password reset failed. The link may be invalid, expired, or already used. Please request a new link.', 'Close', {
-                        verticalPosition: 'top',
-                        horizontalPosition: 'center',
-                        duration: 5000, // Adjust the duration as needed
-                        panelClass: ['red-snackbar'] 
-                    });
-                }
-            );
-        }
+                this.router.navigate([''], { queryParams: { toggleLoginForm: 'true' } });
+            },
+            (error) => {
+                // Handle any errors that occur during the resetPassword API call
+                this.snackBar.open('Password reset failed. The link may be invalid, expired, or already used. Please request a new link.', 'Close', {
+                    verticalPosition: 'top',
+                    horizontalPosition: 'center',
+                    duration: 5000, // Adjust the duration as needed
+                    panelClass: ['red-snackbar'] 
+                });
+            }
+        );
     }
 }
