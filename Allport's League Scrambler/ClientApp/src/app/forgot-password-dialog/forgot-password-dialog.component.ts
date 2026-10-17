@@ -25,12 +25,12 @@ export class ForgotPasswordDialogComponent {
         this.loginService.forgotPassword(this.email).subscribe(
             (response) => {
                 // Handle the response, e.g., show a success message
-                this.showNotification('Password reset email has been sent. Please check your inbox to reset your password.', false);
+                this.showNotification('If an account exists for that email, a password reset link may arrive shortly.', false);
                 this.dialogRef.close();
             },
             (error) => {
                 // Handle the error, e.g., show an error message
-                this.showNotification('Password reset failed. No user with that email address was found.', true);
+                this.showNotification('Unable to request a password reset right now. Please try again later.', true);
             }
         );
     }
