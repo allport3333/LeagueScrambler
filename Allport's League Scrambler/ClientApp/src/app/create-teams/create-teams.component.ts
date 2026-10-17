@@ -71,7 +71,7 @@ export class CreateTeamsComponent implements OnInit {
     saveTeamScores(): void {
         const scrambleNumber = this.selectedScrambleNumber === 'new' ? 0 : this.selectedScrambleNumber;
         const scores = this.listOfTeams.map(team => ({
-            kingQueenTeamId: team.kingQueenTeamId, // Matches `KingQueenTeamId`
+            kingQueenTeamId: 0, // New teams have no persisted database ID yet; keep the local display ID separate
             leagueId: this.selectedLeague.id, // Matches `LeagueId`
             date: new Date().toISOString().split('T')[0], // Matches `Date` as a string (YYYY-MM-DD)
             scrambleNumber: scrambleNumber, // Matches `ScrambleNumber`
