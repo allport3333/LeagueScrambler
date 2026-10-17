@@ -908,9 +908,13 @@ namespace Allport_s_League_Scrambler.Controllers
                 !context.Leagues.Any(l => l.ID == sc.LeagueId)))
                 return Forbid();
 
+            // The Create Teams screen sends temporary positive team IDs for
+            // brand-new teams. Those IDs won't exist in the database yet and
+            // must remain valid. Reject only IDs that *do* exist in another
+            // league; the save method creates a new team when no row exists.
             if (scores.Any(sc => sc.KingQueenTeamId > 0 &&
-                !context.KingQueenTeam.Any(t =>
-                    t.Id == sc.KingQueenTeamId && t.LeagueID == sc.LeagueId)))
+                context.KingQueenTeam.Any(t =>
+                    t.Id == sc.KingQueenTeamId && t.LeagueID != sc.LeagueId)))
                 return BadRequest("One of the teams belongs to another league.");
 
             try
