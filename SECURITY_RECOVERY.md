@@ -25,7 +25,7 @@ This security branch contains functionality preservation for legacy administrati
 * The reset page now clearly identifies expired/used links. The current API route, existing password hashing, and database schema remain unchanged.
 * Rate limiting for account login and password reset requests is still future work. This change does not substitute for a build or runtime check.
 
-* Password-reset emails are now sent only after the new token has been saved successfully, preventing emailed links from preceding database persistence. A failed email still reports an error, and the user can request another link.
+* Password-reset emails are now sent only after the new token has been saved successfully, preventing emailed links from preceding database persistence. If sending the email fails, a conditional database rollback restores the prior reset token (only if no newer token replaced it). The request still reports an error so the user can retry.
 * The reset-password Angular form now checks that the password and confirmation match before sending the API request, with an inline mismatch message.
 
 ## Manual steps required for development
