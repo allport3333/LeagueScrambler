@@ -1010,9 +1010,18 @@ namespace Allport_s_League_Scrambler.Controllers
             }
             catch (Exception ex)
             {
+                // A database-write or delivery failure for an existing account
+                // must not return a distinguishable status from an unknown
+                // email address. Log the failure for diagnostics instead.
                 Console.Error.WriteLine("Password recovery request failed: " + ex.Message);
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Unable to process password recovery right now.");
+                lock (cooldown)
+                {
+                    if (cooldown.LastRequest == requestedAt)
+                    {
+                        cooldown.LastRequest = DateTimeOffset.MinValue;
+                    }
+                }
+                return Ok(new { message = RecoveryAcceptedMessage });
             }
         }
 
