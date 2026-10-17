@@ -535,7 +535,6 @@ namespace Allport_s_League_Scrambler.Controllers
                     new { message = "Too many login attempts. Try again later." });
             }
 
-            {
                 var _context = new DataContext();
                 var userInfo = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginModel.Email);
 
@@ -598,9 +597,6 @@ namespace Allport_s_League_Scrambler.Controllers
 
                 // Return a success response
                 return Ok(new { message = "Login successful" });
-            }
-
-            return BadRequest(new { message = "Invalid login data" });
         }
 
         [HttpPost("logout")]
