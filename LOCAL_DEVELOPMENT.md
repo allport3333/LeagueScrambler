@@ -44,6 +44,13 @@ This document explains how the original LeagueScrambler functionality is preserv
 15. On an unlocked league, sign in a player from its roster. Then confirm a repeated same-day sign-in is rejected. Lock the league and confirm a new sign-in is blocked; unlock it and confirm sign-in works again.
 16. Confirm a player cannot be signed into a league they are not assigned to, even using a direct API request.
 
+## Password reset verification after the server is available
+
+* Request a new password reset email and confirm its link works within one hour, changes the password, and cannot be reused.
+* Check that requests with a missing token or a null token do not reset any account.
+* Check invalid/modified, legacy (old-format), and expired tokens are rejected with a useful error.
+* Previously emailed reset links issued before this change intentionally require a new request. The ResetToken column does **not** need a new migration.
+
 ## Still required before the site goes public
 
 This is a compatibility and initial security patch. Additional work is required for CSRF protection on authenticated changes, authorization by league ownership, migrating the legacy administration password away from plaintext database storage, and upgrading unsupported ASP.NET Core 2.2 and Angular 7 dependencies. The project must not be deployed on the public internet until these issues have been reviewed and tested.
