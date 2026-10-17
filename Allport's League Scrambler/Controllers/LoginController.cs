@@ -119,14 +119,6 @@ namespace Allport_s_League_Scrambler.Controllers
             }
         }
 
-        private static void ClearFailedLogins(RequestCounter counter)
-        {
-            lock (counter)
-            {
-                counter.Count = 0;
-            }
-        }
-
         private RecoveryCooldown GetRecoveryCooldown(string email)
         {
             // Hash normalized email so address values are not kept in cache keys.
@@ -547,7 +539,9 @@ namespace Allport_s_League_Scrambler.Controllers
                     return BadRequest(new { message = "Invalid email or password." });
                 }
 
-                ClearFailedLogins(loginAttempts);
+                // Successful logins must not reset the IP failure counter:
+                // otherwise an attacker with one valid account could bypass
+                // the limit while guessing other users' passwords.
                 string roleName;
 
                 switch (userInfo.UserRoleId)
