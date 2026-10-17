@@ -3467,6 +3467,19 @@ export class ScramblerComponent implements OnInit {
             }
 
 
+            // A scramble is calculated locally for preview, but GenerateScramble
+            // persists a database record. Public visitors and Player accounts
+            // may preview teams without making an unauthorized database write.
+            if (!this.isActionAllowed) {
+                this.scrambleNumber = 0;
+                if (nonDuplicates) {
+                    this.allowScrambleWithNoDuplicates = false;
+                }
+                this.showSnackBar('Preview generated. Unlock administration to save a scramble.');
+                this.cdr.detectChanges();
+                return;
+            }
+
             const requestBody: KingQueenTeamsResponse = {
                 kingQueenTeams: this.listOfTeams.map(team => {
                     return {
