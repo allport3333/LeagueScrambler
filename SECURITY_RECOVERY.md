@@ -41,6 +41,13 @@ This security branch contains functionality preservation for legacy administrati
 
 Read [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md). Copy the example environment values into a gitignored `.env`, supply your own SQL and SMTP connection details, launch with HTTPS, and load your existing development database. The application will not connect to SQL until you supply a connection string. No old published credential has been reused.
 
+## Final source audit before the first build
+
+* The duplicate local `league` declaration in `ScrambleDataController.DeletePlayer` was corrected; the method now returns a clear error when the player or league link is absent.
+* The Scrambler page continues to generate public previews locally, but anonymous and Player sessions skip its `GenerateScramble` database-write request. Only unlocked administration sessions should persist generated teams.
+* The current changes were reviewed statically, including REST method alignment, authentication policy coverage, DB schema compatibility, and Angular form/request shapes. This review is **not** a C# or Angular compilation test; the hosting PC and its database are still needed.
+* Keep the PR in draft until a complete build and focused first-boot tests succeed. In particular, verify login, registration/claim, public preview versus authorized save, public sign-in/lock, legacy administration unlock, league management, scoring, and password recovery.
+
 ## Required checks before merging
 
 * Build the solution and Angular frontend in Visual Studio.
