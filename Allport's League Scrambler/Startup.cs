@@ -1,6 +1,7 @@
 using dotenv.net;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
@@ -22,7 +23,7 @@ namespace Allport_s_League_Scrambler
     {
         public Startup(IConfiguration configuration)
         {
-            DotEnv.Load();
+            DotEnv.Load(options: new DotEnvOptions(probeForEnv: true, probeLevelsToSearch: 6));
 
             Configuration = configuration;
         }
@@ -44,10 +45,54 @@ namespace Allport_s_League_Scrambler
                     options.LoginPath = "/"; // Set the login page
                     options.AccessDeniedPath = ""; // Set the access denied page
                     options.Cookie.HttpOnly = true; // Ensure cookies are only accessible via HTTP
-                    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Allow cookies over HTTP (for development)
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Require HTTPS for authentication cookies
                     options.Cookie.SameSite = SameSiteMode.Lax; // Adjust SameSite mode as needed
                     options.ExpireTimeSpan = TimeSpan.FromDays(30); // Set cookie expiration
+                    options.Events.OnRedirectToLogin = context =>
+                    {
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    };
+                    options.Events.OnRedirectToAccessDenied = context =>
+                    {
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    };
+                })
+                .AddCookie("LeagueAdminPassword", options =>
+                {
+                    // A distinct short-lived credential for the existing administration password.
+                    // This never overwrites an ordinary player's login.
+                    options.Cookie.Name = "LeagueScrambler.Admin";
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SameSite = SameSiteMode.Strict;
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                    options.ExpireTimeSpan = TimeSpan.FromHours(6);
+                    options.SlidingExpiration = true; // Renew the session during active league play.
+                    options.Events.OnRedirectToLogin = context =>
+                    {
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    };
+                    options.Events.OnRedirectToAccessDenied = context =>
+                    {
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    };
                 });
+
+            services.AddMemoryCache();
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("LeagueManagement", policy =>
+                {
+                    policy.AddAuthenticationSchemes(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        "LeagueAdminPassword");
+                    policy.RequireAuthenticatedUser();
+                    policy.RequireRole("Admin", "Manager", "LegacyAdmin");
+                });
+            });
 
             services.AddHttpContextAccessor();
             string smtpServer = Environment.GetEnvironmentVariable("SMTP_SERVER");

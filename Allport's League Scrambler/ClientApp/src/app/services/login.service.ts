@@ -51,6 +51,23 @@ export class LoginService {
         return this.httpClient.get<boolean>(this.isauthenticated, { withCredentials: true }); // Include the 'withCredentials' option
     }
 
+    // The administration password stays on the server. A successful check sets a
+    // short lived, HTTPS only admin session cookie without replacing player login.
+    verifyAdminPassword(password: string): Observable<{ authorized: boolean }> {
+        return this.httpClient.post<{ authorized: boolean }>(
+            this.baseUrl + 'api/Login/VerifyAdminPassword',
+            { password: password },
+            { withCredentials: true }
+        );
+    }
+
+    isAdminPasswordAuthorized(): Observable<boolean> {
+        return this.httpClient.get<boolean>(
+            this.baseUrl + 'api/Login/IsAdminPasswordAuthorized',
+            { withCredentials: true }
+        );
+    }
+
     // Method for user registration
     register(email: string, password: string, firstName: string, lastName: string) {
         const registerData = {

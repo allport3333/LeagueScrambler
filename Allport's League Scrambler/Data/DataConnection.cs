@@ -20,13 +20,12 @@ namespace Allport_s_League_Scrambler.Data
             //"Data Source==LeagueScrambler.mssql.somee.com;" +
             //"Initial Catalog=LeagueScrambler;" +
             //"User id=allport;" +
-            //"Password=Sephiroth3;";
             //workstation id = LeagueScrambler.mssql.somee.com;
             //conn.Open();
 
-            string ConnStr = "";// "workstation id=LeagueScrambler.mssql.somee.com;packet size=4096;user id=allport;pwd=Sephiroth3;data source=LeagueScrambler.mssql.somee.com;persist security info=False;initial catalog=LeagueScrambler";//"Data Source = (localdb)\\LeagueDB; Initial Catalog = League; Integrated Security = True";
 
 
+            string ConnStr = Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION");
             string provider = ConfigurationManager.AppSettings["provider"];
 
 

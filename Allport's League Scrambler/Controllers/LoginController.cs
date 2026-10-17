@@ -8,7 +8,9 @@ using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using System.Text;
 using Allport_s_League_Scrambler.Data;
+using Allport_s_League_Scrambler.Security;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -16,6 +18,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -39,12 +42,196 @@ namespace Allport_s_League_Scrambler.Controllers
         private readonly IConfiguration _config;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly SmtpClient _smtpClient;
+        private readonly IMemoryCache _adminPasswordAttempts;
 
-        public LoginController(IConfiguration config, IHttpContextAccessor httpContextAccessor, SmtpClient smtpClient)
+        public LoginController(IConfiguration config, IHttpContextAccessor httpContextAccessor, SmtpClient smtpClient, IMemoryCache adminPasswordAttempts)
         {
             _config = config;
             _httpContextAccessor = httpContextAccessor;
             _smtpClient = smtpClient; // Injected SMTP Client
+            _adminPasswordAttempts = adminPasswordAttempts;
+        }
+
+        // Compatibility bridge for the administration password used by the old Angular UI.
+        // Authentication is validated on the server; the stored password is never sent to clients.
+        public class AdminPasswordRequest
+        {
+            public string Password { get; set; }
+        }
+
+        private class AdminPasswordAttempt
+        {
+            public int Failures { get; set; }
+        }
+
+        // Simple in-process limits for this legacy single-server application.
+        // They expire automatically, require no schema change, and do not trust
+        // user-supplied forwarding headers for client identity.
+        private static readonly object RateCacheCreationLock = new object();
+
+        private class RequestCounter
+        {
+            public int Count { get; set; }
+        }
+
+        private class RecoveryCooldown
+        {
+            public DateTimeOffset LastRequest { get; set; }
+        }
+
+        private const string RecoveryAcceptedMessage =
+            "If an account exists for that email, a password reset link may arrive shortly.";
+
+        private RequestCounter GetRateCounter(string scope)
+        {
+            var remoteAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            // MemoryCache.GetOrCreate is not an atomic factory under
+            // concurrency. Serialize first use so all requests for one key
+            // increment the same counter object.
+            lock (RateCacheCreationLock)
+            {
+                return _adminPasswordAttempts.GetOrCreate("rate:" + scope + ":" + remoteAddress, entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+                    return new RequestCounter();
+                });
+            }
+        }
+
+        private static bool TryUseRateSlot(RequestCounter counter, int maxRequests)
+        {
+            lock (counter)
+            {
+                if (counter.Count >= maxRequests)
+                {
+                    return false;
+                }
+                counter.Count++;
+                return true;
+            }
+        }
+
+        // Login attempts reserve a slot before password validation, then
+        // release it on success. Previously a check and later increment were
+        // separate operations, letting parallel requests bypass the limit.
+        private static void ReleaseRateSlot(RequestCounter counter)
+        {
+            lock (counter)
+            {
+                if (counter.Count > 0)
+                {
+                    counter.Count--;
+                }
+            }
+        }
+
+        private RecoveryCooldown GetRecoveryCooldown(string email)
+        {
+            // Hash normalized email so address values are not kept in cache keys.
+            string key;
+            using (var sha = SHA256.Create())
+            {
+                var normalized = email.Trim().ToUpperInvariant();
+                key = Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(normalized)));
+            }
+            lock (RateCacheCreationLock)
+            {
+                return _adminPasswordAttempts.GetOrCreate("recovery-address:" + key, entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2);
+                    return new RecoveryCooldown();
+                });
+            }
+        }
+
+        [HttpPost("VerifyAdminPassword")]
+        public async Task<IActionResult> VerifyAdminPassword([FromBody] AdminPasswordRequest request)
+        {
+            if (request == null || string.IsNullOrEmpty(request.Password) || request.Password.Length > 256)
+            {
+                return BadRequest(new { message = "Enter the administration password." });
+            }
+
+            // A basic per-address throttle for the legacy password, until a stronger
+            // account-specific authentication system replaces this compatibility flow.
+            var remoteAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var cacheKey = "legacy-admin:" + remoteAddress;
+            var attempt = _adminPasswordAttempts.GetOrCreate(cacheKey, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+                return new AdminPasswordAttempt();
+            });
+
+            bool blocked;
+            lock (attempt)
+            {
+                blocked = attempt.Failures >= 8;
+            }
+            if (blocked)
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    new { message = "Too many attempts. Try again later." });
+            }
+
+            string savedPassword;
+            using (var context = new DataContext())
+            {
+                savedPassword = await context.Passwords
+                    .Select(p => p.password)
+                    .FirstOrDefaultAsync();
+            }
+
+            // Hash both values for a fixed-length comparison, avoiding early-exit
+            // character-by-character password comparison. Migration of the stored
+            // plaintext password to an adaptive password hash remains required.
+            bool valid = false;
+            using (var sha256 = SHA256.Create())
+            {
+                var provided = sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Password));
+                var expected = sha256.ComputeHash(Encoding.UTF8.GetBytes(savedPassword ?? ""));
+                int diff = 0;
+                for (int i = 0; i < provided.Length; i++)
+                {
+                    diff |= provided[i] ^ expected[i];
+                }
+                valid = !string.IsNullOrEmpty(savedPassword) && diff == 0;
+            }
+
+            if (!valid)
+            {
+                lock (attempt)
+                {
+                    attempt.Failures++;
+                }
+                return Unauthorized(new { message = "Incorrect administration password." });
+            }
+
+            lock (attempt)
+            {
+                attempt.Failures = 0;
+            }
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, "legacy-admin"),
+                new Claim(ClaimTypes.Role, "LegacyAdmin")
+            };
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(
+                claims, "LeagueAdminPassword"));
+
+            // Let CookieAuthenticationOptions.ExpireTimeSpan (six hours) control
+            // expiration so SlidingExpiration can renew an active league session.
+            await HttpContext.SignInAsync("LeagueAdminPassword", principal,
+                new AuthenticationProperties { IsPersistent = false });
+
+            return Ok(new { authorized = true });
+        }
+
+        [HttpGet("IsAdminPasswordAuthorized")]
+        public async Task<IActionResult> IsAdminPasswordAuthorized()
+        {
+            var result = await HttpContext.AuthenticateAsync("LeagueAdminPassword");
+            return Ok(result.Succeeded && result.Principal.IsInRole("LegacyAdmin"));
         }
 
         [HttpPost("register")]
@@ -64,7 +251,24 @@ namespace Allport_s_League_Scrambler.Controllers
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync(); // Save changes to generate the UserId
 
-                // Return a success response with the generated UserId
+                // The registration page immediately offers to claim or create a player.
+                // Give this newly registered user an authenticated Player session so
+                // those actions no longer need unsafe anonymous write permissions.
+                var registrationClaims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                    new Claim(ClaimTypes.Email, user.Email),
+                    new Claim(ClaimTypes.Role, "Player"),
+                    new Claim("FirstName", user.FirstName ?? ""),
+                    new Claim("LastName", user.LastName ?? "")
+                };
+                var registrationIdentity = new ClaimsIdentity(
+                    registrationClaims, CookieAuthenticationDefaults.AuthenticationScheme);
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(registrationIdentity),
+                    new AuthenticationProperties { IsPersistent = false });
+
                 return Ok(new { message = "Registration successful.", userId = user.UserId });
             }
 
@@ -80,20 +284,10 @@ namespace Allport_s_League_Scrambler.Controllers
             var leagueSignInLocked = _context.LeagueSignInLocked
                 .FirstOrDefault(s => s.LeagueId == leagueId);
 
-            if (leagueSignInLocked == null)
-            {
-                // Create a new entry with SignInLocked set to false
-                leagueSignInLocked = new LeagueSignInLocked
-                {
-                    LeagueId = leagueId,
-                    SignInLocked = false
-                };
-
-                _context.LeagueSignInLocked.Add(leagueSignInLocked);
-                _context.SaveChanges();
-            }
-
-            return Ok(leagueSignInLocked.SignInLocked);
+            // A status read must not create a database record. A league with
+            // no lock record has historically been treated as unlocked; the
+            // authenticated SetLockSignInStatus endpoint creates it as needed.
+            return Ok(leagueSignInLocked?.SignInLocked ?? false);
         }
 
         public class LockSignInRequest
@@ -103,9 +297,15 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("SetLockSignInStatus")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult SetLockSignInStatus([FromBody] LockSignInRequest request)
         {
+            if (request == null || request.LeagueId <= 0)
+                return BadRequest("Invalid league.");
+
             var _context = new DataContext();
+            if (!LeagueAccess.CanManage(User, _context, request.LeagueId))
+                return Forbid();
 
             // Get the latest sign-in date for the specified league
             var latestDate = _context.PlayerSignIn
@@ -321,20 +521,32 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
-            if (ModelState.IsValid)
+            if (loginModel == null || !ModelState.IsValid ||
+                string.IsNullOrWhiteSpace(loginModel.Email) ||
+                string.IsNullOrEmpty(loginModel.Password))
             {
+                return BadRequest(new { message = "Invalid login data" });
+            }
+
+            var loginAttempts = GetRateCounter("login");
+            if (!TryUseRateSlot(loginAttempts, 12))
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    new { message = "Too many login attempts. Try again later." });
+            }
+
                 var _context = new DataContext();
                 var userInfo = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginModel.Email);
 
-                if (userInfo == null)
+                // The same message for unknown email and wrong password also
+                // avoids revealing which email addresses have accounts.
+                if (userInfo == null ||
+                    !ValidatePassword(loginModel.Password, userInfo.PasswordHash, userInfo.PasswordSalt))
                 {
-                    return BadRequest(new { message = "User not found." });
+                    // Keep the reserved slot for each failed login.
+                    return BadRequest(new { message = "Invalid email or password." });
                 }
 
-                if (!ValidatePassword(loginModel.Password, userInfo.PasswordHash, userInfo.PasswordSalt))
-                {
-                    return BadRequest(new { message = "Invalid password." });
-                }
                 string roleName;
 
                 switch (userInfo.UserRoleId)
@@ -379,26 +591,26 @@ namespace Allport_s_League_Scrambler.Controllers
 
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
+                // Return only this successful request's reserved slot. Do not
+                // erase failed guesses from other requests sharing the IP.
+                ReleaseRateSlot(loginAttempts);
+
                 // Return a success response
                 return Ok(new { message = "Login successful" });
-            }
-
-            return BadRequest(new { message = "Invalid login data" });
         }
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            // Check if the user is authenticated
             if (User.Identity.IsAuthenticated)
             {
-                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); // Sign out the user
-                Response.Cookies.Delete("access_token"); // Delete the authentication cookie
-                return Ok(new { message = "Logout successful" });
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             }
 
-            // If the user is not authenticated, return an error
-            return BadRequest(new { message = "User is not authenticated." });
+            // Logging out must also clear temporary administration privileges.
+            await HttpContext.SignOutAsync("LeagueAdminPassword");
+            Response.Cookies.Delete("access_token");
+            return Ok(new { message = "Logout successful" });
         }
 
         // Function to validate password
@@ -530,22 +742,70 @@ namespace Allport_s_League_Scrambler.Controllers
             return Ok(userLeagues);
         }
 
+        // The existing ResetToken text column stores both the issue time and
+        // 256 bits of cryptographically random material. No schema change is needed.
+        // Older untimed reset links are deliberately rejected.
+        private static readonly TimeSpan ResetTokenLifetime = TimeSpan.FromHours(1);
+
+        private static bool IsCurrentResetToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token) || token.Length > 128)
+            {
+                return false;
+            }
+
+            var parts = token.Split('.');
+            if (parts.Length != 3 || parts[0] != "v2" ||
+                parts[1].Length != 10 || parts[2].Length != 64 ||
+                !parts[1].All(c => c >= '0' && c <= '9') ||
+                !parts[2].All(c => (c >= '0' && c <= '9') ||
+                                   (c >= 'a' && c <= 'f')) ||
+                !long.TryParse(parts[1], out var issuedAtSeconds))
+            {
+                return false;
+            }
+
+            DateTimeOffset issuedAt;
+            try
+            {
+                issuedAt = DateTimeOffset.FromUnixTimeSeconds(issuedAtSeconds);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return false;
+            }
+
+            var elapsed = DateTimeOffset.UtcNow - issuedAt;
+            return elapsed >= TimeSpan.Zero && elapsed <= ResetTokenLifetime;
+        }
+
         [Route("resetpassword")]
         [HttpPost]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
+            // Count all reset submissions, even invalid tokens, without a
+            // database lookup or a separate database-backed rate-limit table.
+            if (!TryUseRateSlot(GetRateCounter("reset-submit"), 20))
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    "Too many password reset attempts. Try again later.");
+            }
+
+            // Reject missing, malformed, expired or legacy untimed tokens
+            // before querying the database. A null token must never match
+            // an account whose ResetToken column is null.
+            if (request == null || string.IsNullOrWhiteSpace(request.Password) ||
+                request.Password.Length < 6 || !IsCurrentResetToken(request.Token))
+            {
+                return BadRequest("Password reset failed: the link is invalid or expired.");
+            }
+
             try
             {
-                var _context = new DataContext(); // Create a new instance of DataContext
-                // Validate the request
-                if (request == null || string.IsNullOrWhiteSpace(request.Password))
-                {
-                    return BadRequest("Invalid request.");
-                }
-
+                var _context = new DataContext();
                 var userData = await _context.Users
-                                .Where(u => u.ResetToken == request.Token)
-                                .FirstOrDefaultAsync();
+                    .Where(u => u.ResetToken != null && u.ResetToken == request.Token)
+                    .FirstOrDefaultAsync();
                 if (userData == null)
                 {
                     return BadRequest("Password reset failed, token already used or invalid");
@@ -573,14 +833,18 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("updatesetting")]
-        public async Task<bool> UpdateSettingAsync([FromBody] UpdateSettingRequest request)
+        [Authorize(Policy = "LeagueManagement")]
+        public async Task<IActionResult> UpdateSettingAsync([FromBody] UpdateSettingRequest request)
         {
             var context = new DataContext();
 
             if (request == null || string.IsNullOrWhiteSpace(request.SettingName))
             {
-                return false;
+                return Ok(false);
             }
+
+            if (!LeagueAccess.CanManage(User, context, request.LeagueId))
+                return Forbid();
 
             // Check if the setting exists
             var setting = await context.LeagueSettings
@@ -608,7 +872,7 @@ namespace Allport_s_League_Scrambler.Controllers
             // Save changes to the database
             await context.SaveChangesAsync();
 
-            return true;
+            return Ok(true);
         }
 
 
@@ -661,38 +925,99 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost("forgotpassword")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email) ||
+                request.Email.Length > 320)
+            {
+                return BadRequest("Enter a valid email address.");
+            }
+
+            // Count every request, not only ones for registered accounts.
+            if (!TryUseRateSlot(GetRateCounter("forgot-password"), 8))
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    "Too many password reset requests. Try again later.");
+            }
+
+            // Limit email flooding to an address without revealing whether
+            // that address exists. The response is identical in both cases.
+            var cooldown = GetRecoveryCooldown(request.Email);
+            var requestedAt = DateTimeOffset.UtcNow;
+            lock (cooldown)
+            {
+                if (requestedAt - cooldown.LastRequest < TimeSpan.FromMinutes(2))
+                {
+                    return Ok(new { message = RecoveryAcceptedMessage });
+                }
+                cooldown.LastRequest = requestedAt;
+            }
+
             try
             {
-                var _context = new DataContext();
-                // Validate the request
-                if (request == null || string.IsNullOrWhiteSpace(request.Email))
-                {
-                    return BadRequest("Invalid request.");
-                }
-
-                // Check if the email exists in your database asynchronously
-                var userExists = await CheckEmailExistsAsync(request.Email);
-
+                var userExists = await CheckEmailExistsAsync(request.Email.Trim());
                 if (userExists != null)
                 {
-                    // Generate a password reset token asynchronously
                     string resetToken = await GenerateResetTokenAsync(request.Email);
+                    string previousResetToken = userExists.ResetToken;
                     userExists.ResetToken = resetToken;
 
-                    // Send the password reset email asynchronously
-                    await SendPasswordResetEmailAsync(request.Email, resetToken);
-                    _context.Users.Update(userExists);
-                    await _context.SaveChangesAsync();
-                    return Ok(new { message = "Password reset successfully emailed." });
+                    // A user must never receive a link before it is stored.
+                    using (var context = new DataContext())
+                    {
+                        context.Users.Update(userExists);
+                        await context.SaveChangesAsync();
+                    }
+
+                    try
+                    {
+                        await SendPasswordResetEmailAsync(userExists.Email, resetToken);
+                    }
+                    catch (Exception sendError)
+                    {
+                        // Avoid leaking account existence through delivery
+                        // errors, and restore an earlier link if delivery failed.
+                        Console.Error.WriteLine("Password reset delivery failed: " + sendError.Message);
+                        try
+                        {
+                            using (var rollbackContext = new DataContext())
+                            {
+                                await rollbackContext.Database.ExecuteSqlCommandAsync(
+                                    "UPDATE [dbo].[User] SET [ResetToken] = {0} " +
+                                    "WHERE [UserId] = {1} AND [ResetToken] = {2}",
+                                    (object)previousResetToken ?? DBNull.Value,
+                                    userExists.UserId, resetToken);
+                            }
+                        }
+                        catch (Exception rollbackError)
+                        {
+                            Console.Error.WriteLine("Password reset rollback failed: " + rollbackError.Message);
+                        }
+
+                        lock (cooldown)
+                        {
+                            if (cooldown.LastRequest == requestedAt)
+                            {
+                                cooldown.LastRequest = DateTimeOffset.MinValue;
+                            }
+                        }
+                    }
                 }
-                else
-                {
-                    return BadRequest("Email not found.");
-                }
+
+                return Ok(new { message = RecoveryAcceptedMessage });
             }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+                // A database-write or delivery failure for an existing account
+                // must not return a distinguishable status from an unknown
+                // email address. Log the failure for diagnostics instead.
+                Console.Error.WriteLine("Password recovery request failed: " + ex.Message);
+                lock (cooldown)
+                {
+                    if (cooldown.LastRequest == requestedAt)
+                    {
+                        cooldown.LastRequest = DateTimeOffset.MinValue;
+                    }
+                }
+                return Ok(new { message = RecoveryAcceptedMessage });
             }
         }
 
@@ -719,19 +1044,36 @@ namespace Allport_s_League_Scrambler.Controllers
                 rng.GetBytes(tokenBytes);
             }
 
-            // Convert the byte array to a hexadecimal string
-            string token = BitConverter.ToString(tokenBytes).Replace("-", "").ToLower();
+            // Embed the issue time in the same token stored in User.ResetToken.
+            // The random value is still required to match the database exactly.
+            string randomPart = BitConverter.ToString(tokenBytes).Replace("-", "").ToLowerInvariant();
+            string token = "v2." + DateTimeOffset.UtcNow.ToUnixTimeSeconds() + "." + randomPart;
 
             return await Task.FromResult(token);
         }
 
         private async Task SendPasswordResetEmailAsync(string email, string resetToken)
         {
+            var publicBaseUrl = Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_PUBLIC_BASE_URL");
+            if (string.IsNullOrWhiteSpace(publicBaseUrl))
+            {
+                publicBaseUrl = "https://leaguescrambler.hopto.org";
+            }
+
+            if (!Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var publicUri) ||
+                publicUri.Scheme != Uri.UriSchemeHttps)
+            {
+                throw new InvalidOperationException(
+                    "LEAGUESCRAMBLER_PUBLIC_BASE_URL must be a valid HTTPS URL.");
+            }
+
+            var resetUrl = publicBaseUrl.TrimEnd('/') + "/resetpassword?token=" +
+                Uri.EscapeDataString(resetToken);
             var mail = new MailMessage
             {
-                From = new MailAddress("LeagueScrambler@gmail.com"), // Replace with the sender's email
+                From = new MailAddress("LeagueScrambler@gmail.com"),
                 Subject = "Password Reset For League Scrambler",
-                Body = $"Click the following link to reset your password for your login to LeagueScrambler: http://leaguescrambler.hopto.org/resetpassword?token={resetToken}",
+                Body = $"Click the following link to reset your LeagueScrambler password: {resetUrl}\nThis link expires in one hour and can only be used once.",
                 IsBodyHtml = false
             };
 

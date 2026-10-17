@@ -151,7 +151,12 @@ export class HomeComponent implements OnInit {
                 });
             },
             (error) => {
-                this.showSnackBar('Login Failed', true); // Show fail message
+                this.showSnackBar(
+                    error.status === 429
+                        ? 'Too many login attempts. Please try again in 15 minutes.'
+                        : 'Login Failed',
+                    true
+                );
             }
         );
     }
@@ -360,8 +365,19 @@ export class HomeComponent implements OnInit {
     claimPlayer(player: any) {
         this.playerService.claimPlayer({ userId: this.userId, playerId: player.id }).subscribe(
             () => {
-                this.showSnackBar(`${player.firstName} ${player.lastName} has been claimed successfully! Please Log In`, false);
-                this.closeModal();
+                // Registration establishes a temporary Player session so claim
+                // requests can be authorized. Restore the original UX after the
+                // claim: sign out that temporary session, then show the login form.
+                this.loginService.logout().subscribe(
+                    () => {
+                        this.authService.setLoggedIn(false);
+                        this.showLoginForm = true;
+                        this.showRegistrationForm = false;
+                        this.closeModal();
+                        this.showSnackBar(`${player.firstName} ${player.lastName} has been claimed successfully! Please log in.`, false);
+                    },
+                    () => this.showSnackBar('Player claimed, but automatic sign-out failed. Please log out and log back in.', true)
+                );
             },
             () => {
                 this.showSnackBar('Failed to claim player. Try again.', true);

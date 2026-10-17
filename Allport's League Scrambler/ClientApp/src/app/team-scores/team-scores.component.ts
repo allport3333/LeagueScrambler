@@ -38,6 +38,7 @@ export class TeamScoresComponent implements OnInit {
     password: Password = { password: '', id: null };
     isActionAllowed: boolean = false;
     userRole: string;
+    legacyPassword: string = '';
     // The form with multiple "game" score boxes
     TeamScoresForm = new FormGroup({
         date: new FormControl(new Date()),
@@ -64,6 +65,10 @@ export class TeamScoresComponent implements OnInit {
 
     ngOnInit() {
         this.loading = true;
+        this.loginService.isAdminPasswordAuthorized().subscribe(
+            (authorized) => { if (authorized) { this.isActionAllowed = true; } },
+            () => { /* No legacy administration session. */ }
+        );
         this.newTeamScoreLoading = false;
 
         this.leagueService.selectedLeague$.subscribe(selected => {
@@ -77,11 +82,14 @@ export class TeamScoresComponent implements OnInit {
 
             if (result) {
                 // User is logged in
-                this.isActionAllowed = true; // Enable action for logged-in users
+                // Player login is not an administration credential.
 
                 // Fetch user role
                 this.loginService.getUsersRole().subscribe((roleResult) => {
                     this.userRole = roleResult.role;
+                    if (this.userRole === 'Admin' || this.userRole === 'Manager') {
+                        this.isActionAllowed = true;
+                    }
                     this.loading = false;
                 });
 
@@ -91,12 +99,29 @@ export class TeamScoresComponent implements OnInit {
                     this.loading = false;
                 });
             } else {
-                this.isActionAllowed = false;
                 this.loading = false;
             }
         });
 
         this.adjustScoreInputs();  // Initialize score inputs
+    }
+
+    unlockAdministration() {
+        if (!this.legacyPassword) {
+            alert('Enter the administration password.');
+            return;
+        }
+        this.loginService.verifyAdminPassword(this.legacyPassword).subscribe(
+            (result) => {
+                if (result && result.authorized) {
+                    this.isActionAllowed = true;
+                    this.legacyPassword = '';
+                }
+            },
+            (error) => alert(error.status === 429
+                ? 'Too many attempts. Try again later.'
+                : 'Incorrect administration password.')
+        );
     }
 
     // Adjust form controls based on number of games
@@ -118,6 +143,10 @@ export class TeamScoresComponent implements OnInit {
 
     // *** SUBMIT: Called when user enters multiple game scores ***
     onSubmitClick() {
+        if (!this.isActionAllowed) {
+            alert('Unlock administration before recording scores.');
+            return;
+        }
         this.newTeamScoreLoading = true;
 
         // Validate the first game's scores

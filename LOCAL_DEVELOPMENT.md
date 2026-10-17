@@ -1,0 +1,81 @@
+# Running the restored application in Visual Studio
+
+This document explains how the original LeagueScrambler functionality is preserved on the security branch without exposing its administration password to the browser.
+
+## First-time development setup
+
+1. Open the solution in Visual Studio and check out the security branch.
+2. Copy `.env.example` to `.env` in the same directory as `Startup.cs`.
+3. Supply a valid SQL Server connection string in `LEAGUESCRAMBLER_DB_CONNECTION`. Credentials were removed from code and are not committed. If you use Windows authentication, a locally configured connection string such as `Server=localhost;Database=LeagueScrambler;Trusted_Connection=True;` may be suitable. If you use SQL authentication, supply your own new user ID and password.
+4. Supply the SMTP settings if you need password recovery email functionality.
+5. Select an HTTPS launch profile in Visual Studio, trust the local development certificate if prompted, and start the application. The launch settings have been updated to use HTTPS. The authentication cookies deliberately cannot be used over HTTP.
+6. To create leagues using the administration password without an account login, make sure the database has exactly one Admin account, or set `LEAGUESCRAMBLER_LEGACY_ADMIN_EMAIL` to the email of the account that should own those leagues.
+7. To test password reset emails, set `LEAGUESCRAMBLER_PUBLIC_BASE_URL` to your actual HTTPS website origin; a placeholder or retired hostname will not deliver a working reset link.
+8. New registrations automatically obtain a Player session so they can create or claim a player profile securely, without allowing anonymous database writes.
+9. Registered Players may remove their own sign-in records; anonymous visitors may not delete other players' sign-ins.
+10. Restore the original SQL database schema and data. The existing `Passwords` table must contain the administration password used for old management screens. It remains server-side, never returned by the API. Do not use the former published password on a public system.
+
+## Existing administration flows
+
+* Regular Admin and Manager logins still grant management access.
+* On Scrambler and Team Scores, users who know the legacy administration password can enter it and select **Unlock Administration**.
+* The password is checked by `POST /api/Login/VerifyAdminPassword`, which creates a separate secure, HTTP-only administration session cookie that expires after six hours of inactivity and renews while you're actively using the site.
+* Legacy admin sessions do not replace ordinary player logins. After an unlock, users can add players, remove players, add leagues/divisions, save settings, enter scores, and save team scrambles subject to server permissions.
+* The old `GetPassword` endpoint is disabled. The web app no longer calls it.
+* Score recalculation now uses POST instead of a GET request with side effects.
+* Logging out clears both the ordinary session and any temporary administration cookie.
+
+## Test before merging
+
+1. Launch using HTTPS, verify that the home page and public player lists still load.
+2. Add a league with a real Admin login.
+3. Log out, unlock via the administration password, and add a player to a test league.
+4. Use the same unlocked session to delete the test player, create a division, and save league settings.
+5. Enter and recalculate test match scores from Team Scores.
+6. Generate and save scrambles, including King and Queen rounds.
+7. Confirm an anonymous request without an unlock cannot modify scores, divisions, league settings, or leagues.
+8. Confirm a Player login alone cannot modify those resources.
+9. Confirm a wrong administration password is rejected and repeated failed attempts are throttled.
+10. Confirm the admin cookie expires after six hours of inactivity, renews during active use, and that logout clears it.
+11. Validate the player claim, password recovery, and sign-in flows separately.
+12. Check Visual Studio build and Angular build logs. These have not been run by ChatGPT in this environment.
+13. As Admin or password-based administrator, check score updates, scrambles and sign-in locks across two leagues.
+14. As Manager, verify editing an assigned league works and an unassigned league returns HTTP 403.
+15. On an unlocked league, sign in a player from its roster. Then confirm a repeated same-day sign-in is rejected. Lock the league and confirm a new sign-in is blocked; unlock it and confirm sign-in works again.
+16. Confirm a player cannot be signed into a league they are not assigned to, even using a direct API request.
+
+## Password reset verification after the server is available
+
+* Request a new password reset email and confirm its link works within one hour, changes the password, and cannot be reused.
+* Check that requests with a missing token or a null token do not reset any account.
+* Check invalid/modified, legacy (old-format), and expired tokens are rejected with a useful error.
+* Previously emailed reset links issued before this change intentionally require a new request. The ResetToken column does **not** need a new migration.
+
+* Check that a password reset email's new token is already stored before the link is received. Simulate an SMTP failure and confirm the server logs the failure, the API returns the same account-neutral message, the previous reset link remains valid if it was still current, and retrying is possible.
+* Confirm the password-reset form refuses mismatched password/confirmation values and successfully submits a matching pair.
+
+## New login and recovery protection to verify
+
+* Try a valid and an invalid email in Forgot Password; both should display the same account-neutral message. Only the real account should be emailed.
+* Try more than 8 recovery requests from one IP in 15 minutes and confirm HTTP 429. A given email address should not receive more than one reset email per two minutes.
+* Try 12 incorrect login credentials from one IP; further attempts should receive HTTP 429 until the counter expires, even after a successful login was made earlier in the window.
+* Try more than 20 reset-password submissions from one IP within 15 minutes; subsequent requests should return HTTP 429, and the reset page should explain the temporary limit.
+* Check `GetLockSignInStatus` with no existing lock row: it should return unlocked without writing a row. Confirm `SetLockSignInStatus` still creates or changes the row.
+* Send parallel failed login attempts and parallel password-recovery requests for the same address; the counters/cooldowns should be enforced consistently. A successful login should not erase failed guesses from another request.
+* If hosting behind IIS, a tunnel, or another reverse proxy, verify the server sees distinct client IPs before relying on per-IP limits. Otherwise everyone may share one temporary lockout.
+* Test a database failure during reset issuance: the server should log it without indicating whether the target email is registered.
+* The counters are in-process and not shared between machines; they are basic protection, not proof of resilience against distributed abuse.
+
+## Highest-priority first-boot regression checks
+
+* Build the entire ASP.NET Core project and Angular frontend from `security/initial-hardening-oct-2026` before merging; do not test by modifying the master branch.
+* Sign in as Admin/Manager and verify editing an assigned league, creating/deleting a test player, and saving a new scramble and scores.
+* In an anonymous browser session, preview a scramble without unlocking administration: team previews should display, but `GenerateScramble` must not write team rows to SQL. Then unlock and verify the generated scramble can be saved.
+* Check ordinary and legacy-password administration login/logout, player registration and claiming, public player sign-in, signed-in player removal, league lock/unlock, and password recovery.
+* Confirm `LEAGUESCRAMBLER_DB_CONNECTION`, SMTP values, public HTTPS reset origin, IIS/HTTPS certificate, and reverse-proxy client IP handling before public access.
+
+## Still required before the site goes public
+
+This is a compatibility and initial security patch. Additional work is required for CSRF protection on authenticated changes, authorization by league ownership, migrating the legacy administration password away from plaintext database storage, and upgrading unsupported ASP.NET Core 2.2 and Angular 7 dependencies. The project must not be deployed on the public internet until these issues have been reviewed and tested.
+
+Previously committed secrets remain visible in Git history even after removing them from this branch. Rotate all live credentials before using any of those systems. No credentials have been rotated automatically.

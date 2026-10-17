@@ -4,8 +4,10 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Allport_s_League_Scrambler.Data;
+using Allport_s_League_Scrambler.Security;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
@@ -352,6 +354,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("[action]")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult RecordLeagueTeamScore([FromBody] LeagueTeamScoreDto dto)
         {
             var _context = new DataContext();
@@ -361,6 +364,15 @@ namespace Allport_s_League_Scrambler.Controllers
             if (mainTeam == null || oppTeam == null)
             {
                 return BadRequest("Either the main team or the opponent team was not found.");
+            }
+
+            if (mainTeam.LeagueID != oppTeam.LeagueID)
+            {
+                return BadRequest("Both teams must be in the same league.");
+            }
+            if (!LeagueAccess.CanManage(User, _context, mainTeam.LeagueID))
+            {
+                return Forbid();
             }
 
             var newScore = new LeagueTeamScore
@@ -381,14 +393,20 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
 
-        [HttpGet("[action]/{leagueName}")]
-        public List<LeagueTeam> UpdateTeamScores(string leagueName)
+        [HttpPost("[action]/{leagueName}")]
+        [Authorize(Policy = "LeagueManagement")]
+        public IActionResult UpdateTeamScores(string leagueName)
         {
             var _context = new DataContext();
             var league = _context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
             if (league == null)
             {
-                return new List<LeagueTeam>();
+                return Ok(new List<LeagueTeam>());
+            }
+
+            if (!LeagueAccess.CanManage(User, _context, league.ID))
+            {
+                return Forbid();
             }
 
             var teams = _context.LeagueTeam
@@ -415,7 +433,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 .Where(x => x.LeagueID == league.ID)
                 .ToList();
 
-            return updatedTeams;
+            return Ok(updatedTeams);
         }
 
 
@@ -525,6 +543,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("AddPlayerToLeagueTeam")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult AddPlayerToLeagueTeam(int leagueTeamId, int playerId)
         {
             using (var _context = new DataContext())
@@ -534,6 +553,11 @@ namespace Allport_s_League_Scrambler.Controllers
 
                 if (leagueTeam == null || player == null)
                     return BadRequest("LeagueTeam or Player not found.");
+
+                if (!LeagueAccess.CanManage(User, _context, leagueTeam.LeagueID))
+                {
+                    return Forbid();
+                }
 
                 // Check if the player is already on the team
                 var exists = _context.LeagueTeamPlayer
@@ -557,6 +581,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("AddTeam")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult AddTeam([FromBody] AddTeamRequest request)
         {
             var _context = new DataContext();
@@ -564,6 +589,9 @@ namespace Allport_s_League_Scrambler.Controllers
             var league = _context.Leagues.FirstOrDefault(x => x.ID == request.LeagueId);
             if (league == null)
                 return BadRequest("League not found.");
+
+            if (!LeagueAccess.CanManage(User, _context, request.LeagueId))
+                return Forbid();
 
             // Create new LeagueTeam
             var newTeam = new LeagueTeam
@@ -635,7 +663,7 @@ namespace Allport_s_League_Scrambler.Controllers
             var parsedDate = DateTime.Parse(date);
 
             var scores = _context.LeagueTeamScore
-                // If you must filter by league, you can do a join or check the team’s leagueID
+                // If you must filter by league, you can do a join or check the teamÂ’s leagueID
                 .Where(s => s.Date.Date == parsedDate.Date && s.LeagueTeam.LeagueID == league.ID)
                 .Include(s => s.LeagueTeam)
                 .Include(s => s.OpponentsTeam)
@@ -700,12 +728,16 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("SetTeamDivision")]
+        [Authorize(Policy = "LeagueManagement")]
         public IActionResult SetTeamDivision(int leagueTeamId, string division)
         {
             var _context = new DataContext();
             var team = _context.LeagueTeam.FirstOrDefault(t => t.Id == leagueTeamId);
             if (team == null)
                 return NotFound("Team not found.");
+
+            if (!LeagueAccess.CanManage(User, _context, team.LeagueID))
+                return Forbid();
 
             team.Division = division; // e.g. "Silver" or "Gold"
             _context.SaveChanges();

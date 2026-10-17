@@ -491,7 +491,20 @@ export class SignInComponent implements OnInit {
                 this.filteredPlayers = this.filteredPlayers.filter(p => p.id !== player.id);
                 this.updateGenderCounts();
             },
-            (error) => console.error('Error signing in player:', error)
+            (error) => {
+                console.error('Error signing in player:', error);
+                if (error.status === 423) {
+                    this.isSignInLocked = true;
+                    this.openDialog('Sign-in is currently locked for this league.');
+                } else if (error.status === 409) {
+                    this.openDialog('This player is already signed in for today.');
+                    this.fetchSignedInPlayers();
+                } else if (error.status === 400) {
+                    this.openDialog('This player is not assigned to the selected league.');
+                } else {
+                    this.openDialog('Unable to sign in this player. Please try again.');
+                }
+            }
         );
     }
 

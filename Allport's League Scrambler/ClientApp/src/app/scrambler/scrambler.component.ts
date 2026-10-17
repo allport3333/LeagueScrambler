@@ -332,15 +332,34 @@ export class ScramblerComponent implements OnInit {
     }
 
     onPasswordInput(inputPassword: string): void {
+        // Keep the password local until the user explicitly selects Unlock.
+        // Never download the stored password to the browser.
         this.userInputPassword = inputPassword;
-        if (
-            this.passwordLeague &&
-            this.userInputPassword === this.passwordLeague.password
-        ) {
-            this.isActionAllowed = true; // Enable button if password matches
-        } else if (!this.loggedIn) {
-            this.isActionAllowed = false; // Disable button if password is incorrect
+    }
+
+    unlockAdminPassword(password: string = this.userInputPassword, afterUnlock?: () => void): void {
+        if (!password) {
+            this.showSnackBar('Enter the administration password first.', true);
+            return;
         }
+
+        this.loginService.verifyAdminPassword(password).subscribe(
+            (result) => {
+                if (result && result.authorized) {
+                    this.isActionAllowed = true;
+                    this.userInputPassword = '';
+                    this.showSnackBar('Administration unlocked for 6 hours. Your session renews while you stay active.');
+                    if (afterUnlock) {
+                        afterUnlock();
+                    }
+                }
+            },
+            (error) => {
+                this.showSnackBar(error && error.status === 429
+                    ? 'Too many attempts. Try again later.'
+                    : 'Incorrect administration password.', true);
+            }
+        );
     }
 
     public hasTopPlayers(leagueId: number): Observable<boolean> {
@@ -592,17 +611,23 @@ export class ScramblerComponent implements OnInit {
             return;
         }
 
+        if (!this.isActionAllowed) {
+            this.unlockAdminPassword(
+                this.LeagueDivisionForm.get('passwordDivision').value,
+                () => this.addLeagueDivision()
+            );
+            return;
+        }
+
         const code = this.LeagueDivisionForm.get('code').value;
         const name = this.LeagueDivisionForm.get('name').value;
         const sortOrder = this.LeagueDivisionForm.get('sortOrder').value;
-        const passwordDivision = this.LeagueDivisionForm.get('passwordDivision').value;
 
         const payload = {
             leagueId: this.selectedLeagueDto.id,
             code: code,
             name: name,
-            sortOrder: sortOrder,
-            password: passwordDivision
+            sortOrder: sortOrder
         };
 
         this.playerService.addLeagueDivision(payload).subscribe(
@@ -856,45 +881,36 @@ export class ScramblerComponent implements OnInit {
             (error) => console.error(error)
         );
 
-        // Check login status
+        // A legacy administration session is separate from normal player login.
+        this.loginService.isAdminPasswordAuthorized().subscribe(
+            (authorized) => {
+                if (authorized) {
+                    this.isActionAllowed = true;
+                }
+            },
+            () => { /* No legacy session yet. */ }
+        );
+
         this.loginService.isLoggedIn().subscribe((result) => {
             this.loggedIn = result;
-
             if (result) {
-                // User is logged in
-                this.isActionAllowed = true; // Enable action for logged-in users
-
-                // Fetch user role
                 this.loginService.getUsersRole().subscribe((roleResult) => {
-                    this.userRole = roleResult.role; // Assuming the API returns { role: 'Admin' }
-
+                    this.userRole = roleResult.role;
+                    if (this.userRole === 'Admin' || this.userRole === 'Manager') {
+                        this.isActionAllowed = true;
+                    }
                 });
-
-                // Fetch user leagues
-                this.leagueService.getLeagues().subscribe((leagueResult) => {
-                    this.leaguesAvailable = leagueResult;
-                });
-            } else {
-                // User is not logged in
-
-                // Fetch password for non-logged-in users
-                this.playerService.GetPassword().subscribe(
-                    (passwordResult) => {
-                        this.passwordLeague = passwordResult;
-                    },
+                this.leagueService.getLeagues().subscribe(
+                    (leagueResult) => { this.leaguesAvailable = leagueResult; },
                     (error) => console.error(error)
                 );
-
-                // Fetch leagues for non-logged-in users
+            } else {
                 this.playerService.GetLeagues().subscribe(
-                    (leagueResult) => {
-                        this.leaguesAvailable = leagueResult;
-                    },
+                    (leagueResult) => { this.leaguesAvailable = leagueResult; },
                     (error) => console.error(error)
                 );
             }
         });
-
     }
 
     ngAfterViewInit() {
@@ -1117,6 +1133,10 @@ export class ScramblerComponent implements OnInit {
     }
 
     saveSettings(): void {
+        if (!this.isActionAllowed) {
+            this.showSnackBar('Unlock administration before saving league settings.', true);
+            return;
+        }
         const settings = [
             { settingName: 'dropLowest', settingValue: this.dropLowest },
             { settingName: 'numberOfSubsAllowed', settingValue: this.numberOfSubsAllowed },
@@ -1347,7 +1367,7 @@ export class ScramblerComponent implements OnInit {
         }
 
         // Sort by: 1) king/queen score (totalScore) desc
-        //          2) GOLD status (gold before non-gold) — even if gold total points are lower
+        //          2) GOLD status (gold before non-gold) Â— even if gold total points are lower
         //          3) totalScoreBeforeReduction desc
         //          4) playerName as deterministic fallback
         const sortedEligible = standingsEligible.slice().sort((a: any, b: any) => {
@@ -1853,20 +1873,13 @@ export class ScramblerComponent implements OnInit {
     }
 
     addLeague() {
-        if (this.loggedIn) {
+        if (this.isActionAllowed) {
             this.addLeagueLogic();
-        }
-        else {
-            this.playerService.GetPassword().subscribe(result => {
-
-                this.passwordLeague = result;
-                if (this.LeagueForm.controls["passwordLeague"].value == "" || this.LeagueForm.controls["passwordLeague"].value != this.passwordLeague.password) {
-                    this.showSnackBar("Password is not correct.")
-                }
-                else {
-                    this.addLeagueLogic();
-                }
-            });
+        } else {
+            this.unlockAdminPassword(
+                this.LeagueForm.controls['passwordLeague'].value,
+                () => this.addLeagueLogic()
+            );
         }
     }
 
@@ -2112,20 +2125,13 @@ export class ScramblerComponent implements OnInit {
 
 
     onDeletePlayerClick() {
-        if (this.loggedIn) {
+        if (this.isActionAllowed) {
             this.deletePlayerLogic();
-        }
-        else {
-            this.playerService.GetPassword().subscribe(result => {
-                this.password = result;
-                if (this.deletePlayerForm.controls["passwordDelete"].value == "" || this.deletePlayerForm.controls["passwordDelete"].value != this.password.password) {
-                    this.showSnackBar("Password is not correct.")
-                }
-                else {
-                    this.deletePlayerLogic();
-
-                }
-            });
+        } else {
+            this.unlockAdminPassword(
+                this.deletePlayerForm.controls['passwordDelete'].value,
+                () => this.deletePlayerLogic()
+            );
         }
     }
 
@@ -2201,21 +2207,13 @@ export class ScramblerComponent implements OnInit {
 
 
     onSubmitClick() {
-        if (this.loggedIn) {
+        if (this.isActionAllowed) {
             this.addPlayerLogic();
-        }
-        else {
-            this.playerService.GetPassword().subscribe(result => {
-                this.password = result;
-                if (
-                    this.PlayerForm.controls["password"].value == "" ||
-                    this.PlayerForm.controls["password"].value != this.password.password
-                ) {
-                    this.showSnackBar("Password is not correct.");
-                } else {
-                    this.addPlayerLogic();
-                }
-            });
+        } else {
+            this.unlockAdminPassword(
+                this.PlayerForm.controls['password'].value,
+                () => this.addPlayerLogic()
+            );
         }
     }
 
@@ -3468,6 +3466,19 @@ export class ScramblerComponent implements OnInit {
                 this.saveTeamsDiv.nativeElement.focus();
             }
 
+
+            // A scramble is calculated locally for preview, but GenerateScramble
+            // persists a database record. Public visitors and Player accounts
+            // may preview teams without making an unauthorized database write.
+            if (!this.isActionAllowed) {
+                this.scrambleNumber = 0;
+                if (nonDuplicates) {
+                    this.allowScrambleWithNoDuplicates = false;
+                }
+                this.showSnackBar('Preview generated. Unlock administration to save a scramble.');
+                this.cdr.detectChanges();
+                return;
+            }
 
             const requestBody: KingQueenTeamsResponse = {
                 kingQueenTeams: this.listOfTeams.map(team => {
