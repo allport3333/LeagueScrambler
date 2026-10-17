@@ -64,6 +64,85 @@ namespace Allport_s_League_Scrambler.Controllers
             public int Failures { get; set; }
         }
 
+        // Simple in-process limits for this legacy single-server application.
+        // They expire automatically, require no schema change, and do not trust
+        // user-supplied forwarding headers for client identity.
+        private class RequestCounter
+        {
+            public int Count { get; set; }
+        }
+
+        private class RecoveryCooldown
+        {
+            public DateTimeOffset LastRequest { get; set; }
+        }
+
+        private const string RecoveryAcceptedMessage =
+            "If an account exists for that email, a password reset link may arrive shortly.";
+
+        private RequestCounter GetRateCounter(string scope)
+        {
+            var remoteAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            return _adminPasswordAttempts.GetOrCreate("rate:" + scope + ":" + remoteAddress, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+                return new RequestCounter();
+            });
+        }
+
+        private static bool TryUseRateSlot(RequestCounter counter, int maxRequests)
+        {
+            lock (counter)
+            {
+                if (counter.Count >= maxRequests)
+                {
+                    return false;
+                }
+                counter.Count++;
+                return true;
+            }
+        }
+
+        private static bool IsLoginBlocked(RequestCounter counter)
+        {
+            lock (counter)
+            {
+                return counter.Count >= 12;
+            }
+        }
+
+        private static void RecordFailedLogin(RequestCounter counter)
+        {
+            lock (counter)
+            {
+                counter.Count++;
+            }
+        }
+
+        private static void ClearFailedLogins(RequestCounter counter)
+        {
+            lock (counter)
+            {
+                counter.Count = 0;
+            }
+        }
+
+        private RecoveryCooldown GetRecoveryCooldown(string email)
+        {
+            // Hash normalized email so address values are not kept in cache keys.
+            string key;
+            using (var sha = SHA256.Create())
+            {
+                var normalized = email.Trim().ToUpperInvariant();
+                key = Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(normalized)));
+            }
+            return _adminPasswordAttempts.GetOrCreate("recovery-address:" + key, entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2);
+                return new RecoveryCooldown();
+            });
+        }
+
         [HttpPost("VerifyAdminPassword")]
         public async Task<IActionResult> VerifyAdminPassword([FromBody] AdminPasswordRequest request)
         {
@@ -451,20 +530,34 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
-            if (ModelState.IsValid)
+            if (loginModel == null || !ModelState.IsValid ||
+                string.IsNullOrWhiteSpace(loginModel.Email) ||
+                string.IsNullOrEmpty(loginModel.Password))
+            {
+                return BadRequest(new { message = "Invalid login data" });
+            }
+
+            var loginAttempts = GetRateCounter("login");
+            if (IsLoginBlocked(loginAttempts))
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    new { message = "Too many login attempts. Try again later." });
+            }
+
             {
                 var _context = new DataContext();
                 var userInfo = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginModel.Email);
 
-                if (userInfo == null)
+                // The same message for unknown email and wrong password also
+                // avoids revealing which email addresses have accounts.
+                if (userInfo == null ||
+                    !ValidatePassword(loginModel.Password, userInfo.PasswordHash, userInfo.PasswordSalt))
                 {
-                    return BadRequest(new { message = "User not found." });
+                    RecordFailedLogin(loginAttempts);
+                    return BadRequest(new { message = "Invalid email or password." });
                 }
 
-                if (!ValidatePassword(loginModel.Password, userInfo.PasswordHash, userInfo.PasswordSalt))
-                {
-                    return BadRequest(new { message = "Invalid password." });
-                }
+                ClearFailedLogins(loginAttempts);
                 string roleName;
 
                 switch (userInfo.UserRoleId)
@@ -700,6 +793,14 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
+            // Count all reset submissions, even invalid tokens, without a
+            // database lookup or a separate database-backed rate-limit table.
+            if (!TryUseRateSlot(GetRateCounter("reset-submit"), 20))
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    "Too many password reset attempts. Try again later.");
+            }
+
             // Reject missing, malformed, expired or legacy untimed tokens
             // before querying the database. A null token must never match
             // an account whose ResetToken column is null.
