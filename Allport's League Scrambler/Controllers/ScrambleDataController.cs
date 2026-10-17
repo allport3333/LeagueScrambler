@@ -1759,13 +1759,20 @@ namespace Allport_s_League_Scrambler.Controllers
                 return NotFound("League not found.");
             if (!LeagueAccess.CanManage(User, context, league.ID))
                 return Forbid();
-            var playerExists = context.Players.Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName).FirstOrDefault();
+            if (player == null)
+                return BadRequest("Player is required.");
 
-            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
-            var playerLeaguesExist = context.PlayersLeagues.Where(x => x.LeagueID == league.ID && x.PlayerID == playerExists.Id).FirstOrDefault();
+            var playerExists = context.Players.FirstOrDefault(x =>
+                x.FirstName == player.FirstName && x.LastName == player.LastName);
+            if (playerExists == null)
+                return NotFound("Player not found.");
+
+            var playerLeaguesExist = context.PlayersLeagues.FirstOrDefault(x =>
+                x.LeagueID == league.ID && x.PlayerID == playerExists.Id);
+            if (playerLeaguesExist == null)
+                return NotFound("Player is not assigned to this league.");
 
             context.PlayersLeagues.Remove(playerLeaguesExist);
-
             context.SaveChanges();
 
             return Ok(player);
