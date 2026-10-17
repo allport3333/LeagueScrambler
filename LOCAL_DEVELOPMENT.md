@@ -61,6 +61,9 @@ This document explains how the original LeagueScrambler functionality is preserv
 * Try 12 incorrect login credentials from one IP; further attempts should receive HTTP 429 until the counter expires, even after a successful login was made earlier in the window.
 * Try more than 20 reset-password submissions from one IP within 15 minutes; subsequent requests should return HTTP 429, and the reset page should explain the temporary limit.
 * Check `GetLockSignInStatus` with no existing lock row: it should return unlocked without writing a row. Confirm `SetLockSignInStatus` still creates or changes the row.
+* Send parallel failed login attempts and parallel password-recovery requests for the same address; the counters/cooldowns should be enforced consistently. A successful login should not erase failed guesses from another request.
+* If hosting behind IIS, a tunnel, or another reverse proxy, verify the server sees distinct client IPs before relying on per-IP limits. Otherwise everyone may share one temporary lockout.
+* Test a database failure during reset issuance: the server should log it without indicating whether the target email is registered.
 * The counters are in-process and not shared between machines; they are basic protection, not proof of resilience against distributed abuse.
 
 ## Still required before the site goes public
