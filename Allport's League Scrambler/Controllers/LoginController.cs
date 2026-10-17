@@ -850,15 +850,34 @@ namespace Allport_s_League_Scrambler.Controllers
                 {
                     // Generate a password reset token asynchronously
                     string resetToken = await GenerateResetTokenAsync(request.Email);
+                    string previousResetToken = userExists.ResetToken;
                     userExists.ResetToken = resetToken;
 
-                    // Persist the token before sending the reset link. Otherwise a
-                    // user could receive a link that the reset endpoint cannot find.
+                    // Persist the token before emailing it, so the recipient
+                    // cannot reach the reset endpoint before the token exists.
                     _context.Users.Update(userExists);
                     await _context.SaveChangesAsync();
 
-                    // Only report success after the email has been sent.
-                    await SendPasswordResetEmailAsync(request.Email, resetToken);
+                    try
+                    {
+                        await SendPasswordResetEmailAsync(request.Email, resetToken);
+                    }
+                    catch
+                    {
+                        // Restore a previously valid link if email delivery
+                        // fails. Only roll back our own token, not a different
+                        // reset request that may have completed concurrently.
+                        using (var rollbackContext = new DataContext())
+                        {
+                            await rollbackContext.Database.ExecuteSqlCommandAsync(
+                                "UPDATE [dbo].[User] SET [ResetToken] = {0} " +
+                                "WHERE [UserId] = {1} AND [ResetToken] = {2}",
+                                (object)previousResetToken ?? DBNull.Value,
+                                userExists.UserId, resetToken);
+                        }
+                        throw;
+                    }
+
                     return Ok(new { message = "Password reset successfully emailed." });
                 }
                 else
