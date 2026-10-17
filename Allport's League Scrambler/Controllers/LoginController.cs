@@ -852,10 +852,13 @@ namespace Allport_s_League_Scrambler.Controllers
                     string resetToken = await GenerateResetTokenAsync(request.Email);
                     userExists.ResetToken = resetToken;
 
-                    // Send the password reset email asynchronously
-                    await SendPasswordResetEmailAsync(request.Email, resetToken);
+                    // Persist the token before sending the reset link. Otherwise a
+                    // user could receive a link that the reset endpoint cannot find.
                     _context.Users.Update(userExists);
                     await _context.SaveChangesAsync();
+
+                    // Only report success after the email has been sent.
+                    await SendPasswordResetEmailAsync(request.Email, resetToken);
                     return Ok(new { message = "Password reset successfully emailed." });
                 }
                 else
