@@ -41,7 +41,7 @@ export class ResetPasswordComponent {
                 },
                 (error) => {
                     // Handle any errors that occur during the resetPassword API call
-                    this.snackBar.open('Password reset failed, token already used.', 'Close', {
+                    this.snackBar.open('Password reset failed. The link may be invalid, expired, or already used. Please request a new link.', 'Close', {
                         verticalPosition: 'top',
                         horizontalPosition: 'center',
                         duration: 5000, // Adjust the duration as needed
