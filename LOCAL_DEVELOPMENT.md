@@ -51,8 +51,17 @@ This document explains how the original LeagueScrambler functionality is preserv
 * Check invalid/modified, legacy (old-format), and expired tokens are rejected with a useful error.
 * Previously emailed reset links issued before this change intentionally require a new request. The ResetToken column does **not** need a new migration.
 
-* Check that a password reset email's new token is already stored before the link is received. Simulate an SMTP failure and confirm the API reports an error, a previously issued reset link remains usable, and a retry can issue a fresh link.
+* Check that a password reset email's new token is already stored before the link is received. Simulate an SMTP failure and confirm the server logs the failure, the API returns the same account-neutral message, the previous reset link remains valid if it was still current, and retrying is possible.
 * Confirm the password-reset form refuses mismatched password/confirmation values and successfully submits a matching pair.
+
+## New login and recovery protection to verify
+
+* Try a valid and an invalid email in Forgot Password; both should display the same account-neutral message. Only the real account should be emailed.
+* Try more than 8 recovery requests from one IP in 15 minutes and confirm HTTP 429. A given email address should not receive more than one reset email per two minutes.
+* Try 12 incorrect login credentials from one IP; further attempts should receive HTTP 429 until the counter expires, even after a successful login was made earlier in the window.
+* Try more than 20 reset-password submissions from one IP within 15 minutes; subsequent requests should return HTTP 429, and the reset page should explain the temporary limit.
+* Check `GetLockSignInStatus` with no existing lock row: it should return unlocked without writing a row. Confirm `SetLockSignInStatus` still creates or changes the row.
+* The counters are in-process and not shared between machines; they are basic protection, not proof of resilience against distributed abuse.
 
 ## Still required before the site goes public
 
