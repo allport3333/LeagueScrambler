@@ -99,7 +99,7 @@ export class PlayerService {
     }
 
     public addPlayerWithoutLeague(player: any): Observable<any> {
-        return this.httpClient.post(this.baseUrl + '/api/ScrambleData/AddPlayerWithoutLeague', player);
+        return this.httpClient.post(this.baseUrl + 'api/ScrambleData/AddPlayerWithoutLeague', player);
     }
 
     public AddPlayer(player: any, leagueName: string, leagueDivisionId?: number): Observable<any> {
