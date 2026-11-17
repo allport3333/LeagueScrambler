@@ -48,14 +48,12 @@ namespace Allport_s_League_Scrambler.Controllers
                 }
             }
 
-            // Preserve the original behavior for old records whose Gender field
-            // was populated when listing players. This write-in-GET should move
-            // into a separate data migration before public relaunch.
-            context.SaveChanges();
+            // Display normalization must never persist from a public GET.
             return players;
         }
 
         [HttpPost("claimPlayer")]
+        [SameOrigin]
         [Authorize]
         public IActionResult ClaimPlayer([FromBody] ClaimPlayerRequest request)
         {
@@ -388,6 +386,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
         [HttpPost("[action]")]
+        [SameOrigin]
         [Authorize]
         public IActionResult AddPlayerWithoutLeague([FromBody] Player player)
         {
@@ -833,6 +832,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("SignInPlayer")]
+        [SameOrigin]
         public async Task<IActionResult> SignInPlayer([FromBody] PlayerSignIn playerSignIn)
         {
             // This endpoint stays public so leagues can use the existing
@@ -1648,8 +1648,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 player.Gender = player.IsMale ? "Male" : "Female";
             }
 
-            // Save changes if needed (e.g., if Gender is stored in the database)
-            context.SaveChanges();
+            // Display normalization must never persist from a public GET.
 
             return players;
         }

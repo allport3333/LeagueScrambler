@@ -102,4 +102,12 @@ To inventory retained synthetic records without deleting anything, run `Run.ps1 
 
 ## Limits
 
+### Scoped same-origin protection (2026-11-17)
+
+Ordinary register/login, ClaimPlayer, AddPlayerWithoutLeague and public SignInPlayer now require a same-origin Origin header, or a same-origin Referer if Origin is absent. Missing/null/malformed/foreign origins are rejected with 403. Origin comparison includes scheme, host and port; Origin takes precedence over Referer. Nonbrowser API clients must supply these headers. The API fixture supplies the exact localhost Origin; negative CSRF tests explicitly vary it under the same isolation guard. Browser tests use real browser-generated headers.
+
+This is intentionally scoped, not a global CSRF fix. Frozen legacy password verification, its cookie, shared logout and league-management actions are untouched. Existing browser JSON/preflight protections are not a substitute for reviewing every endpoint. Both public GetPlayers routes now normalize Gender only in their response, without SaveChanges. The global directory stays intercepted in browser tests to avoid exposing real data; SQL persistence checks use synthetic league fixtures only.
+
+The approach follows [OWASP origin verification guidance](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#verifying-the-origin-with-standard-headers). No CORS expansion is permitted without revisiting this protection. Focused results: artifacts/runs/csrf-focused; complete follow-up results: artifacts/runs/csrf-full. See WORK_LOG.md for the current checkpoint and resume restrictions.
+
 Live SQL correlation proves the observed application's development session, not every possible connection made by arbitrary modified code. Configuration checks plus source inspection and strict test-only SQL targets supplement that evidence. Manual verification is always labelled separately and does not claim successful SQL correlation. No schema migration, database creation, production read/write or email delivery is part of this harness. SQL metadata checks may require additional read-only permissions. A stopped server is BLOCKED, never a passing app test. App API getters not on the nonmutating allowlist are blocked in read-only browser runs because legacy GET handlers can write data. Safe orphan-account deletion is the only enabled cleanup operation.

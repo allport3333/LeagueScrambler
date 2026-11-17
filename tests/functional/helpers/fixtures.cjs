@@ -88,7 +88,7 @@ const test = base.extend({
   },
   api: async ({ request, mutation, regression }, use, testInfo) => {
     const diagnostics = [];
-    async function send(method, relative, data) {
+    async function send(method, relative, data, headers) {
       const url = assertLocalUrl(new URL(relative, BASE_URL).href);
       if (!mutation && (method !== 'GET' || !SAFE_READS.has(url.pathname.toLowerCase()))) {
         throw new Error('Nonmutating request allowlist rejected this operation.');
@@ -97,12 +97,13 @@ const test = base.extend({
         throw new Error('Milestone-one mutation endpoint allowlist rejected this operation.');
       }
       if (mutation && method !== 'GET') verifyIsolation(regression ? 'development-regression' : 'milestone-one');
-      const response = await request.fetch(url.href, { method, data, maxRedirects: 0 });
+      const originHeaders = headers === null ? {} : Object.fromEntries(Object.entries({ Origin: BASE_URL, ...headers }).filter(([,value]) => value !== undefined));
+      const response = await request.fetch(url.href, { method, data, headers: method === 'GET' ? headers : originHeaders, maxRedirects: 0 });
       diagnostics.push({ method, path: url.pathname, status: response.status() });
       if (response.status() >= 300 && response.status() < 400) throw new Error('Unexpected API redirect blocked.');
       return response;
     }
-    await use({ get: route => send('GET', route), post: (route, data) => send('POST', route, data), delete: route => send('DELETE', route) });
+    await use({ get: route => send('GET', route), post: (route, data, headers) => send('POST', route, data, headers), delete: route => send('DELETE', route) });
     await testInfo.attach('api-diagnostics', { body: JSON.stringify(diagnostics, null, 2), contentType: 'application/json' });
   },
   records: async ({}, use, testInfo) => {

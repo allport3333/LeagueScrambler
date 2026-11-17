@@ -235,6 +235,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("register")]
+        [SameOrigin]
         public async Task<IActionResult> Register([FromBody] RegistrationModel registrationModel)
         {
             if (ModelState.IsValid)
@@ -519,6 +520,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("login")]
+        [SameOrigin]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
             if (loginModel == null || !ModelState.IsValid ||

@@ -1,5 +1,7 @@
 # LeagueScrambler development regression report
 
+**Historical report:** the subsequent usage-limited CSRF follow-up completed with **34 passed, 0 failed and 2 blocked**. See WORK_LOG.md for the current changes, limitations and resume instructions, and artifacts/runs/csrf-full for actual post-change results. The inventory and security findings below describe the earlier cycle; both player-list GET writes have since been removed and five ordinary account/player routes now have scoped same-origin protection. This does not remediate CSRF globally or change the frozen legacy administration system.
+
 Generated 2026-11-17T04:47:33.633Z. Target: https://localhost:5001 and localhost SQL Server LeagueScramblerDev, Windows Authentication. No production database access, IIS/certificate/deployment change, framework upgrade, real recovery email, commit, push, merge or deployment was performed.
 
 ## Final execution results

@@ -94,6 +94,7 @@ try {
             $parameters=@{ '@email'=[string]$id.email; '@first'=[string]$id.firstName; '@last'=[string]$id.lastName }
             $users=Query 'SELECT UserId,UserRoleId FROM dbo.[User] WHERE Email=@email;' $parameters
             $players=Query 'SELECT Id FROM dbo.Player WHERE FirstName=@first AND LastName=@last;' $parameters
+            if ($request.includeDisplay) { $players=Query 'SELECT Id,Gender,IsMale FROM dbo.Player WHERE FirstName=@first AND LastName=@last;' $parameters }
             $links=Query 'SELECT up.UsersPlayerId,up.UserId,up.PlayerId FROM dbo.UsersPlayer up JOIN dbo.[User] u ON u.UserId=up.UserId WHERE u.Email=@email;' $parameters
             $result=@{users=@($users);players=@($players);links=@($links)}
         }
