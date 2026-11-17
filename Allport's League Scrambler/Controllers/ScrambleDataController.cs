@@ -301,6 +301,12 @@ namespace Allport_s_League_Scrambler.Controllers
             if (!LeagueAccess.CanManage(User, context, existingLeague.ID))
                 return Forbid();
 
+            if (divisionIdToSave.HasValue && !context.LeagueDivision.Any(d =>
+                d.Id == divisionIdToSave.Value && d.LeagueID == existingLeague.ID))
+            {
+                return BadRequest("The selected division does not belong to this league.");
+            }
+
             var playerExists = context.Players
                 .Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName)
                 .FirstOrDefault();
@@ -929,13 +935,25 @@ namespace Allport_s_League_Scrambler.Controllers
                     .Select(t => t.ScrambleNumber)
                     .FirstOrDefaultAsync();
 
+                // All new teams in one submitted batch share the new scramble
+                // number for their league, rather than incrementing per team.
+                var newScrambleNumbers = new Dictionary<int, int>();
                 foreach (var teamScore in scores)
                 {
                     // If scramble number is 0, assign a new scramble number
                     if (teamScore.ScrambleNumber == 0)
                     {
-                        teamScore.ScrambleNumber = latestScrambleNumber + 1;
-                        latestScrambleNumber = teamScore.ScrambleNumber; // Update for subsequent teams
+                        if (!newScrambleNumbers.TryGetValue(teamScore.LeagueId, out var nextScrambleNumber))
+                        {
+                            nextScrambleNumber = context.KingQueenTeam
+                                .Where(t => t.LeagueID == teamScore.LeagueId && t.ScrambleWithScoresToBeSaved)
+                                .Select(t => t.ScrambleNumber)
+                                .DefaultIfEmpty(0)
+                                .Max() + 1;
+                            newScrambleNumbers.Add(teamScore.LeagueId, nextScrambleNumber);
+                        }
+                        teamScore.ScrambleNumber = nextScrambleNumber;
+                        latestScrambleNumber = Math.Max(latestScrambleNumber, nextScrambleNumber);
                     }
 
                     // Get or create KingQueenTeam
@@ -1350,7 +1368,7 @@ namespace Allport_s_League_Scrambler.Controllers
                         : 0,
 
                     LeagueDivisionCode = playerDivisionLookup.ContainsKey(group.Key.PlayerId)
-                        ? playerDivisionLookup[group.Key.PlayerId].LeagueDivisionName
+                        ? playerDivisionLookup[group.Key.PlayerId].LeagueDivisionCode
                         : "Unassigned",
 
                     LeagueDivisionName = playerDivisionLookup.ContainsKey(group.Key.PlayerId)
@@ -1509,7 +1527,7 @@ namespace Allport_s_League_Scrambler.Controllers
                         : 0,
 
                     LeagueDivisionCode = playerDivisionLookup.ContainsKey(player.PlayerId)
-                        ? playerDivisionLookup[player.PlayerId].LeagueDivisionName
+                        ? playerDivisionLookup[player.PlayerId].LeagueDivisionCode
                         : "Unassigned",
 
                     LeagueDivisionName = playerDivisionLookup.ContainsKey(player.PlayerId)
