@@ -1,10 +1,17 @@
-param()
+param([switch]$ReadOnly)
 $ErrorActionPreference='Stop'
 try {
-    $authority=Get-Content -LiteralPath (Join-Path $PSScriptRoot '../.local/manual-process-approval.json') -Raw | ConvertFrom-Json
-    if ([DateTime]::Parse($authority.expiresAt).ToUniversalTime() -le [DateTime]::UtcNow -or $authority.baseURL -cne 'https://localhost:5001' -or $authority.database -cne 'LeagueScramblerDev' -or $authority.authorizedScopes -notcontains 'development-regression') { throw 'Original development regression authority is absent or expired.' }
+    if (-not $ReadOnly) {
+        $authority=Get-Content -LiteralPath (Join-Path $PSScriptRoot '../.local/manual-process-approval.json') -Raw | ConvertFrom-Json
+        if ([DateTime]::Parse($authority.expiresAt).ToUniversalTime() -le [DateTime]::UtcNow -or $authority.baseURL -cne 'https://localhost:5001' -or $authority.database -cne 'LeagueScramblerDev' -or $authority.authorizedScopes -notcontains 'development-regression') { throw 'Original development regression authority is absent or expired.' }
+    }
     $identity=(& (Join-Path $PSScriptRoot 'process-identity.ps1') | ConvertFrom-Json)
     if (-not $identity.pid -or [IntPtr]::Size -ne 8) { throw 'Verified 64-bit localhost Debug process required.' }
+    if (-not $ReadOnly) {
+        foreach($field in 'pid','processStartUtc','projectDll','dllSha256','envSha256','launchProfileSha256') {
+            if (-not $authority.identity.$field -or $authority.identity.$field -cne $identity.$field) { throw 'Testing authorization does not match the current process/configuration.' }
+        }
+    }
     # Read-only Windows APIs: no WriteProcessMemory, thread injection or SQL connection.
     Add-Type -TypeDefinition @'
 using System;
@@ -61,6 +68,15 @@ public static class LocalDevEnvironmentReader {
     $after=(& (Join-Path $PSScriptRoot 'process-identity.ps1') | ConvertFrom-Json)
     foreach($field in 'pid','processStartUtc','projectDll','dllSha256','envSha256','launchProfileSha256') {
         if($identity.$field -cne $after.$field){throw 'Process/configuration changed during runtime verification.'}
+    }
+    if ($ReadOnly) {
+        # Evidence is NOT authorization: no expiry/scopes, no update to either
+        # mutation approval/proof file, and no claim of personal confirmation.
+        $inspection=@{mode='runtime-inspection';effectiveRuntimeEnvironmentVerified=$true;mutationAuthorizationGranted=$false;baseURL='https://localhost:5001';server='localhost';database='LeagueScramblerDev';windowsAuthentication=$true;identity=$identity;verifiedAt=[DateTime]::UtcNow.ToString('o');automatedSessionCorrelationPassed=$false}
+        $file=Join-Path $PSScriptRoot '../.local/runtime-process-inspection.json'
+        [IO.File]::WriteAllText([IO.Path]::GetFullPath($file),($inspection|ConvertTo-Json -Depth 8),(New-Object Text.UTF8Encoding($false)))
+        @{mode='runtime-inspection';pid=$identity.pid;processStartUtc=$identity.processStartUtc;server='localhost';database='LeagueScramblerDev';windowsAuthentication=$true;effectiveRuntimeEnvironmentVerified=$true;mutationAuthorizationGranted=$false;automatedSessionCorrelationPassed=$false} | ConvertTo-Json -Compress
+        exit 0
     }
     $proof=@{mode='runtime-environment';effectiveRuntimeEnvironmentVerified=$true;baseURL='https://localhost:5001';server='localhost';database='LeagueScramblerDev';identity=$identity;verifiedAt=[DateTime]::UtcNow.ToString('o');expiresAt=$authority.expiresAt;authorizedScopes=@('milestone-one','development-regression');automatedSessionCorrelationPassed=$false}
     $file=Join-Path $PSScriptRoot '../.local/runtime-process-verification.json'

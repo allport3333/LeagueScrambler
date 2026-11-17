@@ -1798,6 +1798,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("[action]/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
+        [SameOrigin]
         public async Task<IActionResult> AddNewLeague(string leagueName)
         {
             // A Player cookie may coexist with the legacy administration cookie.

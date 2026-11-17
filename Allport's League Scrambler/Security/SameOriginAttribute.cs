@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace Allport_s_League_Scrambler.Security
 {
-    // Browser-facing account/player writes only. Do not apply globally: the
+    // Explicitly selected browser-facing writes. Do not apply globally: the
     // frozen legacy administration credential flow is deliberately out of scope.
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class SameOriginAttribute : ActionFilterAttribute

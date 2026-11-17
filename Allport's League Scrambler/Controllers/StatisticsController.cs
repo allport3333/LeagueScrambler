@@ -395,6 +395,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("[action]/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
+        [SameOrigin]
         public IActionResult UpdateTeamScores(string leagueName)
         {
             var _context = new DataContext();
@@ -544,6 +545,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("AddPlayerToLeagueTeam")]
         [Authorize(Policy = "LeagueManagement")]
+        [SameOrigin]
         public IActionResult AddPlayerToLeagueTeam(int leagueTeamId, int playerId)
         {
             using (var _context = new DataContext())
@@ -729,6 +731,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("SetTeamDivision")]
         [Authorize(Policy = "LeagueManagement")]
+        [SameOrigin]
         public IActionResult SetTeamDivision(int leagueTeamId, string division)
         {
             var _context = new DataContext();

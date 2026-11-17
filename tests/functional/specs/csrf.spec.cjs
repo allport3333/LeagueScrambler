@@ -4,6 +4,56 @@ const {account,league,roster,leagueSnapshot}=require('../helpers/regression.cjs'
 const {BASE_URL}=require('../helpers/safety.cjs');
 test.use({mutation:true,regression:true});
 
+for(const [role,roleId] of [['Admin',1],['Manager',2]]){
+  test(`management CSRF ${role}: rejected writes preserve SQL and real-browser same-origin writes succeed`,async({api,request,page,records})=>{
+    await account(api,records,'management',roleId);
+    // Transfer only this test's synthetic session to the browser. No real accounts.
+    await page.context().addCookies((await request.storageState()).cookies);
+    await page.goto('/');
+    const browserPost=async(path,data)=>page.evaluate(async({path,data})=>{
+      const response=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+      const text=await response.text();
+      return {status:response.status,body:response.headers.get('content-type')?.includes('application/json')?JSON.parse(text):text};
+    },{path,data});
+    const hostile=[{Origin:'https://attacker.invalid'},{Origin:'null'},null,
+      {Origin:'https://attacker.invalid','X-Forwarded-Host':'attacker.invalid','X-Forwarded-Proto':'https'}];
+    const deniedName=records.league('deniedcreation');
+    for(const headers of hostile){
+      expect((await api.post('/api/ScrambleData/AddNewLeague/'+deniedName,[],headers)).status()).toBe(403);
+      expect(leagueSnapshot(deniedName)).toEqual({league:[]});
+    }
+    const name=records.league('browsermanagement');
+    const created=await browserPost('/api/ScrambleData/AddNewLeague/'+name,[]);
+    expect(created.status).toBe(200);
+    const target={name,id:created.body.id};
+    records.captureLeague(name,leagueSnapshot(name));
+    const player=await roster(api,records,target,'teamcandidate');
+    const teams=[];
+    for(const teamName of ['Synthetic CSRF One','Synthetic CSRF Two']){
+      const response=await api.post('/api/Statistics/AddTeam',{leagueId:target.id,teamName,division:'Gold'});
+      expect(response.status()).toBe(200);teams.push(await response.json());
+    }
+    expect((await api.post('/api/Statistics/RecordLeagueTeamScore',{teamId:teams[0].id,opponentsTeamId:teams[1].id,teamScore:21,wonGame:true,date:new Date().toISOString()})).status()).toBe(200);
+    const operations=[
+      `/api/Statistics/AddPlayerToLeagueTeam?leagueTeamId=${teams[0].id}&playerId=${player.id}`,
+      `/api/Statistics/SetTeamDivision?leagueTeamId=${teams[0].id}&division=Silver`,
+      '/api/Statistics/UpdateTeamScores/'+name
+    ];
+    for(const path of operations){
+      const before=leagueSnapshot(name);
+      for(const headers of hostile){
+        expect((await api.post(path,{},headers)).status()).toBe(403);
+        expect(leagueSnapshot(name),'Cross-origin rejection must preserve the complete synthetic league graph').toEqual(before);
+      }
+      expect((await browserPost(path,{})).status).toBe(200);
+    }
+    const after=leagueSnapshot(name);
+    expect(after.teamPlayers.some(row=>row.LeagueTeamId===teams[0].id&&row.PlayerId===player.id)).toBe(true);
+    expect(after.teams.find(row=>row.ID===teams[0].id)).toMatchObject({Division:'Silver',TotalWins:1,TotalLosses:0});
+    records.captureLeague(name,after);
+  });
+}
+
 test('CSRF registration rejects foreign opaque missing and malformed origins without records',async({api,records})=>{
   const identity=records.create('csrfregister');
   const body={...identity};

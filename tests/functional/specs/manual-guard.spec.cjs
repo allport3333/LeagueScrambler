@@ -19,4 +19,6 @@ test('independent runtime proof preserves restart, configuration, database and d
   for(const field of ['pid','processStartUtc','projectDll','dllSha256','envSha256','launchProfileSha256'])expect(()=>validateProcessBinding(proof,{...identity,[field]:'different'})).toThrow();
   expect(()=>validateProcessBinding({...proof,database:'LeagueScrambler'},identity)).toThrow();
   expect(()=>validateProcessBinding({...proof,expiresAt:'2000-01-01T00:00:00Z'},identity)).toThrow();
+  const {expiresAt,...inspection}=proof;
+  expect(()=>validateProcessBinding({...inspection,mode:'runtime-inspection',mutationAuthorizationGranted:false},identity)).toThrow();
 });

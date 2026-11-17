@@ -38,7 +38,7 @@ try {
         'verify' { & $nodeExe 'scripts/verify.cjs' }
         'dbcheck' { & $nodeExe 'scripts/verify-db.cjs' }
         'isolation' { & $nodeExe 'scripts/isolation.cjs' }
-        'verify-runtime' { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'helpers/runtime-verification.ps1' }
+        'verify-runtime' { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'helpers/runtime-verification.ps1' -ReadOnly }
         'inventory' { & $nodeExe 'scripts/inventory.cjs' }
         'final-report' { & $nodeExe 'scripts/final-report.cjs' }
         'cleanup-orphans' {
