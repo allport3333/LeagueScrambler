@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy, AfterViewInit, DoCheck, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { LoginService } from '../services/login.service';
 import { NavigationStart, Router } from '@angular/router';
 import { AuthService } from '../auth.service';
@@ -12,18 +12,18 @@ import { catchError } from 'rxjs/operators';
     templateUrl: './nav-menu.component.html',
     styleUrls: ['./nav-menu.component.css']
 })
-export class NavMenuComponent implements OnInit, OnDestroy {
+export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoCheck {
     // Presentation metadata only: these are the existing routes and visibility rules.
     readonly destinations = [
-        { route: '/', label: 'Home', icon: 'home', group: 'night', primary: true, anonymousOnly: true },
-        { route: '/scrambler', label: 'Scrambler', icon: 'shuffle', group: 'night', primary: true, roles: ['Admin', 'Manager'] },
-        { route: '/team-scores', label: 'Team Management', icon: 'group', group: 'night', primary: true, roles: ['Admin', 'Manager'] },
-        { route: '/league-dashboard', label: 'League Dashboard', icon: 'dashboard', group: 'night', primary: true, roles: ['Admin', 'Manager', 'Player'] },
-        { route: '/standings', label: 'K/Q Standings', icon: 'emoji_events', group: 'results', primary: true, roles: ['Admin', 'Manager', 'Player'] },
-        { route: '/kqmatchups', label: 'K/Q Matchups', icon: 'view_list', group: 'results', primary: true, roles: ['Admin', 'Manager', 'Player'] },
-        { route: '/fetch-data', label: 'Players', icon: 'people', group: 'night', primary: false, signedInOnly: true },
-        { route: '/sign-in', label: 'Sign In Sheet', icon: 'how_to_reg', group: 'night', primary: false, signedInOnly: true },
-        { route: '/league-management', label: 'League Management', icon: 'settings', group: 'management', primary: false, roles: ['Admin', 'Manager'] },
+        { route: '/', label: 'Home', icon: 'home', group: 'night', anonymousOnly: true },
+        { route: '/scrambler', label: 'Scrambler', icon: 'shuffle', group: 'night', roles: ['Admin', 'Manager'] },
+        { route: '/team-scores', label: 'Team Management', icon: 'group', group: 'night', roles: ['Admin', 'Manager'] },
+        { route: '/league-dashboard', label: 'League Dashboard', icon: 'dashboard', group: 'night', roles: ['Admin', 'Manager', 'Player'] },
+        { route: '/standings', label: 'K/Q Standings', icon: 'emoji_events', group: 'results', roles: ['Admin', 'Manager', 'Player'] },
+        { route: '/kqmatchups', label: 'K/Q Matchups', icon: 'view_list', group: 'results', roles: ['Admin', 'Manager', 'Player'] },
+        { route: '/fetch-data', label: 'Players', icon: 'people', group: 'night', signedInOnly: true },
+        { route: '/sign-in', label: 'Sign In Sheet', icon: 'how_to_reg', group: 'night', signedInOnly: true },
+        { route: '/league-management', label: 'League Management', icon: 'settings', group: 'management', roles: ['Admin', 'Manager'] },
         { route: '/faq', label: 'F.A.Q', icon: 'help_outline', group: 'management', primary: false }
     ];
     get visibleDestinations() {
@@ -32,8 +32,48 @@ export class NavMenuComponent implements OnInit, OnDestroy {
             (!item.signedInOnly || (this.authenticationChecked && this.loggedIn)) &&
             (!item.roles || item.roles.indexOf(this.userRole) >= 0));
     }
-    get primaryLinks() { return this.visibleDestinations.filter(item => item.primary); }
-    get secondaryLinks() { return this.visibleDestinations.filter(item => !item.primary); }
+    primaryLinks: any[] = [];
+    secondaryLinks: any[] = [];
+    layoutReady = false;
+    @ViewChild('desktopLinks') desktopLinks: ElementRef;
+    @ViewChild('widthProbe') widthProbe: ElementRef;
+    private layoutFingerprint = '';
+    private layoutFrame: number = null;
+    private widthObserver: any;
+    ngAfterViewInit() {
+        this.queueLayout();
+        const Observer=(window as any).ResizeObserver;
+        if(Observer){this.widthObserver=new Observer(()=>this.queueLayout());this.widthObserver.observe(this.desktopLinks.nativeElement);}
+        const fonts=(document as any).fonts;
+        if(fonts)fonts.ready.then(()=>{if(this.desktopLinks)this.queueLayout();});
+    }
+    ngDoCheck() {
+        const fingerprint=this.visibleDestinations.map(item=>item.route+item.label+item.icon).join('|')+':'+this.authenticationChecked+':'+this.loggedIn+':'+this.selectedLeagueName;
+        if(fingerprint!==this.layoutFingerprint){this.layoutFingerprint=fingerprint;this.layoutReady=false;this.queueLayout();}
+    }
+    private queueLayout() {
+        if(this.layoutFrame!==null)return;
+        this.layoutFrame=window.requestAnimationFrame(()=>this.zone.run(()=>{this.layoutFrame=null;this.measureLayout();}));
+    }
+    private measureLayout() {
+        if(!this.desktopLinks||!this.widthProbe)return;
+        const entries=this.visibleDestinations;
+        const available=this.desktopLinks.nativeElement.getBoundingClientRect().width;
+        if(!available)return;
+        const probe=this.widthProbe.nativeElement;
+        const widths=Array.from(probe.querySelectorAll('[data-measure-route]')).map((node:HTMLElement)=>node.getBoundingClientRect().width);
+        if(widths.length!==entries.length){this.queueLayout();return;}
+        const style=window.getComputedStyle(this.desktopLinks.nativeElement);
+        const gap=parseFloat((style as any).columnGap)||2;
+        const all=widths.reduce((sum,width)=>sum+width,0)+gap*Math.max(0,widths.length-1);
+        let count=entries.length;
+        if(all>available-4){
+            const more=probe.querySelector('[data-measure-more]').getBoundingClientRect().width;
+            const budget=available-more-gap-4;let used=0;count=0;
+            for(const width of widths){const next=used+(count?gap:0)+width;if(next>budget)break;used=next;count++;}
+        }
+        this.primaryLinks=entries.slice(0,count);this.secondaryLinks=entries.slice(count);this.layoutReady=true;
+    }
     drawerLinks(group: string) { return this.visibleDestinations.filter(item => item.group === group); }
     trackDestination(index: number, item: { route: string }) { return item.route; }
     get secondaryPageActive(): boolean {
@@ -41,7 +81,8 @@ export class NavMenuComponent implements OnInit, OnDestroy {
     }
     get profilePageActive(): boolean { return this.router.url.indexOf('/player-stats-tabs/') === 0; }
     @HostListener('window:resize') onNavigationResize() {
-        if (window.innerWidth >= 1280) { this.collapse(); }
+        if (window.innerWidth >= 1024) { this.collapse(); }
+        this.queueLayout();
     }
     authenticationChecked = false;
     private sessionVersion = 0;
@@ -58,6 +99,7 @@ export class NavMenuComponent implements OnInit, OnDestroy {
         private loginService: LoginService,
         private router: Router,
         private authService: AuthService,
+        private zone: NgZone,
         private leagueService: LeagueService
     ) { }
 
@@ -107,6 +149,9 @@ export class NavMenuComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy() {
+        if(this.layoutFrame!==null)window.cancelAnimationFrame(this.layoutFrame);
+        if(this.widthObserver)this.widthObserver.disconnect();
+        this.desktopLinks=null;
         this.sessionVersion++;
         this.subscriptions.unsubscribe();
     }

@@ -1,0 +1,7 @@
+{
+    "sourceGuardChecksPassed":  6,
+    "databaseAccess":  false,
+    "limitation":  "Pure production policy and source guard assertions; no live controller/SQL execution",
+    "failed":  0,
+    "policyGroupsPassed":  6
+}

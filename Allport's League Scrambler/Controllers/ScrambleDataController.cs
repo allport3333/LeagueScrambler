@@ -857,7 +857,9 @@ namespace Allport_s_League_Scrambler.Controllers
             }
 
             using (var context = new DataContext())
+            using (var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
             {
+                await AttendanceSerialization.Acquire(context, playerSignIn.LeagueId, playerSignIn.DateTime.ToLocalTime().Date);
                 if (!await context.Leagues.AnyAsync(l => l.ID == playerSignIn.LeagueId))
                 {
                     return NotFound("League not found.");
@@ -898,6 +900,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
                 context.PlayerSignIn.Add(playerSignIn);
                 await context.SaveChangesAsync();
+                transaction.Commit();
 
                 return Ok(new PlayerSignInResult
                 {
@@ -1258,6 +1261,24 @@ namespace Allport_s_League_Scrambler.Controllers
             if (!isLeagueManager && !isOwnEntry)
             {
                 return Forbid();
+            }
+
+            // Preserve manager/legacy administrator removal behavior. Ordinary owners
+            // must not bypass the profile's league-day/lock rules through this older route.
+            if (!isLeagueManager)
+            {
+                using (var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                {
+                    await AttendanceSerialization.Acquire(context, signInRecord.LeagueId, signInRecord.DateTime.Date);
+                    var locked = await context.LeagueSignInLocked.AnyAsync(value => value.LeagueId == signInRecord.LeagueId && value.SignInLocked);
+                    var day = await context.LeagueSettings.Where(value => value.LeagueId == signInRecord.LeagueId && value.SettingName == "dayOfLeague").Select(value => value.SettingValue).FirstOrDefaultAsync();
+                    var reason = AttendanceRules.UnavailableReason(true, locked, day, AttendanceRules.EasternNow(DateTime.UtcNow));
+                    if (reason != null) return StatusCode(423, reason);
+                    context.PlayerSignIn.Remove(signInRecord);
+                    await context.SaveChangesAsync();
+                    transaction.Commit();
+                    return NoContent();
+                }
             }
 
             context.PlayerSignIn.Remove(signInRecord);

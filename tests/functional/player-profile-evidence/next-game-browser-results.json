@@ -1,0 +1,15 @@
+{
+  "passed": 5,
+  "failed": 0,
+  "checks": [
+    "Viewed PlayerId1 team1/team2 associations, today and multiple games, compact responsive profile at five widths, one request per endpoint",
+    "Profile schedule URL selects league/schedule tab/exact week and complete matchups; refresh and manual selection retained",
+    "Viewed other player/team2, unassigned team, ended season and no-schedule states do not invent opponents",
+    "Request failure/retry distinct from empty; league switch clears stale game and resolves selected league2 IDs",
+    "Explicit future week overrides closest selection across refresh; ordinary schedule still selects closest date"
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "databaseAccess": false,
+  "login": "Existing Player-authenticated session fixture; no real login POST executed"
+}

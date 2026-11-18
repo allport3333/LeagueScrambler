@@ -1,5 +1,6 @@
 <div class="container" style="margin-top: 20px; text-align: center;">
     <h2>League Dashboard</h2>
+    <p *ngIf="navigationError" role="alert">{{ navigationError }}</p>
 
     <p *ngIf="selectedLeagueId && (selectedLeagueId != 27 && selectedLeagueId != 33)">
         ({{ selectedLeagueName }})
@@ -12,13 +13,13 @@
 
 
     <div style="display: flex; justify-content: center; margin-top: 20px;">
-        <mat-tab-group style="width: 100%; max-width: 1200px;" mat-align-tabs="center">
+        <mat-tab-group [(selectedIndex)]="activeDashboardTab" style="width: 100%; max-width: 1200px;" mat-align-tabs="center">
             <mat-tab label="Standings">
                 <app-league-team-standings [leagueId]="selectedLeagueId"></app-league-team-standings>
             </mat-tab>
             <!-- TAB #1: Schedule -->
             <mat-tab label="Schedule">
-                <app-league-schedule [leagueId]="selectedLeagueId" style="width: 100%;"></app-league-schedule>
+                <app-league-schedule [leagueId]="selectedLeagueId" [requestedWeekNumber]="requestedWeekNumber" [requestedScheduleDate]="requestedScheduleDate" style="width: 100%;"></app-league-schedule>
             </mat-tab>
 
             <mat-tab label="Individual Team Scores">

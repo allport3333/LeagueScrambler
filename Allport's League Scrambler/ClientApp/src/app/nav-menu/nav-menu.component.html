@@ -9,11 +9,11 @@
         </button>
     </mat-menu>
 
-    <div class="desktop-navigation">
+    <div class="desktop-navigation" #desktopLinks [class.navigation-measuring]="!layoutReady">
         <a *ngFor="let item of primaryLinks; trackBy: trackDestination" [routerLink]="item.route" routerLinkActive="active" #primaryActive="routerLinkActive" [routerLinkActiveOptions]="{exact: item.route === '/'}" [attr.aria-current]="primaryActive.isActive ? 'page' : null" class="navigation-link" (click)="collapse()">
             <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span>
         </a>
-        <button type="button" mat-button class="menu-trigger" [class.active]="secondaryPageActive" [matMenuTriggerFor]="moreMenu">More<mat-icon aria-hidden="true">arrow_drop_down</mat-icon></button>
+        <button *ngIf="secondaryLinks.length" type="button" mat-button class="menu-trigger more-trigger" [class.active]="secondaryPageActive" [matMenuTriggerFor]="moreMenu">More<mat-icon aria-hidden="true">arrow_drop_down</mat-icon></button>
         <mat-menu #moreMenu="matMenu">
             <a mat-menu-item *ngFor="let item of secondaryLinks; trackBy: trackDestination" [routerLink]="item.route" routerLinkActive="selected-destination" #moreActive="routerLinkActive" [attr.aria-current]="moreActive.isActive ? 'page' : null" (click)="collapse()"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>{{ item.label }}</a>
         </mat-menu>
@@ -44,3 +44,5 @@
 <ng-template #drawerLink let-item>
     <a [routerLink]="item.route" routerLinkActive="active" #drawerActive="routerLinkActive" [routerLinkActiveOptions]="{exact: item.route === '/'}" [attr.aria-current]="drawerActive.isActive ? 'page' : null" class="drawer-link" (click)="collapse()"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span></a>
 </ng-template>
+
+<div class="nav-width-probe" #widthProbe aria-hidden="true"><span *ngFor="let item of visibleDestinations;trackBy:trackDestination" class="navigation-link" data-measure-route><mat-icon>{{ item.icon }}</mat-icon><span>{{ item.label }}</span></span><button mat-button class="menu-trigger" data-measure-more tabindex="-1">More<mat-icon>arrow_drop_down</mat-icon></button></div>

@@ -23,19 +23,12 @@ p {
     margin: auto;
 }
 
-ng-deep .mat-tab-label {
-    min-width: 50px; /* Adjust to your preference */
-    max-width: 80px; /* Adjust to your preference */
-    font-size: 12px; /* Smaller font size */
-    text-align: center;
-    padding: 4px 8px; /* Less padding for compact look */
-}
 
-ng-deep .mat-tab-header {
-    justify-content: center; /* Center the tabs */
-    overflow-x: auto; /* Allow horizontal scrolling */
-}
-
-ng-deep .mat-tab-header-pagination {
-    display: none; /* Hide pagination arrows for cleaner look */
-}
+:host { display: block; min-width: 0; }
+.league-schedule h2 { text-align: center; margin: 12px 0 6px; font-size: 24px; }
+.week-navigation { display: grid; grid-template-columns: 44px minmax(0, 270px) 44px; align-items: center; justify-content: center; gap: 4px; margin: 0 auto 4px; }
+.week-navigation button { width: 44px; height: 44px; line-height: 44px; margin-bottom: 16px; }
+.week-navigation mat-form-field { width: 100%; min-width: 0; font-size: 14px; }
+.schedule-matchups { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
+.schedule-state { text-align: center; padding: 8px; }
+@media(max-width:767px) { .league-schedule h2 { margin-top: 10px; font-size: 22px; }.week-navigation { grid-template-columns: 44px minmax(0, 1fr) 44px; max-width: 370px; gap: 2px; }.schedule-matchups { gap: 10px; } }

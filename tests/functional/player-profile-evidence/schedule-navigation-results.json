@@ -1,0 +1,13 @@
+{
+  "passed": 4,
+  "failed": 0,
+  "checks": [
+    "Closest-date Week6, actual gap-aware order 1/6/9, previous/next boundaries, dropdown and manual week survives main tab switch without duplicate schedule request",
+    "League change clears stale cards while loading and selects new closest week with one request",
+    "Single past week disables both arrows; no schedule, empty week, failure and explicit retry states",
+    "Direct dashboard refresh chooses closest week; four main dashboard tabs retained"
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "databaseAccess": false
+}

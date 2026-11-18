@@ -9,6 +9,8 @@
  </header>
  <p *ngIf="selectingLeague" role="status" class="state-message">Selecting league...</p>
  <p *ngIf="leagueError" role="alert" class="state-message">{{ leagueError }}</p>
+ <app-player-next-game *ngIf="player && !loading && !error && !leagueError && !selectingLeague && selectedLeagueId" [playerId]="playerId" [leagueId]="selectedLeagueId"></app-player-next-game>
+ <app-player-attendance *ngIf="player && !loading && !error && !leagueError && !selectingLeague && selectedLeagueId" [playerId]="playerId" [leagueId]="selectedLeagueId"></app-player-attendance>
  <mat-tab-group class="profile-tabs" mat-align-tabs="center" [selectedIndex]="activeTab" (selectedIndexChange)="selectTab($event)" *ngIf="player && !loading && !error && !leagueError && !selectingLeague && selectedLeagueId">
   <mat-tab label="King/Queen Stats"><app-detailed-player-stats [playerId]="playerId" [leagueId]="selectedLeagueId"></app-detailed-player-stats></mat-tab>
   <mat-tab label="League Team Stats"><app-league-team-player-scores [playerId]="playerId" [leagueId]="selectedLeagueId"></app-league-team-player-scores></mat-tab>

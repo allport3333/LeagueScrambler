@@ -1,3 +1,5 @@
+import { PlayerAttendanceComponent } from './player-attendance/player-attendance.component';
+import { PlayerNextGameComponent } from './player-next-game/player-next-game.component';
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -60,6 +62,8 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         TeamManagementComponent,
         LeagueTeamPlayerScoresComponent,
         PlayerStatsTabsComponent,
+        PlayerNextGameComponent,
+        PlayerAttendanceComponent,
         CombinedStatsTabComponent,
         LeagueTeamStandingsComponent,
         IndividualTeamScoresComponent,

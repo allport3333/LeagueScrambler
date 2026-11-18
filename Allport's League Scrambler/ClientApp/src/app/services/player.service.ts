@@ -25,6 +25,8 @@ export class PlayerService {
     constructor(@Inject('BASE_URL') public baseUrl: string, public httpClient: HttpClient) {
     }
 
+    getSelfAttendance(leagueId:number,playerId:number){return this.httpClient.get<any>(this.baseUrl+'api/PlayerAttendance/'+leagueId+'/'+playerId);}
+    changeSelfAttendance(leagueId:number,playerId:number,remove:boolean){const url=this.baseUrl+'api/PlayerAttendance/'+leagueId+'/'+playerId;return remove?this.httpClient.delete<any>(url):this.httpClient.post<any>(url,{});}
     public GetPlayers() {
         return this.httpClient.get<Player[]>(this.baseUrl + 'api/ScrambleData/GetPlayers');
     }

@@ -27,10 +27,15 @@
 .drawer-link:hover { background: #47525f; }
 .drawer-link.active { background: #495c75; box-shadow: inset 3px 0 #98d0a7; }
 .navigation-link:focus-visible, .drawer-link:focus-visible, button:focus-visible { outline: 2px solid #b8dfc3; outline-offset: -2px; }
-@media (max-width: 1279px) {
+@media (max-width: 1023px) {
     .desktop-navigation, .desktop-account { display: none; }
     .drawer-toggle { display: inline-block; flex-shrink: 0; }
     .league-navigation { gap: 8px; padding: 6px 10px; min-height: 56px; }
     .league-selector { flex: 0 1 260px; max-width: calc(100% - 54px); }
 }
 @media print { :host { display: none; } }
+
+.desktop-navigation { flex-wrap: nowrap; overflow: hidden; }
+.navigation-link, .more-trigger { flex-shrink: 0; }
+.navigation-measuring { visibility: hidden; }
+.nav-width-probe { display: inline-flex; position: fixed; left: -10000px; top: 0; visibility: hidden; pointer-events: none; white-space: nowrap; width: max-content; }

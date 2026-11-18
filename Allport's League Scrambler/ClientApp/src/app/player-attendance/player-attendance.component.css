@@ -1,0 +1,8 @@
+:host{display:block}.attendance-card{max-width:620px;margin:8px auto 16px;padding:10px 14px;text-align:center;border:1px solid #d8e2ed;border-radius:6px;background:#f8fbff}h2{margin:0 0 6px;font-size:19px;color:#29446c}p{margin:4px 0}.attendance-sign-in{background:#99d2a7;color:#163f25;min-height:44px;min-width:220px;margin-top:4px;font-weight:600}.attendance-sign-in[disabled]{background:#e2e5e8;color:#68717c}.attendance-success{color:#26723b;font-weight:600;display:flex;align-items:center;justify-content:center;gap:5px}.attendance-success mat-icon{font-size:20px;height:20px;width:20px}.attendance-remove{min-height:44px;font-size:12px;color:#526579}.attendance-reason{font-size:13px;color:#526579}.attendance-card button{min-height:44px}@media(max-width:767px){.attendance-card{margin-bottom:12px;padding:10px}.attendance-sign-in{width:100%;min-width:0}}
+
+.attendance-card.attendance-compact { border: 0; box-shadow: none; background: transparent; padding: 2px 6px; margin: 2px auto 10px; font-size: 13px; }
+.attendance-compact .signed-in-row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; column-gap: 8px; }
+.attendance-compact .attendance-success { font-size: 14px; }
+.attendance-reason { display: flex; align-items: center; justify-content: center; gap: 5px; line-height: 20px; }
+.attendance-reason mat-icon { flex: 0 0 16px; width: 16px; height: 16px; font-size: 16px; }
+.attendance-compact .attendance-remove { padding: 0 6px; }

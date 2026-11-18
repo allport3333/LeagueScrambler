@@ -1,0 +1,374 @@
+{
+  "passed": 6,
+  "failed": 0,
+  "checks": [
+    "four role-specific permitted lists at 1024/1366/1600/1920",
+    "wide-to-narrow-to-wide preserves every route once and keeps one row",
+    "Player all six visible when fitting with More absent",
+    "active route/More and keyboard dismissal plus account/league menus",
+    "unchanged phone drawer includes all permitted links without More",
+    "role/logout state changes recalculate measured allocation"
+  ],
+  "measurements": [
+    {
+      "role": "Anonymous",
+      "width": 1920,
+      "primary": [
+        "/",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Anonymous",
+      "width": 1600,
+      "primary": [
+        "/",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Anonymous",
+      "width": 1366,
+      "primary": [
+        "/",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Anonymous",
+      "width": 1024,
+      "primary": [
+        "/",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Anonymous",
+      "width": 1366,
+      "primary": [
+        "/",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Anonymous",
+      "width": 1920,
+      "primary": [
+        "/",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Player",
+      "width": 1920,
+      "primary": [
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Player",
+      "width": 1600,
+      "primary": [
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Player",
+      "width": 1366,
+      "primary": [
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Player",
+      "width": 1024,
+      "primary": [
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data"
+      ],
+      "overflow": [
+        "/sign-in",
+        "/faq"
+      ]
+    },
+    {
+      "role": "Player",
+      "width": 1366,
+      "primary": [
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Player",
+      "width": 1920,
+      "primary": [
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Manager",
+      "width": 1920,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Manager",
+      "width": 1600,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Manager",
+      "width": 1366,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data"
+      ],
+      "overflow": [
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ]
+    },
+    {
+      "role": "Manager",
+      "width": 1024,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard"
+      ],
+      "overflow": [
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ]
+    },
+    {
+      "role": "Manager",
+      "width": 1366,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data"
+      ],
+      "overflow": [
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ]
+    },
+    {
+      "role": "Manager",
+      "width": 1920,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Admin",
+      "width": 1920,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Admin",
+      "width": 1600,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "Admin",
+      "width": 1366,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data"
+      ],
+      "overflow": [
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ]
+    },
+    {
+      "role": "Admin",
+      "width": 1024,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard"
+      ],
+      "overflow": [
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ]
+    },
+    {
+      "role": "Admin",
+      "width": 1366,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data"
+      ],
+      "overflow": [
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ]
+    },
+    {
+      "role": "Admin",
+      "width": 1920,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data",
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ],
+      "overflow": []
+    },
+    {
+      "role": "role-change",
+      "width": 1366,
+      "primary": [
+        "/scrambler",
+        "/team-scores",
+        "/league-dashboard",
+        "/standings",
+        "/kqmatchups",
+        "/fetch-data"
+      ],
+      "overflow": [
+        "/sign-in",
+        "/league-management",
+        "/faq"
+      ]
+    },
+    {
+      "role": "logout-state",
+      "width": 1366,
+      "primary": [
+        "/",
+        "/faq"
+      ],
+      "overflow": []
+    }
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "databaseAccess": false
+}

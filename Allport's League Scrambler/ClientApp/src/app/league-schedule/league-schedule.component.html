@@ -1,29 +1,15 @@
-<div *ngIf="loading" style="text-align: center;">
-    <p>Loading schedule...</p>
-    <mat-spinner diameter="50"></mat-spinner>
-</div>
-
-<div *ngIf="!loading && schedule.length > 0">
-    <div style="text-align: center; margin-bottom: 20px;">
-        <h2>League Schedule</h2>
-    </div>
-
-    <!-- Scrollable and compact mat-tabs -->
-    <mat-tab-group [(selectedIndex)]="activeTabIndex"
-                   style="overflow-x: auto; display: block; max-width: 100%; white-space: nowrap;">
-        <mat-tab *ngFor="let week of schedule"
-                 label="Week {{ week.weekNumber }}"
-                 [ngStyle]="{
-                     'min-width': '30px',
-                     'max-width': '80px',
-                     'font-size': '12px',
-                     'text-align': 'center'
-                 }">
-            <div style="margin-top: 20px;">
-                <h3 style="text-align: center;">
-                    Week {{ week.weekNumber }} ({{ week.date | date: 'longDate' }})
-                </h3>
-                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+<section class="league-schedule">
+ <h2>League Schedule</h2>
+ <div *ngIf="loading" class="schedule-state" role="status"><p>Loading schedule...</p><mat-spinner diameter="40"></mat-spinner></div>
+ <div *ngIf="error && !loading" class="schedule-state" role="alert"><p>{{ error }}</p><button mat-stroked-button type="button" (click)="retrySchedule()">Retry Schedule</button></div>
+ <ng-container *ngIf="!loading && !error && selectedWeek">
+  <nav class="week-navigation" aria-label="Schedule weeks">
+   <button mat-icon-button type="button" aria-label="Previous Week" [disabled]="activeTabIndex === 0" (click)="selectWeek(activeTabIndex - 1)"><mat-icon>chevron_left</mat-icon></button>
+   <mat-form-field appearance="outline"><mat-label>Scheduled week</mat-label><mat-select aria-label="Scheduled week" [value]="activeTabIndex" (selectionChange)="selectWeek($event.value)"><mat-option *ngFor="let week of schedule;let index=index" [value]="index">Week {{ week.weekNumber }} &middot; {{ week.date | date:'mediumDate' }}</mat-option></mat-select></mat-form-field>
+   <button mat-icon-button type="button" aria-label="Next Week" [disabled]="activeTabIndex === schedule.length - 1" (click)="selectWeek(activeTabIndex + 1)"><mat-icon>chevron_right</mat-icon></button>
+  </nav>
+  <div class="schedule-matchups" aria-live="polite">
+   <ng-container *ngFor="let week of [selectedWeek]">
                     <mat-card *ngFor="let match of week.matches"
                               [ngStyle]="{
               'background-color': match.division === 'Gold' ? '#FFF8DC' :
@@ -35,7 +21,7 @@
               'flex': '1 1 calc(33% - 20px)',
               'min-width': '250px',
               'max-width': '300px',
-              'margin-bottom': '20px',
+              'margin-bottom': '8px',
               'box-shadow': '0 2px 6px rgba(0, 0, 0, 0.2)',
               'border-radius': '8px',
               'transition': 'transform 0.2s, box-shadow 0.2s'
@@ -72,13 +58,9 @@
                             {{ match.division }} Division
                         </mat-chip>
                     </mat-card>
-
-                </div>
-            </div>
-        </mat-tab>
-    </mat-tab-group>
-</div>
-
-<div *ngIf="!loading && schedule.length === 0" style="text-align: center;">
-    <p>No schedule available for this league.</p>
-</div>
+   </ng-container>
+  </div>
+  <p class="schedule-state" *ngIf="!selectedWeek.matches || !selectedWeek.matches.length">No matchups scheduled for this week.</p>
+ </ng-container>
+ <p *ngIf="!loading && !error && !schedule.length" class="schedule-state">No schedule available for this league.</p>
+</section>

@@ -1,0 +1,43 @@
+{
+  "passed": 6,
+  "failed": 0,
+  "checks": [
+    "Initial eligibility checked once, single click guarded while pending, server-confirmed status refreshed and survives reload; four responsive widths",
+    "Existing administrator Sign In Sheet reads same fixture record; Scrambler signed-player API contract reads same record; administrator-first record displayed on profile",
+    "Removal requires confirmation/cancel preserves record; confirmed own removal refreshes; HTTP409 refreshes to signed-in state",
+    "Locked/wrong-day/nonmember/unlinked states unavailable; other public player profile has no attendance controls",
+    "Fixture rejects forged deletion without changing owner record; expired session and service failure do not show an enabled sign-in or false status",
+    "Selected leagues use independent shared attendance keys and status refresh"
+  ],
+  "pageErrors": [],
+  "realWriteRequests": [],
+  "interceptedFixtureMutations": [
+    {
+      "method": "POST",
+      "league": 1,
+      "player": 1
+    },
+    {
+      "method": "DELETE",
+      "league": 1,
+      "player": 1
+    },
+    {
+      "method": "POST",
+      "league": 1,
+      "player": 1
+    },
+    {
+      "method": "DELETE",
+      "league": 1,
+      "player": 2
+    },
+    {
+      "method": "POST",
+      "league": 2,
+      "player": 1
+    }
+  ],
+  "databaseAccess": false,
+  "limitation": "Browser API responses are fixtures; actual controller authorization, SQL locking and simultaneous database writes not executed"
+}

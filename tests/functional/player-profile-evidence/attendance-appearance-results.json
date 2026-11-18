@@ -1,0 +1,16 @@
+{
+  "passed": 6,
+  "failed": 0,
+  "checks": [
+    "available prominent card retains enabled green action",
+    "wrong day compact calendar status uses server reason",
+    "administrator lock distinguished with lock icon",
+    "already signed-in compact success and secondary removal/confirmation preserved",
+    "other player profile hidden and error/retry retained",
+    "1366/1920/375/390/430 layouts no overflow, compact states under70px"
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "fixtureMutations": [],
+  "databaseAccess": false
+}
