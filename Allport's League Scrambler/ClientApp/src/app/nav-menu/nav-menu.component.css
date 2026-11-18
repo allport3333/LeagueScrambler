@@ -1,70 +1,36 @@
-/* Adjusted styles for top navigation */
-/* Keep the existing links and collapse behavior; reserve space for every item. */
-@media (min-width: 992px) {
-    .main-nav .navbar { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
-    .main-nav .navbar-brand { justify-self: start; margin-right: 0; max-width: 100%; }
-    .main-nav .navbar > .d-lg-flex { grid-column: 2; grid-row: 1; }
-    .main-nav .navbar > .d-lg-flex > ul { display: flex; flex-direction: row; flex-wrap: nowrap; }
-    .main-nav #navbarNav { grid-column: 1 / -1; grid-row: 2; min-width: 0; width: 100%; border-top: 1px solid #56606b; padding-top: 4px; }
-    .main-nav #navbarNav > ul { display: flex; flex-direction: row; flex-wrap: wrap; gap: 2px; margin: 0 auto; }
-    .main-nav #navbarNav li { margin: 0; }
-    .main-nav .navbar #navbarNav li a { padding: 10px 8px; }
+:host { display: block; }
+.league-navigation { display: flex; align-items: center; gap: 10px; padding: 8px 12px; min-height: 60px; background: #343a40; color: #f1f4f8; }
+.league-selector { display: flex; flex: 0 1 220px; min-width: 140px; max-width: 220px; padding: 0 10px; min-height: 44px; background: #f0f8ff; color: #172534; text-align: left; }
+.league-selector ::ng-deep .mat-button-wrapper { display: flex; align-items: center; }
+.league-name { display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
+.desktop-navigation { display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0; gap: 2px; }
+.navigation-link { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 8px; color: #e1e6ec; font-size: 14px; white-space: nowrap; border-radius: 4px; text-decoration: none; }
+.navigation-link mat-icon { width: 18px; height: 18px; font-size: 18px; }
+.desktop-account { flex: 0 0 auto; }
+.menu-trigger { min-height: 44px; padding: 0 8px; color: #e1e6ec; }
+.menu-trigger mat-icon { width: 20px; height: 20px; font-size: 20px; vertical-align: middle; }
+.navigation-link:hover, .menu-trigger:hover { background: #47525f; color: #fff; }
+.active { background: #495c75; color: #fff; box-shadow: inset 0 -3px #98d0a7; }
+.selected-league, .selected-destination { background: #edf3fa; color: #23466d; }
+.session-status { font-size: 14px; }
+.drawer-toggle { display: none; margin-left: auto; color: #fff; }
+.navigation-drawer-container { position: fixed; top: 0; bottom: 0; left: 0; right: 0; z-index: 1200; visibility: hidden; pointer-events: none; background: transparent; }
+.navigation-drawer-container.drawer-open { visibility: visible; pointer-events: auto; }
+.navigation-drawer { width: 320px; max-width: 88vw; background: #343a40; color: #f1f4f8; }
+.navigation-drawer ::ng-deep .mat-drawer-inner-container { overscroll-behavior: contain; }
+.drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #535e6b; }
+.drawer-header strong { font-size: 18px; }
+.navigation-drawer section { padding: 8px 12px; }
+.navigation-drawer h2 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: #b9c7d8; margin: 10px 8px 6px; }
+.drawer-link { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 9px 12px; border: 0; border-radius: 4px; text-align: left; font: inherit; font-size: 15px; line-height: 24px; color: #f1f4f8; background: transparent; text-decoration: none; }
+.drawer-link mat-icon { flex: 0 0 20px; width: 20px; height: 20px; font-size: 20px; }
+.drawer-link:hover { background: #47525f; }
+.drawer-link.active { background: #495c75; box-shadow: inset 3px 0 #98d0a7; }
+.navigation-link:focus-visible, .drawer-link:focus-visible, button:focus-visible { outline: 2px solid #b8dfc3; outline-offset: -2px; }
+@media (max-width: 1279px) {
+    .desktop-navigation, .desktop-account { display: none; }
+    .drawer-toggle { display: inline-block; flex-shrink: 0; }
+    .league-navigation { gap: 8px; padding: 6px 10px; min-height: 56px; }
+    .league-selector { flex: 0 1 260px; max-width: calc(100% - 54px); }
 }
-@media (min-width: 992px) and (max-width: 1259px) {
-    .main-nav #navbarNav > ul { max-width: 800px; }
-}
-@media (min-width: 1260px) and (max-width: 1599px) {
-    .main-nav #navbarNav > ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); width: 100%; }
-    .main-nav .navbar #navbarNav li a { white-space: normal; height: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; }
-    .main-nav #navbarNav .nav-link > span { flex-shrink: 0; }
-}
-@media (min-width: 368px) {
-    .main-nav {
-        position: static; /* Change from fixed position to static */
-        height: auto; /* Remove fixed height */
-        text-align: center; /* Center-align the menu options */
-    }
-
-        .main-nav ul {
-            padding: 0; /* Remove default padding */
-        }
-
-        .main-nav li {
-            display: inline-block; /* Display the list items horizontally */
-            font-size: 15px;
-            margin: 0 6px; /* Adjust margins as needed */
-        }
-
-            .main-nav li a {
-                padding: 10px 16px;
-                border-radius: 4px;
-            }
-
-        .main-nav .navbar {
-            border-radius: 0; /* Remove border-radius */
-            border-width: 0px;
-            height: auto; /* Adjust height as needed */
-            vertical-align: middle; /* Center the content vertically */
-        }
-
-            .main-nav .navbar a {
-                width: auto; /* Remove width constraint */
-                white-space: nowrap; /* Prevent line breaks in link text */
-                overflow: visible; /* Show overflowing content */
-                text-overflow: clip; /* Display full text without ellipsis */
-            }
-
-            .main-nav .navbar li {
-                float: none; /* Remove float */
-                font-size: 15px;
-            }
-
-                .main-nav .navbar li a {
-                    padding: 10px 16px;
-                    border-radius: 4px;
-                }
-
-        .main-nav .navbar-header {
-            float: none; /* Remove float */
-        }
-}
+@media print { :host { display: none; } }

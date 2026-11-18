@@ -49,7 +49,7 @@ const checks=[],errors=[],writes=[];let browser;
  }
  async function ready(page,logged=true){
   await expect(page.locator('app-nav-menu [role=status]')).toHaveCount(0);
-  if(logged)await expect(page.locator('app-nav-menu .d-lg-flex').getByRole('link',{name:'Logout',exact:true})).toBeVisible();
+  if(logged)await expect(page.getByRole('button',{name:'Account',exact:true})).toBeVisible();
   else await expect(page.locator('app-nav-menu').getByRole('link',{name:'Home',exact:true})).toBeVisible();
  }
  async function navState(page){return page.evaluate(()=>{
@@ -88,7 +88,7 @@ const checks=[],errors=[],writes=[];let browser;
   await recheck(page);await ready(page);assert.equal((await navState(page)).league,-502);
   assert.equal(await page.evaluate(()=>window.fixtureSelectionEmissions),0);
   checks.push('Persisted-pageshow revalidation preserves existing league B without a redundant selection emission');
-  await page.locator('app-nav-menu .d-lg-flex').getByRole('link',{name:'Logout',exact:true}).click();await ready(page,false);
+  await page.getByRole('button',{name:'Account',exact:true}).click();await page.getByRole('menuitem',{name:'Logout',exact:true}).click();await ready(page,false);
   assert.equal(state.active,false);assert.equal((await navState(page)).player,null);
   await page.reload();await ready(page,false);assert.equal((await navState(page)).loggedIn,false);
   checks.push('Explicit browser logout invokes existing endpoint, clears synthetic server session/UI and remains logged out on refresh');

@@ -1,0 +1,11 @@
+{
+  "unchangedMethods": [
+    "onLeagueChange",
+    "propagateSelectedLeague",
+    "logoutAndNavigate",
+    "collapse",
+    "toggle",
+    "ngOnDestroy"
+  ],
+  "ngOnInitChange": "Additional route-start drawer close subscription; original authentication/league subscriptions retained"
+}

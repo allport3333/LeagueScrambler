@@ -1,32 +1,33 @@
 // UI workflow + print verification. All API traffic intercepted; no real writes or SQL.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const {chromium,expect}=require('@playwright/test');const {BASE_URL,assertLocalUrl}=require('../helpers/safety.cjs');
-const mode=process.argv[2]||'final',out=path.resolve(__dirname,mode==='corrections'?'../scrambler-corrections-evidence':mode.startsWith('polish')?'../scrambler-polish-evidence':'../scrambler-workspace-evidence');fs.mkdirSync(out,{recursive:true});let browser;
+const mode=process.argv[2]||'final',out=path.resolve(__dirname,mode==='navigation'?'../navigation-evidence':mode==='corrections'?'../scrambler-corrections-evidence':mode.startsWith('polish')?'../scrambler-polish-evidence':'../scrambler-workspace-evidence');fs.mkdirSync(out,{recursive:true});let browser;
 const players=Array.from({length:24},(_,i)=>({id:1001+i,firstName:'Synthetic',lastName:'Player'+String(i+1).padStart(2,'0'),isMale:i%2===0,gender:i%2===0?'Male':'Female',isSub:false,isTopPlayer:false,isLowPlayer:false,isByePlayer:false}));
 const teams=()=>Array.from({length:12},(_,i)=>({players:players.slice(i*2,i*2+2).map(p=>({...p})),maleCount:1,femaleCount:1,sortingId:i+1,kingQueenTeamId:201+i,scrambleNumber:12,kingQueenRoundScores:[]}));
 const hash=content=>crypto.createHash('sha256').update(content).digest('hex');
 (async()=>{
- browser=await chromium.launch();const context=await browser.newContext({serviceWorkers:'block',viewport:{width:1920,height:1080}});const errors=[],writes=[],checks=[];let failNextSave=false;
+ browser=await chromium.launch();const context=await browser.newContext({serviceWorkers:'block',viewport:{width:1920,height:1080}});const errors=[],writes=[],checks=[];let failNextSave=false,navigationRole='Admin',navigationSignedIn=true;
  await context.route('**/*',async route=>{
   let u;try{u=assertLocalUrl(route.request().url());}catch{
    const asset=new URL(route.request().url());
-   if(['polish','corrections','visibility','fetch'].includes(mode)&&route.request().method()==='GET'&&['fonts.googleapis.com','fonts.gstatic.com','use.fontawesome.com'].includes(asset.hostname)&&['font','stylesheet'].includes(route.request().resourceType())){await route.continue();return;}
+   if(['polish','corrections','visibility','fetch','navigation'].includes(mode)&&route.request().method()==='GET'&&['fonts.googleapis.com','fonts.gstatic.com','use.fontawesome.com'].includes(asset.hostname)&&['font','stylesheet'].includes(route.request().resourceType())){await route.continue();return;}
    await route.abort();return;
   }
   const p=u.pathname.toLowerCase();let body=[];
   if(p.startsWith('/sockjs-node/')){await route.abort();return;}
   if(route.request().method()!=='GET'){
    const data=route.request().postDataJSON();writes.push({path:p,mode:'intercepted fixture only'});
-   if(p.includes('/generatescramble/'))body=(data.kingQueenTeams||[]).map((t,i)=>({id:201+i,scrambleNumber:12}));
+   if(mode==='navigation'&&p==='/api/login/logout'){navigationSignedIn=false;body={};}
+   else if(p.includes('/generatescramble/'))body=(data.kingQueenTeams||[]).map((t,i)=>({id:201+i,scrambleNumber:12}));
    else if(p.includes('/savekingqueenteams/')){if(failNextSave){failNextSave=false;await route.fulfill({status:500,body:'Fixture save failure'});return;}body={kingQueenTeams:teams().map(t=>({kingQueenTeam:{id:t.kingQueenTeamId,scrambleNumber:12},players:t.players})),byePlayers:[]};}
    else if(p.includes('/savekingqueenroundscores/'))body={};
    else{await route.abort();return;}
   }else if(!p.startsWith('/api/')){await route.continue();return;}
-  else if(p==='/api/login/isauthenticated')body=true;
-  else if(p==='/api/login/getusersrole')body={role:'Admin'};
+  else if(p==='/api/login/isauthenticated')body=navigationSignedIn;
+  else if(p==='/api/login/getusersrole')body={role:navigationRole};
   else if(p==='/api/login/getusersplayer')body={playerId:1001};
   else if(p==='/api/login/isadminpasswordauthorized')body=false;
-  else if(p==='/api/login/getuserleagues'||p==='/api/scrambledata/getleagues')body=[{id:101,leagueName:'Synthetic League'}];
+  else if(p==='/api/login/getuserleagues'||p==='/api/scrambledata/getleagues')body=mode==='navigation'?[{id:101,leagueName:'Synthetic League'},{id:102,leagueName:'Second Synthetic League'}]:[{id:101,leagueName:'Synthetic League'}];
   else if(u.searchParams.has('settingName'))body={settingValue:{dropLowest:'0',numberOfSubsAllowed:'100',subScorePercent:'100',standingsType:'round',dayOfLeague:'Monday'}[u.searchParams.get('settingName')]};
   else if(p.includes('/getbyleague'))body={maxRounds:2,playerScores:players.map(x=>({playerId:x.id,playerName:x.firstName+' '+x.lastName,isMale:x.isMale,scores:[{roundId:1,score:21,roundWon:true,isSubScore:false},{roundId:2,score:15,roundWon:false,isSubScore:false}]}))};
   else if(p.includes('/selectedleaguescrambles/'))body=[{id:201,scrambleNumber:12,dateOfTeam:'2026-11-01T18:00:00'}];
@@ -54,7 +55,39 @@ const hash=content=>crypto.createHash('sha256').update(content).digest('hex');
    result[count]={htmlHash:hash(html.replace(/ _ngcontent[^=\s]*=""/g,'')),pixels:hash(fs.readFileSync(path.join(out,`print-${count}-${label}.png`))),pages:(pdf.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length};await render.close();
   }return result;
  }
- if(mode==='fetch'){
+ if(mode==='navigation'){
+  const nav=page.locator('app-nav-menu'),drawer=page.locator('#navigation-drawer');
+  const secondary=['/league-management','/faq','/fetch-data','/sign-in'],primary=['/scrambler','/team-scores','/league-dashboard','/standings','/kqmatchups'];
+  async function openDrawer(){await page.getByRole('button',{name:'Open navigation',exact:true}).click();await expect(drawer).toBeVisible();await expect(drawer.getByRole('button',{name:'Close navigation',exact:true})).toBeFocused();}
+  async function waitRole(role){await page.waitForFunction(r=>{const c=window.ng.probe(document.querySelector('app-nav-menu')).componentInstance;return c.authenticationChecked&&c.userRole===r;},role);}
+  async function menuReady(){await expect(page.locator('.mat-menu-panel')).toHaveCount(1);await expect.poll(()=>page.locator('.mat-menu-panel').evaluate(e=>getComputedStyle(e).opacity)).toBe('1');}
+  for(const role of ['Admin','Manager','Player']){
+   navigationRole=role;await page.setViewportSize({width:1920,height:1080});await page.goto(BASE_URL+'/scrambler');await waitRole(role);await page.evaluate(()=>document.fonts.ready);
+   const expected=role==='Player'?primary.slice(2):primary;
+   assert.deepEqual((await nav.locator('.desktop-navigation > a').evaluateAll(ns=>ns.map(n=>new URL(n.href).pathname))).sort(),expected.slice().sort());
+   await page.getByRole('button',{name:'More',exact:true}).click();assert.deepEqual((await page.locator('.cdk-overlay-pane a[mat-menu-item]').evaluateAll(ns=>ns.map(n=>new URL(n.href).pathname))).sort(),secondary.slice().sort());await page.keyboard.press('Escape');
+   await page.getByRole('button',{name:'Account',exact:true}).click();await expect(page.getByRole('menuitem',{name:'Profile',exact:true})).toHaveAttribute('href','/player-stats-tabs/1001');await expect(page.getByRole('menuitem',{name:'Logout',exact:true})).toBeVisible();await page.keyboard.press('Escape');
+   await page.setViewportSize({width:390,height:844});const y=(await page.locator('.scramble-setup').boundingBox()).y;await openDrawer();
+   assert.deepEqual((await drawer.locator('a').evaluateAll(ns=>ns.map(n=>new URL(n.href).pathname))).sort(),expected.concat(secondary,'/player-stats-tabs/1001').sort());assert.equal((await page.locator('.scramble-setup').boundingBox()).y,y);
+   await page.screenshot({path:path.join(out,'drawer-'+role+'-390.png')});
+   await page.keyboard.press('Shift+Tab');assert(await drawer.evaluate(e=>e.contains(document.activeElement)));await page.keyboard.press('Escape');await expect(drawer).toBeHidden();
+   await openDrawer();await drawer.getByRole('link',{name:'F.A.Q',exact:true}).click();await expect(drawer).toBeHidden();await expect(page).toHaveURL(/\/faq$/);await openDrawer();await expect(drawer.getByRole('link',{name:'F.A.Q',exact:true})).toHaveAttribute('aria-current','page');await drawer.getByRole('button',{name:'Close navigation',exact:true}).click();
+   checks.push(role+': all original permitted routes/account actions; drawer link closes, keyboard focus/Escape and active state');
+  }
+  navigationRole='Admin';await page.setViewportSize({width:1920,height:1080});await page.goto(BASE_URL+'/scrambler');await waitRole('Admin');await seed();
+  const preserved=await evaluate(c=>JSON.stringify({players:c.selectedList,teams:c.listOfTeams,rounds:c.selectedRounds,print:c.selectedMatchupsPerPage}));await page.getByRole('button',{name:'More',exact:true}).click();await page.getByRole('menuitem',{name:'League Management',exact:true}).click();await expect(page.locator('.league-management-page')).toBeVisible();await expect(page.getByRole('button',{name:'More',exact:true})).toHaveClass(/active/);
+  await nav.getByRole('link',{name:'Scrambler',exact:true}).click();assert.equal(await evaluate(c=>JSON.stringify({players:c.selectedList,teams:c.listOfTeams,rounds:c.selectedRounds,print:c.selectedMatchupsPerPage})),preserved);checks.push('Scrambler/Management retains same live selections, teams, rounds and print settings');
+  for(const [width,height] of [[1920,1080],[1366,768],[1024,768],[390,844],[375,667]]){
+   await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));await nav.locator('.league-navigation').screenshot({path:path.join(out,'navigation-closed-'+width+'.png')});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert((await nav.locator('.league-navigation').boundingBox()).height<=64);
+   if(width>=1280){const rows=await nav.locator('.desktop-navigation > a').evaluateAll(ns=>ns.map(n=>Math.round(n.getBoundingClientRect().top)));assert.equal(new Set(rows).size,1);await expect(nav.getByRole('link',{name:'Scrambler',exact:true})).toHaveAttribute('aria-current','page');await page.getByRole('button',{name:'More',exact:true}).click();await menuReady();await page.screenshot({path:path.join(out,'more-open-'+width+'.png')});await page.keyboard.press('Escape');await page.getByRole('button',{name:'Account',exact:true}).click();await menuReady();await page.screenshot({path:path.join(out,'account-open-'+width+'.png')});await page.keyboard.press('Escape');}
+   else{const y=(await page.locator('.scramble-setup').boundingBox()).y;await openDrawer();await page.screenshot({path:path.join(out,'drawer-open-'+width+'.png')});assert.equal((await page.locator('.scramble-setup').boundingBox()).y,y);if(width===375){assert(await drawer.locator('.mat-drawer-inner-container').evaluate(e=>e.scrollHeight>e.clientHeight));await drawer.getByRole('button',{name:'Logout',exact:true}).scrollIntoViewIfNeeded();await expect(drawer.getByRole('button',{name:'Logout',exact:true})).toBeVisible();}await page.mouse.click(5,200);await expect(drawer).toBeHidden();await openDrawer();await drawer.getByRole('button',{name:'Close navigation',exact:true}).click();await expect(drawer).toBeHidden();}
+  }
+  checks.push('Five sizes: compact single-row desktop, overlay without page movement, scrolling/dismissal and no overflow');
+  await page.setViewportSize({width:1366,height:768});await page.getByRole('button',{name:'Synthetic League',exact:true}).click();await page.getByRole('menuitem',{name:'Second Synthetic League',exact:true}).click();assert.equal(await evaluate(c=>c.selectedLeague),'Second Synthetic League');await expect(page.getByRole('button',{name:'Second Synthetic League',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'More',exact:true}).click();await page.getByRole('menuitem',{name:'League Management',exact:true}).click();await page.reload();await waitRole('Admin');await expect(page).toHaveURL(/\/league-management$/);await expect(page.getByRole('button',{name:'More',exact:true})).toHaveClass(/active/);checks.push('Existing league selection updates without route change; direct management refresh restores role and route');
+  await page.setViewportSize({width:390,height:844});await openDrawer();await page.setViewportSize({width:1920,height:1080});await expect(drawer).toBeHidden();navigationSignedIn=false;await page.reload();await page.waitForFunction(()=>{const c=window.ng.probe(document.querySelector('app-nav-menu')).componentInstance;return c.authenticationChecked&&!c.loggedIn;});await expect(page.getByRole('button',{name:'Account',exact:true})).toBeHidden();await expect(nav.getByRole('link',{name:'Home',exact:true})).toBeVisible();await page.getByRole('button',{name:'More',exact:true}).click();await expect(page.getByRole('menuitem',{name:'League Management',exact:true})).toBeVisible();assert.equal(await page.getByRole('menuitem',{name:'Players',exact:true}).count(),0);await page.keyboard.press('Escape');checks.push('Resize closes drawer; anonymous public/legacy-management entry preserved without private links');assert.equal(writes.length,0);
+  navigationSignedIn=true;await page.reload();await waitRole('Admin');await page.getByRole('button',{name:'Account',exact:true}).click();await page.getByRole('menuitem',{name:'Logout',exact:true}).click();await expect(nav.getByRole('link',{name:'Home',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Account',exact:true})).toBeHidden();await page.reload();await expect(nav.getByRole('link',{name:'Home',exact:true})).toBeVisible();assert.equal(writes.length,1);assert.equal(writes[0].path,'/api/login/logout');checks.push('Account Logout invokes unchanged handler/endpoint through intercepted transport; logged-out state remains after refresh');
+ }else if(mode==='fetch'){
   await seed(false);await evaluate(c=>{c.calculateTeamsNeeded();c.hasSignedInPlayersAvailable=true;c.fetchClicked=false;});
   const fetch=page.getByRole('button',{name:'Fetch Signed In Players',exact:true});await expect(fetch).toBeEnabled();await expect.poll(()=>fetch.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe('rgb(152, 208, 167)');
   await page.setViewportSize({width:1366,height:768});await page.evaluate(()=>document.fonts.ready);
@@ -148,7 +181,7 @@ const hash=content=>crypto.createHash('sha256').update(content).digest('hex');
     if(m.overflow)console.log(await page.locator('.selection-actions').evaluate(e=>({grid:getComputedStyle(e).gridTemplateColumns,children:Array.from(e.children).map(n=>({tag:n.tagName,column:getComputedStyle(n).gridColumn,width:n.getBoundingClientRect().width,style:n.getAttribute('style')}))})));
     assert.equal(m.overflow,false,'Overflow at '+width);assert(m.buttonHeight>=60);assert(m.buttonWidth>=(width>800?350:width-80));assert(m.buttonWidth<=500||width<800);
     if(width>800)assert(m.configurationWidth<=1080);
-    if(width>=992){const rows=await page.locator('#navbarNav > ul > li').evaluateAll(ns=>ns.filter(n=>n.getBoundingClientRect().height).map(n=>Math.round(n.getBoundingClientRect().top)));assert.equal(new Set(rows).size,1,'Main desktop links share an intentional row');}
+    if(width>=1280){const rows=await page.locator('.desktop-navigation > a').evaluateAll(ns=>ns.filter(n=>n.getBoundingClientRect().height).map(n=>Math.round(n.getBoundingClientRect().top)));assert.equal(new Set(rows).size,1,'Main desktop links share an intentional row');}
     const roster=await page.locator('.league-roster mat-list-option').evaluateAll(ns=>ns.slice(0,5).map(n=>n.getBoundingClientRect().y));if(width>800)assert(roster.slice(0,4).every(y=>Math.abs(y-roster[0])<1)&&roster[4]>roster[0]);
    }
   }
@@ -159,7 +192,7 @@ const hash=content=>crypto.createHash('sha256').update(content).digest('hex');
   console.log('Before-layout and actual print-function HTML/rendered PDF baselines captured.');
  }else if(mode==='stage1'){
   await seed();const prior=await evaluate(c=>JSON.stringify({players:c.selectedList,teams:c.listOfTeams,size:c.teamSize,rounds:c.selectedRounds,print:c.selectedMatchupsPerPage}));
-  await page.locator('app-nav-menu').getByRole('link',{name:'League Management',exact:true}).click();await expect(page.locator('.league-management-page')).toBeVisible();
+  await page.getByRole('button',{name:'More',exact:true}).click();await page.getByRole('menuitem',{name:'League Management',exact:true}).click();await expect(page.locator('.league-management-page')).toBeVisible();
   assert.equal(await evaluate(c=>c.__workspaceToken),'retained');assert.equal(await evaluate(c=>JSON.stringify({players:c.selectedList,teams:c.listOfTeams,size:c.teamSize,rounds:c.selectedRounds,print:c.selectedMatchupsPerPage})),prior);
   await shot('league-management');await page.locator('app-nav-menu').getByRole('link',{name:'Scrambler',exact:true}).click();assert.equal(await evaluate(c=>c.__workspaceToken),'retained');
   await expect(page.locator('app-scrambler-component').getByRole('tab',{name:'Standings',exact:true})).toHaveCount(0);checks.push('Management route and return preserve the same live Scrambler state; duplicate standings tab removed');

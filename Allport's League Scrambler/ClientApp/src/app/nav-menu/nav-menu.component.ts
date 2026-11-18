@@ -1,6 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { LoginService } from '../services/login.service';
-import { Router } from '@angular/router';
+import { NavigationStart, Router } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { LeagueService } from '../services/league.service';
 import { Leagues } from '../data-models/leagues.model';
@@ -13,6 +13,36 @@ import { catchError } from 'rxjs/operators';
     styleUrls: ['./nav-menu.component.css']
 })
 export class NavMenuComponent implements OnInit, OnDestroy {
+    // Presentation metadata only: these are the existing routes and visibility rules.
+    readonly destinations = [
+        { route: '/', label: 'Home', icon: 'home', group: 'night', primary: true, anonymousOnly: true },
+        { route: '/scrambler', label: 'Scrambler', icon: 'shuffle', group: 'night', primary: true, roles: ['Admin', 'Manager'] },
+        { route: '/team-scores', label: 'Team Management', icon: 'group', group: 'night', primary: true, roles: ['Admin', 'Manager'] },
+        { route: '/league-dashboard', label: 'League Dashboard', icon: 'dashboard', group: 'night', primary: true, roles: ['Admin', 'Manager', 'Player'] },
+        { route: '/standings', label: 'K/Q Standings', icon: 'emoji_events', group: 'results', primary: true, roles: ['Admin', 'Manager', 'Player'] },
+        { route: '/kqmatchups', label: 'K/Q Matchups', icon: 'view_list', group: 'results', primary: true, roles: ['Admin', 'Manager', 'Player'] },
+        { route: '/fetch-data', label: 'Players', icon: 'people', group: 'night', primary: false, signedInOnly: true },
+        { route: '/sign-in', label: 'Sign In Sheet', icon: 'how_to_reg', group: 'night', primary: false, signedInOnly: true },
+        { route: '/league-management', label: 'League Management', icon: 'settings', group: 'management', primary: false },
+        { route: '/faq', label: 'F.A.Q', icon: 'help_outline', group: 'management', primary: false }
+    ];
+    get visibleDestinations() {
+        return this.destinations.filter(item =>
+            (!item.anonymousOnly || (this.authenticationChecked && !this.loggedIn)) &&
+            (!item.signedInOnly || (this.authenticationChecked && this.loggedIn)) &&
+            (!item.roles || item.roles.indexOf(this.userRole) >= 0));
+    }
+    get primaryLinks() { return this.visibleDestinations.filter(item => item.primary); }
+    get secondaryLinks() { return this.visibleDestinations.filter(item => !item.primary); }
+    drawerLinks(group: string) { return this.visibleDestinations.filter(item => item.group === group); }
+    trackDestination(index: number, item: { route: string }) { return item.route; }
+    get secondaryPageActive(): boolean {
+        return this.secondaryLinks.some(item => this.router.url.split(/[?#]/)[0] === item.route);
+    }
+    get profilePageActive(): boolean { return this.router.url.indexOf('/player-stats-tabs/') === 0; }
+    @HostListener('window:resize') onNavigationResize() {
+        if (window.innerWidth >= 1280) { this.collapse(); }
+    }
     authenticationChecked = false;
     private sessionVersion = 0;
     private subscriptions = new Subscription();
@@ -40,6 +70,9 @@ export class NavMenuComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit() {
+        this.subscriptions.add(this.router.events.subscribe(event => {
+            if (event instanceof NavigationStart) { this.collapse(); }
+        }));
         this.subscriptions.add(this.leagueService.selectedLeague$.subscribe(selected => {
             this.selectedLeagueId = selected.leagueId;
             this.selectedLeagueName = selected.leagueName;

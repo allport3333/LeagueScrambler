@@ -1,0 +1,21 @@
+{
+  "checks": [
+    "Admin: all original permitted routes/account actions; drawer link closes, keyboard focus/Escape and active state",
+    "Manager: all original permitted routes/account actions; drawer link closes, keyboard focus/Escape and active state",
+    "Player: all original permitted routes/account actions; drawer link closes, keyboard focus/Escape and active state",
+    "Scrambler/Management retains same live selections, teams, rounds and print settings",
+    "Five sizes: compact single-row desktop, overlay without page movement, scrolling/dismissal and no overflow",
+    "Existing league selection updates without route change; direct management refresh restores role and route",
+    "Resize closes drawer; anonymous public/legacy-management entry preserved without private links",
+    "Account Logout invokes unchanged handler/endpoint through intercepted transport; logged-out state remains after refresh"
+  ],
+  "pageErrors": [],
+  "writes": [
+    {
+      "path": "/api/login/logout",
+      "mode": "intercepted fixture only"
+    }
+  ],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}
