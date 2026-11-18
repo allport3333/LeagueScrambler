@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "1366: three tabs, roster actions do not overlap, dialog fits, creation expands and setup responds without overflow",
+    "1920: three tabs, roster actions do not overlap, dialog fits, creation expands and setup responds without overflow",
+    "375: three tabs, roster actions do not overlap, dialog fits, creation expands and setup responds without overflow",
+    "390: three tabs, roster actions do not overlap, dialog fits, creation expands and setup responds without overflow",
+    "Existing locked administration controls visible; removal disabled; no password supplied or unlock attempted"
+  ],
+  "pageErrors": [],
+  "requests": [],
+  "databaseAccess": false
+}

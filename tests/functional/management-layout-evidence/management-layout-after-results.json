@@ -1,0 +1,55 @@
+{
+  "checks": [
+    "Four sizes; all five tabs/select values retained desktop tabs/cards centered/two columns; mobile screenshot dimensions and stacked fields retained; original five Save Settings requests intercepted"
+  ],
+  "pageErrors": [],
+  "writes": [
+    {
+      "path": "/api/login/updatesetting",
+      "mode": "intercepted fixture only",
+      "data": {
+        "settingName": "dropLowest",
+        "settingValue": "2",
+        "leagueId": 101
+      }
+    },
+    {
+      "path": "/api/login/updatesetting",
+      "mode": "intercepted fixture only",
+      "data": {
+        "settingName": "numberOfSubsAllowed",
+        "settingValue": "3",
+        "leagueId": 101
+      }
+    },
+    {
+      "path": "/api/login/updatesetting",
+      "mode": "intercepted fixture only",
+      "data": {
+        "settingName": "subScorePercent",
+        "settingValue": "80",
+        "leagueId": 101
+      }
+    },
+    {
+      "path": "/api/login/updatesetting",
+      "mode": "intercepted fixture only",
+      "data": {
+        "settingName": "dayOfLeague",
+        "settingValue": "Thursday",
+        "leagueId": 101
+      }
+    },
+    {
+      "path": "/api/login/updatesetting",
+      "mode": "intercepted fixture only",
+      "data": {
+        "settingName": "standingsType",
+        "settingValue": "round",
+        "leagueId": 101
+      }
+    }
+  ],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

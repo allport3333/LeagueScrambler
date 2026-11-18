@@ -854,16 +854,145 @@
         </div>
     </div>
 </div>
-<p class="scramble-empty-state" *ngIf="workspaceSection === 'scrambler' && !listOfTeams.length">No scramble has been generated yet. Select players and configure teams above. <button mat-button *ngIf="hideEverything" (click)="hideShowEverything()">Show Setup</button> <button mat-button *ngIf="hidePlayers" (click)="hidePlayerList()">Show Player List</button></p><section class="league-management-page" [hidden]="workspaceSection !== 'league-management'"><div class="workspace-links"><a mat-stroked-button routerLink="/scrambler">Back to Scrambler</a><a mat-button routerLink="/standings">K/Q Standings</a></div>
-                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                            <h5 class="text-center mb-3">Player and League Management</h5>
+<p class="scramble-empty-state" *ngIf="workspaceSection === 'scrambler' && !listOfTeams.length">No scramble has been generated yet. Select players and configure teams above. <button mat-button *ngIf="hideEverything" (click)="hideShowEverything()">Show Setup</button> <button mat-button *ngIf="hidePlayers" (click)="hidePlayerList()">Show Player List</button></p><section class="league-management-page consolidated-management" [hidden]="workspaceSection !== 'league-management'"><mat-card class="management-workspace"><h1>Player and League Management</h1><mat-tab-group class="management-tabs" mat-align-tabs="center"><mat-tab label="Manage Players"><div class="management-players-section"><mat-card class="management-form-card management-roster-card">
+ <h2>Current League Players</h2><p class="management-context">{{ selectedLeague || 'Select a league to manage its players.' }}</p>
+ <mat-form-field appearance="outline" class="roster-search"><mat-label>Search current league players</mat-label><input matInput [(ngModel)]="managementRosterSearch" (ngModelChange)="showAllManagementPlayers = false" placeholder="Player name" /></mat-form-field>
+ <div class="roster-visibility"><button mat-stroked-button type="button" (click)="toggleManagementRoster()" [disabled]="managementRosterLoading || !!managementRosterError || !managementRoster.length" [attr.aria-expanded]="showAllManagementPlayers">{{ showAllManagementPlayers ? 'Hide All Players' : 'Show All Players' }}</button></div>
+ <p *ngIf="managementRosterLoading" role="status">Loading league players...</p>
+ <div *ngIf="managementRosterError" role="alert"><p>{{ managementRosterError }}</p><button mat-stroked-button (click)="refreshManagementRoster()">Retry roster</button></div>
+ <p *ngIf="!managementRosterLoading && !managementRosterError && !managementRoster.length">No players belong to this league yet.</p>
+ <p class="management-context" *ngIf="!managementRosterLoading && !managementRosterError && managementRoster.length && !managementRosterSearch.trim() && !showAllManagementPlayers">Search for a player, or select Show All Players.</p>
+ <p *ngIf="!managementRosterLoading && !managementRosterError && managementRoster.length && managementRosterSearch.trim() && !filteredManagementRoster.length">No players match your search.</p>
+ <ul class="management-roster" *ngIf="!managementRosterLoading && !managementRosterError && (showAllManagementPlayers || managementRosterSearch.trim())">
+  <li *ngFor="let player of filteredManagementRoster; trackBy: trackManagementPlayer">
+   <div class="roster-player-name"><strong>{{ player.firstName }} {{ player.lastName }}</strong><span *ngIf="player.managementDivision">{{ player.managementDivision }}</span></div>
+   <button mat-stroked-button color="warn" type="button" [disabled]="!isActionAllowed || managementRemovalPending" (click)="confirmRemoveFromLeague(player, removeMembershipDialog)">Remove from League</button>
+  </li>
+ </ul>
+</mat-card>
+                                    <mat-card class="management-form-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                                        <div class="tab-content d-flex flex-column align-items-center" style="margin-bottom:20px">
+                                            <h5 class="mb-2">Add Existing Player</h5>
+                                            <mat-form-field appearance="fill">
+                                                <mat-label>Search Player</mat-label>
+                                                <input matInput
+                                                       [matAutocomplete]="auto"
+                                                       [(ngModel)]="searchTerm"
+                                                       (input)="onSearchPlayer($event)"
+                                                       (blur)="onBlurPlayerInput()" />
+                                                <mat-autocomplete #auto="matAutocomplete"
+                                                                  (optionSelected)="onPlayerSelected($event.option.value)"
+                                                                  [displayWith]="displayPlayer">
+                                                    <mat-option *ngFor="let player of searchedPlayers"
+                                                                [value]="player">
+                                                        {{ player.firstName }} {{ player.lastName }}
+                                                    </mat-option>
+                                                </mat-autocomplete>
+                                            </mat-form-field>
 
-                            <!-- Nested Mat Tab Group -->
-                            <mat-tab-group>
-                                <mat-tab label="Modify Settings" *ngIf="selectedLeague">
+
+                                            <!-- Loading text -->
+                                            <div *ngIf="divisionsLoading" style="margin-top: 6px; font-size: 12px; color: gray;">
+                                                Loading divisions...
+                                            </div>
+
+                                            <!-- Only show the division picker if we are NOT loading AND we have at least 1 division -->
+                                            <div class="existing-player-division" *ngIf="!divisionsLoading && leagueDivisionsForSelectedLeague && leagueDivisionsForSelectedLeague.length > 0">
+                                                <mat-form-field appearance="outline" style="width: 220px;">
+                                                    <mat-label>Division</mat-label>
+                                                    <mat-select [(ngModel)]="selectedLeagueDivisionIdForAddPlayer" name="divisionSelect">
+                                                        <mat-option [value]="0">No Division</mat-option>
+                                                        <mat-option *ngFor="let div of leagueDivisionsForSelectedLeague" [value]="div.id">
+                                                            {{ div.name }}
+                                                        </mat-option>
+                                                    </mat-select>
+                                                </mat-form-field>
+                                            </div>
+
+                                            <!-- Optional: if we have loaded at least once and there are still no divisions, show nothing (or a message) -->
+                                            <div *ngIf="!divisionsLoading && divisionsLoadedOnce && (!leagueDivisionsForSelectedLeague || leagueDivisionsForSelectedLeague.length === 0)"
+                                                 style="margin-top: 6px; font-size: 12px; color: gray;">
+                                                No divisions for this league.
+                                            </div>
+
+                                            <button mat-raised-button
+                                                    style="margin-bottom:20px"
+                                                    color="primary"
+                                                    (click)="addExistingPlayer()"
+                                                    [disabled]="!isActionAllowed">
+                                                Add Existing Player
+                                            </button>
+                                            <mat-form-field style="max-width: 300px" appearance="outline" *ngIf="!isActionAllowed">
+                                                <mat-label>Enter Password</mat-label>
+                                                <input matInput
+                                                       type="password"
+                                                       (input)="onPasswordInput($event.target.value)"
+                                                       placeholder="Password">
+                                            </mat-form-field>
+                                                     <button mat-raised-button color="primary" type="button"
+                                                             *ngIf="!isActionAllowed"
+                                                             (click)="unlockAdminPassword()">
+                                                         Unlock Administration
+                                                     </button>
+                                        </div>
+                                        <div class="tab-content d-flex flex-column align-items-center" style="margin-bottom:20px">
+                                            <button mat-raised-button
+                                                    color="primary"
+                                                    (click)="toggleNewPlayerForm()" [attr.aria-expanded]="showNewPlayerForm"
+                                                    [class.active]="showNewPlayerForm">
+                                                Create New Player
+                                            </button>
+
+                                            <!-- Form to Add New Player -->
+                                            <div *ngIf="showNewPlayerForm" class="mt-3">
+                                                <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()" class="d-flex flex-column align-items-center">
+                                                    <div class="row">
+                                                        <div class="col-12 col-lg-6">
+                                                            <mat-form-field style="max-width: 180px" appearance="outline">
+                                                                <mat-label>First Name:</mat-label>
+                                                                <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
+                                                            </mat-form-field>
+                                                            <br />
+                                                            <mat-form-field style="max-width: 180px" appearance="outline">
+                                                                <mat-label>Last Name:</mat-label>
+                                                                <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
+                                                            </mat-form-field>
+                                                            <br />
+                                                            <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!isActionAllowed">
+                                                                <mat-label>Password:</mat-label>
+                                                                <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
+                                                            </mat-form-field>
+                                                        </div>
+                                                        <div class="col-12 col-lg-6">
+                                                            <mat-form-field appearance="outline">
+                                                                <mat-select formControlName="isSub" placeholder="Sub/Flex">
+                                                                    <mat-option [value]="true">Sub</mat-option>
+                                                                    <mat-option [value]="false">Not a Sub</mat-option>
+                                                                </mat-select>
+                                                            </mat-form-field>
+                                                            <br />
+                                                            <mat-form-field appearance="outline">
+                                                                <mat-label>Gender:</mat-label>
+                                                                <mat-select [formControl]="PlayerForm.get('selectedGender')" placeholder="Gender">
+                                                                    <mat-option *ngFor="let gender of gendersPossible" [value]="gender.value">
+                                                                        {{ gender.value }}
+                                                                    </mat-option>
+                                                                </mat-select>
+                                                            </mat-form-field>
+                                                            <br />
+                                                            <div class="d-flex justify-content-center">
+                                                                <button mat-raised-button color="primary">Submit</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </mat-card>
+                                </div></mat-tab><mat-tab label="League Settings">
                                     <div class="container-fluid">
-                                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                                            <div style="margin: 20px;" class="tab-content d-flex flex-column align-items-center">
+                                        <mat-card class="management-form-card management-settings-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                                            <div style="margin: 20px;" class="tab-content d-flex flex-column align-items-center management-settings-grid">
                                                 <h2>Modify League Settings</h2>
 
                                                 <!-- Modify Drop Lowest Scores -->
@@ -923,183 +1052,10 @@
                                             </div>
                                         </mat-card>
                                     </div>
-                                </mat-tab>
-                                <!-- Add Player Tab -->
-                                <mat-tab label="Add Player" *ngIf="selectedLeague">
-                                    <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                                        <div class="tab-content d-flex flex-column align-items-center" style="margin-bottom:20px">
-                                            <h5 class="mb-2">Search for Existing Player</h5>
-                                            <mat-form-field appearance="fill">
-                                                <mat-label>Search Player</mat-label>
-                                                <input matInput
-                                                       [matAutocomplete]="auto"
-                                                       [(ngModel)]="searchTerm"
-                                                       (input)="onSearchPlayer($event)"
-                                                       (blur)="onBlurPlayerInput()" />
-                                                <mat-autocomplete #auto="matAutocomplete"
-                                                                  (optionSelected)="onPlayerSelected($event.option.value)"
-                                                                  [displayWith]="displayPlayer">
-                                                    <mat-option *ngFor="let player of searchedPlayers"
-                                                                [value]="player">
-                                                        {{ player.firstName }} {{ player.lastName }}
-                                                    </mat-option>
-                                                </mat-autocomplete>
-                                            </mat-form-field>
-
-
-                                            <!-- Loading text -->
-                                            <div *ngIf="divisionsLoading" style="margin-top: 6px; font-size: 12px; color: gray;">
-                                                Loading divisions...
-                                            </div>
-
-                                            <!-- Only show the division picker if we are NOT loading AND we have at least 1 division -->
-                                            <div *ngIf="!divisionsLoading && leagueDivisionsForSelectedLeague && leagueDivisionsForSelectedLeague.length > 0">
-                                                <mat-form-field appearance="outline" style="width: 220px;">
-                                                    <mat-label>Division</mat-label>
-                                                    <mat-select [(ngModel)]="selectedLeagueDivisionIdForAddPlayer" name="divisionSelect">
-                                                        <mat-option [value]="0">No Division</mat-option>
-                                                        <mat-option *ngFor="let div of leagueDivisionsForSelectedLeague" [value]="div.id">
-                                                            {{ div.name }}
-                                                        </mat-option>
-                                                    </mat-select>
-                                                </mat-form-field>
-                                            </div>
-
-                                            <!-- Optional: if we have loaded at least once and there are still no divisions, show nothing (or a message) -->
-                                            <div *ngIf="!divisionsLoading && divisionsLoadedOnce && (!leagueDivisionsForSelectedLeague || leagueDivisionsForSelectedLeague.length === 0)"
-                                                 style="margin-top: 6px; font-size: 12px; color: gray;">
-                                                No divisions for this league.
-                                            </div>
-
-                                            <button mat-raised-button
-                                                    style="margin-bottom:20px"
-                                                    color="primary"
-                                                    (click)="addExistingPlayer()"
-                                                    [disabled]="!isActionAllowed">
-                                                Add Existing Player
-                                            </button>
-                                            <mat-form-field style="max-width: 300px" appearance="outline" *ngIf="!isActionAllowed">
-                                                <mat-label>Enter Password</mat-label>
-                                                <input matInput
-                                                       type="password"
-                                                       (input)="onPasswordInput($event.target.value)"
-                                                       placeholder="Password">
-                                            </mat-form-field>
-                                                     <button mat-raised-button color="primary" type="button"
-                                                             *ngIf="!isActionAllowed"
-                                                             (click)="unlockAdminPassword()">
-                                                         Unlock Administration
-                                                     </button>
-                                        </div>
-                                        <div class="tab-content d-flex flex-column align-items-center" style="margin-bottom:20px">
-                                            <button mat-raised-button
-                                                    color="primary"
-                                                    (click)="toggleNewPlayerForm()"
-                                                    [class.active]="showNewPlayerForm">
-                                                Enter New Player
-                                            </button>
-
-                                            <!-- Form to Add New Player -->
-                                            <div *ngIf="showNewPlayerForm" class="mt-3">
-                                                <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()" class="d-flex flex-column align-items-center">
-                                                    <div class="row">
-                                                        <div class="col-12 col-lg-6">
-                                                            <mat-form-field style="max-width: 180px" appearance="outline">
-                                                                <mat-label>First Name:</mat-label>
-                                                                <input matInput placeholder="Player First Name" type="text" formControlName="firstName" value="{{addedPlayer?.firstName}}" required />
-                                                            </mat-form-field>
-                                                            <br />
-                                                            <mat-form-field style="max-width: 180px" appearance="outline">
-                                                                <mat-label>Last Name:</mat-label>
-                                                                <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
-                                                            </mat-form-field>
-                                                            <br />
-                                                            <mat-form-field style="max-width: 180px" appearance="outline" *ngIf="!isActionAllowed">
-                                                                <mat-label>Password:</mat-label>
-                                                                <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
-                                                            </mat-form-field>
-                                                        </div>
-                                                        <div class="col-12 col-lg-6">
-                                                            <mat-form-field appearance="outline">
-                                                                <mat-select formControlName="isSub" placeholder="Sub/Flex">
-                                                                    <mat-option [value]="true">Sub</mat-option>
-                                                                    <mat-option [value]="false">Not a Sub</mat-option>
-                                                                </mat-select>
-                                                            </mat-form-field>
-                                                            <br />
-                                                            <mat-form-field appearance="outline">
-                                                                <mat-label>Gender:</mat-label>
-                                                                <mat-select [formControl]="PlayerForm.get('selectedGender')" placeholder="Gender">
-                                                                    <mat-option *ngFor="let gender of gendersPossible" [value]="gender.value">
-                                                                        {{ gender.value }}
-                                                                    </mat-option>
-                                                                </mat-select>
-                                                            </mat-form-field>
-                                                            <br />
-                                                            <div class="d-flex justify-content-center">
-                                                                <button mat-raised-button color="primary">Submit</button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </mat-card>
-                                </mat-tab>
-
-
-                                <mat-tab label="Delete Player" class="mt-2" *ngIf="selectedLeague">
+                                </mat-tab><mat-tab label="League Setup"><div class="management-setup-grid">
                                     <div class="container-fluid">
-                                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                                            <h5 class="text-center">Delete Player from {{ selectedLeague }}</h5>
-                                            <br />
-                                            <div class="row" style="margin-bottom:20px">
-                                                <div class="col-12 d-flex flex-column align-items-center">
-                                                    <mat-form-field style="max-width: 300px" appearance="outline">
-                                                        <mat-label>Search Player</mat-label>
-                                                        <input matInput
-                                                               [matAutocomplete]="auto"
-                                                               (input)="onSearchPlayerToDelete($event)"
-                                                               (blur)="onBlurDeletePlayerInput()"
-                                                               [(ngModel)]="searchTermDelete" />
-                                                        <mat-autocomplete #auto="matAutocomplete"
-                                                                          (optionSelected)="onDeletePlayerSelected($event.option.value)"
-                                                                          [displayWith]="displayPlayer">
-                                                            <mat-option *ngFor="let player of searchedPlayersToDelete"
-                                                                        [value]="player">
-                                                                {{ player.firstName }} {{ player.lastName }}
-                                                            </mat-option>
-                                                        </mat-autocomplete>
-                                                    </mat-form-field>
-                                                    <button mat-raised-button
-                                                            style="margin-bottom:20px"
-                                                            color="primary"
-                                                            (click)="deleteSelectedPlayer()"
-                                                            [disabled]="!isActionAllowed">
-                                                        Delete Player
-                                                    </button>
-                                                    <mat-form-field style="max-width: 300px" appearance="outline" *ngIf="!isActionAllowed">
-                                                        <mat-label>Enter Password</mat-label>
-                                                        <input matInput
-                                                               type="password"
-                                                               (input)="onPasswordInput($event.target.value)"
-                                                               placeholder="Password">
-                                                    </mat-form-field>
-                                                     <button mat-raised-button color="primary" type="button"
-                                                             *ngIf="!isActionAllowed"
-                                                             (click)="unlockAdminPassword()">
-                                                         Unlock Administration
-                                                     </button>
-                                                </div>
-                                            </div>
-                                        </mat-card>
-                                    </div>
-                                </mat-tab>
-
-                                <mat-tab label="Add League" class="mt-2">
-                                    <div class="container-fluid">
-                                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                                            <h5 class="text-center">Enter New League</h5>
+                                        <mat-card class="management-form-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                                            <h5 class="text-center">Create New League</h5>
                                             <br />
                                             <form [formGroup]="LeagueForm" (ngSubmit)="addLeague()">
                                                 <div class="d-flex flex-column align-items-center">
@@ -1119,10 +1075,9 @@
                                             </form>
                                         </mat-card>
                                     </div>
-                                </mat-tab>
-                                <mat-tab label="Add Division" class="mt-2">
+
                                     <div class="container-fluid">
-                                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                                        <mat-card class="management-form-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                             <h5 class="text-center">Add Division</h5>
                                             <br />
 
@@ -1172,10 +1127,12 @@
                                             </form>
                                         </mat-card>
                                     </div>
-                                </mat-tab>
-                            </mat-tab-group>
-                        </mat-card>
-                    </section>
+                                </div></mat-tab></mat-tab-group></mat-card></section>
+<ng-template #removeMembershipDialog let-data>
+ <h2 mat-dialog-title>Remove from League?</h2>
+ <mat-dialog-content><p>Remove <strong>{{ data.player.firstName }} {{ data.player.lastName }}</strong> from <strong>{{ data.leagueName }}</strong>?</p><p>The player's global record, account and other league memberships will be kept.</p></mat-dialog-content>
+ <mat-dialog-actions align="end"><button mat-button [mat-dialog-close]="false">Cancel</button><button mat-raised-button color="warn" [mat-dialog-close]="true">Remove from League</button></mat-dialog-actions>
+</ng-template>
 <div class="scrambler-results-shell" [hidden]="workspaceSection !== 'scrambler' || !listOfTeams.length">
 <section class="scramble-results-toolbar" #saveTeamsDiv tabindex="-1">
  <div class="results-heading"><h2>Scramble Results</h2><strong *ngIf="scrambleNumber && !scrambleSelected">Scramble Number: {{ scrambleNumber }}</strong><strong *ngIf="scrambleSelected && listOfRetrievedScrambleNumbers.length">Retrieved Scramble{{ listOfRetrievedScrambleNumbers.length > 1 ? 's' : '' }}: {{ listOfRetrievedScrambleNumbers.join(', ') }}</strong><span *ngIf="!scrambleNumber && !scrambleSelected">Preview — not saved</span></div>

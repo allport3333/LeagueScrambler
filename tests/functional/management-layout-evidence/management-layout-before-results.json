@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Four sizes; all five tabs/select values retained baseline"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

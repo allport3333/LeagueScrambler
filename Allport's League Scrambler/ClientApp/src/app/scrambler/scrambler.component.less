@@ -1,4 +1,4 @@
-﻿.my-class {
+.my-class {
     width: 45px !important;
     height: 30px !important;
     min-width: unset !important;
@@ -253,6 +253,63 @@ button[disabled].apply-top-button {
 .reset-actions button { min-height: 44px; }
 .scramble-empty-state { margin: 12px 20px; padding: 8px 12px; background: #f5f6f8; font-size: 14px; }
 .league-management-page { margin: 12px; }
+.league-management-page.consolidated-management .management-workspace { max-width: 1160px; margin: 16px auto; padding: 8px; background: transparent !important; border: 0; box-shadow: none; }
+.league-management-page.consolidated-management h1 { text-align: center; color: #293d69; font-size: 24px; margin: 8px 0 18px; }
+.league-management-page.consolidated-management h2, .league-management-page.consolidated-management h5 { text-align: center; color: #293d69; font-size: 20px; margin: 0 0 12px; }
+.league-management-page.consolidated-management .management-form-card { width: 100%; max-width: 960px; margin: 16px auto !important; padding: 20px; background: #fff !important; border: 1px solid #d8dfe9; border-radius: 6px; box-shadow: 0 2px 5px rgba(35,55,85,.07); }
+.league-management-page.consolidated-management .management-roster-card { max-width: 1120px; }
+.league-management-page.consolidated-management .management-settings-card { max-width: 940px; }
+.league-management-page.consolidated-management .management-form-card mat-form-field { width: 100% !important; max-width: 100% !important; }
+.league-management-page.consolidated-management .management-form-card > .tab-content { width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; }
+.league-management-page.consolidated-management form { width: 100%; }
+.league-management-page.consolidated-management .management-form-card button { min-height: 44px; white-space: normal; line-height: 20px; padding-top: 8px; padding-bottom: 8px; }
+.league-management-page.consolidated-management .management-settings-grid { display: grid !important; grid-template-columns: minmax(0,1fr); gap: 8px 24px; margin: 0 !important; max-width: none !important; }
+.league-management-page.consolidated-management .management-settings-grid > h2, .league-management-page.consolidated-management .management-settings-grid > div { grid-column: ~"1 / -1"; text-align: center; }
+.league-management-page.consolidated-management .management-settings-grid > mat-form-field { margin-bottom: 0 !important; }
+.league-management-page.consolidated-management .management-context { text-align: center; color: #596575; overflow-wrap: break-word; }
+.league-management-page.consolidated-management .roster-search { max-width: 520px !important; display: block; margin: 0 auto; }
+.league-management-page.consolidated-management .management-form-card .roster-search { max-width: 520px !important; }
+.league-management-page.consolidated-management .existing-player-division { width: 100%; }
+.league-management-page.consolidated-management button.active:not([disabled]) { background: #3f51b5; color: #fff; }
+.management-roster { list-style: none; padding: 0; margin: 0; }
+.roster-visibility { text-align: center; margin-bottom: 12px; }
+.management-roster li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid #e5e9ef; }
+.roster-player-name { min-width: 0; overflow-wrap: break-word; }
+.roster-player-name span { display: block; color: #596575; font-size: 13px; }
+.management-roster button { flex-shrink: 0; }
+.management-setup-grid { max-width: 1000px; margin: 16px auto; display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; align-items: start; }
+.management-setup-grid > .container-fluid { padding: 0; }
+.league-management-page.consolidated-management .management-setup-grid .management-form-card { margin: 0 !important; height: auto; }
+.league-management-page.consolidated-management .management-tabs ::ng-deep .mat-tab-labels { justify-content: center; }
+@media (min-width: 801px) {
+ .league-management-page.consolidated-management .management-settings-grid { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+}
+@media (min-width: 1000px) { .management-setup-grid { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } }
+@media (max-width: 600px) {
+ .league-management-page.consolidated-management { margin: 8px 0; }
+ .league-management-page.consolidated-management .management-workspace { padding: 0; }
+ .league-management-page.consolidated-management h1 { font-size: 21px; }
+ .league-management-page.consolidated-management .management-form-card { padding: 14px; }
+ .league-management-page.consolidated-management .container-fluid { padding: 0; }
+ .league-management-page.consolidated-management .management-tabs ::ng-deep .mat-tab-label { flex: 1 1 0; min-width: 0; padding: 0 6px; height: 48px; font-size: 12px; }
+ .league-management-page.consolidated-management .management-tabs ::ng-deep .mat-tab-label-content { white-space: normal; text-align: center; line-height: 16px; }
+ .management-roster li { align-items: flex-start; }
+ .management-roster button { font-size: 12px; max-width: 135px; }
+}
+/* Desktop management layout only; retain the existing stacked phone forms. */
+@media (min-width: 801px) {
+ .league-management-page > mat-card { background: #fafbfd !important; box-shadow: none; border: 1px solid #e0e5ed; }
+ .league-management-page .management-tabs ::ng-deep .mat-tab-labels { justify-content: center; }
+ .league-management-page .management-form-card { max-width: 680px; margin: 16px auto !important; padding: 20px; background: #fff !important; border: 1px solid #d8dfe9; border-radius: 6px; box-shadow: 0 2px 5px rgba(35,55,85,.07); }
+ .league-management-page .management-settings-card { max-width: 860px; }
+ .league-management-page .management-settings-grid { display: grid !important; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px 24px; margin: 0 !important; align-items: start !important; }
+ .league-management-page .management-settings-grid > h2 { grid-column: ~"1 / -1"; text-align: center; font-size: 22px; color: #293d69; margin: 0 0 12px; }
+ .league-management-page .management-settings-grid > mat-form-field { width: 100% !important; margin-bottom: 0 !important; }
+ .league-management-page .management-settings-grid > div { grid-column: ~"1 / -1"; text-align: center; margin-top: 6px; }
+ .league-management-page .management-form-card mat-form-field { width: 100%; }
+ .league-management-page .management-form-card button { min-height: 44px; }
+ .league-management-page .management-settings-grid ::ng-deep .mat-form-field-wrapper { padding-bottom: 12px; }
+}
 @media (max-width: 800px) {
  .scramble-workflow-actions { grid-template-columns: minmax(0,1fr); }
  .progression-actions { grid-column: 1; }

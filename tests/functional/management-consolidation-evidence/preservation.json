@@ -1,0 +1,12 @@
+{
+  "changedExistingMethods": [
+    "addExistingPlayer",
+    "deleteSelectedPlayer",
+    "onLeagueChanged",
+    "selectLeague",
+    "addPlayerLogic"
+  ],
+  "unchangedMethods": 128,
+  "creationRequestAndValidation": "Unchanged; added management refresh and error feedback only",
+  "frozenPasswordAndSaveSettingsMethodsUnchanged": true
+}

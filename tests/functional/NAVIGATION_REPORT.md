@@ -1,5 +1,7 @@
 # Responsive navigation checkpoint
 
+**Permission correction:** League Management is now Admin/Manager only, matching Scrambler navigation, on desktop and mobile. A new Angular route guard also blocks Player/anonymous direct URLs after waiting for session restoration. This supersedes the original public management visibility described below. Password validation, cookies and backend authorization are unchanged. Angular development build passed. The new four-role browser check could not execute because localhost:5001 refused the connection (development app stopped); it is blocked, not passed. Run `scrambler-workspace.cjs management-permissions` after starting the existing development application. Previous eight navigation checks below preceded this correction.
+
 Completed November 17, 2026. Stopped at user's usage-limit request; no further work pending for this navigation assignment.
 
 - Single dark desktop bar at 1280px and above: league selector left, five existing primary destinations, More (Players, Sign In Sheet, League Management, FAQ), Account (Profile when associated, Logout).

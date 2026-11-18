@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "1366: hidden default, live matching/no-results/clear, explicit Show All/Hide All and no overflow",
+    "375: hidden default, live matching/no-results/clear, explicit Show All/Hide All and no overflow",
+    "390: hidden default, live matching/no-results/clear, explicit Show All/Hide All and no overflow",
+    "League switching returns to search-first presentation and scopes matches"
+  ],
+  "pageErrors": [],
+  "requests": [],
+  "databaseAccess": false
+}

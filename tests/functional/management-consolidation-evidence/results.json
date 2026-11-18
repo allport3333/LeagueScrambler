@@ -1,0 +1,128 @@
+{
+  "checks": [
+    "Three sections, scoped roster, available division, filtering/no results",
+    "Removal confirmation cancel/no POST; confirm reuses league-scoped endpoint; fixture global player and other league intact",
+    "Existing autocomplete/division selection, membership add and duplicate idempotence via existing contract; no fixture global creation",
+    "Original new-player form/creation handler updates refreshed roster with saved ID",
+    "Settings dropdown change remains local; explicit save uses original five requests",
+    "Original league and division forms/handlers use existing endpoints and selected league",
+    "Four desktop/phone sizes: all sections, expanded creation, stacked setup and dialogs; no horizontal overflow",
+    "League switch scopes roster; empty and failure/retry states",
+    "Main navigation return keeps shared Scrambler instance and selection",
+    "Manager allowed and Player direct route blocked by existing guard; no legacy password used"
+  ],
+  "pageErrors": [],
+  "requests": [
+    {
+      "path": "/api/scrambledata/deleteplayer/synthetic%20league%20a",
+      "data": {
+        "id": 1001,
+        "firstName": "Synthetic",
+        "lastName": "Player01",
+        "isMale": true,
+        "gender": "Male",
+        "isSub": false,
+        "managementDivision": "Gold"
+      },
+      "fixtureOnly": true
+    },
+    {
+      "path": "/api/scrambledata/addplayer/synthetic%20league%20a",
+      "data": {
+        "id": 1005,
+        "firstName": "Synthetic",
+        "lastName": "Player05",
+        "isMale": true,
+        "gender": "Male",
+        "isSub": false
+      },
+      "fixtureOnly": true
+    },
+    {
+      "path": "/api/scrambledata/addplayer/synthetic%20league%20a",
+      "data": {
+        "id": 1005,
+        "firstName": "Synthetic",
+        "lastName": "Player05",
+        "isMale": true,
+        "gender": "Male",
+        "isSub": false
+      },
+      "fixtureOnly": true
+    },
+    {
+      "path": "/api/scrambledata/addplayer/synthetic%20league%20a",
+      "data": {
+        "id": 0,
+        "firstName": "SyntheticCreated",
+        "lastName": "Player99",
+        "gender": "Female",
+        "isMale": false,
+        "isSub": null
+      },
+      "fixtureOnly": true
+    },
+    {
+      "path": "/api/login/updatesetting",
+      "data": {
+        "settingName": "dropLowest",
+        "settingValue": "2",
+        "leagueId": 101
+      },
+      "fixtureOnly": true
+    },
+    {
+      "path": "/api/login/updatesetting",
+      "data": {
+        "settingName": "numberOfSubsAllowed",
+        "settingValue": "3",
+        "leagueId": 101
+      },
+      "fixtureOnly": true
+    },
+    {
+      "path": "/api/login/updatesetting",
+      "data": {
+        "settingName": "subScorePercent",
+        "settingValue": "80",
+        "leagueId": 101
+      },
+      "fixtureOnly": true
+    },
+    {
+      "path": "/api/login/updatesetting",
+      "data": {
+        "settingName": "dayOfLeague",
+        "settingValue": "Thursday",
+        "leagueId": 101
+      },
+      "fixtureOnly": true
+    },
+    {
+      "path": "/api/login/updatesetting",
+      "data": {
+        "settingName": "standingsType",
+        "settingValue": "round",
+        "leagueId": 101
+      },
+      "fixtureOnly": true
+    },
+    {
+      "path": "/api/scrambledata/addnewleague/synthetic%20created%20league",
+      "data": [],
+      "fixtureOnly": true
+    },
+    {
+      "path": "/api/leaguedivision/add",
+      "data": {
+        "leagueId": 101,
+        "code": "TEST",
+        "name": "Synthetic Division",
+        "sortOrder": 1
+      },
+      "fixtureOnly": true
+    }
+  ],
+  "databaseAccess": false,
+  "realPersistenceVerified": false
+}

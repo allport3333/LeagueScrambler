@@ -1,6 +1,6 @@
-import { Component, Inject, Input, OnInit, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, Inject, Input, OnInit, OnChanges, SimpleChanges, TemplateRef, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatSelectionListChange, MatTabGroup, MatTabChangeEvent } from '@angular/material';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatSelectionListChange, MatTabGroup, MatTabChangeEvent } from '@angular/material';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatChipsModule } from '@angular/material';
 import { Player } from '../data-models/player.model';
@@ -22,13 +22,74 @@ import { PlayerScoreGroup, PlayerScoresResponse } from '../data-models/playerSco
 import { KingQueenPlayer } from '../data-models/kingQueenPlayer.model';
 import { LeagueService } from '../services/league.service';
 import { KingQueenTeamsResponse } from '../data-models/kingQueenTeamsResponse';
-import { Subject, Observable } from 'rxjs';
+import { Subject, Observable, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
     styleUrls: ['./scrambler.component.less']
 })
-export class ScramblerComponent implements OnInit {
+export class ScramblerComponent implements OnInit, OnChanges {
+    managementRoster: any[] = [];
+    managementRosterSearch = '';
+    showAllManagementPlayers = false;
+    managementRosterLoading = false;
+    managementRosterError = '';
+    managementRemovalPending = false;
+    private managementRosterVersion = 0;
+    private managementRosterLeague: number = null;
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes.workspaceSection && this.workspaceSection === 'league-management') { this.refreshManagementRoster(); }
+    }
+    get filteredManagementRoster(): any[] {
+        const query = this.managementRosterSearch.trim().toLowerCase();
+        if (!query && !this.showAllManagementPlayers) { return []; }
+        return this.managementRoster.filter(p => (p.firstName + ' ' + p.lastName).toLowerCase().indexOf(query) >= 0);
+    }
+    toggleManagementRoster(): void {
+        this.managementRosterSearch = '';
+        this.showAllManagementPlayers = !this.showAllManagementPlayers;
+    }
+    trackManagementPlayer(index: number, player: any): number { return player.id; }
+    refreshManagementRoster(): void {
+        if (this.workspaceSection !== 'league-management' || !this.leagueId || !this.selectedLeague) { return; }
+        const leagueId = this.leagueId, leagueName = this.selectedLeague, version = ++this.managementRosterVersion;
+        if (this.managementRosterLeague !== leagueId) {
+            this.managementRoster = []; this.managementRosterSearch = ''; this.showAllManagementPlayers = false; this.managementRosterLeague = leagueId;
+        }
+        this.managementRosterLoading = true; this.managementRosterError = '';
+        forkJoin([
+            this.playerService.GetPlayersByLeague(leagueId),
+            this.playerService.getStandingsByLeague(leagueName).pipe(catchError(() => of(null)))
+        ]).subscribe(([players, standings]) => {
+            if (version !== this.managementRosterVersion || this.leagueId !== leagueId) { return; }
+            this.managementRoster = (players || []).map(player => {
+                const metadata: any = standings && standings.playerScores ? standings.playerScores.find(p => p.playerId === player.id) : null;
+                const division = player.leagueDivisionName || (metadata && metadata.leagueDivisionName) || player.leagueDivisionCode || (metadata && metadata.leagueDivisionCode);
+                return { ...player, managementDivision: division && division !== 'Unassigned' ? division : '' };
+            });
+            this.managementRosterLoading = false;
+        }, () => {
+            if (version !== this.managementRosterVersion || this.leagueId !== leagueId) { return; }
+            this.managementRosterLoading = false; this.managementRosterError = 'Unable to load league players. Please retry.';
+        });
+    }
+    confirmRemoveFromLeague(player: any, template: TemplateRef<any>): void {
+        if (!this.isActionAllowed || this.managementRemovalPending) { return; }
+        // The existing endpoint resolves names. Do not guess between duplicate roster names.
+        if (this.managementRoster.filter(p => p.firstName === player.firstName && p.lastName === player.lastName).length !== 1) {
+            this.showSnackBar('This player name is ambiguous in the league. No player was removed.', true); return;
+        }
+        const leagueId = this.leagueId, leagueName = this.selectedLeague;
+        this.managementDialog.open(template, { width: '420px', maxWidth: 'calc(100vw - 32px)', data: { player, leagueName } }).afterClosed().subscribe(confirmed => {
+            if (!confirmed) { return; }
+            if (this.leagueId !== leagueId || this.selectedLeague !== leagueName || !this.isActionAllowed) {
+                this.showSnackBar('League or administration access changed. Please select the player again.', true); return;
+            }
+            this.selectedPlayerToDelete = player; this.managementRemovalPending = true; this.deleteSelectedPlayer();
+        });
+    }
     @Input() workspaceSection = 'scrambler';
     resultsCollapsed = false;
     private savedPrintSignature: string = null;
@@ -231,7 +292,8 @@ export class ScramblerComponent implements OnInit {
         public playerService: PlayerService,
         public leagueService: LeagueService,
         public loginService: LoginService,
-        private snackBar: MatSnackBar
+        private snackBar: MatSnackBar,
+        private managementDialog: MatDialog
     ) {
         this.teamSize = 4;
 
@@ -652,6 +714,7 @@ export class ScramblerComponent implements OnInit {
 
                             this.showSnackBar("Player added successfully!");
                         }
+                        this.refreshManagementRoster();
                     },
                     (error) => {
                         console.error(error);
@@ -741,17 +804,20 @@ export class ScramblerComponent implements OnInit {
 
     // Delete the selected player from the league
     deleteSelectedPlayer() {
+        const target = this.selectedPlayerToDelete, targetLeague = this.selectedLeague;
         if (this.selectedPlayerToDelete && this.selectedLeague) {
             this.playerService
                 .DeletePlayer(this.selectedPlayerToDelete, this.selectedLeague)
                 .subscribe(
                     (result) => {
+                        this.managementRemovalPending = false;
+                        if (this.selectedLeague !== targetLeague) { this.refreshManagementRoster(); return; }
                         if (result) {
                             // Remove player from the local lists
                             const maleIndex = this.malePlayers1.findIndex(
                                 (p) =>
-                                    p.firstName === this.selectedPlayerToDelete.firstName &&
-                                    p.lastName === this.selectedPlayerToDelete.lastName
+                                    p.firstName === target.firstName &&
+                                    p.lastName === target.lastName
                             );
 
                             if (maleIndex !== -1) {
@@ -760,15 +826,17 @@ export class ScramblerComponent implements OnInit {
 
                             const femaleIndex = this.femalePlayers1.findIndex(
                                 (p) =>
-                                    p.firstName === this.selectedPlayerToDelete.firstName &&
-                                    p.lastName === this.selectedPlayerToDelete.lastName
+                                    p.firstName === target.firstName &&
+                                    p.lastName === target.lastName
                             );
 
                             if (femaleIndex !== -1) {
                                 this.femalePlayers1.splice(femaleIndex, 1);
                             }
 
-                            this.snackBar.open('Player deleted successfully!', 'Close', { duration: 3000, panelClass: ['custom-snackbar'] });
+                            this.snackBar.open('Player removed from league successfully!', 'Close', { duration: 3000, panelClass: ['custom-snackbar'] });
+                            this.selectedPlayerToDelete = null;
+                            this.refreshManagementRoster();
                         } else {
                             this.snackBar.open('Player not found in the league.', 'Close', { duration: 3000, panelClass: ['red-snackbar'] });
                         }
@@ -776,10 +844,12 @@ export class ScramblerComponent implements OnInit {
                     (error) => {
                         console.error(error);
                         this.snackBar.open('An error occurred while deleting the player.', 'Close', { duration: 3000, panelClass: ['red-snackbar'] });
+                        this.managementRemovalPending = false;
                     }
                 );
         } else {
             this.snackBar.open('Please select a player to delete.', 'Close', { duration: 3000, panelClass: ['red-snackbar'] });
+            this.managementRemovalPending = false;
         }
     }
 
@@ -1011,6 +1081,7 @@ export class ScramblerComponent implements OnInit {
             this.loadDivisionsForSelectedLeague();
         }
 
+        this.refreshManagementRoster();
         // Reset fetch state when switching leagues
         this.fetchClicked = false;
         this.checkForSignedInPlayers();
@@ -1062,6 +1133,7 @@ export class ScramblerComponent implements OnInit {
             console.log('load1');
         }
 
+        this.refreshManagementRoster();
         // Reset fetch state when selecting a league
         this.fetchClicked = false;
         this.checkForSignedInPlayers();
@@ -2264,8 +2336,9 @@ export class ScramblerComponent implements OnInit {
                             // Show success message
                             this.showSnackBar("Player added successfully!");
                         }
+                        this.refreshManagementRoster();
                     },
-                    (error) => console.error(error)
+                    (error) => { console.error(error); this.showSnackBar('An error occurred while creating the player.', true); }
                 );
             } else {
                 this.showSnackBar("Please Select A League From The Dropdown");

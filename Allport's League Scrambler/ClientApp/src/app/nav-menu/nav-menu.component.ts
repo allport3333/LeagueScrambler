@@ -23,7 +23,7 @@ export class NavMenuComponent implements OnInit, OnDestroy {
         { route: '/kqmatchups', label: 'K/Q Matchups', icon: 'view_list', group: 'results', primary: true, roles: ['Admin', 'Manager', 'Player'] },
         { route: '/fetch-data', label: 'Players', icon: 'people', group: 'night', primary: false, signedInOnly: true },
         { route: '/sign-in', label: 'Sign In Sheet', icon: 'how_to_reg', group: 'night', primary: false, signedInOnly: true },
-        { route: '/league-management', label: 'League Management', icon: 'settings', group: 'management', primary: false },
+        { route: '/league-management', label: 'League Management', icon: 'settings', group: 'management', primary: false, roles: ['Admin', 'Manager'] },
         { route: '/faq', label: 'F.A.Q', icon: 'help_outline', group: 'management', primary: false }
     ];
     get visibleDestinations() {
