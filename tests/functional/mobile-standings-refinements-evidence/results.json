@@ -1,0 +1,24 @@
+{
+  "mode": "browser-only synthetic display fixture",
+  "databaseAccess": false,
+  "baseline": false,
+  "apiReads": 9,
+  "writes": [],
+  "pageErrors": [],
+  "desktopVerified": [
+    "1366",
+    "1920"
+  ],
+  "checks": [
+    "Desktop at both sizes: preserved geometry/fonts/spacing/colors, with only requested ascending column order",
+    "Mobile 375x667: no page overflow, four columns, original values/colors, tap/keyboard expansion and indicators",
+    "Mobile 390x844: no page overflow, four columns, original values/colors, tap/keyboard expansion and indicators",
+    "Unassigned, null, missing and blank divisions omit the entire Division label/value; mobile Total Wins absent",
+    "All four mobile sort keys and direction toggle match original tables",
+    "Overall, Gold, Silver, configured Bronze and both gender tabs use correct filtered arrays",
+    "Round/Matchup 1–11 chronology, including repeated raw round IDs across scrambles; values and flags preserved",
+    "Full-table opt-in scrolls within its own region, retains sticky player names and returns to compact mode",
+    "Returning to desktop restores only the existing full-table presentation"
+  ],
+  "fixtureSha256": "07afb77e0ede6236249051d33b8871c7f9e1d181d17569ab560468b806bb2a5f"
+}

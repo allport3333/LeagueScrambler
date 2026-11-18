@@ -1,0 +1,1142 @@
+{
+  "desktop": {
+    "1366": {
+      "root": [
+        15,
+        83,
+        1336,
+        663.5
+      ],
+      "table": [
+        300.78,
+        509.5,
+        764.42,
+        164
+      ],
+      "cells": [
+        {
+          "text": "Place",
+          "rect": [
+            301.28,
+            510,
+            50,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Player Name",
+          "rect": [
+            351.28,
+            510,
+            143.06,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "King Queen Score arrow_upward",
+          "rect": [
+            494.34,
+            510,
+            140.36,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Total Points",
+          "rect": [
+            634.7,
+            510,
+            80,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Matchup5",
+          "rect": [
+            714.7,
+            510,
+            70,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Matchup4",
+          "rect": [
+            784.7,
+            510,
+            70,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Matchup3",
+          "rect": [
+            854.7,
+            510,
+            70,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Matchup2",
+          "rect": [
+            924.7,
+            510,
+            70,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Matchup1",
+          "rect": [
+            994.7,
+            510,
+            70,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "1",
+          "rect": [
+            301.28,
+            591.5,
+            50,
+            27.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(173, 216, 230)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Alex Riverstone",
+          "rect": [
+            351.28,
+            591.5,
+            143.06,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "113",
+          "rect": [
+            494.34,
+            591.5,
+            140.36,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(144, 238, 144)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "113",
+          "rect": [
+            634.7,
+            591.5,
+            80,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "21",
+          "rect": [
+            714.7,
+            591.5,
+            70,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "22",
+          "rect": [
+            784.7,
+            591.5,
+            70,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "27",
+          "rect": [
+            854.7,
+            591.5,
+            70,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "20",
+          "rect": [
+            924.7,
+            591.5,
+            70,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(216, 191, 216)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "23",
+          "rect": [
+            994.7,
+            591.5,
+            70,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(216, 191, 216)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "2",
+          "rect": [
+            301.28,
+            619,
+            50,
+            27
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(173, 216, 230)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Blake Long-Player-Name",
+          "rect": [
+            351.28,
+            619,
+            143.06,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "100",
+          "rect": [
+            494.34,
+            619,
+            140.36,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(144, 238, 144)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "100",
+          "rect": [
+            634.7,
+            619,
+            80,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "19",
+          "rect": [
+            714.7,
+            619,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "20",
+          "rect": [
+            784.7,
+            619,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "24",
+          "rect": [
+            854.7,
+            619,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "17",
+          "rect": [
+            924.7,
+            619,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "20",
+          "rect": [
+            994.7,
+            619,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "3",
+          "rect": [
+            301.28,
+            646,
+            50,
+            27
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(173, 216, 230)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Casey Shore",
+          "rect": [
+            351.28,
+            646,
+            143.06,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "74",
+          "rect": [
+            494.34,
+            646,
+            140.36,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(144, 238, 144)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "74",
+          "rect": [
+            634.7,
+            646,
+            80,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "18",
+          "rect": [
+            714.7,
+            646,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "16",
+          "rect": [
+            784.7,
+            646,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "15",
+          "rect": [
+            854.7,
+            646,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "14",
+          "rect": [
+            924.7,
+            646,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "11",
+          "rect": [
+            994.7,
+            646,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        }
+      ],
+      "tabs": [
+        "Overall",
+        "Bronze",
+        "Gold",
+        "Silver",
+        "Men's Standings",
+        "Women's Standings"
+      ]
+    },
+    "1920": {
+      "root": [
+        15,
+        83,
+        1890,
+        663.5
+      ],
+      "table": [
+        577.78,
+        509.5,
+        764.42,
+        164
+      ],
+      "cells": [
+        {
+          "text": "Place",
+          "rect": [
+            578.28,
+            510,
+            50,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Player Name",
+          "rect": [
+            628.28,
+            510,
+            143.06,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "King Queen Score arrow_upward",
+          "rect": [
+            771.34,
+            510,
+            140.36,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Total Points",
+          "rect": [
+            911.7,
+            510,
+            80,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Matchup5",
+          "rect": [
+            991.7,
+            510,
+            70,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Matchup4",
+          "rect": [
+            1061.7,
+            510,
+            70,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Matchup3",
+          "rect": [
+            1131.7,
+            510,
+            70,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Matchup2",
+          "rect": [
+            1201.7,
+            510,
+            70,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Matchup1",
+          "rect": [
+            1271.7,
+            510,
+            70,
+            81.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "1",
+          "rect": [
+            578.28,
+            591.5,
+            50,
+            27.5
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(173, 216, 230)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Alex Riverstone",
+          "rect": [
+            628.28,
+            591.5,
+            143.06,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "113",
+          "rect": [
+            771.34,
+            591.5,
+            140.36,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(144, 238, 144)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "113",
+          "rect": [
+            911.7,
+            591.5,
+            80,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "21",
+          "rect": [
+            991.7,
+            591.5,
+            70,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "22",
+          "rect": [
+            1061.7,
+            591.5,
+            70,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "27",
+          "rect": [
+            1131.7,
+            591.5,
+            70,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "20",
+          "rect": [
+            1201.7,
+            591.5,
+            70,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(216, 191, 216)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "23",
+          "rect": [
+            1271.7,
+            591.5,
+            70,
+            27.5
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(216, 191, 216)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "2",
+          "rect": [
+            578.28,
+            619,
+            50,
+            27
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(173, 216, 230)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Blake Long-Player-Name",
+          "rect": [
+            628.28,
+            619,
+            143.06,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "100",
+          "rect": [
+            771.34,
+            619,
+            140.36,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(144, 238, 144)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "100",
+          "rect": [
+            911.7,
+            619,
+            80,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "19",
+          "rect": [
+            991.7,
+            619,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "20",
+          "rect": [
+            1061.7,
+            619,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "24",
+          "rect": [
+            1131.7,
+            619,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "17",
+          "rect": [
+            1201.7,
+            619,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "20",
+          "rect": [
+            1271.7,
+            619,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "3",
+          "rect": [
+            578.28,
+            646,
+            50,
+            27
+          ],
+          "font": "700 12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "700",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(173, 216, 230)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "Casey Shore",
+          "rect": [
+            628.28,
+            646,
+            143.06,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "74",
+          "rect": [
+            771.34,
+            646,
+            140.36,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgb(144, 238, 144)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "74",
+          "rect": [
+            911.7,
+            646,
+            80,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "18",
+          "rect": [
+            991.7,
+            646,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "16",
+          "rect": [
+            1061.7,
+            646,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "15",
+          "rect": [
+            1131.7,
+            646,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "14",
+          "rect": [
+            1201.7,
+            646,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        },
+        {
+          "text": "11",
+          "rect": [
+            1271.7,
+            646,
+            70,
+            27
+          ],
+          "font": "12px / 18px Roboto, \"Helvetica Neue\", sans-serif",
+          "fontWeight": "400",
+          "color": "rgb(33, 37, 41)",
+          "background": "rgba(0, 0, 0, 0.05)",
+          "padding": "4px",
+          "textAlign": "center"
+        }
+      ],
+      "tabs": [
+        "Overall",
+        "Bronze",
+        "Gold",
+        "Silver",
+        "Men's Standings",
+        "Women's Standings"
+      ]
+    }
+  },
+  "spacing": {
+    "375": {
+      "tableTop": 657.6875,
+      "tableWidth": 319
+    },
+    "390": {
+      "tableTop": 657.6875,
+      "tableWidth": 334
+    }
+  }
+}

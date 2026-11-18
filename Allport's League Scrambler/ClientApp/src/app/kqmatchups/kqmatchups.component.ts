@@ -1,153 +1,157 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ActivatedRoute, Router, Params } from '@angular/router';
+import { combineLatest, Subscription } from 'rxjs';
 import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
 import { LeagueService } from '../services/league.service';
 import { PlayerService } from '../services/player.service';
 import { Team } from '../data-models/teams.model';
-import { KingQueenPlayer } from '../data-models/kingQueenPlayer.model';
 import { Player } from '../data-models/player.model';
 import { KingQueenRoundScore } from '../data-models/kingQueenRoundScore';
 
 @Component({
-  selector: 'app-kqmatchups',
-  templateUrl: './kqmatchups.component.html',
-  styleUrls: ['./kqmatchups.component.css']
+    selector: 'app-kqmatchups',
+    templateUrl: './kqmatchups.component.html',
+    styleUrls: ['./kqmatchups.component.css']
 })
-export class KqmatchupsComponent implements OnInit {
-    queriedScrambles: KingQueenTeam[] = new Array();
-    retrievedListOfTeams: Team[] = new Array();
+export class KqmatchupsComponent implements OnInit, OnDestroy {
+    queriedScrambles: KingQueenTeam[] = [];
+    retrievedListOfTeams: Team[] = [];
     selectedLeagueId: number;
     leagueName: string;
-    listOfTeams: Team[] = new Array();
-    listOfRetrievedScrambleNumbers: number[] = [];
-    selectedRounds: number = 5; // Default to 5 rounds
-    byePlayers: Player[] = new Array();
-    rounds: number[] = [];
-    kingQueenRoundScores: KingQueenRoundScore[] = [];
-    constructor(
-        public leagueService: LeagueService,
-        public playerService: PlayerService
-    ) { }
+    selectedScramble: KingQueenTeam;
+    byePlayers: Player[] = [];
+    loading = false;
+    message = '';
+    focusedTeamId: number = null;
+    focusedRoundId: number = null;
+    fromStandings = false;
+    private params: Params = {};
+    private version = 0;
+    private focused = false;
+    private resolved = false;
+    private subscriptions = new Subscription();
+
+    constructor(public leagueService: LeagueService, public playerService: PlayerService,
+        private route: ActivatedRoute, private router: Router) { }
 
     ngOnInit() {
-
-        // Subscribe to selected league changes
-        this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
-            this.selectedLeagueId = selectedLeague.leagueId;
-            this.leagueName = selectedLeague.leagueName;
-            this.playerService.SelectedLeagueScrambles(selectedLeague.leagueName).subscribe((result) => {
-                this.queriedScrambles = result;
-            });
-
-        });
-    }
-
-    getSortedScores(scores: KingQueenRoundScore[]): KingQueenRoundScore[] {
-        // Return a sorted copy, so we don't mutate the original array
-        return [...scores].sort((a, b) => a.roundId - b.roundId);
-    }
-
-    initializeRounds(): void {
-        this.rounds = Array.from({ length: this.selectedRounds }, (_, index) => index + 1);
-    }
-
-    initializeScores(): void {
-        this.kingQueenRoundScores = []; // Reset the array
-
-        for (const team of this.retrievedListOfTeams) {
-
-            if (team.kingQueenRoundScores && team.kingQueenRoundScores.length > 0) {
-                // Use existing scores if they exist
-                for (let kingQueenRoundScore of team.kingQueenRoundScores) {
-                    this.kingQueenRoundScores.push({
-                        id: kingQueenRoundScore.id,
-                        roundId: kingQueenRoundScore.roundId,
-                        kingQueenTeamId: kingQueenRoundScore.kingQueenTeamId,
-                        roundScore: kingQueenRoundScore.roundScore,
-                        roundWon: kingQueenRoundScore.roundWon
-                    });
-                }
-            } else {
-                // Create new scores if none exist
-                for (let roundIndex = 0; roundIndex < this.selectedRounds; roundIndex++) {
-                    this.kingQueenRoundScores.push({
-                        id: 0, // Default for new scores
-                        roundId: roundIndex + 1,
-                        kingQueenTeamId: team.kingQueenTeamId,
-                        roundScore: 0,
-                        roundWon: false
-                    });
-                }
+        this.subscriptions.add(combineLatest(this.route.queryParams, this.leagueService.selectedLeague$).subscribe(([params, selected]) => {
+            // A deliberate league change after opening a week starts normal browsing;
+            // the old score URL must not force the navigation dropdown back again.
+            if (params === this.params && this.selectedScramble && selected.leagueId
+                && selected.leagueId !== this.selectedLeagueId) {
+                this.version++;
+                this.retrievedListOfTeams = [];
+                this.router.navigate(['/kqmatchups'], { queryParams: { leagueId: selected.leagueId } });
+                return;
             }
-        }
-
+            const version = ++this.version;
+            this.params = params;
+            this.fromStandings = params.fromStandings === '1';
+            this.focused = this.fromStandings && params.view !== 'all';
+            this.resolved = false; this.message = ''; this.retrievedListOfTeams = []; this.byePlayers = [];
+            this.queriedScrambles = []; this.selectedScramble = null; this.loading = false;
+            const requestedLeague = params.leagueId === undefined ? null : Number(params.leagueId);
+            if (requestedLeague !== null && !this.positiveId(requestedLeague)) {
+                this.message = 'The requested league is invalid.'; return;
+            }
+            if (requestedLeague && requestedLeague !== selected.leagueId) {
+                this.loading = true;
+                this.subscriptions.add(this.leagueService.selectNavigationLeague(requestedLeague).subscribe(found => {
+                    if (!found && version === this.version) { this.loading = false; this.message = 'The requested league is unavailable. Select an available league and try again.'; }
+                }));
+                return;
+            }
+            if (!selected.leagueId || !selected.leagueName) { return; }
+            this.selectedLeagueId = selected.leagueId; this.leagueName = selected.leagueName;
+            this.loading = true;
+            this.subscriptions.add(this.playerService.SelectedLeagueScrambles(this.leagueName).subscribe(result => {
+                if (version !== this.version) { return; }
+                this.queriedScrambles = (result || []).slice().sort((a, b) => a.scrambleNumber - b.scrambleNumber);
+                this.loading = false;
+                if (params.scrambleNumber !== undefined) {
+                    const number = Number(params.scrambleNumber);
+                    const scramble = this.queriedScrambles.find(s => s.scrambleNumber === number);
+                    if (!this.positiveId(number) || !scramble) { this.message = 'The saved week for this score is unavailable.'; return; }
+                    this.retrieveScramble(scramble);
+                } else if (this.fromStandings) { this.message = 'This score link does not identify a saved week.'; }
+            }, () => { if (version === this.version) { this.loading = false; this.message = 'Could not load saved weeks. Please try again.'; } }));
+        }));
     }
 
+    ngOnDestroy() { this.version++; this.subscriptions.unsubscribe(); }
+    positiveId(value: number): boolean { return Number.isInteger(value) && value > 0; }
+    get singleMatchupView(): boolean { return this.focused; }
+    getSortedScores(scores: KingQueenRoundScore[]): KingQueenRoundScore[] {
+        return (scores || []).slice().sort((a, b) => a.roundId - b.roundId);
+    }
+    matchNumber(pair: Team[]): number { return Math.floor((pair[0].sortingId - 1) / 2) + 1; }
     getTeamPairs(): Team[][] {
+        if (this.focused && !this.resolved) { return []; }
         const pairs: Team[][] = [];
         for (let i = 0; i < this.retrievedListOfTeams.length; i += 2) {
-            pairs.push(this.retrievedListOfTeams.slice(i, i + 2));
+            const pair = this.retrievedListOfTeams.slice(i, i + 2);
+            if (!this.focused || pair.some(t => t.kingQueenTeamId === this.focusedTeamId)) { pairs.push(pair); }
         }
         return pairs;
     }
-
-    retrieveScramble(scramble: KingQueenTeam) {
-        this.retrievedListOfTeams = [];
-
-        this.playerService.getKingQueenTeamsByScrambleNumber(this.leagueName, scramble.scrambleNumber).subscribe(
-            (response) => {
-                // Initialize your list of teams
-                this.listOfTeams = [];
-                this.listOfRetrievedScrambleNumbers = [];
-                let matchups = response.kingQueenTeams;
-                if (matchups.length > 0 && matchups[0].kingQueenTeam.kingQueenRoundScores) {
-                    this.selectedRounds = matchups[0].kingQueenTeam.kingQueenRoundScores.length;
-                }
-                // Map the retrieved matchups into listOfTeams
-                matchups.forEach((matchup) => {
-                    matchup.players.forEach((player) => {
-                        // kingQueenPlayers might be null/undefined, so default to empty array
-                        const kqPlayers = matchup.kingQueenTeam.kingQueenPlayers || [];
-
-                        let matchingKQPlayer: KingQueenPlayer | null = null;
-                        for (const kqp of kqPlayers) {
-                            if (kqp.playerId === player.id) {
-                                matchingKQPlayer = kqp;
-                                break; // Stop once we find the match
-                            }
-                        }
-
-                        if (matchingKQPlayer) {
-                            player.isSubScore = matchingKQPlayer.isSubScore;
-                        }
-                    });
-
-                    // 2. Build your Team object now that each Player is updated
-                    const team: Team = {
-                        players: matchup.players,
-                        maleCount: matchup.players.filter((player) => player.isMale).length,
-                        femaleCount: matchup.players.filter((player) => !player.isMale).length,
-                        kingQueenRoundScores: matchup.kingQueenTeam.kingQueenRoundScores,
-                        kingQueenTeamId: matchup.kingQueenTeam.id,
-                        scrambleNumber: null,
-                        sortingId: null
-                    };
-
-                    // 3. Push the team into your list
-                    this.listOfTeams.push(team);
-                    this.retrievedListOfTeams.push(team);
-                });
-                this.byePlayers = response.byePlayers;
-
-                this.listOfRetrievedScrambleNumbers.push(scramble.scrambleNumber);
-                // Initialize rounds and scores after data is fully loaded
-                this.initializeRounds();
-                this.initializeScores();
-            },
-            (error) => {
-                // Handle any errors
-                console.error('Error retrieving matchups:', error);
-            }
-        );
+    isFocusedScore(team: Team, score: KingQueenRoundScore): boolean {
+        return this.focused && team.kingQueenTeamId === this.focusedTeamId && score.roundId === this.focusedRoundId;
     }
-
+    showAllMatchups() {
+        this.router.navigate([], { relativeTo: this.route, queryParams: { view: 'all', playerId: null, kingQueenTeamId: null, roundId: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    }
+    chooseWeek(scramble: KingQueenTeam) {
+        if (this.fromStandings || this.params.scrambleNumber !== undefined) {
+            this.router.navigate([], { relativeTo: this.route, queryParams: { view: 'all', scrambleNumber: scramble.scrambleNumber, playerId: null, kingQueenTeamId: null, roundId: null }, queryParamsHandling: 'merge', replaceUrl: true });
+        } else { this.retrieveScramble(scramble); }
+    }
+    backToStandings() {
+        this.router.navigate(['/standings'], { queryParams: { leagueId: this.selectedLeagueId || this.params.leagueId,
+            standingsMode: this.params.standingsMode === 'matchup' ? 'matchup' : 'round',
+            divisionId: this.params.divisionId || 0, gender: this.params.gender === 'women' ? 'women' : 'men' } });
+    }
+    retrieveScramble(scramble: KingQueenTeam) {
+        const version = ++this.version;
+        this.selectedScramble = scramble; this.retrievedListOfTeams = []; this.byePlayers = [];
+        this.message = ''; this.loading = true; this.resolved = false;
+        this.focusedTeamId = this.focused ? Number(this.params.kingQueenTeamId) : null;
+        this.focusedRoundId = this.focused && this.params.roundId !== undefined ? Number(this.params.roundId) : null;
+        const playerId = Number(this.params.playerId);
+        if (this.focused && (!this.positiveId(this.focusedTeamId) || !this.positiveId(playerId)
+            || (this.focusedRoundId !== null && !this.positiveId(this.focusedRoundId)))) {
+            this.loading = false; this.message = 'This score link has incomplete or invalid player, team or round information.'; return;
+        }
+        this.subscriptions.add(this.playerService.getKingQueenTeamsByScrambleNumber(this.leagueName, scramble.scrambleNumber).subscribe(response => {
+            if (version !== this.version) { return; }
+            this.loading = false;
+            if (!response || !response.kingQueenTeams) { this.message = 'The saved matchup is unavailable.'; return; }
+            // Finalization assigns players to ascending saved IDs. Never pair an unordered response.
+            const records = response.kingQueenTeams.slice().sort((a, b) => a.kingQueenTeam.id - b.kingQueenTeam.id);
+            this.retrievedListOfTeams = records.map((entry, index) => ({
+                kingQueenTeamId: entry.kingQueenTeam.id, scrambleNumber: scramble.scrambleNumber, sortingId: index + 1,
+                players: (entry.players || []).map(player => {
+                    const membership = (entry.kingQueenTeam.kingQueenPlayers || []).find(p => p.playerId === player.id);
+                    return { ...player, isSubScore: membership ? membership.isSubScore : false };
+                }),
+                maleCount: (entry.players || []).filter(p => p.isMale).length,
+                femaleCount: (entry.players || []).filter(p => !p.isMale).length,
+                kingQueenRoundScores: entry.kingQueenTeam.kingQueenRoundScores || []
+            }));
+            this.byePlayers = response.byePlayers || [];
+            if (this.focused) {
+                const index = this.retrievedListOfTeams.findIndex(t => t.kingQueenTeamId === this.focusedTeamId);
+                const team = this.retrievedListOfTeams[index];
+                const pairStart = Math.floor(index / 2) * 2;
+                const pair = this.retrievedListOfTeams.slice(pairStart, pairStart + 2);
+                if (!team || !team.players.some(p => p.id === playerId) || pair.length !== 2
+                    || this.retrievedListOfTeams.length % 2 !== 0 || pair.some(t => !t.players.length)
+                    || pair[0].players.some(p => pair[1].players.some(other => other.id === p.id))
+                    || (this.focusedRoundId !== null && !team.kingQueenRoundScores.some(s => s.roundId === this.focusedRoundId))) {
+                    this.message = 'The exact saved player/team matchup could not be verified. No unrelated matchup is shown.'; return;
+                }
+            }
+            this.resolved = true;
+        }, () => { if (version === this.version) { this.loading = false; this.message = 'Could not retrieve the saved matchup. Please try again.'; } }));
+    }
 }

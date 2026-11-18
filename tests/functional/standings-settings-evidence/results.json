@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "Desktop 1366/1920 screenshots identical, existing settings remain visible",
+    "375px: collapsed default, controls/values preserved, centered equal-column scores, right indicators/colors, ascending order, links and 44px touch targets",
+    "390px: collapsed default, controls/values preserved, centered equal-column scores, right indicators/colors, ascending order, links and 44px touch targets",
+    "430px: collapsed default, controls/values preserved, centered equal-column scores, right indicators/colors, ascending order, links and 44px touch targets",
+    "Manager: correct settings-section visibility",
+    "Player: correct settings-section visibility",
+    "Anonymous: correct settings-section visibility"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "actual Angular UI; synthetic intercepted API data"
+}

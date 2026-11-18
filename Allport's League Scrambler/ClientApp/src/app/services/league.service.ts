@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { LoginService } from './login.service';
 import { Leagues } from '../data-models/leagues.model';
-import { Router } from '@angular/router';
+import { map, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { PlayerService } from './player.service';
 
 @Injectable({
     providedIn: 'root',
@@ -16,53 +18,45 @@ export class LeagueService {
 
     leaguesAvailable: Leagues[] = []; // Store fetched leagues
 
-    constructor(private loginService: LoginService, private router: Router) { }
+    constructor(private loginService: LoginService, private playerService: PlayerService) { }
 
-    // Fetch leagues for the logged-in user
-    getLeagues(): Observable<{ id: number; leagueName: string }[]> {
-        return new Observable((observer) => {
-            this.loginService.getUsersPlayer().subscribe(
-                (playerResult) => {
-                    let playerId: number | null = null;
-
-                    if (playerResult != null) {
-                        playerId = playerResult.playerId;
-                    }
-
-                    // Fetch user leagues after player is resolved
-                    this.loginService.getUserLeagues().subscribe(
-                        (leagueResult) => {
-                            if (!leagueResult || leagueResult.length === 0) {
-                                console.warn('No leagues found. Redirecting to player stats.');
-                                this.router.navigate(['/player-stats', playerId]);
-                                observer.complete();
-                                return;
-                            }
-
-                            // Map leagues to the required structure
-                            this.leaguesAvailable = leagueResult.map((league) => ({
-                                id: league.id,
-                                leagueName: league.leagueName,
-                            }));
-                            observer.next(this.leaguesAvailable); // Pass the mapped leagues to the subscriber
-                            observer.complete();
-                        },
-                        (error) => {
-                            console.error('Error fetching leagues:', error);
-                            this.router.navigate(['/player-stats', playerId]);
-                            observer.complete();
-                        }
-                    );
-                },
-                (error) => {
-                    console.error('Error fetching player:', error);
-                    this.router.navigate(['/profile']); // Navigate to profile on player fetch error
-                    observer.complete();
-                }
-            );
-        });
+    // Resolve a read-only navigation context, including an anonymous direct link.
+    selectNavigationLeague(leagueId: number): Observable<boolean> {
+        if (this.leaguesAvailable.length) {
+            if (!this.leaguesAvailable.some(l => l.id === leagueId)) { return of(false); }
+            if (this.selectedLeagueSource.getValue().leagueId !== leagueId) { this.setSelectedLeague(leagueId); }
+            return of(true);
+        }
+        return this.playerService.GetLeagues().pipe(map(leagues => {
+            if (!leagues || !leagues.some(l => l.id === leagueId)) { return false; }
+            this.leaguesAvailable = leagues;
+            this.setSelectedLeague(leagueId);
+            return true;
+        }), catchError(() => of(false)));
     }
 
+    // Nonredirecting session restoration; retain a still-accessible current selection.
+    restoreLeagues(leagues: Leagues[]): void {
+        this.leaguesAvailable = (leagues || []).map(league => ({ id: league.id, leagueName: league.leagueName }));
+        const current = this.selectedLeagueSource.getValue();
+        const selected = this.leaguesAvailable.find(league => league.id === current.leagueId) || this.leaguesAvailable[0];
+        if (selected) {
+            if (selected.id !== current.leagueId || selected.leagueName !== current.leagueName) {
+                this.setSelectedLeague(selected.id);
+            }
+        } else if (current.leagueId !== null) {
+            this.selectedLeagueSource.next({ leagueId: null, leagueName: null });
+        }
+    }
+
+    // Data loading must not redirect the route during session restoration. A valid
+    // Admin/Manager can have leagues without a claimed player profile.
+    getLeagues(): Observable<{ id: number; leagueName: string }[]> {
+        return this.loginService.getUserLeagues().pipe(map(leagues => {
+            this.leaguesAvailable = (leagues || []).map(league => ({ id: league.id, leagueName: league.leagueName }));
+            return this.leaguesAvailable;
+        }));
+    }
     // Set the selected league globally
     setSelectedLeague(leagueId: number) {
 

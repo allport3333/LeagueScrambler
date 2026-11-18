@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "Mobile round link: adjusted 15 opens raw 30, correct league B/week scramble12, teams107/108, Match#4 and round highlight",
+    "Direct link refresh restores the same week and single matchup",
+    "Back returns to league B, round mode, Gold and Women",
+    "Legitimate saved zero remains linked; placeholder zero is not linked",
+    "View All restores all four original matchups and bye players",
+    "Mobile combined matchup link shows original individual rounds without a false round highlight",
+    "Manual week change removes single-match filter",
+    "Mobile full-table score link works",
+    "Desktop individual score links work; total columns remain plain",
+    "Overall Men/Women and division Men/Women links retain the correct stable player/team association",
+    "Missing league/week/team/player/round, incomplete link and incomplete pairing never show an unrelated matchup",
+    "Normal browsing retains week selection, all matchups and byes without extra back button"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "real Angular UI; browser-only synthetic API fixtures"
+}

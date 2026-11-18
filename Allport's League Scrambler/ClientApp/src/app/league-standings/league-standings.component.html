@@ -10,13 +10,19 @@
                  style="width: 100%; max-width: 200px; height: auto; object-fit: contain;">
         </div>
 
-        <button mat-raised-button color="primary"
+        <button mat-raised-button color="primary" class="standings-type-toggle"
                 (click)="toggleStandingsType()"
                 style="margin-bottom: 16px; margin-top:20px">
             {{ standingsType === 'round' ? 'Show Standings by Matchup' : 'Show Standings by Round' }}
         </button>
 
-        <div class="dropdown-container" [hidden]="userRole !== 'Admin' && userRole !== 'Manager'">
+        <section class="standings-settings" *ngIf="userRole === 'Admin' || userRole === 'Manager'">
+            <button mat-button type="button" class="mobile-settings-toggle" (click)="mobileSettingsOpen = !mobileSettingsOpen"
+                    [attr.aria-expanded]="mobileSettingsOpen" aria-controls="standings-settings-controls">
+                <span class="settings-toggle-content"><span aria-hidden="true" class="settings-symbol">&#9881;</span>
+                    <span>Standings Settings</span><span aria-hidden="true" class="settings-expand">{{ mobileSettingsOpen ? '▴' : '▾' }}</span></span>
+            </button>
+        <div id="standings-settings-controls" class="dropdown-container" [class.mobile-settings-open]="mobileSettingsOpen">
             <mat-form-field appearance="outline" style="width: 200px;">
                 <mat-label>Number of Subs Allowed</mat-label>
                 <mat-select [(value)]="numberOfSubsAllowed"
@@ -50,7 +56,9 @@
             </mat-form-field>
         </div>
 
-        <div style="margin-bottom: 10px; text-align: center;">
+        </section>
+
+        <div class="standings-legend" style="margin-bottom: 10px; text-align: center;">
             <div style="font-weight: bold; margin-bottom: 5px;">Key:</div>
             <div>
                 <span style="color: red; font-weight: bold;">Dropped Score</span> |
@@ -59,17 +67,19 @@
             </div>
         </div>
 
-        <div class="card" style="margin: 20px; padding: 20px; max-width: 100%; overflow-x: auto;">
+        <div class="card standings-card" style="margin: 20px; padding: 20px; max-width: 100%; overflow-x: auto;">
 
             <!-- OUTER TABS: Overall + one tab per ASSIGNED division -->
-            <mat-tab-group (selectedTabChange)="onMainTabChange($event)" mat-align-tabs="center">
+            <mat-tab-group [selectedIndex]="mainTabIndex" (selectedTabChange)="onMainTabChange($event)" mat-align-tabs="center">
 
                 <!-- OVERALL TAB (always shown) -->
                 <mat-tab label="Overall">
-                    <mat-tab-group mat-align-tabs="center">
+                    <mat-tab-group [selectedIndex]="returnGenderIndex" mat-align-tabs="center">
 
                         <mat-tab label="Men's Standings">
-                            <table class="table table-bordered table-striped compact-table"
+                            <ng-container *ngTemplateOutlet="mobileStandings; context: { $implicit: maleStandings, group: 'overall-men' }"></ng-container>
+                            <div class="standings-full-table" [class.mobile-full-table-open]="mobileFullTable">
+<table class="table table-bordered table-striped compact-table"
                                    style="width: 100%; table-layout: auto; font-size: 0.75rem;">
                                 <thead>
                                     <tr>
@@ -102,7 +112,7 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngFor="let round of standingsRounds.slice().reverse()"
+                                        <th *ngFor="let round of standingsRounds"
                                             style="min-width: 70px; padding: 4px; text-align: center;">
                                             <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
                                             <span>{{ round }}</span>
@@ -119,20 +129,23 @@
                                         <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
-                                        <td *ngFor="let score of player.scores.slice().reverse()"
+                                        <td *ngFor="let score of player.scores"
                                             [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
                                             [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
-                                            {{ score.score }}
+                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </mat-tab>
 
                         <mat-tab label="Women's Standings">
-                            <table class="table table-bordered table-striped compact-table"
+                            <ng-container *ngTemplateOutlet="mobileStandings; context: { $implicit: femaleStandings, group: 'overall-women' }"></ng-container>
+                            <div class="standings-full-table" [class.mobile-full-table-open]="mobileFullTable">
+<table class="table table-bordered table-striped compact-table"
                                    style="width: 100%; table-layout: auto; font-size: 0.75rem;">
                                 <thead>
                                     <tr>
@@ -165,7 +178,7 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngFor="let round of standingsRounds.slice().reverse()"
+                                        <th *ngFor="let round of standingsRounds"
                                             style="min-width: 70px; padding: 4px; text-align: center;">
                                             <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
                                             <span>{{ round }}</span>
@@ -182,16 +195,17 @@
                                         <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
-                                        <td *ngFor="let score of player.scores.slice().reverse()"
+                                        <td *ngFor="let score of player.scores"
                                             [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
                                             [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
-                                            {{ score.score }}
+                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </mat-tab>
 
                     </mat-tab-group>
@@ -199,11 +213,13 @@
 
                 <!-- DIVISION TABS (only assigned divisions show up here) -->
                 <mat-tab *ngFor="let div of divisions" [label]="div.leagueDivisionCode">
-                    <mat-tab-group mat-align-tabs="center">
+                    <mat-tab-group [selectedIndex]="returnGenderIndex" mat-align-tabs="center">
 
                         <mat-tab label="Men's Standings"
                                  *ngIf="divisionMaleStandings[div.leagueDivisionId] && divisionMaleStandings[div.leagueDivisionId].length > 0">
-                            <table class="table table-bordered table-striped compact-table"
+                            <ng-container *ngTemplateOutlet="mobileStandings; context: { $implicit: divisionMaleStandings[div.leagueDivisionId], group: 'division-' + div.leagueDivisionId + '-men' }"></ng-container>
+                            <div class="standings-full-table" [class.mobile-full-table-open]="mobileFullTable">
+<table class="table table-bordered table-striped compact-table"
                                    style="width: 100%; table-layout: auto; font-size: 0.75rem;">
                                 <thead>
                                     <tr>
@@ -236,7 +252,7 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngFor="let round of standingsRounds.slice().reverse()"
+                                        <th *ngFor="let round of standingsRounds"
                                             style="min-width: 70px; padding: 4px; text-align: center;">
                                             <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
                                             <span>{{ round }}</span>
@@ -253,21 +269,24 @@
                                         <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
-                                        <td *ngFor="let score of player.scores.slice().reverse()"
+                                        <td *ngFor="let score of player.scores"
                                             [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
                                             [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
-                                            {{ score.score }}
+                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </mat-tab>
 
                         <mat-tab label="Women's Standings"
                                  *ngIf="divisionFemaleStandings[div.leagueDivisionId] && divisionFemaleStandings[div.leagueDivisionId].length > 0">
-                            <table class="table table-bordered table-striped compact-table"
+                            <ng-container *ngTemplateOutlet="mobileStandings; context: { $implicit: divisionFemaleStandings[div.leagueDivisionId], group: 'division-' + div.leagueDivisionId + '-women' }"></ng-container>
+                            <div class="standings-full-table" [class.mobile-full-table-open]="mobileFullTable">
+<table class="table table-bordered table-striped compact-table"
                                    style="width: 100%; table-layout: auto; font-size: 0.75rem;">
                                 <thead>
                                     <tr>
@@ -300,7 +319,7 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngFor="let round of standingsRounds.slice().reverse()"
+                                        <th *ngFor="let round of standingsRounds"
                                             style="min-width: 70px; padding: 4px; text-align: center;">
                                             <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
                                             <span>{{ round }}</span>
@@ -317,16 +336,17 @@
                                         <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
-                                        <td *ngFor="let score of player.scores.slice().reverse()"
+                                        <td *ngFor="let score of player.scores"
                                             [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
                                             [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
-                                            {{ score.score }}
+                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </mat-tab>
 
                     </mat-tab-group>
@@ -338,3 +358,75 @@
         </div>
     </div>
 </mat-card>
+
+<!-- Shared mobile presentation reuses the same processed/sorted arrays as the original tables. -->
+<ng-template #mobileStandings let-players let-group="group">
+    <div class="mobile-standings">
+        <div class="mobile-standings-controls">
+            <mat-form-field appearance="outline">
+                <mat-label>Sort standings</mat-label>
+                <mat-select [value]="sortColumn || 'totalScore'" (selectionChange)="sortMobileStandings($event.value)">
+                    <mat-option value="playerName">Player Name</mat-option>
+                    <mat-option value="totalScore">King Queen Score</mat-option>
+                    <mat-option value="totalScoreBeforeReduction">Total Points</mat-option>
+                    <mat-option value="totalWins">Total Wins</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <button mat-stroked-button type="button" class="mobile-sort-direction"
+                    (click)="sortStandings(sortColumn || 'totalScore')"
+                    [attr.aria-label]="'Sort direction: ' + (sortDirection === 'asc' ? 'ascending' : 'descending') + '. Tap to reverse.'">
+                {{ sortDirection === 'asc' ? 'Ascending ↑' : 'Descending ↓' }}
+            </button>
+            <button mat-stroked-button color="primary" type="button" class="mobile-table-toggle"
+                [attr.aria-pressed]="mobileFullTable" (click)="mobileFullTable = !mobileFullTable">
+            {{ mobileFullTable ? 'View Compact Table' : 'View Full Table' }}
+            </button>
+        </div>
+        <p *ngIf="mobileFullTable" class="mobile-standings-hint">Scroll sideways. Player names stay visible.</p>
+        <table class="mobile-rankings" *ngIf="!mobileFullTable" aria-label="Compact player standings">
+            <thead>
+                <tr><th scope="col">Place</th><th scope="col">Player Name</th><th scope="col">King Queen Score</th><th scope="col">Total Points</th></tr>
+            </thead>
+            <tbody>
+                <ng-container *ngFor="let player of players; let index = index">
+                    <tr class="mobile-player-row" (click)="toggleMobilePlayer(group, player.playerId)">
+                        <td class="mobile-place">{{ index + 1 }}</td>
+                        <th scope="row" class="mobile-player-name">
+                            <button type="button" class="mobile-player-toggle"
+                                    (click)="$event.stopPropagation(); toggleMobilePlayer(group, player.playerId)"
+                                    [attr.aria-expanded]="!!mobileExpandedPlayers[mobilePlayerKey(group, player.playerId)]"
+                                    [attr.aria-controls]="'details-' + mobilePlayerKey(group, player.playerId)">
+                                {{ player.playerName }} <span aria-hidden="true">{{ mobileExpandedPlayers[mobilePlayerKey(group, player.playerId)] ? '▴' : '▾' }}</span>
+                            </button>
+                        </th>
+                        <td class="mobile-kq-score">{{ player.totalScore }}</td>
+                        <td>{{ player.totalScoreBeforeReduction }}</td>
+                    </tr>
+                    <tr class="mobile-player-details" [hidden]="!mobileExpandedPlayers[mobilePlayerKey(group, player.playerId)]"
+                        [id]="'details-' + mobilePlayerKey(group, player.playerId)">
+                        <td colspan="4">
+                            <div class="mobile-player-summary" *ngIf="player.leagueDivisionId > 0 && player.leagueDivisionCode && player.leagueDivisionCode.trim() && player.leagueDivisionCode !== 'Unassigned'">
+                                <span><strong>Division:</strong> {{ player.leagueDivisionCode }}</span>
+                            </div>
+                            <ul class="mobile-round-scores" aria-label="Individual scores">
+                                <li *ngFor="let score of player.scores; let scoreIndex = index"
+                                    [class.mobile-score-dropped]="score.isDropped"
+                                    [class.mobile-score-reduced]="score.isReduced && score.isSubScore"
+                                    [class.mobile-score-sub]="score.isSubScore">
+                                    <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }} {{ scoreIndex + 1 }}</span>
+                                    <strong><a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template></strong>
+                                    <span class="mobile-score-indicators">
+                                        <span *ngIf="score.isDropped">Dropped</span>
+                                        <span *ngIf="score.isReduced && score.isSubScore">Reduced</span>
+                                        <span *ngIf="score.isSubScore">Substitute</span>
+                                    </span>
+                                </li>
+                            </ul>
+                        </td>
+                    </tr>
+                </ng-container>
+                <tr *ngIf="!players || !players.length"><td colspan="4" class="mobile-standings-empty">No standings available.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</ng-template>

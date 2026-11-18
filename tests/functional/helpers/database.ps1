@@ -33,6 +33,32 @@ try {
     }
     switch ($request.operation) {
         'target' { $result = $target }
+        'seedSchedule' {
+            # This fixture cannot accept SQL or target an existing non-synthetic league.
+            $name=[string]$request.leagueName
+            if ($name -notmatch '^LSAuto_([a-f0-9]{24})_L[a-z0-9]+$') { throw 'Synthetic league identity required.' }
+            $prefix='LSAuto_'+$Matches[1]
+            $proof=Get-Content -LiteralPath (Join-Path $PSScriptRoot '../.local/runtime-process-verification.json') -Raw | ConvertFrom-Json
+            $current=(& (Join-Path $PSScriptRoot 'process-identity.ps1') | ConvertFrom-Json)
+            if ($proof.mode -cne 'runtime-environment' -or $proof.effectiveRuntimeEnvironmentVerified -ne $true -or $proof.automatedSessionCorrelationPassed -ne $false -or $proof.database -cne 'LeagueScramblerDev' -or $proof.server -cne 'localhost' -or $proof.baseURL -cne 'https://localhost:5001' -or [DateTime]::Parse($proof.expiresAt).ToUniversalTime() -le [DateTime]::UtcNow -or $proof.authorizedScopes -notcontains 'development-regression') { throw 'Current runtime testing authorization required.' }
+            foreach($field in 'pid','processStartUtc','projectDll','dllSha256','envSha256','launchProfileSha256') {
+                if (-not $current.$field -or $current.$field -cne $proof.identity.$field) { throw 'Runtime binding changed.' }
+            }
+            $day=[DateTime]::ParseExact([string]$request.date,'yyyy-MM-dd',[Globalization.CultureInfo]::InvariantCulture)
+            $p=@{'@name'=$name;'@prefix'=$prefix;'@one'=[int]$request.team1Id;'@two'=[int]$request.team2Id;'@date'=$day}
+            if($p['@one'] -le 0 -or $p['@one'] -eq $p['@two']) { throw 'Two synthetic league teams required.' }
+            $transaction=$connection.BeginTransaction([Data.IsolationLevel]::Serializable)
+            try {
+                $owned=Query 'SELECT l.ID FROM dbo.LeagueType l WITH(UPDLOCK,HOLDLOCK) WHERE l.LeagueName=@name AND EXISTS(SELECT 1 FROM dbo.UserLeague ul JOIN dbo.[User] u ON u.UserId=ul.UserId WHERE ul.LeagueTypeId=l.ID AND u.FirstName=@prefix AND u.Email LIKE ''lsauto_%@example.invalid'') AND (SELECT COUNT(*) FROM dbo.LeagueTeam t WHERE t.LeagueID=l.ID AND t.Id IN(@one,@two))=2;' $p
+                if($owned.Count -ne 1) { throw 'Exact run-owned league and team references required.' }
+                $p['@league']=[int]$owned[0].ID
+                $p.Remove('@prefix');$p.Remove('@name')
+                $exists=Query 'SELECT Id FROM dbo.LeagueSchedule WHERE LeagueId=@league AND Date=@date AND Team1Id=@one AND Team2Id=@two;' $p
+                if($exists.Count) { throw 'Refusing duplicate schedule fixture.' }
+                $result=Query 'INSERT INTO dbo.LeagueSchedule(LeagueId,WeekNumber,Date,Team1Id,Team2Id,MatchDescription) OUTPUT INSERTED.Id VALUES(@league,1,@date,@one,@two,''Synthetic scheduled matchup'');' $p
+                $transaction.Commit()
+            } catch { $transaction.Rollback(); throw } finally { $transaction.Dispose();$transaction=$null }
+        }
         'cleanupOrphanUser' {
             $id=$request.identity
             if ($id.email -notmatch '^lsauto_[a-f0-9]{24}_[a-z0-9]+@example\.invalid$' -or $id.firstName -notmatch '^LSAuto_[a-f0-9]{24}$' -or $id.lastName -notmatch '^Test_[a-z0-9]+$' -or [int]$request.userId -le 0) { throw 'Exact synthetic orphan identity required.' }
@@ -77,6 +103,7 @@ try {
                 signIns=(Query 'SELECT PlayerSignInId,PlayerId,DateTime,LockedSignIn FROM dbo.PlayerSignIn WHERE LeagueId=@league ORDER BY PlayerSignInId;' $p)
                 locks=(Query 'SELECT Id,SignInLocked FROM dbo.LeagueSignInLocked WHERE LeagueId=@league ORDER BY Id;' $p)
                 teams=(Query 'SELECT ID,TeamName,TotalWins,TotalLosses,Division FROM dbo.LeagueTeam WHERE LeagueID=@league ORDER BY ID;' $p)
+                schedules=(Query 'SELECT Id,LeagueId,Team1Id,Team2Id,Date,WeekNumber,MatchDescription FROM dbo.LeagueSchedule WHERE LeagueId=@league ORDER BY Id;' $p)
                 teamPlayers=(Query 'SELECT p.Id,p.LeagueTeamId,p.PlayerId FROM dbo.LeagueTeamPlayer p JOIN dbo.LeagueTeam t ON t.ID=p.LeagueTeamId WHERE t.LeagueID=@league ORDER BY p.Id;' $p)
                 scores=(Query 'SELECT s.Id,s.LeagueTeamId,s.OpponentsLeagueTeamId,s.TeamScore,s.WonGame FROM dbo.LeagueTeamScore s JOIN dbo.LeagueTeam t ON t.ID=s.LeagueTeamId WHERE t.LeagueID=@league ORDER BY s.Id;' $p)
                 kqTeams=(Query 'SELECT Id,ScrambleNumber,ScrambleWithScoresToBeSaved FROM dbo.KingQueenTeam WHERE LeagueID=@league ORDER BY Id;' $p)

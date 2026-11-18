@@ -134,3 +134,7 @@
 .extended-background-pink-lastName {
     background-color: pink;
 }
+
+.score-navigation { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.score-navigation-message { max-width: 600px; margin: 8px; color: #7b271c; }
+.score-item.selected-score { background: #fff7d6; outline: 2px solid #4c659d; border-radius: 3px; }

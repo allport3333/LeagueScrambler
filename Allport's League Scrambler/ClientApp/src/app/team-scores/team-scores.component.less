@@ -1,77 +1,27 @@
-﻿.center {
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    width: 50%;
-}
-
-.score-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 5px;
-    padding: 0 10px;
-}
-
-.score-input {
-    width: 70%;
-}
-
-.vs-divider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 20px;
-}
-
-.team-card {
-    width: 400px;
-    padding: 10px;
-}
-/* Center the entire mat-tab-group */
-mat-tab-group {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto;
-}
-
-/* Center the tab labels */
-.mat-tab-labels {
-    justify-content: center !important;
-}
-
-/* Card styling for each team's score */
-.score-card {
-    width: 350px;
-    padding: 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Win and Loss Badge Styles */
-.win-badge {
-    background-color: #4CAF50;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-weight: bold;
-}
-
-.loss-badge {
-    background-color: #F44336;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-weight: bold;
-}
-
-/* Material Table Styling */
-table {
-    width: 100%;
-    margin-top: 10px;
-}
-
-.mat-header-cell, .mat-cell {
-    text-align: center;
-    padding: 10px;
+.matchup-entry { max-width: 900px; margin: 0 auto; padding: 20px 4px; }
+h2 { margin-bottom: 4px; }
+.league-context, .matchup-detail { color: #555; overflow-wrap: break-word; }
+.score-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+.score-toolbar mat-form-field { width: 220px; max-width: 100%; }
+.matchup-card { margin: 16px 0; border-top: 3px solid #233a72; }
+.matchup-card h3 { font-size: 20px; margin: 0 0 12px; }
+.team-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.team-pair mat-form-field { width: 100%; min-width: 0; }
+.team-names { margin: 12px 0; overflow-wrap: break-word; }
+.game-count { width: 155px; }
+.game-row { display: grid; grid-template-columns: 65px minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; }
+.game-row mat-form-field { width: 100%; min-width: 0; }
+.score-error { color: #a01818; margin-top: 12px; }
+.score-success { color: #205c29; font-weight: 600; margin-top: 12px; }
+.empty-schedule, .saved-results { background: #f2f4f7; padding: 12px; }
+.matchup-help, details p { font-size: 14px; margin-top: 12px; }
+summary { cursor: pointer; padding: 8px 0; }
+@media (max-width: 600px) {
+    .matchup-entry { padding: 16px 0; }
+    .matchup-card { padding: 12px; }
+    .score-toolbar { gap: 4px; }
+    .score-toolbar mat-form-field { width: 100%; }
+    .game-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+    .game-label { grid-column-start: 1; grid-column-end: 3; }
+    .team-pair { gap: 8px; }
 }

@@ -14,6 +14,9 @@ export interface TeamWithPlayersDto {
 }
 
 export interface Match {
+    scheduleId?: number;
+    team1Id?: number;
+    team2Id?: number;
     courtNumber: number;
     team1Name: string;
     team2Name: string;

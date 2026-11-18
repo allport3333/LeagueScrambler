@@ -14,7 +14,7 @@ using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 namespace Allport_s_League_Scrambler.Controllers
 {
     [Route("api/[controller]")]
-    public class StatisticsController : Controller
+    public partial class StatisticsController : Controller
     {
         [HttpGet("[action]/{leagueName}")]
         public List<LeagueTeam> GetTeams(string leagueName)
@@ -488,6 +488,9 @@ namespace Allport_s_League_Scrambler.Controllers
                         Date = g.Key.Date,
                         Matches = g.Select(m => new
                         {
+                            ScheduleId = m.Id,
+                            Team1Id = m.Team1Id,
+                            Team2Id = m.Team2Id,
                             Team1Name = _context.LeagueTeam.FirstOrDefault(t => t.Id == m.Team1Id).TeamName,
                             Team2Name = _context.LeagueTeam.FirstOrDefault(t => t.Id == m.Team2Id).TeamName,
                             MatchDescription = m.MatchDescription,

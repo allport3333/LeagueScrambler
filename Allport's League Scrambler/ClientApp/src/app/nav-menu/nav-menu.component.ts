@@ -1,16 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { LoginService } from '../services/login.service';
 import { Router } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { LeagueService } from '../services/league.service';
 import { Leagues } from '../data-models/leagues.model';
+import { forkJoin, of, throwError, Subscription } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
     selector: 'app-nav-menu',
     templateUrl: './nav-menu.component.html',
     styleUrls: ['./nav-menu.component.css']
 })
-export class NavMenuComponent implements OnInit {
+export class NavMenuComponent implements OnInit, OnDestroy {
+    authenticationChecked = false;
+    private sessionVersion = 0;
+    private subscriptions = new Subscription();
     isExpanded = false;
     loggedIn = false;
     userRole: string = '';
@@ -35,47 +40,43 @@ export class NavMenuComponent implements OnInit {
     }
 
     ngOnInit() {
-        // Check if the user is logged in
-        this.authService.isLoggedIn$.subscribe((loggedIn) => {
-            this.loggedIn = loggedIn;
-
-            if (this.loggedIn) {
-                // Fetch user role
-                this.loginService.getUsersRole().subscribe((result) => {
-                    this.userRole = result.role; // Example: 'Admin', 'Manager', 'Player'
-                });
-
-                // Fetch user player ID
-                this.loginService.getUsersPlayer().subscribe((result) => {
-                    this.playerId = result.playerId; // Associated player ID
-                });
-
-                // Fetch available leagues
-                this.leagueService.getLeagues().subscribe((leagues) => {
-                    this.leagues = leagues;
-
-                    if (this.leagues.length > 0) {
-                        // Set the default selected league to the first league
-                        const defaultLeague = this.leagues[0];
-                        this.selectedLeagueId = defaultLeague.id;
-
-                        // Notify the app of the default league
-                        this.leagueService.setSelectedLeague(defaultLeague.id);
-                    }
-                });
-
-                // Subscribe to selectedLeague$ to update the dropdown label
-                this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
-                    if (selectedLeague) {
-                        this.selectedLeagueId = selectedLeague.leagueId;
-                        this.selectedLeagueName = selectedLeague.leagueName;
-                    }
-                });
+        this.subscriptions.add(this.leagueService.selectedLeague$.subscribe(selected => {
+            this.selectedLeagueId = selected.leagueId;
+            this.selectedLeagueName = selected.leagueName;
+        }));
+        this.subscriptions.add(this.authService.authenticationState$.subscribe(state => {
+            const version = ++this.sessionVersion;
+            this.authenticationChecked = state === false;
+            this.loggedIn = state === true;
+            this.userRole = '';
+            this.playerId = null;
+            if (state === false) {
+                this.leagues = [];
             }
-        });
+            if (state !== true) { return; }
+            const fallback = (error, value) => error.status === 401 || error.status === 403 ? throwError(error) : of(value);
+            this.subscriptions.add(forkJoin([
+                this.loginService.getUsersRole().pipe(catchError(error => fallback(error, { role: '' }))),
+                // An unclaimed account legitimately has no player association (404).
+                this.loginService.getUsersPlayer().pipe(catchError(error => fallback(error, null))),
+                this.loginService.getUserLeagues().pipe(catchError(error => fallback(error, [])))
+            ]).subscribe(results => {
+                if (version !== this.sessionVersion) { return; }
+                this.userRole = results[0].role;
+                this.playerId = results[1] ? results[1].playerId : null;
+                this.leagueService.restoreLeagues(results[2]);
+                this.leagues = this.leagueService.leaguesAvailable;
+                this.authenticationChecked = true;
+            }, () => {
+                if (version === this.sessionVersion) { this.authService.setLoggedIn(false); }
+            }));
+        }));
     }
 
-
+    ngOnDestroy() {
+        this.sessionVersion++;
+        this.subscriptions.unsubscribe();
+    }
     onLeagueChange(leagueId: number) {
         const selectedLeague = this.leagues.find((league) => league.id === leagueId);
         if (selectedLeague) {

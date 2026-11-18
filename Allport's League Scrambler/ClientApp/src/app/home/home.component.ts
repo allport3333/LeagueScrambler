@@ -29,6 +29,7 @@ export class HomeComponent implements OnInit {
     showRegistrationForm: boolean = false;
     showLoginForm: boolean = false;
     userId: number;
+    authenticationChecked = false;
     isLoggedIn: boolean = false;
     registerForm: FormGroup; 
     dialogRef: MatDialogRef<ForgotPasswordDialogComponent>; 
@@ -66,8 +67,9 @@ export class HomeComponent implements OnInit {
         }, {
             validator: this.passwordMatchValidator // Add custom validation function
         });
-        this.authService.isLoggedIn$.subscribe((loggedIn) => {
-            this.isLoggedIn = loggedIn;
+        this.authService.authenticationState$.subscribe((state) => {
+            this.authenticationChecked = state !== null;
+            this.isLoggedIn = state === true;
         });
     }
 

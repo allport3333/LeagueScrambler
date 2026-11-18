@@ -1,0 +1,33 @@
+{
+  "checks": [
+    "Player: startup and refresh restore role/player/navigation and preserve /player-stats-tabs/-801",
+    "Manager: startup and refresh restore role/player/navigation and preserve /scrambler",
+    "Admin: startup and refresh restore role/player/navigation and preserve /standings",
+    "Browser login with synthetic transport followed by refresh restores authentication",
+    "Navigate away to about:blank and back with the synthetic secure cookie retained",
+    "Persisted-pageshow revalidation preserves existing league B without a redundant selection emission",
+    "Explicit browser logout invokes existing endpoint, clears synthetic server session/UI and remains logged out on refresh",
+    "False/invalid/check-failure session result 0 returns logged-out state without redirect",
+    "False/invalid/check-failure session result 401 returns logged-out state without redirect",
+    "False/invalid/check-failure session result 503 returns logged-out state without redirect",
+    "Valid unclaimed account with no leagues does not trigger a startup redirect",
+    "Expired session on persisted pageshow clears cached navigation and user information",
+    "Admin: no claimed player does not redirect on Scrambler refresh",
+    "Manager: no claimed player and no leagues does not redirect on Scrambler refresh",
+    "Late startup/revalidation response cannot reverse a newer explicit logged-out state"
+  ],
+  "pageErrors": [],
+  "writes": [
+    {
+      "path": "/api/login/login",
+      "mode": "mocked-only"
+    },
+    {
+      "path": "/api/login/logout",
+      "mode": "mocked-only"
+    }
+  ],
+  "databaseAccess": false,
+  "realCookieExpiryTested": false,
+  "mode": "synthetic secure-cookie/API transport; real Angular UI"
+}

@@ -1,111 +1,77 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { FormGroup, FormControl } from '@angular/forms';
-import { MatInput } from '@angular/material';
-
-import { PlayerService } from '../services/player.service';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { forkJoin, Subscription } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
-
-import { Leagues } from '../data-models/leagues.model';
 import { LeagueTeams } from '../data-models/leagueTeams.model';
-import { Password } from '../data-models/password.model';
-import { NewCreatedTeam } from '../data-models/newCreatedTeam.model';
-
-// Our new interface for LEAGUE TEAM SCORES
-import { LeagueTeamScoreDto } from '../data-models/leagueTeamScore.model';
 import { LeagueService } from '../services/league.service';
 import { LoginService } from '../services/login.service';
+
+interface ScoreEntry { team1Score: number | null; team2Score: number | null; }
+interface MatchupEditor {
+    scheduleId?: number;
+    team1Id: number;
+    team2Id: number;
+    division?: string;
+    description?: string;
+    manual: boolean;
+    games: ScoreEntry[];
+    saving: boolean;
+    message?: string;
+    error?: string;
+}
 
 @Component({
     selector: 'app-team-scores',
     templateUrl: './team-scores.component.html',
     styleUrls: ['./team-scores.component.less']
 })
-export class TeamScoresComponent implements OnInit {
-    teams: LeagueTeams[];
-    selectedTeam1: LeagueTeams;
-    selectedTeam2: LeagueTeams;
+export class TeamScoresComponent implements OnInit, OnDestroy {
+    teams: LeagueTeams[] = [];
     selectedLeague: string;
-    loggedIn: boolean = false;
-    leagueID: number = 1;
-    leaguesAvailable: Leagues[];
-    loading: boolean;
-    newTeamScoreLoading: boolean;
-    containsTeam: boolean;
-    numberOfGames: number = 3;
-    teamScores: LeagueTeamScoreDto[]; // GET call result
-    gameDate: Date;
-    initialDate: Date | null = new Date();
-    password: Password = { password: '', id: null };
-    isActionAllowed: boolean = false;
-    userRole: string;
-    legacyPassword: string = '';
-    // The form with multiple "game" score boxes
-    TeamScoresForm = new FormGroup({
-        date: new FormControl(new Date()),
-        password: new FormControl()
-    });
+    leagueID: number;
+    loading = true;
+    loadingMatchups = false;
+    numberOfGames = 3;
+    gameDate = new Date();
+    loadedDate: Date = new Date();
+    isActionAllowed = false;
+    legacyPassword = '';
+    matchups: MatchupEditor[] = [];
+    savedScores: any[] = [];
+    loadError = '';
+    scheduledCount = 0;
+    private requestVersion = 0;
+    private subscriptions = new Subscription();
 
-
-    // For creating a new team
-    NewTeamForm = new FormGroup({
-        newTeamName: new FormControl(),
-        password: new FormControl()
-    });
-
-    @ViewChild('dateInput', { read: MatInput }) dateInput;
-
-    constructor(
-        public playerService: PlayerService,
-        public statisticsService: StatisticsService,
-        public leagueService: LeagueService,
-        public loginService: LoginService
-    ) {
-        // no-op
-    }
+    constructor(public statisticsService: StatisticsService,
+        public leagueService: LeagueService, public loginService: LoginService) { }
 
     ngOnInit() {
-        this.loading = true;
-        this.loginService.isAdminPasswordAuthorized().subscribe(
-            (authorized) => { if (authorized) { this.isActionAllowed = true; } },
+        this.subscriptions.add(this.loginService.isAdminPasswordAuthorized().subscribe(
+            authorized => { if (authorized) { this.isActionAllowed = true; this.loadMatchups(); } },
             () => { /* No legacy administration session. */ }
-        );
-        this.newTeamScoreLoading = false;
-
-        this.leagueService.selectedLeague$.subscribe(selected => {
+        ));
+        this.subscriptions.add(this.leagueService.selectedLeague$.subscribe(selected => {
             this.leagueID = selected.leagueId;
             this.selectedLeague = selected.leagueName;
-            this.getTeams();
-        });
-
-        this.loginService.isLoggedIn().subscribe((result) => {
-            this.loggedIn = result;
-
+            this.loadMatchups();
+        }));
+        this.subscriptions.add(this.loginService.isLoggedIn().subscribe(result => {
             if (result) {
-                // User is logged in
-                // Player login is not an administration credential.
-
-                // Fetch user role
-                this.loginService.getUsersRole().subscribe((roleResult) => {
-                    this.userRole = roleResult.role;
-                    if (this.userRole === 'Admin' || this.userRole === 'Manager') {
+                this.subscriptions.add(this.loginService.getUsersRole().subscribe(roleResult => {
+                    if (roleResult.role === 'Admin' || roleResult.role === 'Manager') {
                         this.isActionAllowed = true;
+                        this.loadMatchups();
                     }
                     this.loading = false;
-                });
-
-                // Fetch user leagues
-                this.leagueService.getLeagues().subscribe((leagueResult) => {
-                    this.leaguesAvailable = leagueResult;
-                    this.loading = false;
-                });
-            } else {
-                this.loading = false;
-            }
-        });
-
-        this.adjustScoreInputs();  // Initialize score inputs
+                }, () => { this.loading = false; }));
+                // Preserve the existing league discovery workflow.
+                this.subscriptions.add(this.leagueService.getLeagues().subscribe(
+                    () => { this.loading = false; }, () => { this.loading = false; }));
+            } else { this.loading = false; }
+        }, () => { this.loading = false; }));
     }
 
+    ngOnDestroy() { this.requestVersion++; this.subscriptions.unsubscribe(); }
     unlockAdministration() {
         if (!this.legacyPassword) {
             alert('Enter the administration password.');
@@ -116,6 +82,7 @@ export class TeamScoresComponent implements OnInit {
                 if (result && result.authorized) {
                     this.isActionAllowed = true;
                     this.legacyPassword = '';
+                    this.loadMatchups();
                 }
             },
             (error) => alert(error.status === 429
@@ -124,213 +91,115 @@ export class TeamScoresComponent implements OnInit {
         );
     }
 
-    // Adjust form controls based on number of games
-    adjustScoreInputs() {
-        // Remove old score controls
-        Object.keys(this.TeamScoresForm.controls).forEach((key) => {
-            if (key.startsWith('team1Score') || key.startsWith('team2Score')) {
-                this.TeamScoresForm.removeControl(key);
-            }
-        });
-
-        // Add new controls based on the selected number of games
-        for (let i = 0; i < this.numberOfGames; i++) {
-            this.TeamScoresForm.addControl(`team1Score${i}`, new FormControl());
-            this.TeamScoresForm.addControl(`team2Score${i}`, new FormControl());
-        }
+    dateKey(date: Date): string {
+        return date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2);
     }
 
-
-    // *** SUBMIT: Called when user enters multiple game scores ***
-    onSubmitClick() {
-        if (!this.isActionAllowed) {
-            alert('Unlock administration before recording scores.');
-            return;
+    changeDate() {
+        if (this.matchups.some(m => !this.hasSaved(m) && m.games.some(g => g.team1Score !== null || g.team2Score !== null))
+            && !window.confirm('Change date and discard unsaved score entries?')) {
+            this.gameDate = new Date(this.loadedDate); return;
         }
-        this.newTeamScoreLoading = true;
+        this.loadMatchups();
+    }
 
-        // Validate the first game's scores
-        if (
-            this.TeamScoresForm.controls['team1Score0'].value === null ||
-            this.TeamScoresForm.controls['team2Score0'].value === null ||
-            !this.selectedTeam1 ||
-            !this.selectedTeam2 ||
-            !this.TeamScoresForm.controls['date'].value
-        ) {
-            alert('Please ensure all required fields are filled out.');
-            this.newTeamScoreLoading = false;
-            return;
-        }
+    reloadDate() {
+        if (this.matchups.some(m => !this.hasSaved(m) && m.games.some(g => g.team1Score !== null || g.team2Score !== null))
+            && !window.confirm('Reload and discard unsaved score entries?')) return;
+        this.loadMatchups();
+    }
 
-        // Arrays to store scores separately for Team 1 and Team 2
-        let team1ScoresArray: LeagueTeamScoreDto[] = [];
-        let team2ScoresArray: LeagueTeamScoreDto[] = [];
-
-        // Helper function to add game records in order
-        const addGameRecords = (team1ScoreControl: string, team2ScoreControl: string) => {
-            const team1Score = this.TeamScoresForm.controls[team1ScoreControl].value;
-            const team2Score = this.TeamScoresForm.controls[team2ScoreControl].value;
-
-            if (team1Score == null || team2Score == null) return;
-
-            // Compare scores to determine the winner
-            const team1Won = +team1Score > +team2Score;
-            const team2Won = +team2Score > +team1Score;
-
-            // Record for Team 1
-            const recordForTeam1: LeagueTeamScoreDto = {
-                id: 0,
-                teamId: this.selectedTeam1.id,
-                opponentsTeamId: this.selectedTeam2.id,
-                teamScore: +team1Score,
-                wonGame: team1Won,
-                date: this.TeamScoresForm.controls['date'].value,
-                teamName: null,
-                opponentsTeamName: null
-            };
-
-            // Record for Team 2
-            const recordForTeam2: LeagueTeamScoreDto = {
-                id: 0,
-                teamId: this.selectedTeam2.id,
-                opponentsTeamId: this.selectedTeam1.id,
-                teamScore: +team2Score,
-                wonGame: team2Won,
-                date: this.TeamScoresForm.controls['date'].value,
-                teamName: null,
-                opponentsTeamName: null
-            };
-
-            // Push the scores into separate arrays
-            team1ScoresArray.push(recordForTeam1);
-            team2ScoresArray.push(recordForTeam2);
-        };
-
-        // Loop through the dynamic controls to collect scores in order
-        for (let i = 0; i < this.numberOfGames; i++) {
-            addGameRecords(`team1Score${i}`, `team2Score${i}`);
-        }
-
-        // Check if scores were entered
-        if (team1ScoresArray.length === 0 || team2ScoresArray.length === 0) {
-            alert('No valid score entries found.');
-            this.newTeamScoreLoading = false;
-            return;
-        }
-
-        // Helper function to submit scores in sequence
-        const submitScoresSequentially = (scoresArray: LeagueTeamScoreDto[], callback: () => void) => {
-            let index = 0;
-
-            const submitNext = () => {
-                if (index >= scoresArray.length) {
-                    callback();  // All scores submitted, move to next step
-                    return;
+    loadMatchups() {
+        const version = ++this.requestVersion;
+        this.matchups = []; this.savedScores = []; this.scheduledCount = 0; this.loadError = '';
+        this.loadingMatchups = false;
+        if (!this.isActionAllowed || !this.leagueID || !this.selectedLeague) return;
+        if (!this.gameDate || isNaN(this.gameDate.getTime())) { this.loadError = 'Select a valid game date.'; return; }
+        this.loadedDate = new Date(this.gameDate);
+        const day = this.dateKey(this.gameDate);
+        this.loadingMatchups = true;
+        this.subscriptions.add(forkJoin([
+            this.statisticsService.GetTeams(this.selectedLeague),
+            this.statisticsService.getLeagueSchedule(this.leagueID),
+            this.statisticsService.getMatchupScores(this.leagueID, day)
+        ]).subscribe(results => {
+            if (version !== this.requestVersion) return;
+            this.teams = results[0]; this.savedScores = results[2];
+            results[1].filter(week => week.date.substring(0, 10) === day).forEach(week => {
+                week.matches.forEach(match => {
+                    const editor = this.newEditor(false);
+                    editor.scheduleId = match.scheduleId;
+                    editor.team1Id = match.team1Id; editor.team2Id = match.team2Id;
+                    editor.division = match.division; editor.description = match.matchDescription;
+                    this.matchups.push(editor);
+                });
+            });
+            this.scheduledCount = this.matchups.length;
+            // Include saved unscheduled matches so refresh never hides their saved status.
+            this.savedScores.forEach(score => {
+                if (!this.matchups.some(m => this.isPair(m, score.teamId, score.opponentsTeamId))) {
+                    const editor = this.newEditor(true);
+                    editor.team1Id = score.teamId; editor.team2Id = score.opponentsTeamId;
+                    this.matchups.push(editor);
                 }
-
-                this.statisticsService.RecordLeagueTeamScore(scoresArray[index]).subscribe({
-                    next: () => {
-                        index++;
-                        submitNext();  // Submit the next score
-                    },
-                    error: (err) => {
-                        console.error(err);
-                        this.newTeamScoreLoading = false;
-                        alert('Error submitting scores. Please try again.');
-                    }
-                });
-            };
-
-            submitNext();  // Start submitting
-        };
-
-        // Step 1: Submit Team 1's scores in order
-        submitScoresSequentially(team1ScoresArray, () => {
-            // Step 2: Submit Team 2's scores after Team 1
-            submitScoresSequentially(team2ScoresArray, () => {
-                // Step 3: Update team standings after all scores are submitted
-                this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe({
-                    next: () => {
-                        this.statisticsService.GetTeams(this.selectedLeague).subscribe({
-                            next: (updatedTeams) => {
-                                this.teams = updatedTeams;
-                                this.newTeamScoreLoading = false;
-                                alert('Scores submitted and team standings updated successfully!');
-                            },
-                            error: (err) => console.error(err)
-                        });
-                    },
-                    error: (err) => console.error(err)
-                });
             });
-        });
-
-        // Reset form after submission
-        this.TeamScoresForm.reset();
-        this.password.password = '';
+            if (!this.scheduledCount) this.addManualMatchup();
+            this.loadingMatchups = false;
+        }, error => {
+            if (version !== this.requestVersion) return;
+            this.loadingMatchups = false;
+            this.loadError = error.status === 403 ? 'You do not have permission to enter scores for this league.'
+                : 'Could not load matchups and existing scores. Reload before entering scores.';
+        }));
     }
 
-
-    groupScoresByTeam() {
-        if (!this.teamScores || this.teamScores.length === 0) {
-            return [];  // Return an empty array if teamScores is undefined or empty
-        }
-
-        const grouped = this.teamScores.reduce((acc, score) => {
-            if (!acc[score.teamId]) {
-                acc[score.teamId] = [];
-            }
-            acc[score.teamId].push(score);
-            return acc;
-        }, {} as { [key: number]: LeagueTeamScoreDto[] });
-
-        return Object.values(grouped);
+    newEditor(manual: boolean): MatchupEditor {
+        return { manual: manual, team1Id: null, team2Id: null, saving: false,
+            games: Array.from({ length: this.numberOfGames }, () => ({ team1Score: null, team2Score: null })) };
     }
-
-
-    // *** Update All Scores for the league ***
-    updateScores() {
-        if (this.selectedLeague) {
-            this.newTeamScoreLoading = true;
-            this.statisticsService.UpdateTeamScores(this.selectedLeague).subscribe({
-                next: () => {
-                    this.statisticsService.GetTeams(this.selectedLeague).subscribe({
-                        next: result => {
-                            this.teams = result;
-                            this.newTeamScoreLoading = false;
-                            alert('Successfully updated scores.');
-                        },
-                        error: err => console.error(err)
-                    });
-                },
-                error: err => console.error(err)
-            });
-        } else {
-            alert('Please Select A League From The Dropdown');
-        }
+    addManualMatchup() { this.matchups.push(this.newEditor(true)); }
+    resizeGames(matchup: MatchupEditor, count: number) {
+        if (count < matchup.games.length && matchup.games.slice(count).some(g => g.team1Score !== null || g.team2Score !== null)
+            && !window.confirm('Remove the extra unsaved game scores?')) return;
+        matchup.games = matchup.games.slice(0, count);
+        while (matchup.games.length < count) matchup.games.push({ team1Score: null, team2Score: null });
     }
-
-    getTeamScores() {
-        if (!this.selectedLeague) {
-            alert('Please select a league');
-            return;
-        }
-        this.gameDate = this.initialDate;
-        this.statisticsService.GetTeamScores(this.gameDate, this.selectedLeague).subscribe({
-            next: (result) => {
-                this.teamScores = result;
-            },
-            error: err => console.error(err)
-        });
+    teamName(id: number): string {
+        const team = this.teams.find(t => t.id === id);
+        return team ? team.teamName : 'Team unavailable';
     }
-
-    getTeams() {
-        if (!this.selectedLeague) return;
-        this.statisticsService.GetTeams(this.selectedLeague).subscribe({
-            next: result => {
-                this.teams = result;
-            },
-            error: err => console.error(err)
-        });
+    isPair(matchup: MatchupEditor, one: number, two: number): boolean {
+        return (matchup.team1Id === one && matchup.team2Id === two) || (matchup.team1Id === two && matchup.team2Id === one);
+    }
+    storedRows(matchup: MatchupEditor): any[] {
+        return this.savedScores.filter(s => this.isPair(matchup, s.teamId, s.opponentsTeamId));
+    }
+    hasSaved(matchup: MatchupEditor): boolean { return this.storedRows(matchup).length > 0; }
+    valid(matchup: MatchupEditor): boolean {
+        return !!matchup.team1Id && !!matchup.team2Id && matchup.team1Id !== matchup.team2Id &&
+            matchup.games.every(g => [g.team1Score, g.team2Score].every(score =>
+                score !== null && score !== undefined && Number.isInteger(score) && score >= 0 && score <= 2147483647));
+    }
+    anySaving(): boolean { return this.matchups.some(m => m.saving); }
+    saveMatchup(matchup: MatchupEditor) {
+        if (!this.valid(matchup) || this.hasSaved(matchup) || matchup.saving || this.loadError || this.loadingMatchups) return;
+        const version = this.requestVersion;
+        matchup.saving = true; matchup.error = ''; matchup.message = '';
+        const payload = { leagueId: this.leagueID, date: this.dateKey(this.loadedDate),
+            scheduleId: matchup.scheduleId, team1Id: matchup.team1Id, team2Id: matchup.team2Id, games: matchup.games };
+        this.subscriptions.add(this.statisticsService.recordMatchupScores(payload).subscribe(() => {
+            if (version !== this.requestVersion) return;
+            // Preserve other matchup drafts while refreshing saved state.
+            this.statisticsService.getMatchupScores(this.leagueID, payload.date).subscribe(rows => {
+                if (version !== this.requestVersion) return;
+                this.savedScores = rows; matchup.saving = false;
+                matchup.message = 'Scores saved and standings updated.';
+            }, () => { matchup.saving = false; matchup.error = 'Save completed, but confirmation could not be loaded. Reload before trying again.'; });
+        }, error => {
+            if (version !== this.requestVersion) return;
+            matchup.saving = false;
+            matchup.error = error.status === 409 ? 'Scores already exist. Reload the date to inspect them; no scores were replaced.'
+                : 'Scores were not confirmed. Reload to check saved results before retrying.';
+        }));
     }
 }

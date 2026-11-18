@@ -1,0 +1,15 @@
+{
+  "mode": "browser-only synthetic display fixtures",
+  "serverOrDatabaseTests": false,
+  "assertions": [
+    "two scheduled matchups",
+    "stable team IDs rendered with fixed teams",
+    "three games by default",
+    "manual option with schedule",
+    "no-schedule manual fallback",
+    "desktop and mobile without horizontal overflow",
+    "paired equal-width score fields on mobile"
+  ],
+  "deniedWrites": 0,
+  "pageErrors": []
+}

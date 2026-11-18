@@ -1,0 +1,72 @@
+{
+  "375": {
+    "gap": 93,
+    "padding": "85px",
+    "cardPadding": "8px 4px",
+    "cardMargin": "8px",
+    "nav": {
+      "x": 15,
+      "y": 0,
+      "width": 345,
+      "height": 56,
+      "text": "Toggle navigation Home  F.A.Q"
+    },
+    "overflow": false
+  },
+  "390": {
+    "gap": 93,
+    "padding": "85px",
+    "cardPadding": "8px 4px",
+    "cardMargin": "8px",
+    "nav": {
+      "x": 15,
+      "y": 0,
+      "width": 360,
+      "height": 56,
+      "text": "Toggle navigation Home  F.A.Q"
+    },
+    "overflow": false
+  },
+  "768": {
+    "gap": 20,
+    "padding": "0px",
+    "cardPadding": "16px",
+    "cardMargin": "20px",
+    "nav": {
+      "x": 15,
+      "y": 0,
+      "width": 738,
+      "height": 56,
+      "text": "Toggle navigation Home  F.A.Q"
+    },
+    "overflow": false
+  },
+  "1366": {
+    "gap": 20,
+    "padding": "0px",
+    "cardPadding": "16px",
+    "cardMargin": "20px",
+    "nav": {
+      "x": 15,
+      "y": 0,
+      "width": 1336,
+      "height": 63,
+      "text": "Toggle navigation Home  F.A.Q"
+    },
+    "overflow": false
+  },
+  "1920": {
+    "gap": 20,
+    "padding": "0px",
+    "cardPadding": "16px",
+    "cardMargin": "20px",
+    "nav": {
+      "x": 15,
+      "y": 0,
+      "width": 1890,
+      "height": 63,
+      "text": "Toggle navigation Home  F.A.Q"
+    },
+    "overflow": false
+  }
+}

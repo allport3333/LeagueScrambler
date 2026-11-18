@@ -1,0 +1,24 @@
+{
+  "mode": "browser-only synthetic display fixture",
+  "databaseAccess": false,
+  "baseline": false,
+  "apiReads": 9,
+  "writes": [],
+  "pageErrors": [],
+  "desktopVerified": [
+    "1366",
+    "1920"
+  ],
+  "checks": [
+    "Desktop baseline: identical screenshots, table geometry, values, fonts, colors, spacing and tabs at both sizes",
+    "Mobile 375x667: no page overflow, four columns, original values/colors, tap/keyboard expansion and indicators",
+    "Mobile 390x844: no page overflow, four columns, original values/colors, tap/keyboard expansion and indicators",
+    "Mobile 430x932: no page overflow, four columns, original values/colors, tap/keyboard expansion and indicators",
+    "All four mobile sort keys and direction toggle match original tables",
+    "Overall, Gold, Silver, configured Bronze and both gender tabs use correct filtered arrays",
+    "Round/Matchup switching retains original values and changes expanded score labels",
+    "Full-table opt-in scrolls within its own region, retains sticky player names and returns to compact mode",
+    "Returning to desktop restores only the existing full-table presentation"
+  ],
+  "fixtureSha256": "10e021bf7fa90e6ccf2cfdae72920b93a246fa985c5f5630219bc926326742a4"
+}

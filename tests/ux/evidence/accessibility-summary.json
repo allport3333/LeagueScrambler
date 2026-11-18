@@ -1,0 +1,329 @@
+{
+  "engine": "axe-core 4.10.3",
+  "scope": "Chromium viewport audit, not compliance certification; repeated states not distinct bugs",
+  "rules": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/color-contrast?application=axeAPI",
+      "capturedStates": 84,
+      "examples": [
+        {
+          "screenshot": "home_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              ".link-active > a"
+            ],
+            [
+              "a[href$=\"faq\"]"
+            ]
+          ]
+        },
+        {
+          "screenshot": "login_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              ".link-active > a"
+            ],
+            [
+              "a[href$=\"faq\"]"
+            ]
+          ]
+        },
+        {
+          "screenshot": "registration_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              ".link-active > a"
+            ],
+            [
+              "a[href$=\"faq\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "image-alt",
+      "impact": "critical",
+      "help": "Images must have alternative text",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/image-alt?application=axeAPI",
+      "capturedStates": 23,
+      "examples": [
+        {
+          "screenshot": "home_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "img"
+            ]
+          ]
+        },
+        {
+          "screenshot": "login_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "img"
+            ]
+          ]
+        },
+        {
+          "screenshot": "registration_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "img"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "landmark-one-main",
+      "impact": "moderate",
+      "help": "Document should have one main landmark",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/landmark-one-main?application=axeAPI",
+      "capturedStates": 111,
+      "examples": [
+        {
+          "screenshot": "home_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "html"
+            ]
+          ]
+        },
+        {
+          "screenshot": "login_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "html"
+            ]
+          ]
+        },
+        {
+          "screenshot": "registration_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "html"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-has-heading-one",
+      "impact": "moderate",
+      "help": "Page should contain a level-one heading",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/page-has-heading-one?application=axeAPI",
+      "capturedStates": 105,
+      "examples": [
+        {
+          "screenshot": "home_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "html"
+            ]
+          ]
+        },
+        {
+          "screenshot": "login_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "html"
+            ]
+          ]
+        },
+        {
+          "screenshot": "registration_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "html"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "region",
+      "impact": "moderate",
+      "help": "All page content should be contained by landmarks",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/region?application=axeAPI",
+      "capturedStates": 114,
+      "examples": [
+        {
+          "screenshot": "home_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "app-home > div[_ngcontent-ng-cli-universal-c2=\"\"]:nth-child(1)"
+            ]
+          ]
+        },
+        {
+          "screenshot": "login_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "app-home > div:nth-child(1)"
+            ],
+            [
+              "h2"
+            ]
+          ]
+        },
+        {
+          "screenshot": "registration_visitor_desktop-1920x1080_production.png",
+          "targets": [
+            [
+              "app-home > div:nth-child(1)"
+            ],
+            [
+              "h2"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scrollable-region-focusable",
+      "impact": "serious",
+      "help": "Scrollable region must have keyboard access",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/scrollable-region-focusable?application=axeAPI",
+      "capturedStates": 13,
+      "examples": [
+        {
+          "screenshot": "dashboard_player_tablet-768x1024_local-display-fixture.png",
+          "targets": [
+            [
+              "div:nth-child(1) > mat-card > div"
+            ],
+            [
+              "div:nth-child(2) > mat-card > div"
+            ]
+          ]
+        },
+        {
+          "screenshot": "dashboard_player_mobile-390x844_local-display-fixture.png",
+          "targets": [
+            [
+              "div:nth-child(1) > mat-card > div"
+            ],
+            [
+              "div:nth-child(2) > mat-card > div"
+            ]
+          ]
+        },
+        {
+          "screenshot": "dashboard_player_mobile-375x667_local-display-fixture.png",
+          "targets": [
+            [
+              "div:nth-child(1) > mat-card > div"
+            ],
+            [
+              "div:nth-child(2) > mat-card > div"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "heading-order",
+      "impact": "moderate",
+      "help": "Heading levels should only increase by one",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/heading-order?application=axeAPI",
+      "capturedStates": 19,
+      "examples": [
+        {
+          "screenshot": "sign-in_player_desktop-1920x1080_local-display-fixture.png",
+          "targets": [
+            [
+              "h4"
+            ]
+          ]
+        },
+        {
+          "screenshot": "sign-in_player_laptop-1366x768_local-display-fixture.png",
+          "targets": [
+            [
+              "h4"
+            ]
+          ]
+        },
+        {
+          "screenshot": "sign-in_player_tablet-768x1024_local-display-fixture.png",
+          "targets": [
+            [
+              "h4"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "aria-required-parent",
+      "impact": "critical",
+      "help": "Certain ARIA roles must be contained by particular parents",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/aria-required-parent?application=axeAPI",
+      "capturedStates": 1,
+      "examples": [
+        {
+          "screenshot": "claim-picker_new-player_mobile-375x667_local-form-preview.png",
+          "targets": [
+            [
+              "#mat-option-0"
+            ],
+            [
+              "#mat-option-1"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "listitem",
+      "impact": "serious",
+      "help": "<li> elements must be contained in a <ul> or <ol>",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/listitem?application=axeAPI",
+      "capturedStates": 2,
+      "examples": [
+        {
+          "screenshot": "kq-results_player_1366x768_local-display-fixture.png",
+          "targets": [
+            [
+              ".match-row:nth-child(1) > .teams-container > .team-card:nth-child(1) > .extended-background-blue-lastName[ng-reflect-ng-class=\"extended-background-blue-lastN\"]:nth-child(2)"
+            ],
+            [
+              ".match-row:nth-child(1) > .teams-container > .team-card:nth-child(1) > .extended-background-pink-lastName[ng-reflect-ng-class=\"extended-background-pink-lastN\"]:nth-child(3)"
+            ]
+          ]
+        },
+        {
+          "screenshot": "kq-results_player_375x667_local-display-fixture.png",
+          "targets": [
+            [
+              ".match-row:nth-child(1) > .teams-container > .team-card:nth-child(1) > .extended-background-blue-lastName[ng-reflect-ng-class=\"extended-background-blue-lastN\"]:nth-child(2)"
+            ],
+            [
+              ".match-row:nth-child(1) > .teams-container > .team-card:nth-child(1) > .extended-background-pink-lastName[ng-reflect-ng-class=\"extended-background-pink-lastN\"]:nth-child(3)"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "label",
+      "impact": "critical",
+      "help": "Form elements must have labels",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/label?application=axeAPI",
+      "capturedStates": 1,
+      "examples": [
+        {
+          "screenshot": "scramble-preview_visitor_1366x768_local.png",
+          "targets": [
+            [
+              ".col-1 > input[type=\"text\"]"
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

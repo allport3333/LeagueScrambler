@@ -1,0 +1,1182 @@
+{
+  "writesForwarded": 0,
+  "realCredentialsUsed": false,
+  "databaseFixturesWritten": false,
+  "events": [
+    {
+      "kind": "blocked-external",
+      "host": "static.cloudflareinsights.com"
+    },
+    {
+      "kind": "blocked-external",
+      "host": "static.cloudflareinsights.com"
+    },
+    {
+      "kind": "blocked-external",
+      "host": "static.cloudflareinsights.com"
+    },
+    {
+      "kind": "blocked-external",
+      "host": "static.cloudflareinsights.com"
+    },
+    {
+      "kind": "blocked-external",
+      "host": "static.cloudflareinsights.com"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/league-standings/null",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/isauthenticated",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "player"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/817/czdn4xlg/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/058/avf1hf1w/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/335/ed0mvfar/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/073/0ecvjsvr/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/571/uvcxq1pp/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetLeagues",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetLockSignInStatus/null",
+      "role": "player"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/273/51nfw1hl/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/264/3faotk4k/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetAllMalePlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetAllFemalePlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetNumberOfBrackets",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetPlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/IsAdminPasswordAuthorized",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/isauthenticated",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "manager"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/461/5gcnz051/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/076/t2cy2i3c/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/IsAdminPasswordAuthorized",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/isauthenticated",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "manager"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/769/05rnwd1g/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/949/hsd1onyc/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/340/r1p4gjhi/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetPlayers/null",
+      "role": "manager"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/881/epytmshm/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/136/alckdaaa/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/648/25z5ing3/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/GetProfile",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/GetPlayerLeagues",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/GetProfile",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/GetPlayerLeagues",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/league-team-scores/910001/null",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetPlayerByPlayerIdVariable/910001",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/league-team-scores/910001/null",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/combined-stats/910001/null",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/combined-stats/910001/null",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetPlayerByPlayerIdVariable/910001",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/combined-stats/910001/null",
+      "role": "player"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/243/1iczefth/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/614/nevwt04a/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectedLeagueScrambles/null",
+      "role": "player"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/108/fc0gpa5r/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/061/xlrmgdun/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetLeagues",
+      "role": "anonymous"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/301/p3tzyzlv/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/330/raaghwgc/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/027/vyocjbv4/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/273/ag3b101a/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetAllMalePlayers",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetAllFemalePlayers",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetNumberOfBrackets",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetPlayers",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/IsAdminPasswordAuthorized",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/isauthenticated",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetLeagues",
+      "role": "anonymous"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/400/kujda30h/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/IsAdminPasswordAuthorized",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/isauthenticated",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetByLeague/UX%20Sample%20Tuesday%20League",
+      "role": "player"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/074/zb2oeyem/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/891/u1utshwm/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/467/qtqqxc4x/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/league-standings/null",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/isauthenticated",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/league-standings/900001",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/available-dates/UX%20Sample%20Tuesday%20League",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/GetLeagueSchedule/900001",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/GetAllTeamsWithPlayers/900001",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/GetTeamScores/2026-11-16/UX%20Sample%20Tuesday%20League",
+      "role": "player"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/273/pwpwk3ji/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/953/nfwwxesi/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetAllMalePlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetAllFemalePlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetNumberOfBrackets",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetPlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/IsAdminPasswordAuthorized",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/isauthenticated",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/LeagueDivision/GetByLeague/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/LeagueDivision/GetByLeague/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetSignedInPlayersAsPlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetTopPlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectLeague/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectedLeagueScrambles/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetByLeague/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectLeague/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetScrambleNumbers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetLeagues",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetScrambleNumbers",
+      "role": "manager"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/197/j5o2gwpr/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/944/bf1xpzuv/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/IsAdminPasswordAuthorized",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/isauthenticated",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/GetTeams/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/GetAllTeamsWithPlayers/900001",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Statistics/GetTeamsByLeagueId/900001",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetPlayers/900001",
+      "role": "manager"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/407/n0nzy0wa/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/845/qhas0unv/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/272/fpt2332n/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetLeagues",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetLockSignInStatus/null",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetPlayerByPlayerId",
+      "role": "player"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/940/l4gccpgg/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectedLeagueScrambles/null",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectedLeagueScrambles/UX%20Sample%20Tuesday%20League",
+      "role": "player"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/392/oltvgsrf/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectedLeagueScrambles/null",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectedLeagueScrambles/UX%20Sample%20Tuesday%20League",
+      "role": "player"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/487/n1oyughi/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/092/z0ifpgv4/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetPlayers",
+      "role": "anonymous"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/978/umsl4fvd/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetPlayers",
+      "role": "anonymous"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/024/vcnxqgn4/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetPlayers",
+      "role": "anonymous"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/936/btiom2hn/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/543/mihcckpk/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectedLeagueScrambles/null",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectedLeagueScrambles/UX%20Sample%20Tuesday%20League",
+      "role": "player"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetKingQueenTeamsByScrambleNumber/UX%20Sample%20Tuesday%20League/1",
+      "role": "player"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/466/n0inwpc5/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetAllMalePlayers",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetAllFemalePlayers",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetNumberOfBrackets",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetPlayers",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/IsAdminPasswordAuthorized",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/isauthenticated",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectLeague/UX%20Sample%20Tuesday%20League",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetScrambleNumbers",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetLeagues",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetLeagues",
+      "role": "anonymous"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetScrambleNumbers",
+      "role": "anonymous"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/010/4o1ff2vb/xhr_streaming"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetAllMalePlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetAllFemalePlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetNumberOfBrackets",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetPlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/IsAdminPasswordAuthorized",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/isauthenticated",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersRole",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetUsersPlayer",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/getuserleagues",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/LeagueDivision/GetByLeague/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetSignedInPlayersAsPlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetTopPlayers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectLeague/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectedLeagueScrambles/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetByLeague/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/SelectLeague/UX%20Sample%20Tuesday%20League",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetScrambleNumbers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetLeagues",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/ScrambleData/GetScrambleNumbers",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "manager"
+    },
+    {
+      "kind": "display-fixture",
+      "path": "/api/Login/GetSettingValue",
+      "role": "manager"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/635/nikzzdr5/xhr_streaming"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/api/Login/login"
+    },
+    {
+      "kind": "blocked-write",
+      "method": "POST",
+      "path": "/sockjs-node/986/ntf5jxbl/xhr_streaming"
+    }
+  ]
+}

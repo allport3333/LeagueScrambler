@@ -236,16 +236,28 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpGet("[action]/{leagueName}")]
         public IEnumerable<KingQueenTeam> SelectedLeagueScrambles(string leagueName)
         {
-            List<KingQueenTeam> players = new List<KingQueenTeam>();
-            var context = new DataContext();
-            var league = context.Leagues.Where(x => x.LeagueName == leagueName).FirstOrDefault();
-            var kingQueenTeamsDistinct = context.KingQueenTeam
-                .Where(x => x.LeagueID == league.ID && x.ScrambleWithScoresToBeSaved == true)
-                .GroupBy(x => x.ScrambleNumber)
-                .Select(g => g.First())
-                .ToList();
+            // Initial selection may be empty, or an old link may name a removed league.
+            // Keep the existing array response contract without evaluating a null entity.
+            if (string.IsNullOrWhiteSpace(leagueName))
+                return new List<KingQueenTeam>();
 
-            return kingQueenTeamsDistinct;
+            using (var context = new DataContext())
+            {
+                var leagueId = context.Leagues.AsNoTracking()
+                    .Where(x => x.LeagueName == leagueName)
+                    .Select(x => (int?)x.ID)
+                    .FirstOrDefault();
+                if (!leagueId.HasValue)
+                    return new List<KingQueenTeam>();
+
+                var selectedLeagueId = leagueId.Value;
+                return context.KingQueenTeam.AsNoTracking()
+                    .Where(x => x.LeagueID == selectedLeagueId && x.ScrambleWithScoresToBeSaved == true)
+                    .GroupBy(x => x.ScrambleNumber)
+                    .Select(g => g.First())
+                    .OrderBy(t => t.ScrambleNumber)
+                    .ToList();
+            }
         }
 
         [HttpGet("SearchPlayers")]
@@ -771,6 +783,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 .Where(t =>
                     t.LeagueID == leagueId &&
                     t.ScrambleNumber == scrambleNumber && t.ScrambleWithScoresToBeSaved == true)
+                // SaveKingQueenTeams assigns request positions in this exact ID order.
+                .OrderBy(t => t.Id)
                 .ToList();
 
             foreach (var kingQueenTeam in kingQueenTeams)
@@ -1349,6 +1363,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     IsMale = player.Player.IsMale,
                     Scores = team.KingQueenRoundScores.Select(score => new
                     {
+                        KingQueenTeamId = team.Id,
                         RoundId = score.RoundId,
                         Score = score.RoundScore,
                         ScrambleNumber = team.ScrambleNumber,
@@ -1379,6 +1394,10 @@ namespace Allport_s_League_Scrambler.Controllers
                     {
                         RoundId = round.RoundId,
                         ScrambleNumber = round.ScrambleNumber,
+                        HasSavedScore = group.SelectMany(p => p.Scores).Count(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId) == 1,
+                        KingQueenTeamId = group.SelectMany(p => p.Scores)
+                            .Where(s => s.ScrambleNumber == round.ScrambleNumber && s.RoundId == round.RoundId)
+                            .Select(s => (int?)s.KingQueenTeamId).FirstOrDefault(),
 
                         IsSubScore = group
                             .SelectMany(player => player.Scores)
@@ -1538,6 +1557,7 @@ namespace Allport_s_League_Scrambler.Controllers
                         .GroupBy(score => team.ScrambleNumber)
                         .Select(scrambleGroup => new
                         {
+                            KingQueenTeamId = team.Id,
                             ScrambleNumber = scrambleGroup.Key,
                             Score = scrambleGroup.Sum(roundScore => roundScore.RoundScore),
                             RoundWon = scrambleGroup.Count(roundScore => (bool)roundScore.RoundWon),
@@ -1576,6 +1596,7 @@ namespace Allport_s_League_Scrambler.Controllers
                         group => new
                         {
                             ScrambleNumber = group.Key,
+                            TeamIds = group.Select(s => s.KingQueenTeamId).Distinct().ToList(),
                             Score = group.Sum(s => s.Score),
                             RoundWon = group.Sum(s => s.RoundWon),
                             IsSubScore = group.Any(s => s.IsSubScore ?? false)
@@ -1591,6 +1612,8 @@ namespace Allport_s_League_Scrambler.Controllers
                             {
                                 ScrambleNumber = scramble.ScrambleNumber,
                                 RoundId = scramble.RoundId,
+                                HasSavedScore = existingScore.TeamIds.Count == 1,
+                                KingQueenTeamId = existingScore.TeamIds.Count == 1 ? (int?)existingScore.TeamIds[0] : null,
                                 Score = existingScore.Score,
                                 RoundWon = existingScore.RoundWon,
                                 IsSubScore = existingScore.IsSubScore
@@ -1602,6 +1625,8 @@ namespace Allport_s_League_Scrambler.Controllers
                             {
                                 ScrambleNumber = scramble.ScrambleNumber,
                                 RoundId = scramble.RoundId,
+                                HasSavedScore = false,
+                                KingQueenTeamId = (int?)null,
                                 Score = 0,
                                 RoundWon = 0,
                                 IsSubScore = false

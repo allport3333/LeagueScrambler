@@ -1,8 +1,14 @@
 <div class="tab-content d-flex flex-column align-items-center">
+    <div *ngIf="fromStandings" class="score-navigation">
+        <button mat-stroked-button type="button" (click)="backToStandings()">Back to Standings</button>
+        <button mat-stroked-button type="button" *ngIf="singleMatchupView" (click)="showAllMatchups()">View All Matchups</button>
+    </div>
+    <p *ngIf="loading" role="status">Loading saved matchups...</p>
+    <p *ngIf="message" role="alert" class="score-navigation-message">{{ message }}</p>
     <h5 class="mb-2">Select Week to Retrieve</h5>
     <mat-form-field appearance="outline" style="width: 250px;">
         <mat-label>Select Week</mat-label>
-        <mat-select (selectionChange)="retrieveScramble($event.value)">
+        <mat-select [value]="selectedScramble" (selectionChange)="chooseWeek($event.value)">
             <mat-option *ngFor="let scramble of queriedScrambles; let i = index" [value]="scramble">
                 Week {{ i + 1 }} - {{ scramble.dateOfTeam | date: 'shortDate' }}
             </mat-option>
@@ -16,12 +22,12 @@
     <div *ngFor="let pair of getTeamPairs(); let matchIndex = index" class="match-row">
 
         <!-- Centered Heading for the Match # -->
-        <h3 class="match-header">Match #{{ matchIndex + 1 }}</h3>
+        <h3 class="match-header">Match #{{ matchNumber(pair) }}</h3>
 
         <!-- Teams container: both teams side by side, centered within row -->
         <div class="teams-container">
             <div *ngFor="let team of pair; let idx = index" class="team-card">
-                <h4>Team {{ matchIndex * 2 + idx + 1 }}</h4>
+                <h4>Team {{ team.sortingId }}</h4>
 
                 <!-- Players -->
                 <li *ngFor="let player of team.players"
@@ -33,7 +39,7 @@
 
                 <!-- Scores, sorted by round -->
                 <div *ngIf="team.kingQueenRoundScores?.length > 0" class="scores-list">
-                    <div *ngFor="let score of getSortedScores(team.kingQueenRoundScores)" class="score-item">
+                    <div *ngFor="let score of getSortedScores(team.kingQueenRoundScores)" class="score-item" [class.selected-score]="isFocusedScore(team, score)">
                         Round {{ score.roundId }}:
                         <strong>{{ score.roundScore }}</strong>
                         <span *ngIf="score.roundWon" class="won-badge">WON</span>
@@ -45,7 +51,7 @@
 </div>
 
 <!-- Bye Players -->
-<div class="bye-players" *ngIf="byePlayers && byePlayers.length > 0">
+<div class="bye-players" *ngIf="!singleMatchupView && byePlayers && byePlayers.length > 0">
     <h4>Bye Players</h4>
     <ul>
         <li *ngFor="let bye of byePlayers">

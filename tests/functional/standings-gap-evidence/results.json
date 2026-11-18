@@ -1,0 +1,85 @@
+{
+  "checks": [
+    "375px: direct load, refresh and FAQ-to-standings navigation give 14px gap; other route unchanged",
+    "390px: direct load, refresh and FAQ-to-standings navigation give 14px gap; other route unchanged",
+    "768px: screenshot and layout identical to baseline",
+    "1366px: screenshot and layout identical to baseline",
+    "1920px: screenshot and layout identical to baseline"
+  ],
+  "measurements": {
+    "375": {
+      "gap": 14,
+      "padding": "6px",
+      "cardPadding": "8px 4px",
+      "cardMargin": "8px",
+      "nav": {
+        "x": 15,
+        "y": 0,
+        "width": 345,
+        "height": 56,
+        "text": "Toggle navigation Home  F.A.Q"
+      },
+      "overflow": false
+    },
+    "390": {
+      "gap": 14,
+      "padding": "6px",
+      "cardPadding": "8px 4px",
+      "cardMargin": "8px",
+      "nav": {
+        "x": 15,
+        "y": 0,
+        "width": 360,
+        "height": 56,
+        "text": "Toggle navigation Home  F.A.Q"
+      },
+      "overflow": false
+    },
+    "768": {
+      "gap": 20,
+      "padding": "0px",
+      "cardPadding": "16px",
+      "cardMargin": "20px",
+      "nav": {
+        "x": 15,
+        "y": 0,
+        "width": 738,
+        "height": 56,
+        "text": "Toggle navigation Home  F.A.Q"
+      },
+      "overflow": false
+    },
+    "1366": {
+      "gap": 20,
+      "padding": "0px",
+      "cardPadding": "16px",
+      "cardMargin": "20px",
+      "nav": {
+        "x": 15,
+        "y": 0,
+        "width": 1336,
+        "height": 63,
+        "text": "Toggle navigation Home  F.A.Q"
+      },
+      "overflow": false
+    },
+    "1920": {
+      "gap": 20,
+      "padding": "0px",
+      "cardPadding": "16px",
+      "cardMargin": "20px",
+      "nav": {
+        "x": 15,
+        "y": 0,
+        "width": 1890,
+        "height": 63,
+        "text": "Toggle navigation Home  F.A.Q"
+      },
+      "overflow": false
+    }
+  },
+  "writes": [],
+  "pageErrors": [],
+  "databaseAccess": false,
+  "mode": "browser-only synthetic display fixtures"
+}

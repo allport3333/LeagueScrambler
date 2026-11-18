@@ -16,7 +16,7 @@ const ALLOWED_WRITES = new Set([
   '/api/login/register', '/api/login/login', '/api/login/logout',
   '/api/scrambledata/addplayerwithoutleague', '/api/scrambledata/claimplayer'
 ]);
-const REGRESSION_WRITES = /^(?:\/api\/Login\/(?:updatesetting|SetLockSignInStatus|VerifyAdminPassword)|\/api\/LeagueDivision\/Add|\/api\/Statistics\/(?:AddTeam|AddPlayerToLeagueTeam|SetTeamDivision|RecordLeagueTeamScore|UpdateTeamScores\/LSAuto_[a-f0-9]{24}_L[a-z0-9]+)|\/api\/ScrambleData\/(?:SignInPlayer(?:\/\d+)?|SaveCreatedTeamScores|UpdateKingQueenPlayerSubStatus|(?:AddNewLeague|AddPlayer|DeletePlayer|GenerateScramble|SaveKingQueenTeams|SaveKingQueenRoundScores)\/LSAuto_[a-f0-9]{24}_L[a-z0-9]+))$/i;
+const REGRESSION_WRITES = /^(?:\/api\/Login\/(?:updatesetting|SetLockSignInStatus|VerifyAdminPassword)|\/api\/LeagueDivision\/Add|\/api\/Statistics\/(?:AddTeam|AddPlayerToLeagueTeam|SetTeamDivision|RecordLeagueTeamScore|RecordMatchupScores|UpdateTeamScores\/LSAuto_[a-f0-9]{24}_L[a-z0-9]+)|\/api\/ScrambleData\/(?:SignInPlayer(?:\/\d+)?|SaveCreatedTeamScores|UpdateKingQueenPlayerSubStatus|(?:AddNewLeague|AddPlayer|DeletePlayer|GenerateScramble|SaveKingQueenTeams|SaveKingQueenRoundScores)\/LSAuto_[a-f0-9]{24}_L[a-z0-9]+))$/i;
 async function available() {
   return new Promise(resolve => {
     const req = https.get(BASE_URL + '/api/Login/isauthenticated', { timeout: 5000 }, res => {

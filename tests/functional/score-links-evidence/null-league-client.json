@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "emptyInputsChecked": 4,
+  "requestsForEmptyInputs": 0,
+  "validNameEncoded": true,
+  "mode": "actual Angular service; intercepted API transport",
+  "databaseAccess": false
+}

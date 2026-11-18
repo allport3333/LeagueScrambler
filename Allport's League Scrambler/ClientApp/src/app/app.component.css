@@ -3,4 +3,10 @@
   .body-content {
     padding-top: 85px;
   }
+
+  /* Navigation is in normal flow. With the standings card's existing 8px
+     top margin, 6px parent padding leaves a 14px gap on this route only. */
+  .body-content.standings-page {
+    padding-top: 6px;
+  }
 }

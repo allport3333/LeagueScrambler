@@ -1,0 +1,9 @@
+# Evidence and privacy
+
+Actual browser screenshots, Chromium from the existing Playwright 1.51.1 installation, captured 2026-11-17. Five CSS viewports, not physical-device certification. Sources and fixture limits are in the screenshot index and full report. Axe 4.10.3 is a standalone audit tool, not an application dependency. Local process verification used the established read-only inspector: PID 3380, Development, localhost/LeagueScramblerDev/Windows Authentication. No write authority was renewed.
+
+All browser non-GET requests were aborted. API data for protected-layout previews was fabricated in browser responses. No credentials/cookies were used; legacy unlock was never simulated successful. Schedule cells/contact links are masked when applicable; sample names and example.invalid addresses are not real records. A page-text privacy check found zero non-synthetic email addresses in capture evidence.
+
+The review ZIP deliberately excludes raw browser/session data, raw capture HTML/text, network event logs (including development hot-reload identifiers), production recovery evidence, database manifests, binaries and dependency caches. Viewport CSV and grouped axe rules retain selectors and counts but not private response bodies. Duplicate screenshot states are not distinct issues or users.
+
+Harness notes: the browser cache setting initially needed to precede loading Playwright; fixed without installing browsers. One offscreen nested tab needed pagination and was not forced. An initial Material select locator needed the existing mat-select element rather than a newer combobox role. Outside-Angular fixture method calls required an explicit Development-zone render. Those are audit harness limitations, not application defects. A loading screenshot was not reliable and is reported source-only. Picker click obstruction persisted with normal browser events and is a documented UI finding.

@@ -79,7 +79,11 @@ export class PlayerService {
     }
 
     public SelectedLeagueScrambles(leagueName: string) {
-        return this.httpClient.get<KingQueenTeam[]>(this.baseUrl + 'api/ScrambleData/SelectedLeagueScrambles/' + leagueName);
+        // Tabs can initialize before the shared league selection has arrived.
+        if (typeof leagueName !== 'string' || !leagueName.trim()) {
+            return of<KingQueenTeam[]>([]);
+        }
+        return this.httpClient.get<KingQueenTeam[]>(this.baseUrl + 'api/ScrambleData/SelectedLeagueScrambles/' + encodeURIComponent(leagueName));
     }
 
     public GetAllFemalePlayers() {

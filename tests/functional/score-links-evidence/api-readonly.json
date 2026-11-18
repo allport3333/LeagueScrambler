@@ -1,0 +1,13 @@
+{
+  "database": "LeagueScramblerDev",
+  "mode": "independent runtime environment + retained synthetic record reads",
+  "automatedSessionCorrelationPassed": false,
+  "mutationAuthorizationGranted": false,
+  "checkedScores": 4,
+  "linkedScores": 4,
+  "endpointsChecked": 4,
+  "missingAndBlankLeagueChecksPassed": 2,
+  "metadataMatchesDatabase": true,
+  "weekAndTeamOrderVerified": true,
+  "databaseWrites": 0
+}

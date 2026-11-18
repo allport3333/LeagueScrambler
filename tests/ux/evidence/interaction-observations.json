@@ -1,0 +1,162 @@
+[
+  {
+    "workflow": "claim modal keyboard",
+    "focus": [
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-0",
+        "text": "Sample Player 01",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-1",
+        "text": "Sample Player 02",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-2",
+        "text": "Sample Player 03",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-3",
+        "text": "Sample Player 04",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-4",
+        "text": "Sample Player 05",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-5",
+        "text": "Sample Player 06",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-6",
+        "text": "Sample Player 07",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-7",
+        "text": "Sample Player 08",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-8",
+        "text": "Sample Player 09",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-9",
+        "text": "Sample Player 10",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-10",
+        "text": "Sample Player 11",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-11",
+        "text": "Sample Player 12",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-12",
+        "text": "Sample Player 13",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-13",
+        "text": "Sample Player 14",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-14",
+        "text": "Sample Player 15",
+        "insideModal": true
+      },
+      {
+        "tag": "MAT-OPTION",
+        "id": "mat-option-15",
+        "text": "Sample Player 16",
+        "insideModal": true
+      },
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "Create New Player",
+        "insideModal": true
+      },
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "Close",
+        "insideModal": true
+      },
+      {
+        "tag": "BODY",
+        "id": "",
+        "text": "Toggle navigation\nLoginRegister\nForgot Password\nClaim a Play",
+        "insideModal": false
+      },
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "Toggle navigation",
+        "insideModal": false
+      },
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "Login",
+        "insideModal": false
+      },
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "Register",
+        "insideModal": false
+      },
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "Forgot Password",
+        "insideModal": false
+      },
+      {
+        "tag": "INPUT",
+        "id": "mat-input-0",
+        "text": "Start typing to search",
+        "insideModal": true
+      }
+    ],
+    "dialogRoleCount": 0
+  },
+  {
+    "workflow": "claim search popup",
+    "observation": "Normal click on Create New Player was intercepted by a suggestion. Empty search returns all players; a no-match query used as a visible UI workaround."
+  },
+  {
+    "workflow": "login keyboard/required fields",
+    "enterSubmitted": false,
+    "passwordEntered": false,
+    "submitEnabledWithBlankPassword": true
+  }
+]

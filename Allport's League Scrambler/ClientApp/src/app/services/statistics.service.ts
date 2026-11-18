@@ -145,6 +145,14 @@ export class StatisticsService {
         );
     }
 
+    getMatchupScores(leagueId: number, date: string): Observable<any[]> {
+        return this.httpClient.get<any[]>(`${this.baseUrl}api/Statistics/GetMatchupScores/${leagueId}?date=${encodeURIComponent(date)}`);
+    }
+
+    recordMatchupScores(matchup: any): Observable<any> {
+        return this.httpClient.post<any>(`${this.baseUrl}api/Statistics/RecordMatchupScores`, matchup);
+    }
+
     public GetAllTeamsWithPlayers(leagueId: number): Observable<TeamWithPlayersDto[]> {
         const url = `${this.baseUrl}api/Statistics/GetAllTeamsWithPlayers/${leagueId}`;
         return this.httpClient.get<TeamWithPlayersDto[]>(url);

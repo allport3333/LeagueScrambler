@@ -14,6 +14,9 @@ export interface PlayerScoreGroup {
 }
 
 export interface RoundScore {
+    scrambleNumber?: number;
+    kingQueenTeamId?: number;
+    hasSavedScore?: boolean;
     roundId: number;
     score: number;
     date: Date;

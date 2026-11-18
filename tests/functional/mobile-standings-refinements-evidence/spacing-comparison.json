@@ -1,0 +1,26 @@
+[
+  {
+    "width": 375,
+    "before": {
+      "tableTop": 657.6875,
+      "tableWidth": 319
+    },
+    "after": {
+      "tableTop": 487.625,
+      "tableWidth": 335
+    },
+    "pixelsHigher": 170.0625
+  },
+  {
+    "width": 390,
+    "before": {
+      "tableTop": 657.6875,
+      "tableWidth": 334
+    },
+    "after": {
+      "tableTop": 487.625,
+      "tableWidth": 350
+    },
+    "pixelsHigher": 170.0625
+  }
+]

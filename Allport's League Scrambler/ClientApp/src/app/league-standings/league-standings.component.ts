@@ -6,6 +6,8 @@ import { PlayerScoresResponse, PlayerScoreGroup } from '../data-models/playerSco
 import { PlayerService } from '../services/player.service';
 import { LeagueService } from '../services/league.service';
 import { LoginService } from '../services/login.service';
+import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-league-standings',
@@ -44,14 +46,57 @@ export class LeagueStandingsComponent implements OnInit {
     divisionMaleStandings: { [divisionId: number]: PlayerScoreGroup[] } = {};
     divisionFemaleStandings: { [divisionId: number]: PlayerScoreGroup[] } = {};
 
+    // Presentation state only; desktop markup and all score calculations are unchanged.
+    mobileFullTable = false;
+    mobileSettingsOpen = false;
+    mobileExpandedPlayers: { [key: string]: boolean } = {};
+    returnGenderIndex = 0;
+    private returnModeApplied = false;
+    private returnTabsApplied = false;
+    private navigationLeagueResolved = false;
+    private navigationSubscriptions = new Subscription();
+
+    scoreQuery(player: PlayerScoreGroup, score: any): any {
+        return { fromStandings: '1', leagueId: this.selectedLeagueId, playerId: player.playerId,
+            kingQueenTeamId: score.kingQueenTeamId, scrambleNumber: score.scrambleNumber,
+            roundId: this.standingsType === 'round' ? score.roundId : null,
+            standingsMode: this.standingsType, divisionId: this.selectedDivisionId,
+            gender: player.isMale ? 'men' : 'women' };
+    }
+    canOpenScore(score: any): boolean {
+        return score.hasSavedScore === true && score.kingQueenTeamId > 0 && score.scrambleNumber > 0;
+    }
+    ngOnDestroy() { this.navigationSubscriptions.unsubscribe(); }
+
+    mobilePlayerKey(group: string, playerId: number): string {
+        return group + '-' + playerId;
+    }
+
+    toggleMobilePlayer(group: string, playerId: number): void {
+        const key = this.mobilePlayerKey(group, playerId);
+        this.mobileExpandedPlayers[key] = !this.mobileExpandedPlayers[key];
+    }
+
+    sortMobileStandings(column: string): void {
+        this.sortColumn = column;
+        this.sortDirection = column === 'playerName' ? 'asc' : 'desc';
+        this.applySort(column);
+    }
+
     constructor(
         private playerService: PlayerService,
         private snackBar: MatSnackBar,
         public leagueService: LeagueService,
-        public loginService: LoginService
+        public loginService: LoginService,
+        private route: ActivatedRoute
     ) { }
 
     ngOnInit(): void {
+        const requestedLeague = Number(this.route.snapshot.queryParamMap.get('leagueId'));
+        this.returnGenderIndex = this.route.snapshot.queryParamMap.get('gender') === 'women' ? 1 : 0;
+        if (Number.isInteger(requestedLeague) && requestedLeague > 0) {
+            this.navigationSubscriptions.add(this.leagueService.selectNavigationLeague(requestedLeague).subscribe());
+        }
         this.loginService.getUsersRole().subscribe(
             (role) => {
                 this.userRole = role.role;
@@ -61,7 +106,9 @@ export class LeagueStandingsComponent implements OnInit {
             }
         );
 
-        this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
+        this.navigationSubscriptions.add(this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
+            if (!this.navigationLeagueResolved && requestedLeague > 0 && selectedLeague.leagueId !== requestedLeague) { return; }
+            if (selectedLeague.leagueId) { this.navigationLeagueResolved = true; }
             this.standings = null;
             this.originalStandings = null;
             this.maleStandings = null;
@@ -74,20 +121,23 @@ export class LeagueStandingsComponent implements OnInit {
             this.divisionMaleStandings = {};
             this.divisionFemaleStandings = {};
 
-            if (selectedLeague) {
+            if (selectedLeague && selectedLeague.leagueId) {
                 this.selectedLeagueId = selectedLeague.leagueId;
                 this.leagueName = selectedLeague.leagueName;
                 this.initializeSettings();
             } else {
                 console.warn('No league selected.');
             }
-        });
+        }));
     }
 
     initializeStandings(): void {
         this.playerLoading = true;
 
-        this.playerService.getStandingsByLeague(this.leagueName).subscribe(
+        const request = this.standingsType === 'matchup'
+            ? this.playerService.getStandingsByLeagueMatchup(this.leagueName)
+            : this.playerService.getStandingsByLeague(this.leagueName);
+        request.subscribe(
             (result: PlayerScoresResponse) => {
                 if (result != null) {
                     this.lastResult = result;
@@ -138,6 +188,15 @@ export class LeagueStandingsComponent implements OnInit {
                                     this.loginService.getSettingValue('standingsType', this.selectedLeagueId).subscribe(
                                         (newStandingsType) => {
                                             this.retrievedStandingsType = newStandingsType;
+
+                                            const returnMode = this.route.snapshot.queryParamMap.get('standingsMode');
+                                            if (!this.returnModeApplied && (returnMode === 'round' || returnMode === 'matchup')) {
+                                                this.returnModeApplied = true;
+                                                this.standingsType = returnMode;
+                                                this.initializeStandings();
+                                                resolve();
+                                                return;
+                                            }
 
                                             if (this.retrievedStandingsType !== this.standingsType) {
                                                 this.toggleStandingsType();
@@ -444,6 +503,13 @@ export class LeagueStandingsComponent implements OnInit {
         // Build only ASSIGNED divisions (no "Unassigned" tab)
         this.buildDivisionsFromStandings();
         this.buildDivisionStandings();
+
+        if (!this.returnTabsApplied) {
+            const divisionId = Number(this.route.snapshot.queryParamMap.get('divisionId'));
+            const index = this.divisions.findIndex(d => d.leagueDivisionId === divisionId);
+            if (index >= 0) { this.mainTabIndex = index + 1; }
+            this.returnTabsApplied = true;
+        }
 
         // Keep whatever tab you were on, but make sure selectedDivisionId matches it
         if (this.mainTabIndex === 0) {
