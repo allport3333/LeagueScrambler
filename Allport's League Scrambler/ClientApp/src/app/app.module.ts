@@ -114,7 +114,7 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
             { path: 'player-scores', component: PlayerScoresComponent },
             { path: 'schedule', component: ScheduleComponent },
             { path: 'resetpassword', component: ResetPasswordComponent },
-            { path: 'player-stats/:playerId', component: DetailedPlayerStatsComponent },
+            { path: 'player-stats/:playerId', redirectTo: 'player-stats-tabs/:playerId', pathMatch: 'full' },
             { path: 'sign-in', component: SignInComponent },
             { path: 'standings', component: LeagueStandingsComponent },
             { path: 'player-stats-tabs/:playerId', component: PlayerStatsTabsComponent },

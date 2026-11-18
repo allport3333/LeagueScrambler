@@ -1,0 +1,19 @@
+{
+  "checks": [
+    "KQ raw 83 points/chronological history/rounds/teammate links; legitimate zero opens exact saved scramble41/team101/round2, refresh and profile return",
+    "League Team summary 2 wins/2 losses/72 points, all four saved games grouped by actual date",
+    "Unique teammate IDs (namesakes retained), calculated games/wins, sorting, links preserve league/tab and refresh header",
+    "Explicit league2 direct link/refresh/active tab/no division; global league selection updates scoped stats and URL",
+    "All three tabs/header/collapsed and expanded histories at five desktop/phone sizes; no horizontal page overflow",
+    "Empty KQ/league-team/teammates distinguished from loading/errors",
+    "Each statistics endpoint fails with safe message and recovers via retry",
+    "Incomplete team/date/win metadata retains raw zero and suppresses unsafe matchup links",
+    "Missing player, unavailable profile endpoint and unknown league fail helpfully without unrelated stats",
+    "No fabricated loading zeros; legacy player-stats route still resolves to profile preserving tab"
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "requestCount": 150,
+  "databaseAccess": false,
+  "apiFixtures": "Generated from production C# calculation tests; HTTP transport intercepted"
+}

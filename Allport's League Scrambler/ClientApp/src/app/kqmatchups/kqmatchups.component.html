@@ -1,6 +1,6 @@
 <div class="tab-content d-flex flex-column align-items-center">
     <div *ngIf="fromStandings" class="score-navigation">
-        <button mat-stroked-button type="button" (click)="backToStandings()">Back to Standings</button>
+        <button mat-stroked-button type="button" (click)="backToStandings()">{{ fromProfile ? 'Back to Player Profile' : 'Back to Standings' }}</button>
         <button mat-stroked-button type="button" *ngIf="singleMatchupView" (click)="showAllMatchups()">View All Matchups</button>
     </div>
     <p *ngIf="loading" role="status">Loading saved matchups...</p>

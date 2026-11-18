@@ -1,0 +1,402 @@
+{
+    "combined":  {
+                     "TotalScores":  72,
+                     "TotalWins":  2,
+                     "TotalLosses":  2,
+                     "TotalGames":  4,
+                     "WinPercentage":  50,
+                     "AverageScore":  18,
+                     "HighestScore":  21,
+                     "LowestScore":  12,
+                     "LongestWinStreak":  1,
+                     "LongestLossStreak":  1,
+                     "TotalOpponents":  2,
+                     "OpponentStats":  [
+                                           {
+                                               "OpponentTeamId":  12,
+                                               "OpponentTeamName":  "Opponent X",
+                                               "GamesPlayed":  3,
+                                               "Wins":  1,
+                                               "WinPercentage":  33.333333333333336,
+                                               "TotalPointsScored":  51,
+                                               "AveragePointsPerGame":  17
+                                           },
+                                           {
+                                               "OpponentTeamId":  13,
+                                               "OpponentTeamName":  "Opponent Y",
+                                               "GamesPlayed":  1,
+                                               "Wins":  1,
+                                               "WinPercentage":  100,
+                                               "TotalPointsScored":  21,
+                                               "AveragePointsPerGame":  21
+                                           }
+                                       ],
+                     "LeagueStats":  [
+                                         {
+                                             "LeagueTeamId":  10,
+                                             "LeagueName":  "Team A",
+                                             "GamesPlayed":  2,
+                                             "Wins":  1,
+                                             "WinPercentage":  50
+                                         },
+                                         {
+                                             "LeagueTeamId":  11,
+                                             "LeagueName":  "Team B",
+                                             "GamesPlayed":  2,
+                                             "Wins":  1,
+                                             "WinPercentage":  50
+                                         }
+                                     ],
+                     "TeammateStats":  [
+                                           {
+                                               "PlayerId":  3,
+                                               "PlayerName":  "Alex Synthetic",
+                                               "TimesPlayedTogether":  2,
+                                               "WinsTogether":  1
+                                           },
+                                           {
+                                               "PlayerId":  4,
+                                               "PlayerName":  "Alex Synthetic",
+                                               "TimesPlayedTogether":  2,
+                                               "WinsTogether":  1
+                                           },
+                                           {
+                                               "PlayerId":  2,
+                                               "PlayerName":  "Partner Synthetic",
+                                               "TimesPlayedTogether":  4,
+                                               "WinsTogether":  2
+                                           }
+                                       ]
+                 },
+    "unplayed":  {
+                     "TotalScores":  0,
+                     "TotalWins":  0,
+                     "TotalLosses":  0,
+                     "TotalGames":  0,
+                     "WinPercentage":  0,
+                     "AverageScore":  0,
+                     "HighestScore":  0,
+                     "LowestScore":  0,
+                     "LongestWinStreak":  0,
+                     "LongestLossStreak":  0,
+                     "TotalOpponents":  0,
+                     "OpponentStats":  [
+
+                                       ],
+                     "LeagueStats":  [
+
+                                     ],
+                     "TeammateStats":  [
+                                           {
+                                               "PlayerId":  7,
+                                               "PlayerName":  "NoGamesPartner Synthetic",
+                                               "TimesPlayedTogether":  0,
+                                               "WinsTogether":  0
+                                           }
+                                       ]
+                 },
+    "solo":  {
+                 "TotalScores":  0,
+                 "TotalWins":  0,
+                 "TotalLosses":  1,
+                 "TotalGames":  1,
+                 "WinPercentage":  0,
+                 "AverageScore":  0,
+                 "HighestScore":  0,
+                 "LowestScore":  0,
+                 "LongestWinStreak":  0,
+                 "LongestLossStreak":  1,
+                 "TotalOpponents":  1,
+                 "OpponentStats":  [
+                                       {
+                                           "OpponentTeamId":  12,
+                                           "OpponentTeamName":  "Opponent X",
+                                           "GamesPlayed":  1,
+                                           "Wins":  0,
+                                           "WinPercentage":  0,
+                                           "TotalPointsScored":  0,
+                                           "AveragePointsPerGame":  0
+                                       }
+                                   ],
+                 "LeagueStats":  [
+                                     {
+                                         "LeagueTeamId":  14,
+                                         "LeagueName":  "Solo",
+                                         "GamesPlayed":  1,
+                                         "Wins":  0,
+                                         "WinPercentage":  0
+                                     }
+                                 ],
+                 "TeammateStats":  [
+
+                                   ]
+             },
+    "empty":  {
+                  "TotalScores":  0,
+                  "TotalWins":  0,
+                  "TotalLosses":  0,
+                  "TotalGames":  0,
+                  "WinPercentage":  0,
+                  "AverageScore":  0,
+                  "HighestScore":  0,
+                  "LowestScore":  0,
+                  "LongestWinStreak":  0,
+                  "LongestLossStreak":  0,
+                  "TotalOpponents":  0,
+                  "OpponentStats":  [
+
+                                    ],
+                  "LeagueStats":  [
+
+                                  ],
+                  "TeammateStats":  [
+
+                                    ]
+              },
+    "foreign":  {
+                    "TotalScores":  99,
+                    "TotalWins":  1,
+                    "TotalLosses":  0,
+                    "TotalGames":  1,
+                    "WinPercentage":  100,
+                    "AverageScore":  99,
+                    "HighestScore":  99,
+                    "LowestScore":  99,
+                    "LongestWinStreak":  1,
+                    "LongestLossStreak":  0,
+                    "TotalOpponents":  1,
+                    "OpponentStats":  [
+                                          {
+                                              "OpponentTeamId":  20,
+                                              "OpponentTeamName":  "Foreign team",
+                                              "GamesPlayed":  1,
+                                              "Wins":  1,
+                                              "WinPercentage":  100,
+                                              "TotalPointsScored":  99,
+                                              "AveragePointsPerGame":  99
+                                          }
+                                      ],
+                    "LeagueStats":  [
+                                        {
+                                            "LeagueTeamId":  20,
+                                            "LeagueName":  "Foreign team",
+                                            "GamesPlayed":  1,
+                                            "Wins":  1,
+                                            "WinPercentage":  100
+                                        }
+                                    ],
+                    "TeammateStats":  [
+                                          {
+                                              "PlayerId":  9,
+                                              "PlayerName":  "Foreign Synthetic",
+                                              "TimesPlayedTogether":  1,
+                                              "WinsTogether":  1
+                                          }
+                                      ]
+                },
+    "kingQueen":  {
+                      "IndividualRounds":  [
+                                               {
+                                                   "ScoreId":  1,
+                                                   "Id":  101,
+                                                   "RoundNumber":  1,
+                                                   "RoundScore":  21,
+                                                   "RoundWon":  true,
+                                                   "ScrambleNumber":  41,
+                                                   "DateOfTeam":  "\/Date(1767243600000)\/"
+                                               },
+                                               {
+                                                   "ScoreId":  2,
+                                                   "Id":  101,
+                                                   "RoundNumber":  2,
+                                                   "RoundScore":  0,
+                                                   "RoundWon":  false,
+                                                   "ScrambleNumber":  41,
+                                                   "DateOfTeam":  "\/Date(1767243600000)\/"
+                                               },
+                                               {
+                                                   "ScoreId":  3,
+                                                   "Id":  102,
+                                                   "RoundNumber":  1,
+                                                   "RoundScore":  15,
+                                                   "RoundWon":  true,
+                                                   "ScrambleNumber":  77,
+                                                   "DateOfTeam":  "\/Date(1767848400000)\/"
+                                               },
+                                               {
+                                                   "ScoreId":  4,
+                                                   "Id":  103,
+                                                   "RoundNumber":  1,
+                                                   "RoundScore":  20,
+                                                   "RoundWon":  true,
+                                                   "ScrambleNumber":  77,
+                                                   "DateOfTeam":  "\/Date(1767848400000)\/"
+                                               },
+                                               {
+                                                   "ScoreId":  5,
+                                                   "Id":  104,
+                                                   "RoundNumber":  1,
+                                                   "RoundScore":  18,
+                                                   "RoundWon":  null,
+                                                   "ScrambleNumber":  88,
+                                                   "DateOfTeam":  "\/Date(1768453200000)\/"
+                                               },
+                                               {
+                                                   "ScoreId":  6,
+                                                   "Id":  104,
+                                                   "RoundNumber":  2,
+                                                   "RoundScore":  9,
+                                                   "RoundWon":  false,
+                                                   "ScrambleNumber":  88,
+                                                   "DateOfTeam":  "\/Date(1768453200000)\/"
+                                               }
+                                           ],
+                      "TotalScores":  83,
+                      "TotalWins":  3,
+                      "TeamMembers":  [
+                                          {
+                                              "Id":  101,
+                                              "PlayerId":  2,
+                                              "PlayerName":  "Partner Synthetic",
+                                              "IsMale":  false,
+                                              "ScrambleNumber":  41
+                                          },
+                                          {
+                                              "Id":  102,
+                                              "PlayerId":  2,
+                                              "PlayerName":  "Partner Synthetic",
+                                              "IsMale":  false,
+                                              "ScrambleNumber":  77
+                                          },
+                                          {
+                                              "Id":  102,
+                                              "PlayerId":  3,
+                                              "PlayerName":  "Alex Synthetic",
+                                              "IsMale":  true,
+                                              "ScrambleNumber":  77
+                                          },
+                                          {
+                                              "Id":  103,
+                                              "PlayerId":  2,
+                                              "PlayerName":  "Partner Synthetic",
+                                              "IsMale":  false,
+                                              "ScrambleNumber":  77
+                                          },
+                                          {
+                                              "Id":  103,
+                                              "PlayerId":  4,
+                                              "PlayerName":  "Alex Synthetic",
+                                              "IsMale":  false,
+                                              "ScrambleNumber":  77
+                                          },
+                                          {
+                                              "Id":  104,
+                                              "PlayerId":  2,
+                                              "PlayerName":  "Partner Synthetic",
+                                              "IsMale":  false,
+                                              "ScrambleNumber":  88
+                                          }
+                                      ],
+                      "ScrambleTotals":  [
+                                             {
+                                                 "ScrambleNumber":  41,
+                                                 "DateOfTeam":  "\/Date(1767243600000)\/",
+                                                 "TotalScore":  21,
+                                                 "Wins":  1,
+                                                 "Team":  [
+                                                              {
+                                                                  "PlayerId":  2,
+                                                                  "PlayerName":  "Partner Synthetic",
+                                                                  "IsMale":  false
+                                                              }
+                                                          ]
+                                             },
+                                             {
+                                                 "ScrambleNumber":  77,
+                                                 "DateOfTeam":  "\/Date(1767848400000)\/",
+                                                 "TotalScore":  35,
+                                                 "Wins":  2,
+                                                 "Team":  [
+                                                              {
+                                                                  "PlayerId":  2,
+                                                                  "PlayerName":  "Partner Synthetic",
+                                                                  "IsMale":  false
+                                                              },
+                                                              {
+                                                                  "PlayerId":  3,
+                                                                  "PlayerName":  "Alex Synthetic",
+                                                                  "IsMale":  true
+                                                              },
+                                                              {
+                                                                  "PlayerId":  4,
+                                                                  "PlayerName":  "Alex Synthetic",
+                                                                  "IsMale":  false
+                                                              }
+                                                          ]
+                                             },
+                                             {
+                                                 "ScrambleNumber":  88,
+                                                 "DateOfTeam":  "\/Date(1768453200000)\/",
+                                                 "TotalScore":  27,
+                                                 "Wins":  0,
+                                                 "Team":  [
+                                                              {
+                                                                  "PlayerId":  2,
+                                                                  "PlayerName":  "Partner Synthetic",
+                                                                  "IsMale":  false
+                                                              }
+                                                          ]
+                                             }
+                                         ],
+                      "TeammateCounts":  [
+                                             {
+                                                 "PlayerId":  2,
+                                                 "PlayerName":  "Partner Synthetic",
+                                                 "Count":  3,
+                                                 "WinsTogether":  3
+                                             },
+                                             {
+                                                 "PlayerId":  3,
+                                                 "PlayerName":  "Alex Synthetic",
+                                                 "Count":  1,
+                                                 "WinsTogether":  1
+                                             },
+                                             {
+                                                 "PlayerId":  4,
+                                                 "PlayerName":  "Alex Synthetic",
+                                                 "Count":  1,
+                                                 "WinsTogether":  1
+                                             }
+                                         ]
+                  },
+    "teamScores":  [
+                       {
+                           "date":  "2026-01-01T00:00:00",
+                           "wonGame":  false,
+                           "scoreId":  101,
+                           "teamScore":  12,
+                           "opponentTeam":  "Opponent X"
+                       },
+                       {
+                           "date":  "2026-01-01T00:00:00",
+                           "wonGame":  true,
+                           "scoreId":  100,
+                           "teamScore":  21,
+                           "opponentTeam":  "Opponent X"
+                       },
+                       {
+                           "date":  "2026-01-08T00:00:00",
+                           "wonGame":  true,
+                           "scoreId":  102,
+                           "teamScore":  21,
+                           "opponentTeam":  "Opponent Y"
+                       },
+                       {
+                           "date":  "2026-01-09T00:00:00",
+                           "wonGame":  false,
+                           "scoreId":  103,
+                           "teamScore":  18,
+                           "opponentTeam":  "Opponent X"
+                       }
+                   ]
+}

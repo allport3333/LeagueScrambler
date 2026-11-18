@@ -1,181 +1,24 @@
-<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
-    <div style="text-align: center; margin-bottom: 20px;">
-        <h2>{{ player?.firstName }} {{ player?.lastName }}</h2>
-        <h4>Stats for: {{ selectedLeagueName }}</h4>
-        <p>Gender: {{ player?.gender }}</p>
-    </div>
-
-    <div style="text-align: center; margin-bottom: 20px;">
-        <h3 style="margin-bottom: 10px;">Performance Stats</h3>
-        <div style="display: inline-block; border: 1px solid #ddd; padding: 15px; border-radius: 8px; width: 30%;">
-            <div>
-                <p><strong>Total Scores:</strong> {{ performanceStats.totalScores }}</p>
-            </div>
-            <div>
-                <p><strong>Total Wins:</strong> {{ performanceStats.totalWins }}</p>
-            </div>
-        </div>
-    </div>
-
-
-    <div class="responsive-container">
-        <mat-card class="responsive-card">
-            <h3 style="margin-bottom: 10px;">Individual Rounds</h3>
-            <mat-table [dataSource]="performanceStats.individualRoundsWithDividers" class="mat-elevation-z8">
-                <!--<ng-container matColumnDef="matchupNumber">
-                    <mat-header-cell *matHeaderCellDef> Matchup Number </mat-header-cell>
-                    <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? row.scrambleNumber : '' }} </mat-cell>
-                </ng-container>-->
-
-                <ng-container matColumnDef="roundNumber">
-                    <mat-header-cell *matHeaderCellDef> Round Number </mat-header-cell>
-                    <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? row.roundNumber : '' }} </mat-cell>
-                </ng-container>
-
-                <ng-container matColumnDef="date">
-                    <mat-header-cell *matHeaderCellDef> Date </mat-header-cell>
-                    <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? (row.dateOfTeam | date) : '' }} </mat-cell>
-                </ng-container>
-
-                <ng-container matColumnDef="score">
-                    <mat-header-cell *matHeaderCellDef> Round Score </mat-header-cell>
-                    <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? row.roundScore : '' }} </mat-cell>
-                </ng-container>
-
-                <ng-container matColumnDef="won">
-                    <mat-header-cell *matHeaderCellDef> Won </mat-header-cell>
-                    <mat-cell *matCellDef="let row"> {{ row.type === 'data' ? (row.roundWon ? 'Yes' : 'No') : '' }} </mat-cell>
-                </ng-container>
-
-                <mat-header-row *matHeaderRowDef="['roundNumber', 'date', 'score', 'won']"></mat-header-row>
-
-                <!-- Data Row -->
-                <mat-row *matRowDef="let row; columns: ['roundNumber', 'date', 'score', 'won']"
-                         [style.height]="row.type === 'divider' ? '0px' : ''"
-                         [style.padding]="row.type === 'divider' ? '0' : ''"
-                         [style.marginBottom]="row.type === 'divider' ? '-25px' : ''"
-                         [style.backgroundColor]="row.type === 'divider' ? '#f5f5f5' : ''"
-                         [style.borderTop]="row.type === 'divider' ? '1px solid #ccc' : ''"
-                         [style.fontSize]="row.type === 'divider' ? '0' : ''"
-                         [style.lineHeight]="row.type === 'divider' ? '0' : ''">
-                </mat-row>
-            </mat-table>
-        </mat-card>
-
-        <mat-card class="responsive-card">
-            <h3 style="margin-bottom: 10px;">Matchup Totals</h3>
-            <mat-table [dataSource]="performanceStats.scrambleTotals" class="mat-elevation-z8">
-                <!-- Matchup Number Column -->
-                <ng-container matColumnDef="weekNumber">
-                    <mat-header-cell *matHeaderCellDef> Week Number </mat-header-cell>
-                    <mat-cell *matCellDef="let matchup; let i = index">
-                        {{ i + 1 }}
-                    </mat-cell>
-                </ng-container>
-
-                <!-- Total Score Column -->
-                <ng-container matColumnDef="totalScore">
-                    <mat-header-cell *matHeaderCellDef> Total Score </mat-header-cell>
-                    <mat-cell *matCellDef="let matchup">
-                        {{ matchup.totalScore }}
-                    </mat-cell>
-                </ng-container>
-
-                <!-- Wins Column -->
-                <ng-container matColumnDef="wins">
-                    <mat-header-cell *matHeaderCellDef> Wins </mat-header-cell>
-                    <mat-cell *matCellDef="let matchup">
-                        {{ matchup.wins }}
-                    </mat-cell>
-                </ng-container>
-
-                <!-- Header Row -->
-                <mat-header-row *matHeaderRowDef="['weekNumber', 'totalScore', 'wins']"></mat-header-row>
-
-                <!-- Data Row with Hover Effect -->
-                <mat-row *matRowDef="let matchup; let i = index; columns: ['weekNumber', 'totalScore', 'wins']"
-                         class="hover-effect"
-                         (click)="toggleTeam(matchup.scrambleNumber, i + 1)">
-                </mat-row>
-            </mat-table>
-            <!-- Conditional Team Table -->
-            <div *ngIf="expandedMatchup" style="margin-top: 20px;">
-                <h3 style="text-align: center;">Team for Matchup {{ weekNumber }}</h3>
-                <mat-table [dataSource]="getTeamForMatchup(expandedMatchup)" class="mat-elevation-z8">
-                    <!-- Player Name Column -->
-                    <ng-container matColumnDef="playerName">
-                        <mat-header-cell *matHeaderCellDef style="text-align: center;"> Player Name </mat-header-cell>
-                        <mat-cell *matCellDef="let player" [ngClass]="{'male-row': player.isMale, 'female-row': !player.isMale}" style="text-align: center;">
-                            <!-- Make player name clickable -->
-                            <a [routerLink]="['/player-stats', player.playerId]" style="cursor: pointer; text-decoration: underline; color: inherit;">
-                                {{ player.playerName }}
-                            </a>
-                        </mat-cell>
-                    </ng-container>
-
-                    <!-- Header Row -->
-                    <mat-header-row *matHeaderRowDef="['playerName']"></mat-header-row>
-
-                    <!-- Data Row with Gender-Based Highlighting -->
-                    <mat-row *matRowDef="let player; columns: ['playerName']"></mat-row>
-                </mat-table>
-            </div>
-
-            <button style="margin-top: 15px; text-align: center;"
-                    mat-raised-button
-                    color="primary"
-                    (click)="toggleTeammates()"
-                    *ngIf="performanceStats.teammateCounts && performanceStats.teammateCounts.length > 0">
-                {{ showTeammates ? 'Hide Teammate Counts' : 'Show Teammate Counts' }}
-            </button>
-
-            <!-- Teammate Table -->
-            <div *ngIf="showTeammates" style="margin-top: 20px;">
-                <h3>Teammate Statistics</h3>
-                <mat-table [dataSource]="dataSource">
-                    <!-- Player Name Column -->
-                    <ng-container matColumnDef="playerName">
-                        <mat-header-cell *matHeaderCellDef (click)="sortData('playerName')">
-                            Player Name
-                            <mat-icon *ngIf="activeSort === 'playerName'">
-                                {{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
-                            </mat-icon>
-                        </mat-header-cell>
-                        <mat-cell *matCellDef="let teammate">{{ teammate.playerName }}</mat-cell>
-                    </ng-container>
-
-                    <!-- Wins Together Column -->
-                    <ng-container matColumnDef="winsTogether">
-                        <mat-header-cell *matHeaderCellDef (click)="sortData('winsTogether')">
-                            Wins Together
-                            <mat-icon *ngIf="activeSort === 'winsTogether'">
-                                {{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
-                            </mat-icon>
-                        </mat-header-cell>
-                        <mat-cell *matCellDef="let teammate">{{ teammate.winsTogether }}</mat-cell>
-                    </ng-container>
-
-                    <!-- Count Column -->
-                    <ng-container matColumnDef="count">
-                        <mat-header-cell *matHeaderCellDef (click)="sortData('count')">
-                            Times Teammate
-                            <mat-icon *ngIf="activeSort === 'count'">
-                                {{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
-                            </mat-icon>
-                        </mat-header-cell>
-                        <mat-cell *matCellDef="let teammate">{{ teammate.count }}</mat-cell>
-                    </ng-container>
-
-                    <!-- Header Row -->
-                    <mat-header-row *matHeaderRowDef="['playerName', 'winsTogether', 'count']"></mat-header-row>
-
-                    <!-- Data Row -->
-                    <mat-row *matRowDef="let teammate; columns: ['playerName', 'winsTogether', 'count']"></mat-row>
-                </mat-table>
-
-
-
-            </div>
-        </mat-card>
-    </div>
-</div>
+<section class="profile-section kq-history">
+ <p *ngIf="loading" class="state-message" role="status">Loading King/Queen history...</p>
+ <div *ngIf="error" class="state-message" role="alert"><p>{{ error }}</p><button mat-stroked-button (click)="loadDetailedPerformanceStats(leagueId)">Retry King/Queen stats</button></div>
+ <ng-container *ngIf="performanceStats && !loading && !error">
+  <div class="summary-grid"><div><span>Total King/Queen scores</span><strong>{{ performanceStats.totalScores == null ? '—' : performanceStats.totalScores }}</strong></div><div><span>Round wins</span><strong>{{ performanceStats.totalWins == null ? '—' : performanceStats.totalWins }}</strong></div><div><span>Recorded matchups</span><strong>{{ history.length }}</strong></div></div>
+  <h2>Matchup history</h2><p *ngIf="!history.length" class="state-message">No recorded King/Queen matchups in this league.</p>
+  <details class="history-entry" *ngFor="let matchup of history; let i=index">
+   <summary><span class="history-label">Matchup {{ i+1 }}</span><span>{{ matchup.date ? (matchup.date | date:'mediumDate') : 'Date unavailable' }}</span><span><strong>{{ matchup.totalScore == null ? '—' : matchup.totalScore }}</strong> points</span><span>{{ matchup.wins == null ? '—' : matchup.wins }} round {{ matchup.wins === 1 ? 'win' : 'wins' }}</span></summary>
+   <div class="history-detail"><p class="detail-context">Saved scramble {{ matchup.scrambleNumber }} · Original recorded scores</p>
+    <p *ngIf="!matchup.rounds.length">Individual round records are unavailable.</p>
+    <div *ngIf="!matchup.teams.length && matchup.rounds.length"><p>Saved team identity is unavailable; these scores cannot open a matchup link.</p><table class="stats-table round-table"><thead><tr><th>Round</th><th>Score</th><th>Result</th></tr></thead><tbody><tr *ngFor="let round of matchup.rounds"><td>{{ round.roundNumber }}</td><td>{{ round.roundScore == null ? '—' : round.roundScore }}</td><td>{{ round.roundWon === true ? 'Won' : round.roundWon === false ? 'Lost' : 'Not recorded' }}</td></tr></tbody></table></div>
+    <section *ngFor="let team of matchup.teams" class="saved-team-detail">
+     <p class="detail-context" *ngIf="matchup.teams.length > 1">Saved team {{ team.id }} · {{ validDate(team.rounds[0].dateOfTeam) ? (validDate(team.rounds[0].dateOfTeam) | date:'mediumDate') : 'Date unavailable' }}</p>
+     <a *ngIf="canLink(matchup,team)" mat-stroked-button routerLink="/kqmatchups" [queryParams]="matchupQuery(matchup,team)">View actual matchup</a>
+     <table class="stats-table round-table"><thead><tr><th>Round</th><th>Score</th><th>Result</th></tr></thead><tbody><tr *ngFor="let round of team.rounds"><td>{{ round.roundNumber }}</td><td><a *ngIf="canLink(matchup,team) && round.roundNumber > 0; else plainScore" routerLink="/kqmatchups" [queryParams]="matchupQuery(matchup,team,round.roundNumber)">{{ round.roundScore == null ? '—' : round.roundScore }}</a><ng-template #plainScore>{{ round.roundScore == null ? '—' : round.roundScore }}</ng-template></td><td><span [class.win-badge]="round.roundWon === true" [class.loss-badge]="round.roundWon === false">{{ round.roundWon === true ? 'Won' : round.roundWon === false ? 'Lost' : 'Not recorded' }}</span></td></tr></tbody></table>
+     <h3>Teammates</h3><p *ngIf="!team.members.length">Teammate records are unavailable.</p><ul class="teammate-links"><li *ngFor="let member of team.members" [class.male-player]="member.isMale" [class.female-player]="member.isMale === false"><a [routerLink]="['/player-stats-tabs', member.playerId]" [queryParams]="{leagueId:leagueId,tab:'kq'}">{{ member.playerName }}</a></li></ul>
+    </section>
+    <div *ngIf="!matchup.teams.length && matchup.team && matchup.team.length"><h3>Recorded teammates</h3><p class="detail-context">Saved team identity is unavailable; matchup navigation is disabled.</p><a *ngFor="let member of matchup.team" [routerLink]="['/player-stats-tabs', member.playerId]" [queryParams]="{leagueId:leagueId,tab:'kq'}" class="fallback-teammate">{{ member.playerName }}</a></div>
+   </div>
+  </details>
+  <details class="stats-card" *ngIf="performanceStats.individualRounds.length"><summary>View detailed round table</summary><div class="table-scroll" tabindex="0" aria-label="Detailed historical rounds"><table class="stats-table full-round-table"><thead><tr><th>Saved scramble</th><th>Date</th><th>Round</th><th>Score</th><th>Won</th></tr></thead><tbody><tr *ngFor="let round of performanceStats.individualRounds"><td>{{ round.scrambleNumber }}</td><td>{{ validDate(round.dateOfTeam) ? (validDate(round.dateOfTeam) | date:'mediumDate') : 'Date unavailable' }}</td><td>{{ round.roundNumber }}</td><td>{{ round.roundScore }}</td><td>{{ round.roundWon === true ? 'Yes' : round.roundWon === false ? 'No' : 'Not recorded' }}</td></tr></tbody></table></div></details>
+  <details class="stats-card"><summary>King/Queen teammate statistics</summary><p class="detail-context">Times Teammate counts saved scrambles together. Wins Together counts won rounds together.</p><p *ngIf="!teammates.length">No recorded King/Queen teammates.</p><table *ngIf="teammates.length" class="stats-table"><thead><tr><th><button (click)="sortTeammates('playerName')">Teammate</button></th><th><button (click)="sortTeammates('count')">Times Teammate</button></th><th><button (click)="sortTeammates('winsTogether')">Wins Together</button></th></tr></thead><tbody><tr *ngFor="let teammate of teammates"><td><a [routerLink]="['/player-stats-tabs',teammate.playerId]" [queryParams]="{leagueId:leagueId,tab:'kq'}">{{ teammate.playerName }}</a></td><td>{{ teammate.count == null ? '—' : teammate.count }}</td><td>{{ teammate.winsTogether == null ? '—' : teammate.winsTogether }}</td></tr></tbody></table></details>
+ </ng-container>
+</section>

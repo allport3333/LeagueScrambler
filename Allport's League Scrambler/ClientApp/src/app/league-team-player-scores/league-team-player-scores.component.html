@@ -1,72 +1,8 @@
-<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
-    <h2 style="text-align: center; color: blue;">League Team Stats</h2>
-    <h2 style="text-align: center;" >{{ playerName }}</h2>
-    <!-- Performance Stats -->
-    <div class="performance-stats-container">
-        <mat-card class="performance-card">
-            <mat-card-header>
-                <mat-card-title>Performance Stats</mat-card-title>
-            </mat-card-header>
-
-            <mat-card-content>
-                <div class="performance-stats">
-                    <div class="win-stat">
-                        <p><strong>Total Wins:</strong> {{ performanceStats.totalWins }}</p>
-                    </div>
-                    <div class="loss-stat">
-                        <p><strong>Total Losses:</strong> {{ performanceStats.totalLosses }}</p>
-                    </div>
-                    <div class="points-stat">
-                        <p><strong>Total Points:</strong> {{ performanceStats.totalScores }}</p>
-                    </div>
-                </div>
-            </mat-card-content>
-        </mat-card>
-    </div>
-
-    <!-- Grouped Game Scores by Date -->
-    <div class="cards-container">
-        <div *ngFor="let group of groupScoresByDate()" class="score-card">
-            <mat-card>
-                <mat-card-header>
-                    <mat-card-title>{{ group.date }}</mat-card-title>
-                </mat-card-header>
-
-                <!-- Removed mat-divider causing the line through the header -->
-                <!-- <mat-divider></mat-divider> -->
-
-                <mat-card-content>
-                    <table mat-table [dataSource]="group.scores" class="mat-elevation-z8">
-
-                        <!-- Opponent Team Column -->
-                        <ng-container matColumnDef="opponentTeam">
-                            <mat-header-cell *matHeaderCellDef> Opponent Team </mat-header-cell>
-                            <mat-cell *matCellDef="let score"> {{ score.opponentTeam }} </mat-cell>
-                        </ng-container>
-
-                        <!-- Team Score Column -->
-                        <ng-container matColumnDef="teamScore">
-                            <mat-header-cell *matHeaderCellDef> Team Score </mat-header-cell>
-                            <mat-cell *matCellDef="let score"> {{ score.teamScore }} </mat-cell>
-                        </ng-container>
-
-                        <!-- Won Game Column with Badges -->
-                        <ng-container matColumnDef="wonGame">
-                            <mat-header-cell *matHeaderCellDef> Won Game </mat-header-cell>
-                            <mat-cell *matCellDef="let score">
-                                <span [ngClass]="score.wonGame ? 'win-badge' : 'loss-badge'">
-                                    {{ score.wonGame ? 'Yes' : 'No' }}
-                                </span>
-                            </mat-cell>
-                        </ng-container>
-
-                        <!-- Table Header and Rows -->
-                        <mat-header-row *matHeaderRowDef="['opponentTeam', 'teamScore', 'wonGame']"></mat-header-row>
-                        <mat-row *matRowDef="let row; columns: ['opponentTeam', 'teamScore', 'wonGame']"></mat-row>
-                    </table>
-                </mat-card-content>
-            </mat-card>
-        </div>
-    </div>
-
-</div>
+<section class="profile-section league-team-history">
+ <p *ngIf="loading" role="status" class="state-message">Loading league team history...</p><div *ngIf="error" role="alert" class="state-message"><p>{{ error }}</p><button mat-stroked-button (click)="loadLeagueScores(playerId,leagueId)">Retry league team stats</button></div>
+ <ng-container *ngIf="performanceStats && !loading && !error">
+  <div class="summary-grid"><div><span>Total wins</span><strong class="win-text">{{ performanceStats.totalWins == null ? '—' : performanceStats.totalWins }}</strong></div><div><span>Total losses</span><strong class="loss-text">{{ performanceStats.totalLosses == null ? '—' : performanceStats.totalLosses }}</strong></div><div><span>Total points</span><strong>{{ performanceStats.totalScores == null ? '—' : performanceStats.totalScores }}</strong></div></div>
+  <h2>Game history</h2><p *ngIf="!groups.length" class="state-message">No recorded league team games in this league.</p>
+  <details class="history-entry" *ngFor="let group of groups"><summary><span class="history-label">{{ group.date }}</span><span>{{ group.scores.length }} {{ group.scores.length === 1 ? 'game' : 'games' }}</span><span class="win-text">{{ group.wins }} {{ group.wins === 1 ? 'win' : 'wins' }}</span><span class="loss-text">{{ group.losses }} {{ group.losses === 1 ? 'loss' : 'losses' }}</span></summary><div class="history-detail"><table class="stats-table"><thead><tr><th>Opponent team</th><th>Team score</th><th>Result</th></tr></thead><tbody><tr *ngFor="let score of group.scores"><td>{{ score.opponentTeam || 'Unavailable team' }}</td><td>{{ score.teamScore == null ? '—' : score.teamScore }}</td><td><span [class.win-badge]="score.wonGame === true" [class.loss-badge]="score.wonGame === false">{{ score.wonGame === true ? 'Won' : score.wonGame === false ? 'Lost' : 'Not recorded' }}</span></td></tr></tbody></table></div></details>
+ </ng-container>
+</section>

@@ -25,6 +25,7 @@ export class KqmatchupsComponent implements OnInit, OnDestroy {
     focusedTeamId: number = null;
     focusedRoundId: number = null;
     fromStandings = false;
+    fromProfile = false;
     private params: Params = {};
     private version = 0;
     private focused = false;
@@ -48,6 +49,7 @@ export class KqmatchupsComponent implements OnInit, OnDestroy {
             const version = ++this.version;
             this.params = params;
             this.fromStandings = params.fromStandings === '1';
+            this.fromProfile = params.fromProfile === '1' && this.positiveId(Number(params.profilePlayerId));
             this.focused = this.fromStandings && params.view !== 'all';
             this.resolved = false; this.message = ''; this.retrievedListOfTeams = []; this.byePlayers = [];
             this.queriedScrambles = []; this.selectedScramble = null; this.loading = false;
@@ -107,6 +109,10 @@ export class KqmatchupsComponent implements OnInit, OnDestroy {
         } else { this.retrieveScramble(scramble); }
     }
     backToStandings() {
+        if (this.fromProfile) {
+            this.router.navigate(['/player-stats-tabs', Number(this.params.profilePlayerId)], { queryParams: { leagueId: this.selectedLeagueId || this.params.leagueId, tab: 'kq' } });
+            return;
+        }
         this.router.navigate(['/standings'], { queryParams: { leagueId: this.selectedLeagueId || this.params.leagueId,
             standingsMode: this.params.standingsMode === 'matchup' ? 'matchup' : 'round',
             divisionId: this.params.divisionId || 0, gender: this.params.gender === 'women' ? 'women' : 'men' } });

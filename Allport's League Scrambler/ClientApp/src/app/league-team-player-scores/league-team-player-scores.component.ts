@@ -1,93 +1,23 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
-import { MatTableDataSource } from '@angular/material/table';
-import { LeagueService } from '../services/league.service';
-import { ActivatedRoute } from '@angular/router';
-import { PlayerService } from '../services/player.service';
-
-@Component({
-    selector: 'app-league-team-player-scores',
-    templateUrl: './league-team-player-scores.component.html',
-    styleUrls: ['./league-team-player-scores.component.css']
-})
-export class LeagueTeamPlayerScoresComponent implements OnInit {
-    @Input() playerId!: number;
-    @Input() leagueId!: number;
-    playerName: string;
-    leagueScores: any[] = [];
-    displayedColumns: string[] = ['date', 'opponentTeam', 'teamScore', 'wonGame'];
-    dataSource = new MatTableDataSource([]);
-    performanceStats = {
-        totalScores: 0,
-        totalWins: 0,
-        totalLosses: 0
-    };
-
-    constructor(private statisticsService: StatisticsService, private leagueService: LeagueService, private route: ActivatedRoute, private playerService: PlayerService) { }
-
-    ngOnInit() {
-        if (this.playerId && this.leagueId) {
-            this.loadLeagueScores(this.playerId, this.leagueId);
-        }
-
-        this.leagueService.selectedLeague$.subscribe(selectedLeague => {
-            if (selectedLeague) {
-                this.leagueId = selectedLeague.leagueId;
-                this.loadLeagueScores(this.playerId, this.leagueId); // Load data for the selected league
-            }
-        });
-
-        this.route.params.subscribe(params => {
-            this.playerId = +params['playerId']; // Extract playerId from the route
-            this.getPlayerName(); // Fetch and set the player's name
-            this.loadLeagueScores(this.playerId, this.leagueId);  // Reload data for the new player
-        });
-    }
-
-    getPlayerName(): void {
-        this.playerService.getPlayerByPlayerIdVariable(this.playerId).subscribe(
-            (player: any) => {
-                this.playerName = `${player.firstName} ${player.lastName}`; // Set the full name
-            },
-            error => {
-                console.error('Error fetching player details:', error);
-                this.playerName = 'Unknown Player'; // Default name in case of an error
-            }
-        );
-    }
-
-    groupScoresByDate() {
-        if (!this.dataSource || this.dataSource.data.length === 0) {
-
-            return [];
-        }
-
-        const groupedScores = this.dataSource.data.reduce((acc, score) => {
-            const dateKey = new Date(score.date).toDateString();
-            if (!acc[dateKey]) {
-                acc[dateKey] = [];
-            }
-            acc[dateKey].push(score);
-            return acc;
-        }, {} as { [key: string]: any[] });
-
-        // Convert object into array for *ngFor
-        return Object.keys(groupedScores).map(date => ({
-            date,
-            scores: groupedScores[date]
-        }));
-    }
-
-
-    loadLeagueScores(playerId: number, leagueId: number) {
-        this.statisticsService.getLeagueTeamScores(playerId, leagueId).subscribe(scores => {
-            this.leagueScores = scores;
-            this.dataSource.data = scores;
-
-            // Calculate Performance Stats
-            this.performanceStats.totalScores = scores.reduce((sum, score) => sum + score.teamScore, 0);
-            this.performanceStats.totalWins = scores.filter(score => score.wonGame).length;
-            this.performanceStats.totalLosses = scores.filter(score => !score.wonGame).length;
-        });
-    }
+@Component({selector:'app-league-team-player-scores',templateUrl:'./league-team-player-scores.component.html',styleUrls:['../player-stats-tabs/profile-statistics.shared.css']})
+export class LeagueTeamPlayerScoresComponent implements OnChanges, OnDestroy {
+ @Input() playerId:number; @Input() leagueId:number;
+ loading=false; error=''; leagueScores:any[]=null; groups:any[]=[]; performanceStats:any=null;
+ private request:Subscription; private version=0;
+ constructor(private statistics:StatisticsService){}
+ ngOnChanges(){this.loadLeagueScores(this.playerId,this.leagueId);}
+ loadLeagueScores(playerId:number,leagueId:number){
+  if(this.request)this.request.unsubscribe();const version=++this.version;this.loading=false;this.error='';this.leagueScores=null;this.performanceStats=null;this.groups=[];
+  if(!playerId||!leagueId)return;this.loading=true;
+  this.request=this.statistics.getLeagueTeamScores(playerId,leagueId).subscribe(scores=>{
+   if(version!==this.version)return;this.loading=false;if(!Array.isArray(scores)){this.error='The game history response is incomplete.';return;}
+   this.leagueScores=scores;this.performanceStats={totalScores:scores.every(s=>typeof s.teamScore==='number')?scores.reduce((n,s)=>n+s.teamScore,0):null,totalWins:scores.every(s=>typeof s.wonGame==='boolean')?scores.filter(s=>s.wonGame).length:null,totalLosses:scores.every(s=>typeof s.wonGame==='boolean')?scores.filter(s=>!s.wonGame).length:null};
+   const grouped=new Map<string,any>();scores.forEach(score=>{const date=score.date?new Date(score.date):null,key=date&&!isNaN(date.getTime())?date.toDateString():'Date unavailable';if(!grouped.has(key))grouped.set(key,{date:key,timestamp:key==='Date unavailable'?Infinity:date.getTime(),scores:[]});grouped.get(key).scores.push(score);});
+   this.groups=Array.from(grouped.values()).sort((a,b)=>a.timestamp-b.timestamp).map(g=>({...g,wins:g.scores.filter(s=>s.wonGame===true).length,losses:g.scores.filter(s=>s.wonGame===false).length}));
+  },()=>{if(version===this.version){this.loading=false;this.error='Unable to load league team history. Please retry.';}});
+ }
+ groupScoresByDate(){return this.groups;}
+ ngOnDestroy(){this.version++;if(this.request)this.request.unsubscribe();}
 }

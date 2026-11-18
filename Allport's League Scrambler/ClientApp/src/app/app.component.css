@@ -14,4 +14,6 @@
   .body-content.scrambler-page {
     padding-top: 0;
   }
+
+  .body-content.player-profile-page { padding-top: 6px; }
 }

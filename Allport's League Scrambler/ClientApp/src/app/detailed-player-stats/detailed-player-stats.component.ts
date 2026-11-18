@@ -1,170 +1,34 @@
-import { Component, OnInit, ViewChild, Input } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
-import { ActivatedRoute } from '@angular/router';
-import { MatTableDataSource, MatSort } from '@angular/material';
-import { LeagueService } from '../services/league.service';
-
-@Component({
-  selector: 'app-detailed-player-stats',
-  templateUrl: './detailed-player-stats.component.html',
-  styleUrls: ['./detailed-player-stats.component.css']
-})
-export class DetailedPlayerStatsComponent implements OnInit {
-    @Input() playerId!: number;
-    @Input() leagueId!: number;
-    showTeammates = false;
-    playerStats: any;
-    displayedColumns: string[] = ['playerName', 'winsTogether', 'count'];
-    expandedMatchup: number | null = null;
-    weekNumber: number;
-    player: any;
-    playerLeagues: any[] = [];
-    performanceStats: any = {
-        individualRounds: [],
-        scrambleTotals: [],
-        totalScores: 0,
-        totalWins: 0,
-        teammateCounts: []
-    };
-    sortDirection: 'asc' | 'desc' = 'asc'; // Track current sort direction
-    activeSort: string = ''; // Track active column being sorted
-    leagues: any[] = [];
-    selectedLeagueId: number | null = null;
-    selectedLeagueName: string | null = null;
-    dataSource = new MatTableDataSource([]);
-
-    @ViewChild(MatSort) sort!: MatSort;
-    constructor(private statisticsService: StatisticsService, public leagueService: LeagueService, private route: ActivatedRoute) { }
-
-    onSortDebug(event: any) {
-    }
-
-    ngAfterViewInit() {
-        this.dataSource.sort = this.sort;
-
-    }
-
-    ngOnInit() {
-        // Subscribe to route parameters to handle changes in playerId
-        this.route.params.subscribe(params => {
-            this.playerId = +params['playerId']; // Get 'id' from the route
-            this.loadPlayerStats(this.playerId); // Load data for the new playerId
-            this.processRoundsWithDividers(); // Process rounds after updating playerId
-        });
-
-        // Subscribe to selectedLeague$ to update stats when the league changes
-        this.leagueService.selectedLeague$.subscribe(selectedLeague => {
-            if (selectedLeague) {
-                this.selectedLeagueId = selectedLeague.leagueId;
-                this.selectedLeagueName = selectedLeague.leagueName;
-                this.loadDetailedPerformanceStats(this.selectedLeagueId); // Load data for the selected league
-            }
-        });
-        this.route.params.subscribe(params => {
-            this.playerId = +params['playerId']; // Extract playerId from the route
-            this.loadDetailedPerformanceStats(this.selectedLeagueId);
-        });
-        // Initial call to loadPlayerStats for the playerId in the route
-        this.loadPlayerStats(this.playerId);
-    }
-
-
-    sortData(column: string) {
-        // Toggle sort direction
-        if (this.activeSort === column) {
-            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            this.activeSort = column;
-            this.sortDirection = 'asc'; // Default to ascending when changing column
-        }
-
-        // Perform the sorting
-        const sortedData = [...this.dataSource.data].sort((a, b) => {
-            const valueA = a[column];
-            const valueB = b[column];
-
-            if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
-            if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
-            return 0;
-        });
-
-        this.dataSource.data = sortedData; // Update the data source
-    }
-
-    //getLeagues() {
-    //    this.statisticsService.getLeaguesForPlayer(this.playerId).subscribe(data => {
-    //        this.leagues = data;
-    //    });
-    //}
-
-    loadPlayerStats(playerId: number) {
-        this.statisticsService.getPlayerProfile(playerId).subscribe(data => {
-            this.player = data;
-        });
-
-        this.statisticsService.getPlayerLeagues(playerId).subscribe(data => {
-            this.playerLeagues = data;
-        });
-    }
-
-    isDataRow = (index: number, item: any): boolean => {
-        // This is a data row if it has a scrambleNumber
-        return !!item.scrambleNumber;
-    };
-
-    isDividerRow = (index: number, item: any): boolean => {
-        // This is a divider row if it doesn't have a scrambleNumber
-        const current = this.performanceStats.individualRounds[index];
-        const next = this.performanceStats.individualRounds[index + 1];
-        return next && current.scrambleNumber !== next.scrambleNumber;
-    };
-
-    toggleTeammates(): void {
-        this.showTeammates = !this.showTeammates;
-    }
-
-    loadDetailedPerformanceStats(leagueId: number) {
-        if (!this.selectedLeagueId) return;
-
-        this.statisticsService.getDetailedPerformanceStats(this.playerId, leagueId).subscribe(data => {
-            this.performanceStats = data;
-            this.dataSource.data = this.performanceStats.teammateCounts; // Update dataSource with teammateCounts
-            this.processRoundsWithDividers(); // Keep your existing logic
-        });
-    }
-
-    onLeagueChange(leagueId: number) {
-        this.selectedLeagueId = leagueId;
-        this.loadDetailedPerformanceStats(leagueId);
-    }
-
-    processRoundsWithDividers() {
-        const rounds = this.performanceStats.individualRounds || [];
-        const roundsWithDividers = [];
-
-        for (let i = 0; i < rounds.length; i++) {
-            // Add the current round as a regular row
-            roundsWithDividers.push({ ...rounds[i], type: 'data' });
-
-            // Add a divider row if the scrambleNumber changes
-            if (i < rounds.length - 1 && rounds[i].scrambleNumber !== rounds[i + 1].scrambleNumber) {
-                roundsWithDividers.push({ type: 'divider', scrambleNumber: rounds[i].scrambleNumber });
-            }
-        }
-
-        // Assign the processed data
-        this.performanceStats.individualRoundsWithDividers = roundsWithDividers;
-    }
-
-    toggleTeam(scrambleNumber: number, weekNumber: number): void {
-        this.weekNumber = weekNumber;
-        this.expandedMatchup = this.expandedMatchup === scrambleNumber ? null : scrambleNumber;
-    }
-
-    getTeamForMatchup(scrambleNumber: number): any[] {
-        const matchup = this.performanceStats.scrambleTotals.find(m => m.scrambleNumber === scrambleNumber);
-
-        return matchup ? matchup.team : [];
-    }
-
+@Component({ selector: 'app-detailed-player-stats', templateUrl: './detailed-player-stats.component.html', styleUrls: ['../player-stats-tabs/profile-statistics.shared.css'] })
+export class DetailedPlayerStatsComponent implements OnChanges, OnDestroy {
+ @Input() playerId: number; @Input() leagueId: number;
+ loading = false; error = ''; performanceStats: any = null; history: any[] = []; teammates: any[] = [];
+ private request: Subscription; private version = 0; private sortField = ''; private sortAscending = true;
+ constructor(private statistics: StatisticsService) { }
+ ngOnChanges() { this.loadDetailedPerformanceStats(this.leagueId); }
+ loadDetailedPerformanceStats(leagueId: number) {
+  if (this.request) { this.request.unsubscribe(); } const version = ++this.version;
+  this.performanceStats = null; this.history = []; this.teammates = []; this.error = ''; this.loading = false;
+  if (!this.playerId || !leagueId) { return; } this.loading = true;
+  this.request = this.statistics.getDetailedPerformanceStats(this.playerId, leagueId).subscribe(data => {
+   if (version !== this.version) { return; } this.loading = false;
+   if (!data || !Array.isArray(data.individualRounds) || !Array.isArray(data.scrambleTotals)) { this.error = 'The historical statistics response is incomplete.'; return; }
+   this.performanceStats = data; this.teammates = (data.teammateCounts || []).slice();
+   this.history = data.scrambleTotals.map(matchup => {
+    const rounds = data.individualRounds.filter(r => r.scrambleNumber === matchup.scrambleNumber).slice().sort((a,b) => a.roundNumber-b.roundNumber || a.id-b.id || (a.scoreId||0)-(b.scoreId||0));
+    const ids = Array.from(new Set<number>(rounds.map(r => Number(r.id)).filter(id => Number.isInteger(id) && id>0)));
+    const rawDate = matchup.dateOfTeam || (rounds[0] && rounds[0].dateOfTeam);
+    const date = rawDate && !String(rawDate).startsWith('0001') && !isNaN(new Date(rawDate).getTime()) ? rawDate : null;
+    const teams = ids.map(id => ({ id, rounds: rounds.filter(r => Number(r.id)===id), members: data.teamMembers ? data.teamMembers.filter(m=>Number(m.id)===id) : ids.length===1 ? matchup.team || [] : [] }));
+    return { ...matchup, date, rounds, teams };
+   }).sort((a,b) => (a.date?new Date(a.date).getTime():Infinity)-(b.date?new Date(b.date).getTime():Infinity) || a.scrambleNumber-b.scrambleNumber);
+  }, () => { if(version===this.version){this.loading=false;this.error='Unable to load King/Queen history. Please retry.';} });
+ }
+ canLink(matchup: any, team: any): boolean { return this.leagueId>0 && this.playerId>0 && matchup.scrambleNumber>0 && team.id>0 && team.rounds.length>0; }
+ validDate(value: any): any { return value && !String(value).startsWith('0001') && !isNaN(new Date(value).getTime()) ? value : null; }
+ matchupQuery(matchup: any, team: any, roundId?: number): any { return { leagueId:this.leagueId, playerId:this.playerId, scrambleNumber:matchup.scrambleNumber, kingQueenTeamId:team.id, roundId:roundId || null, fromStandings:'1', fromProfile:'1', profilePlayerId:this.playerId, profileTab:'kq' }; }
+ sortTeammates(field: string) { this.sortAscending=this.sortField===field?!this.sortAscending:true;this.sortField=field;this.teammates=this.teammates.slice().sort((a,b)=>{const x=a[field],y=b[field];return(x<y?-1:x>y?1:0)*(this.sortAscending?1:-1)||a.playerId-b.playerId;}); }
+ ngOnDestroy(){this.version++;if(this.request)this.request.unsubscribe();}
 }

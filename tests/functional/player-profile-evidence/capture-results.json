@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "1366: explicit collapsed/expanded states, raw rounds, date results, namesake IDs, phone tables and screenshots without overflow",
+    "1920: explicit collapsed/expanded states, raw rounds, date results, namesake IDs, phone tables and screenshots without overflow",
+    "375: explicit collapsed/expanded states, raw rounds, date results, namesake IDs, phone tables and screenshots without overflow",
+    "390: explicit collapsed/expanded states, raw rounds, date results, namesake IDs, phone tables and screenshots without overflow",
+    "430: explicit collapsed/expanded states, raw rounds, date results, namesake IDs, phone tables and screenshots without overflow",
+    "One request per statistics endpoint for unchanged player/league despite repeated tab interaction"
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "databaseAccess": false
+}

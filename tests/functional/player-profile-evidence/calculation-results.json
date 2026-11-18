@@ -1,0 +1,14 @@
+{
+    "groups":  [
+                   "duplicate memberships and score-ID joins",
+                   "distinct IDs/namesakes/self/league scope",
+                   "regular shared games/wins",
+                   "opponent own-perspective/all teams",
+                   "empty/solo/co-rostered zero",
+                   "raw KQ scores/nullable wins",
+                   "KQ week frequency and score-ID wins"
+               ],
+    "databaseAccess":  false,
+    "failed":  0,
+    "passed":  7
+}

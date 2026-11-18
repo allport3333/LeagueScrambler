@@ -75,40 +75,18 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpGet("league-team-scores/{playerId}/{leagueId}")]
         public IActionResult GetLeagueTeamScores(int playerId, int leagueId)
         {
-            var _context = new DataContext();
-
-            // Filter scores for the player's team within the specified league
-            var scores = _context.LeagueTeamScore
-                .Join(
-                    _context.LeagueTeamPlayer,
-                    score => score.LeagueTeamId,
-                    teamPlayer => teamPlayer.LeagueTeamId,
-                    (score, teamPlayer) => new { score, teamPlayer }
-                )
-                .Join(
-                    _context.LeagueTeam,
-                    joined => joined.teamPlayer.LeagueTeamId,
-                    leagueTeam => leagueTeam.Id,
-                    (joined, leagueTeam) => new { joined.score, joined.teamPlayer, leagueTeam }
-                )
-                .Where(joined =>
-                    joined.leagueTeam.LeagueID == leagueId && // Match league
-                    joined.score.LeagueTeamId == joined.leagueTeam.Id && // Match team
-                    joined.teamPlayer.PlayerId == playerId) // Match player
-                .GroupBy(joined => joined.score.Id) // Group by unique score ID to eliminate duplicates
-                .Select(group => new
-                {
-                    Date = group.FirstOrDefault().score.Date,
-                    OpponentTeam = _context.LeagueTeam
-                        .Where(t => t.Id == group.FirstOrDefault().score.OpponentsLeagueTeamId)
-                        .Select(t => t.TeamName)
-                        .FirstOrDefault(),
-                    TeamScore = group.FirstOrDefault().score.TeamScore,
-                    WonGame = group.FirstOrDefault().score.WonGame
-                })
-                .ToList();
-
-            return Ok(scores);
+            using (var context = new DataContext())
+            {
+                var teamIds = context.LeagueTeam.Where(t => t.LeagueID == leagueId &&
+                    context.LeagueTeamPlayer.Any(m => m.LeagueTeamId == t.Id && m.PlayerId == playerId)).Select(t => t.Id);
+                var scores = context.LeagueTeamScore.AsNoTracking().Where(s => teamIds.Contains(s.LeagueTeamId))
+                    .OrderBy(s => s.Date).ThenBy(s => s.Id).Select(s => new {
+                        ScoreId = s.Id, s.Date, s.LeagueTeamId,
+                        OpponentTeam = context.LeagueTeam.Where(t => t.Id == s.OpponentsLeagueTeamId).Select(t => t.TeamName).FirstOrDefault(),
+                        s.TeamScore, s.WonGame
+                    }).ToList();
+                return Ok(scores);
+            }
         }
 
         [HttpGet("league-standings/{leagueId}")]
@@ -143,212 +121,17 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpGet("combined-stats/{playerId}/{leagueId}")]
         public IActionResult GetCombinedStats(int playerId, int leagueId)
         {
-            var _context = new DataContext();
-
-            // Get all scores for the player's team within the specified league
-            var scores = _context.LeagueTeamScore
-                .Join(
-                    _context.LeagueTeamPlayer,
-                    score => score.LeagueTeamId,
-                    teamPlayer => teamPlayer.LeagueTeamId,
-                    (score, teamPlayer) => new { score, teamPlayer }
-                )
-                .Join(
-                    _context.LeagueTeam,
-                    joined => joined.teamPlayer.LeagueTeamId,
-                    leagueTeam => leagueTeam.Id,
-                    (joined, leagueTeam) => new { joined.score, joined.teamPlayer, leagueTeam }
-                )
-                .Where(joined => joined.teamPlayer.PlayerId == playerId && joined.leagueTeam.LeagueID == leagueId)
-                .Select(joined => new
-                {
-                    Score = joined.score,
-                    TeamPlayer = joined.teamPlayer,
-                    LeagueTeam = joined.leagueTeam
-                })
-                .ToList();
-
-            if (!scores.Any())
+            using (var context = new DataContext())
             {
-                return Ok(new
-                {
-                    totalScores = 0,
-                    totalWins = 0,
-                    totalGames = 0,
-                    winPercentage = 0,
-                    averageScore = 0,
-                    highestScore = 0,
-                    lowestScore = 0,
-                    longestWinStreak = 0,
-                    longestLossStreak = 0,
-                    totalOpponents = 0,
-                    opponentStats = new List<object>(),
-                    leagueStats = new List<object>(),
-                    teammateStats = new List<object>()
-                });
+                var teams = context.LeagueTeam.AsNoTracking().Where(t => t.LeagueID == leagueId).ToList();
+                var leagueTeamIds = teams.Select(t => t.Id).ToList();
+                var members = context.LeagueTeamPlayer.AsNoTracking().Where(m => leagueTeamIds.Contains(m.LeagueTeamId)).ToList();
+                var ownTeamIds = members.Where(m => m.PlayerId == playerId).Select(m => m.LeagueTeamId).Distinct().ToList();
+                var scores = context.LeagueTeamScore.AsNoTracking().Where(g => ownTeamIds.Contains(g.LeagueTeamId)).ToList();
+                var playerIds = members.Where(m => ownTeamIds.Contains(m.LeagueTeamId)).Select(m => m.PlayerId).Distinct().ToList();
+                var players = context.Players.AsNoTracking().Where(p => playerIds.Contains(p.Id)).ToList();
+                return Ok(PlayerProfileStatistics.Combined(playerId, leagueId, teams, members, scores, players));
             }
-
-
-
-            int? leagueTeamId = null;
-
-            if (scores != null && scores.Count > 0 && scores[0].Score != null)
-            {
-                leagueTeamId = scores[0].Score.LeagueTeamId;
-            }
-
-            // Log or handle cases where opponentsLeagueTeamId is null
-            if (leagueTeamId == null)
-            {
-                Console.WriteLine("OpponentsLeagueTeamId is null. Ensure scores contain valid data.");
-            }
-
-            var distinctOpponentTeamIds = _context.LeagueTeamScore
-                    .Where(s => s.LeagueTeamId == leagueTeamId)
-                    .Select(s => s.OpponentsLeagueTeamId)
-                    .Distinct()
-                    .ToList();
-
-            // Ensure valid opponent IDs
-            if (distinctOpponentTeamIds == null || !distinctOpponentTeamIds.Any())
-            {
-                Console.WriteLine("No distinct opponent team IDs found.");
-            }
-
-            // Calculate totals
-            var totalScores = scores.Sum(s => s.Score.TeamScore);
-            var totalWins = scores.Count(s => s.Score.WonGame);
-            var totalGames = scores.Count();
-            var winPercentage = totalGames > 0 ? (double)totalWins / totalGames * 100 : 0;
-
-            // Calculate averages
-            var averageScore = totalGames > 0 ? scores.Average(s => s.Score.TeamScore) : 0;
-
-            // Calculate highest and lowest scores
-            var highestScore = totalGames > 0 ? scores.Max(s => s.Score.TeamScore) : 0;
-            var lowestScore = totalGames > 0 ? scores.Min(s => s.Score.TeamScore) : 0;
-
-            // Streak calculations
-            int currentWinStreak = 0, longestWinStreak = 0;
-            int currentLossStreak = 0, longestLossStreak = 0;
-            foreach (var game in scores.OrderBy(s => s.Score.Date))
-            {
-                if (game.Score.WonGame)
-                {
-                    currentWinStreak++;
-                    longestWinStreak = Math.Max(longestWinStreak, currentWinStreak);
-                    currentLossStreak = 0;
-                }
-                else
-                {
-                    currentLossStreak++;
-                    longestLossStreak = Math.Max(longestLossStreak, currentLossStreak);
-                    currentWinStreak = 0;
-                }
-            }
-
-            // Opponent stats
-            var opponentStats = distinctOpponentTeamIds
-                 .Select(opponentsLeagueTeamId => new
-                 {
-                     OpponentTeamId = opponentsLeagueTeamId,
-                     OpponentTeamName = _context.LeagueTeam
-                         .Where(t => t.Id == opponentsLeagueTeamId)
-                         .Select(t => t.TeamName)
-                         .FirstOrDefault(),
-                     GamesPlayed = _context.LeagueTeamScore
-                         .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
-                         .Count(),
-                     Wins = _context.LeagueTeamScore
-                         .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId && s.WonGame)
-                         .Count(),
-                     WinPercentage = _context.LeagueTeamScore
-                         .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
-                         .Count() > 0
-                         ? (double)_context.LeagueTeamScore
-                             .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId && s.WonGame)
-                             .Count() /
-                           _context.LeagueTeamScore
-                             .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
-                             .Count() * 100
-                         : 0,
-                     TotalPointsScored = _context.LeagueTeamScore
-                         .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
-                         .Sum(s => s.TeamScore),
-                     AveragePointsPerGame = _context.LeagueTeamScore
-                         .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
-                         .Count() > 0
-                         ? (double)_context.LeagueTeamScore
-                             .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
-                             .Sum(s => s.TeamScore) /
-                           _context.LeagueTeamScore
-                             .Where(s => s.LeagueTeamId == opponentsLeagueTeamId && s.OpponentsLeagueTeamId == leagueTeamId)
-                             .Count()
-                         : 0
-                 })
-                 .ToList();
-
-            // League stats
-            var leagueStats = scores
-                .GroupBy(s => s.Score.LeagueTeamId)
-                .Select(g => new
-                {
-                    LeagueTeamId = g.Key,
-                    LeagueName = _context.LeagueTeam
-                        .Where(lt => lt.Id == g.Key)
-                        .Select(lt => lt.TeamName)
-                        .FirstOrDefault(),
-                    GamesPlayed = g.Count(),
-                    Wins = g.Count(s => s.Score.WonGame),
-                    WinPercentage = g.Count() > 0 ? (double)g.Count(s => s.Score.WonGame) / g.Count() * 100 : 0
-                })
-                .ToList();
-
-            // Teammate stats
-            var teammateStats = _context.LeagueTeamPlayer
-                .Where(tp => tp.PlayerId == playerId) // Find the LeagueTeamId for the given player
-                .Select(tp => tp.LeagueTeamId)
-                .Distinct() // Ensure only one LeagueTeamId is retrieved
-                .Join(_context.LeagueTeamPlayer,
-                      team => team,
-                      other => other.LeagueTeamId,
-                      (team, other) => new { TeamPlayer = team, Teammate = other }) // Join to find teammates
-                .Where(joined => joined.Teammate.PlayerId != playerId) // Exclude the original player
-                .Select(joined => new
-                {
-                    PlayerId = joined.Teammate.PlayerId,
-                    PlayerName = _context.Players
-                        .Where(p => p.Id == joined.Teammate.PlayerId)
-                        .Select(p => p.FirstName + " " + p.LastName)
-                        .FirstOrDefault()
-                })
-                .Distinct()
-                .ToList();
-
-
-            // Total unique opponents
-            var totalOpponents = scores
-                .Select(s => s.Score.OpponentsLeagueTeamId)
-                .Distinct()
-                .Count();
-
-            // Results
-            return Ok(new
-            {
-                totalScores,
-                totalWins,
-                totalGames,
-                winPercentage,
-                averageScore,
-                highestScore,
-                lowestScore,
-                longestWinStreak,
-                longestLossStreak,
-                totalOpponents,
-                opponentStats,
-                leagueStats,
-                teammateStats
-            });
         }
 
 
@@ -753,16 +536,20 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpGet("GetProfile")]
-        public async Task<IActionResult> GetProfile(int playerId)
+        public async Task<IActionResult> GetProfile(int playerId, int? leagueId = null)
         {
-            var _context = new DataContext();
-            var player = await _context.Players.FirstOrDefaultAsync(p => p.Id == playerId);
-            if (player == null)
+            using (var context = new DataContext())
             {
-                return NotFound();
+                var player = await context.Players.AsNoTracking().FirstOrDefaultAsync(p => p.Id == playerId);
+                if (player == null) return NotFound();
+                string divisionName = null;
+                if (leagueId.HasValue)
+                    divisionName = await (from membership in context.PlayersLeagues
+                        join division in context.LeagueDivision on membership.LeagueDivisionId equals (int?)division.Id
+                        where membership.PlayerID == playerId && membership.LeagueID == leagueId.Value && division.LeagueID == leagueId.Value
+                        select division.Name).FirstOrDefaultAsync();
+                return Ok(new { player.Id, player.FirstName, player.LastName, player.IsMale, player.Gender, player.IsSub, DivisionName = divisionName });
             }
-
-            return Ok(player);
         }
 
         [HttpGet("GetPlayerLeagues")]
@@ -822,126 +609,23 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpGet("GetDetailedPerformanceStats")]
         public async Task<IActionResult> GetDetailedPerformanceStats(int playerId, int leagueId)
         {
-            var _context = new DataContext();
-
-            // Fetch individual round scores and wins
-            var individualRounds = await (from kqrs in _context.KingQueenRoundScores
-                                          join kqt in _context.KingQueenTeam on kqrs.KingQueenTeamId equals kqt.Id
-                                          where kqt.LeagueID == leagueId &&
-                                                (from kqp in _context.KingQueenPlayer
-                                                 where kqp.PlayerId == playerId && kqp.KingQueenTeamId == kqt.Id
-                                                 select kqp.Id).Any()
-                                          select new
-                                          {
-                                              RoundNumber = kqrs.RoundId,
-                                              kqrs.RoundScore,
-                                              kqrs.RoundWon,
-                                              kqt.ScrambleNumber,
-                                              kqt.DateOfTeam,
-                                              kqt.Id // Include KingQueenTeamId for filtering teammates
-                                          })
-                                          .OrderBy(x => x.DateOfTeam) // First, order by DateOfTeam
-                                          .ThenBy(x => x.RoundNumber)
-                                          .ToListAsync();
-
-            // Fetch team members for the player's teams
-            var playerTeamIds = individualRounds.Select(r => r.Id).Distinct();
-
-            var teamData = await (from kqp in _context.KingQueenPlayer
-                                  join kqt in _context.KingQueenTeam on kqp.KingQueenTeamId equals kqt.Id
-                                  where playerTeamIds.Contains(kqt.Id) // Filter only teams the player is on
-                                        && kqp.PlayerId != playerId    // Exclude the player themselves
-                                  select new
-                                  {
-                                      kqt.ScrambleNumber,
-                                      kqp.PlayerId,
-                                      PlayerName = _context.Players
-                                          .Where(p => p.Id == kqp.PlayerId)
-                                          .Select(p => p.FirstName + " " + p.LastName)
-                                          .FirstOrDefault(),
-                                      IsMale = _context.Players
-                                          .Where(p => p.Id == kqp.PlayerId)
-                                          .Select(p => p.IsMale)
-                                          .FirstOrDefault(),
-                                      kqt.Id // Include KingQueenTeamId for filtering teammates
-                                  }).Distinct().ToListAsync();
-
-            var winsTogether = await (from kqrs in _context.KingQueenRoundScores
-                                      join kqt in _context.KingQueenTeam on kqrs.KingQueenTeamId equals kqt.Id
-                                      join kqp in _context.KingQueenPlayer on kqt.Id equals kqp.KingQueenTeamId
-                                      where playerTeamIds.Contains(kqt.Id) // Filter only teams the player is on
-                                            && kqrs.RoundWon == true       // Count only rounds won
-                                            && kqp.PlayerId != playerId    // Exclude the player themselves
-                                      group new { kqp.PlayerId, kqrs.RoundId, kqrs.KingQueenTeamId }
-                                      by new { kqp.PlayerId, kqrs.RoundId, kqrs.KingQueenTeamId } into uniqueWins
-                                      select new
-                                      {
-                                          PlayerId = uniqueWins.Key.PlayerId,
-                                          RoundId = uniqueWins.Key.RoundId,
-                                          TeamId = uniqueWins.Key.KingQueenTeamId
-                                      })
-                                      .GroupBy(win => win.PlayerId)
-                                      .Select(group => new
-                                      {
-                                          PlayerId = group.Key,
-                                          WinsTogether = group.Count() // Count all unique combinations of RoundId and TeamId
-                                      }).ToListAsync();
-
-
-            // Group team members by scramble number
-            var teamsGrouped = teamData
-                .GroupBy(t => t.ScrambleNumber)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Select(t => new TeamMember
-                    {
-                        PlayerId = t.PlayerId,
-                        PlayerName = t.PlayerName,
-                        IsMale = t.IsMale
-                    }).ToList()
-                );
-
-            // Calculate scramble totals, handling duplicate players correctly
-            var scrambleTotals = individualRounds
-                .GroupBy(r => r.ScrambleNumber)
-                .Select(g => new
-                {
-                    ScrambleNumber = g.Key,
-                    TotalScore = g.GroupBy(r => r.Id).Sum(teamGroup => teamGroup.Sum(r => r.RoundScore)), // Avoid double-counting
-                    Wins = g.Count(r => (bool)r.RoundWon),
-                    Team = teamsGrouped.TryGetValue(g.Key, out var team) ? team : new List<TeamMember>()
-                })
-                .ToList();
-
-            var teammateCounts = (from teammate in teamData
-                                  join win in winsTogether on teammate.PlayerId equals win.PlayerId into winData
-                                  from win in winData.DefaultIfEmpty() // Handle left join
-                                  group new { teammate, win } by new { teammate.PlayerId, teammate.PlayerName } into grouped
-                                  select new
-                                  {
-                                      PlayerId = grouped.Key.PlayerId,
-                                      PlayerName = grouped.Key.PlayerName,
-                                      Count = grouped.Select(g => g.teammate.ScrambleNumber).Distinct().Count(), // Count unique scrambles
-                                      WinsTogether = grouped.FirstOrDefault()?.win?.WinsTogether ?? 0 // Use WinsTogether directly from win
-                                  })
-                               .OrderByDescending(t => t.Count)
-                               .ToList();
-
-
-
-
-            // Calculate overall totals
-            var totalScores = individualRounds.GroupBy(r => r.Id).Sum(teamGroup => teamGroup.Sum(r => r.RoundScore)); // Avoid double-counting
-            var totalWins = individualRounds.Count(r => (bool)r.RoundWon);
-
-            return Ok(new
+            using (var context = new DataContext())
             {
-                IndividualRounds = individualRounds,
-                ScrambleTotals = scrambleTotals,
-                TotalScores = totalScores,
-                TotalWins = totalWins,
-                TeammateCounts = teammateCounts
-            });
+                var rounds = await (from score in context.KingQueenRoundScores.AsNoTracking()
+                    join team in context.KingQueenTeam on score.KingQueenTeamId equals team.Id
+                    where team.LeagueID == leagueId && context.KingQueenPlayer.Any(m => m.PlayerId == playerId && m.KingQueenTeamId == team.Id)
+                    select new ProfileRound { ScoreId = score.Id, Id = team.Id, RoundNumber = score.RoundId,
+                        RoundScore = score.RoundScore, RoundWon = score.RoundWon, ScrambleNumber = team.ScrambleNumber, DateOfTeam = team.DateOfTeam })
+                    .ToListAsync();
+                var teamIds = rounds.Select(r => r.Id).Distinct().ToList();
+                var members = await (from member in context.KingQueenPlayer.AsNoTracking()
+                    join team in context.KingQueenTeam on member.KingQueenTeamId equals team.Id
+                    join player in context.Players on member.PlayerId equals player.Id
+                    where team.LeagueID == leagueId && teamIds.Contains(team.Id) && member.PlayerId != playerId
+                    select new ProfileMember { Id = team.Id, PlayerId = player.Id, PlayerName = player.FirstName + " " + player.LastName,
+                        IsMale = player.IsMale, ScrambleNumber = team.ScrambleNumber }).ToListAsync();
+                return Ok(PlayerProfileStatistics.KingQueen(playerId, rounds, members));
+            }
         }
     }
     public class TeamMember

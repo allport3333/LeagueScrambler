@@ -18,4 +18,8 @@ export class AppComponent {
   get isScramblerPage(): boolean {
     return this.router.url.split(/[?#]/)[0].replace(/\/$/, '') === '/scrambler';
   }
+
+  get isPlayerProfilePage(): boolean {
+    return this.router.url.split(/[?#]/)[0].indexOf('/player-stats-tabs/') === 0;
+  }
 }

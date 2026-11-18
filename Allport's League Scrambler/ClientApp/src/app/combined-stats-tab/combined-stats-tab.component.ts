@@ -1,67 +1,22 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
-import { LeagueService } from '../services/league.service';
-import { ActivatedRoute } from '@angular/router';
-import { PlayerService } from '../services/player.service';
-
-@Component({
-    selector: 'app-combined-stats-tab',
-    templateUrl: './combined-stats-tab.component.html',
-    styleUrls: ['./combined-stats-tab.component.css']
-})
-export class CombinedStatsTabComponent implements OnInit {
-    @Input() playerId!: number;
-    @Input() leagueId!: number;
-    combinedStats: any = {
-        totalGames: 0,
-        totalScores: 0,
-        totalWins: 0,
-        averageScore: 0,
-        highestScore: 0,
-        lowestScore: 0,
-        winPercentage: 0,
-        mostFrequentOpponent: null,
-        longestWinStreak: 0,
-        longestLossStreak: 0,
-        totalOpponents: 0,
-        leagueStats: [],
-        opponentStats: [],
-        teammateStats: []
-    };
-    playerName: string;
-
-    constructor(private playerService: PlayerService, private statisticsService: StatisticsService, private leagueService: LeagueService, private route: ActivatedRoute) { }
-
-    ngOnInit() {
-        this.leagueService.selectedLeague$.subscribe(selectedLeague => {
-            if (selectedLeague) {
-                this.leagueId = selectedLeague.leagueId;
-                this.loadCombinedStats(); 
-            }
-        });
-        this.loadCombinedStats();
-        this.route.params.subscribe(params => {
-            this.playerId = +params['playerId']; // Extract playerId from the route
-            this.getPlayerName(); // Fetch and set the player's name
-            this.loadCombinedStats();  // Reload data for the new player
-        });
-    }
-
-    getPlayerName(): void {
-        this.playerService.getPlayerByPlayerIdVariable(this.playerId).subscribe(
-            (player: any) => {
-                this.playerName = `${player.firstName} ${player.lastName}`; // Set the full name
-            },
-            error => {
-                console.error('Error fetching player details:', error);
-                this.playerName = 'Unknown Player'; // Default name in case of an error
-            }
-        );
-    }
-
-    loadCombinedStats() {
-        this.statisticsService.getCombinedStats(this.playerId, this.leagueId).subscribe(data => {
-            this.combinedStats = data;
-        });
-    }
+@Component({selector:'app-combined-stats-tab',templateUrl:'./combined-stats-tab.component.html',styleUrls:['../player-stats-tabs/profile-statistics.shared.css']})
+export class CombinedStatsTabComponent implements OnChanges, OnDestroy {
+ @Input() playerId:number; @Input() leagueId:number;
+ combinedStats:any=null; loading=false; error=''; opponents:any[]=[]; teammates:any[]=[];
+ private request:Subscription;private version=0;
+ constructor(private statistics:StatisticsService){}
+ ngOnChanges(){this.loadCombinedStats();}
+ loadCombinedStats(){
+  if(this.request)this.request.unsubscribe();const version=++this.version;this.combinedStats=null;this.opponents=[];this.teammates=[];this.error='';this.loading=false;
+  if(!this.playerId||!this.leagueId)return;this.loading=true;
+  this.request=this.statistics.getCombinedStats(this.playerId,this.leagueId).subscribe(data=>{
+   if(version!==this.version)return;this.loading=false;if(!data||!Array.isArray(data.teammateStats)||!Array.isArray(data.opponentStats)){this.error='The league statistics response is incomplete.';return;}
+   this.combinedStats=data;this.opponents=data.opponentStats.slice();this.teammates=data.teammateStats.slice();
+  },()=>{if(version===this.version){this.loading=false;this.error='Unable to load league player statistics. Please retry.';}});
+ }
+ sortTable(table:string,event:any){const source=table==='opponents'?this.combinedStats.opponentStats:this.combinedStats.teammateStats;const rows=source.slice();if(event.direction)rows.sort((a,b)=>{const x=a[event.active],y=b[event.active];if(x==null)return y==null?0:1;if(y==null)return -1;return(x<y?-1:x>y?1:0)*(event.direction==='asc'?1:-1);});if(table==='opponents')this.opponents=rows;else this.teammates=rows;}
+ duplicateName(player:any):boolean{return this.teammates.some(p=>p.playerId!==player.playerId&&p.playerName===player.playerName);}
+ ngOnDestroy(){this.version++;if(this.request)this.request.unsubscribe();}
 }

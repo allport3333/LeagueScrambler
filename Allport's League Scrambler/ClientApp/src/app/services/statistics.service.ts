@@ -44,8 +44,8 @@ export class StatisticsService {
         return this.httpClient.get<any[]>(`${this.baseUrl}api/Statistics/GetLeagues`);
     }
 
-    getPlayerProfile(playerId: number) {
-        return this.httpClient.get<any>(`${this.baseUrl}api/Statistics/GetProfile?playerId=${playerId}`);
+    getPlayerProfile(playerId: number, leagueId?: number) {
+        return this.httpClient.get<any>(`${this.baseUrl}api/Statistics/GetProfile?playerId=${playerId}${leagueId ? '&leagueId=' + leagueId : ''}`);
     }
 
     getPlayerLeagues(playerId: number) {

@@ -1,125 +1,14 @@
-<div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
-    <h2 style="text-align: center; color: #3f51b5; font-weight: bold;">League Player Stats</h2>
-    <h2 style="text-align: center;">{{ playerName }}</h2>
-    <!-- Responsive Card Grid -->
-    <div class="card-grid">
-        <!-- Overview Section -->
-        <mat-card class="stat-card">
-            <mat-card-header>
-                <mat-card-title>Overview</mat-card-title>
-            </mat-card-header>
-            <mat-divider></mat-divider>
-            <mat-card-content>
-                <div class="stat-content">
-                    <div><p><strong>Total Games:</strong> {{ combinedStats.totalGames }}</p></div>
-                    <div><p><strong>Total Scores:</strong> {{ combinedStats.totalScores }}</p></div>
-                    <div><p><strong>Total Wins:</strong> {{ combinedStats.totalWins }}</p></div>
-                    <div><p><strong>Average Score:</strong> {{ combinedStats.averageScore | number: '1.2-2' }}</p></div>
-                    <div><p><strong>Highest Score:</strong> {{ combinedStats.highestScore }}</p></div>
-                    <div><p><strong>Lowest Score:</strong> {{ combinedStats.lowestScore }}</p></div>
-                    <div><p><strong>Win Percentage:</strong> {{ combinedStats.winPercentage | number: '1.2-2' }}%</p></div>
-                </div>
-            </mat-card-content>
-        </mat-card>
-
-        <!-- Streaks Section -->
-        <mat-card class="stat-card">
-            <mat-card-header>
-                <mat-card-title class="centered-title">Streaks</mat-card-title>
-            </mat-card-header>
-            <mat-divider></mat-divider>
-            <mat-card-content>
-                <div class="stat-content">
-                    <div><p><strong>Longest Win Streak:</strong> {{ combinedStats.longestWinStreak }}</p></div>
-                    <div><p><strong>Longest Loss Streak:</strong> {{ combinedStats.longestLossStreak }}</p></div>
-                </div>
-            </mat-card-content>
-        </mat-card>
-
-        <!-- League Stats Section -->
-        <mat-card class="stat-card">
-            <mat-card-header>
-                <mat-card-title class="centered-title">League Stats</mat-card-title>
-            </mat-card-header>
-            <mat-divider></mat-divider>
-            <mat-card-content>
-                <mat-table [dataSource]="combinedStats.leagueStats" class="styled-table mat-elevation-z8">
-                    <ng-container matColumnDef="league">
-                        <mat-header-cell *matHeaderCellDef> League </mat-header-cell>
-                        <mat-cell *matCellDef="let stat"> {{ stat.leagueName }} </mat-cell>
-                    </ng-container>
-
-                    <ng-container matColumnDef="gamesPlayed">
-                        <mat-header-cell *matHeaderCellDef> Games Played </mat-header-cell>
-                        <mat-cell *matCellDef="let stat"> {{ stat.gamesPlayed }} </mat-cell>
-                    </ng-container>
-
-                    <ng-container matColumnDef="winPercentage">
-                        <mat-header-cell *matHeaderCellDef> Win % </mat-header-cell>
-                        <mat-cell *matCellDef="let stat"> {{ stat.winPercentage | number: '1.2-2' }}% </mat-cell>
-                    </ng-container>
-
-                    <mat-header-row *matHeaderRowDef="['league', 'gamesPlayed', 'winPercentage']"></mat-header-row>
-                    <mat-row *matRowDef="let row; columns: ['league', 'gamesPlayed', 'winPercentage']"></mat-row>
-                </mat-table>
-            </mat-card-content>
-        </mat-card>
-
-        <!-- Opponent Stats Section -->
-        <mat-card class="stat-card" *ngIf="combinedStats.opponentStats && combinedStats.opponentStats.length > 0">
-            <mat-card-header>
-                <mat-card-title class="centered-title">Opponent Stats</mat-card-title>
-            </mat-card-header>
-            <mat-divider></mat-divider>
-            <mat-card-content>
-                <mat-table [dataSource]="combinedStats.opponentStats" class="styled-table mat-elevation-z8">
-                    <ng-container matColumnDef="opponentTeamName">
-                        <mat-header-cell *matHeaderCellDef> Opponent Team </mat-header-cell>
-                        <mat-cell *matCellDef="let opponent"> {{ opponent.opponentTeamName }} </mat-cell>
-                    </ng-container>
-
-                    <ng-container matColumnDef="gamesPlayed">
-                        <mat-header-cell *matHeaderCellDef> Games Played </mat-header-cell>
-                        <mat-cell *matCellDef="let opponent"> {{ opponent.gamesPlayed }} </mat-cell>
-                    </ng-container>
-
-                    <ng-container matColumnDef="wins">
-                        <mat-header-cell *matHeaderCellDef> Wins </mat-header-cell>
-                        <mat-cell *matCellDef="let opponent"> {{ opponent.wins }} </mat-cell>
-                    </ng-container>
-
-                    <ng-container matColumnDef="winPercentage">
-                        <mat-header-cell *matHeaderCellDef> Win % </mat-header-cell>
-                        <mat-cell *matCellDef="let opponent"> {{ opponent.winPercentage | number: '1.2-2' }}%</mat-cell>
-                    </ng-container>
-
-                    <mat-header-row *matHeaderRowDef="['opponentTeamName', 'gamesPlayed', 'wins', 'winPercentage']"></mat-header-row>
-                    <mat-row *matRowDef="let row; columns: ['opponentTeamName', 'gamesPlayed', 'wins', 'winPercentage']"></mat-row>
-                </mat-table>
-            </mat-card-content>
-        </mat-card>
-
-        <!-- Teammate Stats Section -->
-        <mat-card class="stat-card">
-            <mat-card-header>
-                <mat-card-title class="centered-title">Teammates</mat-card-title>
-            </mat-card-header>
-            <mat-divider></mat-divider>
-            <mat-card-content>
-                <mat-table [dataSource]="combinedStats.teammateStats" class="styled-table mat-elevation-z8">
-                    <ng-container matColumnDef="teammate">
-                        <mat-header-cell *matHeaderCellDef> Teammate </mat-header-cell>
-                        <mat-cell *matCellDef="let stat">
-                            <a [routerLink]="['/player-stats-tabs', stat.playerId]" style="text-decoration: none; color: inherit;">
-                                {{ stat.playerName }}
-                            </a>
-                        </mat-cell>
-                    </ng-container>
-
-                    <mat-header-row *matHeaderRowDef="['teammate']"></mat-header-row>
-                    <mat-row *matRowDef="let row; columns: ['teammate']"></mat-row>
-                </mat-table>
-            </mat-card-content>
-        </mat-card>
-    </div>
-</div>
+<section class="profile-section combined-profile">
+ <p *ngIf="loading" role="status" class="state-message">Loading league player statistics...</p><div *ngIf="error" role="alert" class="state-message"><p>{{ error }}</p><button mat-stroked-button (click)="loadCombinedStats()">Retry league player stats</button></div>
+ <ng-container *ngIf="combinedStats && !loading && !error">
+  <h2>Overview</h2><p *ngIf="combinedStats.totalGames === 0" class="state-message">No recorded league team games in this league.</p>
+  <div class="summary-grid overview-summary"><div><span>Games</span><strong>{{ combinedStats.totalGames == null ? '—' : combinedStats.totalGames }}</strong></div><div><span>Total scores</span><strong>{{ combinedStats.totalScores == null ? '—' : combinedStats.totalScores }}</strong></div><div><span>Wins</span><strong class="win-text">{{ combinedStats.totalWins == null ? '—' : combinedStats.totalWins }}</strong></div><div><span>Win percentage</span><strong>{{ combinedStats.winPercentage == null ? '—' : (combinedStats.winPercentage | number:'1.0-2') + '%' }}</strong></div></div>
+  <dl class="stats-facts"><div><dt>Average score</dt><dd>{{ combinedStats.averageScore == null ? '—' : (combinedStats.averageScore | number:'1.0-2') }}</dd></div><div><dt>Highest score</dt><dd>{{ combinedStats.highestScore == null ? '—' : combinedStats.highestScore }}</dd></div><div><dt>Lowest score</dt><dd>{{ combinedStats.lowestScore == null ? '—' : combinedStats.lowestScore }}</dd></div><div><dt>Unique opponents</dt><dd>{{ combinedStats.totalOpponents == null ? '—' : combinedStats.totalOpponents }}</dd></div><div><dt>Losses</dt><dd>{{ combinedStats.totalLosses == null ? '—' : combinedStats.totalLosses }}</dd></div></dl>
+  <section class="stats-card"><h2>Streaks</h2><div class="streak-grid"><p>Longest winning streak <strong class="win-text">{{ combinedStats.longestWinStreak == null ? '—' : combinedStats.longestWinStreak }}</strong></p><p>Longest losing streak <strong class="loss-text">{{ combinedStats.longestLossStreak == null ? '—' : combinedStats.longestLossStreak }}</strong></p></div></section>
+  <section class="stats-card"><h2>League Stats</h2><p class="detail-context">Your teams within the selected league.</p><p *ngIf="!combinedStats.leagueStats || !combinedStats.leagueStats.length">No recorded league team comparisons.</p><table class="stats-table" *ngIf="combinedStats.leagueStats && combinedStats.leagueStats.length"><thead><tr><th>Team</th><th>Games</th><th>Wins</th><th>Win %</th></tr></thead><tbody><tr *ngFor="let stat of combinedStats.leagueStats"><td>{{ stat.leagueName }}</td><td>{{ stat.gamesPlayed }}</td><td>{{ stat.wins == null ? '—' : stat.wins }}</td><td>{{ stat.winPercentage | number:'1.0-2' }}%</td></tr></tbody></table></section>
+  <section class="stats-card"><h2>Opponent Stats</h2><p *ngIf="!opponents.length">No recorded opponents.</p><table *ngIf="opponents.length" class="stats-table opponent-table" matSort (matSortChange)="sortTable('opponents',$event)"><thead><tr><th mat-sort-header="opponentTeamName">Opponent</th><th mat-sort-header="gamesPlayed">Games</th><th mat-sort-header="wins">Wins</th><th mat-sort-header="winPercentage">Win %</th></tr></thead><tbody><tr *ngFor="let opponent of opponents"><td>{{ opponent.opponentTeamName }}</td><td>{{ opponent.gamesPlayed }}</td><td>{{ opponent.wins }}</td><td>{{ opponent.winPercentage | number:'1.0-2' }}%</td></tr></tbody></table>
+  <details *ngIf="opponents.length" class="additional-details"><summary>Opponent point details</summary><table class="stats-table"><thead><tr><th>Opponent</th><th>Points scored</th><th>Average points</th></tr></thead><tbody><tr *ngFor="let opponent of opponents"><td>{{ opponent.opponentTeamName }}</td><td>{{ opponent.totalPointsScored == null ? '—' : opponent.totalPointsScored }}</td><td>{{ opponent.averagePointsPerGame == null ? '—' : (opponent.averagePointsPerGame | number:'1.0-2') }}</td></tr></tbody></table></details>
+  </section>
+  <section class="stats-card regular-teammates"><h2>Teammates</h2><p class="detail-context">Games together and wins together use recorded League Team games only, not King/Queen rounds.</p><p *ngIf="!teammates.length">No league team teammates recorded.</p><table *ngIf="teammates.length" class="stats-table" matSort (matSortChange)="sortTable('teammates',$event)"><thead><tr><th mat-sort-header="playerName">Teammate</th><th mat-sort-header="timesPlayedTogether">Games together</th><th mat-sort-header="winsTogether">Wins together</th></tr></thead><tbody><tr *ngFor="let teammate of teammates" [attr.data-player-id]="teammate.playerId"><td><a [routerLink]="['/player-stats-tabs',teammate.playerId]" [queryParams]="{leagueId:leagueId,tab:'player'}">{{ teammate.playerName }}</a><small *ngIf="duplicateName(teammate)">Player #{{ teammate.playerId }}</small></td><td>{{ teammate.timesPlayedTogether == null ? '—' : teammate.timesPlayedTogether }}</td><td>{{ teammate.winsTogether == null ? '—' : teammate.winsTogether }}</td></tr></tbody></table></section>
+ </ng-container>
+</section>
