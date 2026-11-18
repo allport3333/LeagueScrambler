@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Setup: select/deselect, four-column roster, size/count exclusivity, tab state, disabled empty scramble and compact empty results"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

@@ -1,4 +1,3 @@
-<div class="container-fluid" [hidden]="hideEverything">
     <mat-card *ngIf="!isActionAllowed" class="m-2 text-center" style="background-color: #f3f3f3;">
         <p>Viewing and previewing leagues is available without administration access.
            To edit players, save scores, or update league settings, unlock administration.</p>
@@ -10,9 +9,11 @@
         <button mat-raised-button type="button" color="primary" class="ml-2"
                 (click)="unlockAdminPassword()">Unlock Administration</button>
     </mat-card>
+<div class="container-fluid" [hidden]="hideEverything || workspaceSection !== 'scrambler'">
+
     <div class="row">
         <div class="col-12">
-            <mat-card style="background-color:lightgray; " class="ml-1 mt-2">
+            <mat-card class="scramble-setup ml-1 mt-2"><h2>Team Configuration</h2><p class="workspace-help">Choose Max Team Size or Number of Teams. Choosing one clears the other; your player selection is retained.</p>
                 <div class="row">
                     <!--<div class="col">
                         <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
@@ -200,7 +201,7 @@
                     </div>
                 </div>
 
-                <div class="row justify-content-center mt-3">
+                <div class="row justify-content-center mt-3 scramble-rules"><h3 class="col-12">Scramble Rules</h3>
                     <div class="col-12 col-md-6 text-center">
                         <mat-checkbox [(ngModel)]="completeRandom" aria-label="check box 1" style="margin-right: 10px"> Completely Random</mat-checkbox>
                         <mat-checkbox [(ngModel)]="lockedResults" aria-label="check box 2" style="margin-right: 10px"> Lock Results</mat-checkbox>
@@ -208,29 +209,17 @@
                 </div>
 
             </mat-card>
-            <div class="row justify-content-center mt-3">
-                <div class="col-12 mb-3 text-center">
-                    <button mat-raised-button
+<section class="scramble-workflow-actions">
+  <div class="selection-actions"><h2>Player Selection</h2><button mat-raised-button
                             (click)="fetchSelectedList()"
-                            class="w-50 py-3 scramble-button"
+                            class="scramble-button secondary-action"
                             [ngClass]="{
                     'enabled': hasSignedInPlayersAvailable && !fetchClicked,
                     'grey': (!hasSignedInPlayersAvailable && !fetchClicked) || fetchClicked
                 }"
                             [disabled]="!hasSignedInPlayersAvailable && !fetchClicked">
                         Fetch Signed In Players
-                    </button>
-                </div>
-            </div>
-            <div class="row justify-content-center mt-1">
-
-
-                <!-- Replaced two separate col blocks with a single centered container that matches the combined width
-                of the Fetch (w-50) and Scramble (w-50) buttons. The two Apply buttons live side-by-side inside
-                a flex row with a gap. On small screens they wrap and become full width. -->
-                <div class="col-12 mb-3 text-center">
-                    <div class="apply-top-wrapper w-50 mx-auto d-flex">
-                        <button mat-raised-button
+                    </button><p class="selection-summary" role="status">{{ selectedList.length }} selected · {{ getTotalMaleSelectedPlayers() }} male · {{ getTotalFemaleSelectedPlayers() }} female</p></div><div class="balancing-actions"><h2>Player Balancing</h2><div class="apply-top-wrapper"><button mat-raised-button
                                 class="apply-top-button scramble-button"
                                 (click)="applyTopPlayers()"
                                 [ngClass]="{
@@ -241,9 +230,7 @@
                                 [matTooltip]="!hasTopPlayersAvailable ? 'No top players configured for this league' : ''"
                                 [matTooltipDisabled]="hasTopPlayersAvailable">
                             Apply Top Players
-                        </button>
-
-                        <button mat-raised-button
+                        </button><button mat-raised-button
                                 class="apply-top-button scramble-button"
                                 (click)="applyTopPlayersFromMaleStandings()"
                                 [ngClass]="{
@@ -255,14 +242,9 @@
                             [matTooltip]="!(maleStandings && maleStandings.length > 0) ? 'Male standings not available' : ''"
                             [matTooltipDisabled]="maleStandings && maleStandings.length > 0">
                             Apply Top Players (Male Standings)
-                        </button>
-                    </div>
-                </div>
-                <!-- Scramble Players Button -->
-                <div *ngIf="!hideInputOptions" class="col-12 mb-4 text-center">
-                    <button (click)="scramblePlayers(false)"
+                        </button></div><p class="workspace-help">Apply top-player preferences after player selection. Standings remain loaded for balancing.</p></div><div class="progression-actions" *ngIf="!hideInputOptions"><button (click)="scramblePlayers(false)"
                             mat-raised-button
-                            class="w-50 py-3 scramble-button"
+                            class="scramble-button primary-action"
                             matTooltip="Button is disabled because no players are selected."
                             [matTooltipDisabled]="selectedList && selectedList.length > 0"
                             [disabled]="!selectedList || selectedList.length === 0"
@@ -270,43 +252,23 @@
                                             'disabled': !selectedList || selectedList.length === 0
                                             }">
                         Scramble Players
-                    </button>
-                </div>
-
-
-                <!-- Reset Players Menu -->
-                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <div class="d-flex flex-column align-items-center">
-                        <button mat-raised-button color="primary" [matMenuTriggerFor]="resetMenu" class="w-100">
+                    </button><p class="workspace-help" *ngIf="!selectedList.length">Select players before scrambling.</p><p class="workspace-help" *ngIf="locked">Results are locked. Uncheck Lock Results before rescrambling.</p></div><div class="reset-actions"><button mat-raised-button color="warn" [matMenuTriggerFor]="resetMenu" class="w-100">
                             Reset Players
                         </button>
                         <mat-menu #resetMenu="matMenu">
-                            <button mat-menu-item (click)="reset()">
+                            <button mat-menu-item (click)="requestResetAll()">
                                 <span>Reset All Players</span>
                             </button>
-                            <button mat-menu-item (click)="resetTopPlayers()">
+                            <button mat-menu-item (click)="requestResetPreferences('top')">
                                 <span>Reset Top Players</span>
                             </button>
-                            <button mat-menu-item (click)="resetLowPlayers()">
+                            <button mat-menu-item (click)="requestResetPreferences('low')">
                                 <span>Reset Low Players</span>
                             </button>
-                            <button mat-menu-item (click)="resetByePlayers()">
+                            <button mat-menu-item (click)="requestResetPreferences('bye')">
                                 <span>Reset Bye Players</span>
                             </button>
-                        </mat-menu>
-                    </div>
-                </div>
-
-                <!-- Show/Hide Player List Button -->
-                <div class="col-lg-2 col-md-4 col-sm-6 col-12 mb-3">
-                    <button (click)="hidePlayerList()" mat-raised-button color="primary" class="w-100">
-                        {{ hidePlayers ? 'Show Player List' : 'Hide Player List' }}
-                    </button>
-                </div>
-            </div>
-
-
-
+                        </mat-menu></div></section>
             <div class="text-center mt-3" *ngIf="hideInputOptions">
                 <button *ngIf="!lockedResults" style="margin-top:10px; margin-left: 10px" (click)="scramblePlayers(false)" mat-raised-button color="primary">Scramble Players</button>
                 <div class="mt-2">
@@ -404,7 +366,13 @@
 
                                             </mat-card-title>
 
-                                            <mat-selection-list dense [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
+                                            <div class="player-action-key player-action-legend" aria-label="Player action symbols">
+                                                <span><mat-icon aria-hidden="true">star</mat-icon> Top</span>
+                                                <span><mat-icon aria-hidden="true">signal_cellular_4_bar</mat-icon> Low</span>
+                                                <span><mat-icon aria-hidden="true">radio_button_unchecked</mat-icon> Bye</span>
+                                                <span><mat-icon aria-hidden="true">male</mat-icon><mat-icon aria-hidden="true">female</mat-icon> Temporary gender</span>
+                                            </div>
+                                            <mat-selection-list class="league-roster" dense [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
                                                 <div>
                                                     <!-- Male Players -->
                                                     <div style="display: flex; flex-direction: column;">
@@ -459,9 +427,15 @@
                                                                     </div>
                                                                     <div style="display: flex; align-items: center; gap: 8px;" *ngIf="isSmallScreen">
                                                                         <!-- Player Name -->
-                                                                        <span style="flex-grow: 1; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                                                            {{ player1.firstName }} {{ player1.lastName }}
-                                                                        </span>
+                                                                        <div class="mobile-player-identity">
+ <span class="mobile-player-name">{{ player1.firstName }} {{ player1.lastName }}</span>
+ <span class="mobile-player-statuses" *ngIf="player1.isTopPlayer || player1.isLowPlayer || player1.isByePlayer || isPlayerGenderSwapped(player1)">
+  <span class="player-status status-top" *ngIf="player1.isTopPlayer">Top</span>
+  <span class="player-status status-low" *ngIf="player1.isLowPlayer">Low</span>
+  <span class="player-status status-bye" *ngIf="player1.isByePlayer">Bye</span>
+  <span class="player-status status-swapped" *ngIf="isPlayerGenderSwapped(player1)">Gender swapped</span>
+ </span>
+</div>
                                                                         <!-- Small Arrow Dropdown -->
                                                                         <mat-select [(value)]="player1.action"
                                                                                     (selectionChange)="handleDropdownChange(player1, $event)"
@@ -541,9 +515,15 @@
                                                                     </div>
                                                                     <div style="display: flex; align-items: center; gap: 8px;" *ngIf="isSmallScreen">
                                                                         <!-- Player Name -->
-                                                                        <span style="flex-grow: 1; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                                                            {{ player1.firstName }} {{ player1.lastName }}
-                                                                        </span>
+                                                                        <div class="mobile-player-identity">
+ <span class="mobile-player-name">{{ player1.firstName }} {{ player1.lastName }}</span>
+ <span class="mobile-player-statuses" *ngIf="player1.isTopPlayer || player1.isLowPlayer || player1.isByePlayer || isPlayerGenderSwapped(player1)">
+  <span class="player-status status-top" *ngIf="player1.isTopPlayer">Top</span>
+  <span class="player-status status-low" *ngIf="player1.isLowPlayer">Low</span>
+  <span class="player-status status-bye" *ngIf="player1.isByePlayer">Bye</span>
+  <span class="player-status status-swapped" *ngIf="isPlayerGenderSwapped(player1)">Gender swapped</span>
+ </span>
+</div>
                                                                         <!-- Small Arrow Dropdown -->
                                                                         <mat-select [(value)]="player1.action"
                                                                                     (selectionChange)="handleDropdownChange(player1, $event)"
@@ -600,7 +580,7 @@
                                                             <br>
                                                             <span>Date of Scramble: {{ scramble.dateOfTeam | date:'shortDate' }}</span>
                                                         </div>
-                                                        <button mat-icon-button (click)="retrieveScramble(scramble); $event.stopPropagation()" matTooltip="Retrieve Scramble">
+                                                        <button mat-icon-button (click)="requestRetrieveScramble(scramble); $event.stopPropagation()" matTooltip="Retrieve Scramble">
                                                             <mat-icon>sync</mat-icon>
                                                         </button>
                                                     </div>
@@ -610,7 +590,7 @@
                                     </div>
                                 </mat-selection-list>
                                 <ng-container *ngIf="!isSmallScreen"><br></ng-container>
-                                <button mat-raised-button color="primary" (click)="retrieveMultipleScrambles()">Retrieve All Selected Scrambles</button>
+                                <button mat-raised-button color="primary" (click)="requestRetrieveMultipleScrambles()">Retrieve All Selected Scrambles</button>
                                 <br *ngIf="listOfRetrievedScrambleNumbers.length > 0" />
                                 <!-- Display selected scramble numbers at the bottom -->
                                 <div *ngIf="listOfRetrievedScrambleNumbers.length > 0" style="text-align: center;">
@@ -629,7 +609,7 @@
                                 <br />
                                 <button (click)="scramblePlayers(true)"
                                         mat-raised-button
-                                        class="w-50 py-3 scramble-button"
+                                        class="w-50 py-3 scramble-button no-duplicate-action"
                                         matTooltip="Scramble With No Duplicate Teams"
                                         [matTooltipDisabled]="allowScrambleWithNoDuplicates"
                                         [disabled]="!allowScrambleWithNoDuplicates && (!selectedList || selectedList.length === 0)"
@@ -821,191 +801,60 @@
                     <mat-tab label="Create Teams and Scores" *ngIf="selectedLeague">
                         <app-create-teams [selectedLeagueDto]="selectedLeagueDto"></app-create-teams>
                     </mat-tab>
-                    <mat-tab label="Standings" *ngIf="selectedLeague">
-                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                            <div class="tab-content d-flex flex-column align-items-center">
-                                <h5 class="mb-2">Player Standings</h5>
+                </mat-tab-group>
+                <div class="d-flex justify-content-center align-items-start" *ngIf="(displayTopPlayers.length > 0 || displayLowPlayers.length > 0) && !hideInputOptions" style="gap: 20px;">
+                    <!-- Top Players Section -->
+                    <div class="top-players-section" *ngIf="displayTopPlayers.length > 0" style="width: 45%;">
+                        <h5 class="text-center">
+                            Top Players
+                            <span *ngIf="totalTopPlayers.length > 0">({{ totalTopPlayers.length }})</span>
+                        </h5>
 
-                                <!-- Button -->
-                                <button mat-raised-button color="primary" (click)="toggleStandingsType()" style="margin-bottom: 16px;">
-                                    {{ standingsType === 'round' ? 'Show Standings by Matchup' : 'Show Standings by Round' }}
-                                </button>
-
-                                <!-- Dropdown Container -->
-                                <div class="dropdown-container">
-                                    <!-- Dropdown for Number of Subs Allowed -->
-                                    <mat-form-field appearance="outline" style="width: 200px;">
-                                        <mat-label>Number of Subs Allowed</mat-label>
-                                        <mat-select [(value)]="numberOfSubsAllowed" (selectionChange)="onNumberOfSubsChange($event.value)">
-                                            <mat-option [value]="0">No Subs Allowed</mat-option>
-                                            <mat-option *ngFor="let i of [1, 2, 3, 4, 5, 100]" [value]="i">
-                                                Allow {{ i }} {{ i === 1 ? 'Sub' : 'Subs' }}
-                                            </mat-option>
-                                        </mat-select>
-                                    </mat-form-field>
-
-                                    <!-- Percent of Score for Subs -->
-                                    <mat-form-field appearance="outline" style="width: 200px;">
-                                        <mat-label>Percent of Score for Subs</mat-label>
-                                        <mat-select [(value)]="subScorePercent" (selectionChange)="onSubScorePercentChange($event.value)">
-                                            <mat-option *ngFor="let percent of [100, 90, 80, 70, 60, 50]" [value]="percent">
-                                                {{ percent }}%
-                                            </mat-option>
-                                        </mat-select>
-                                    </mat-form-field>
-
-                                    <!-- Drop Lowest Scores -->
-                                    <mat-form-field appearance="outline" id="drop-scores-select" style="width: 200px;">
-                                        <mat-label>Drop Lowest Scores</mat-label>
-                                        <mat-select [(value)]="dropLowest" (selectionChange)="onDropLowestChange($event.value)">
-                                            <mat-option [value]="0">Don't Drop Any</mat-option>
-                                            <mat-option *ngFor="let i of [1, 2, 3, 4, 5, 6]" [value]="i">
-                                                Drop {{ i }} {{ i === 1 ? 'Score' : 'Scores' }}
-                                            </mat-option>
-                                        </mat-select>
-                                    </mat-form-field>
+                        <div class="player-list text-center">
+                            <!-- Top Players -->
+                            <ng-container *ngFor="let player of displayTopPlayers">
+                                <div [ngClass]="getPlayerClass(player)"
+                                     style="margin: 10px 10px; padding: 5px; border-radius: 5px;"
+                                     [matTooltip]="!isPlayerInSelectedList(player) ? 'Not Selected' : ''">
+                                    {{ player.firstName }} {{ player.lastName }}
                                 </div>
+                            </ng-container>
 
-                                <div style="margin-bottom: 10px; text-align: center;">
-                                    <div style="font-weight: bold; margin-bottom: 5px;">Key:</div>
-                                    <div>
-                                        <span style="color: red; font-weight: bold;">Dropped Score</span> |
-                                        <span style="color: red;">Reduced Score from Subs</span> |
-                                        <span style="background-color: #D8BFD8;">Sub Score</span>
-                                    </div>
+
+
+                        </div>
+                    </div>
+
+                    <!-- Vertical Divider -->
+                    <div class="divider" style="border-left: 2px solid #ccc; height: auto;"></div>
+
+                    <!-- Low Players Section -->
+                    <div class="low-players-section" *ngIf="displayLowPlayers.length > 0" style="width: 45%;">
+                        <h5 class="text-center">
+                            Low Players
+                            <span *ngIf="totalLowPlayers.length > 0">({{ totalLowPlayers.length }})</span>
+                        </h5>
+
+                        <div class="player-list text-center">
+                            <!-- Low Players -->
+                            <ng-container *ngFor="let player of displayLowPlayers">
+                                <div [ngClass]="getPlayerClass(player)"
+                                     style="margin: 10px 10px; padding: 5px; border-radius: 5px;"
+                                     [matTooltip]="!isPlayerInSelectedList(player) ? 'Not Selected' : ''">
+                                    {{ player.firstName }} {{ player.lastName }}
                                 </div>
-
-                                <!-- Standings Card -->
-                                <div class="card" style="margin: 20px; padding: 20px; max-width: 100%; overflow-x: auto;">
-                                    <mat-tab-group [(selectedIndex)]="innerTabIndex">
-                                        <!-- Male Standings Tab -->
-                                        <mat-tab label="Men's Standings">
-                                            <table class="table table-bordered table-striped compact-table"
-                                                   style="width: 100%; table-layout: auto; font-size: 0.75rem;">
-                                                <thead>
-                                                    <tr>
-                                                        <th style="min-width: 50px; padding: 4px; cursor: pointer;">
-                                                            Place
-                                                        </th>
-                                                        <th style="min-width: 135px; padding: 4px; cursor: pointer;" (click)="sortStandings('playerName')">
-                                                            Player Name
-                                                            <mat-icon *ngIf="sortColumn === 'playerName'">
-                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                                            </mat-icon>
-                                                        </th>
-                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScore')">
-                                                            King Queen Score
-                                                            <mat-icon *ngIf="sortColumn === 'totalScore'">
-                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                                            </mat-icon>
-                                                        </th>
-                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScoreBeforeReduction')">
-                                                            Total Points
-                                                            <mat-icon *ngIf="sortColumn === 'totalScoreBeforeReduction'">
-                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                                            </mat-icon>
-                                                        </th>
-                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalWins')">
-                                                            Total Wins
-                                                            <mat-icon *ngIf="sortColumn === 'totalWins'">
-                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                                            </mat-icon>
-                                                        </th>
-                                                        <th *ngFor="let round of standingsRounds.slice().reverse()" style="min-width: 70px; padding: 4px; text-align: center;">
-                                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
-                                                            <span>{{ round }}</span>
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr *ngFor="let player of maleStandings; let i = index">
-                                                        <td style="padding: 2px; min-width: 50px; text-align: center; font-weight: bold;">
-                                                            {{ i + 1 }} <!-- Display place as 1-based index -->
-                                                        </td>
-                                                        <td style="padding: 2px; min-width: 135px;">{{ player.playerName }}</td>
-                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalScore }}</td>
-                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalScoreBeforeReduction }}</td>
-                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalWins }}</td>
-                                                        <td *ngFor="let score of player.scores.slice().reverse()"
-                                                            [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
-                                                            [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
-                                                            [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
-                                                            style="padding: 2px; min-width: 70px;">
-                                                            {{ score.score }}
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </mat-tab>
-
-                                        <!-- Female Standings Tab -->
-                                        <mat-tab label="Women's Standings">
-                                            <table class="table table-bordered table-striped compact-table"
-                                                   style="width: 100%; table-layout: auto; font-size: 0.75rem;">
-                                                <thead>
-                                                    <tr>
-                                                        <th style="min-width: 50px; padding: 4px; cursor: pointer;">
-                                                            Place
-                                                        </th>
-                                                        <th style="min-width: 135px; padding: 4px; cursor: pointer;" (click)="sortStandings('playerName')">
-                                                            Player Name
-                                                            <mat-icon *ngIf="sortColumn === 'playerName'">
-                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                                            </mat-icon>
-                                                        </th>
-                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScore')">
-                                                            King Queen Score
-                                                            <mat-icon *ngIf="sortColumn === 'totalScore'">
-                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                                            </mat-icon>
-                                                        </th>
-                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalScoreBeforeReduction')">
-                                                            Total Points
-                                                            <mat-icon *ngIf="sortColumn === 'totalScoreBeforeReduction'">
-                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                                            </mat-icon>
-                                                        </th>
-                                                        <th style="min-width: 80px; padding: 4px; cursor: pointer;" (click)="sortStandings('totalWins')">
-                                                            Total Wins
-                                                            <mat-icon *ngIf="sortColumn === 'totalWins'">
-                                                                {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
-                                                            </mat-icon>
-                                                        </th>
-                                                        <th *ngFor="let round of standingsRounds.slice().reverse()" style="min-width: 70px; padding: 4px; text-align: center;">
-                                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
-                                                            <span>{{ round }}</span>
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr *ngFor="let player of femaleStandings; let i = index">
-                                                        <td style="padding: 2px; min-width: 50px; text-align: center; font-weight: bold;">
-                                                            {{ i + 1 }} <!-- Display place as 1-based index -->
-                                                        </td>
-                                                        <td style="padding: 2px; min-width: 135px;">{{ player.playerName }}</td>
-                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalScore }}</td>
-                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalScoreBeforeReduction }}</td>
-                                                        <td style="padding: 2px; min-width: 80px;">{{ player.totalWins }}</td>
-                                                        <td *ngFor="let score of player.scores.slice().reverse()"
-                                                            [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
-                                                            [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
-                                                            [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
-                                                            style="padding: 2px; min-width: 70px;">
-                                                            {{ score.score }}
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </mat-tab>
-                                    </mat-tab-group>
-                                </div>
-                            </div>
-                        </mat-card>
-                    </mat-tab>
+                            </ng-container>
+                        </div>
+                    </div>
 
 
-                    <!-- Parent Tab -->
-                    <mat-tab label="League Management">
+                </div>
+            </mat-card>
+
+        </div>
+    </div>
+</div>
+<p class="scramble-empty-state" *ngIf="workspaceSection === 'scrambler' && !listOfTeams.length">No scramble has been generated yet. Select players and configure teams above. <button mat-button *ngIf="hideEverything" (click)="hideShowEverything()">Show Setup</button> <button mat-button *ngIf="hidePlayers" (click)="hidePlayerList()">Show Player List</button></p><section class="league-management-page" [hidden]="workspaceSection !== 'league-management'"><div class="workspace-links"><a mat-stroked-button routerLink="/scrambler">Back to Scrambler</a><a mat-button routerLink="/standings">K/Q Standings</a></div>
                         <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <h5 class="text-center mb-3">Player and League Management</h5>
 
@@ -1326,67 +1175,34 @@
                                 </mat-tab>
                             </mat-tab-group>
                         </mat-card>
-                    </mat-tab>
-
-                </mat-tab-group>
-                <div class="d-flex justify-content-center align-items-start" *ngIf="(displayTopPlayers.length > 0 || displayLowPlayers.length > 0) && !hideInputOptions" style="gap: 20px;">
-                    <!-- Top Players Section -->
-                    <div class="top-players-section" *ngIf="displayTopPlayers.length > 0" style="width: 45%;">
-                        <h5 class="text-center">
-                            Top Players
-                            <span *ngIf="totalTopPlayers.length > 0">({{ totalTopPlayers.length }})</span>
-                        </h5>
-
-                        <div class="player-list text-center">
-                            <!-- Top Players -->
-                            <ng-container *ngFor="let player of displayTopPlayers">
-                                <div [ngClass]="getPlayerClass(player)"
-                                     style="margin: 10px 10px; padding: 5px; border-radius: 5px;"
-                                     [matTooltip]="!isPlayerInSelectedList(player) ? 'Not Selected' : ''">
-                                    {{ player.firstName }} {{ player.lastName }}
-                                </div>
-                            </ng-container>
-
-
-
-                        </div>
-                    </div>
-
-                    <!-- Vertical Divider -->
-                    <div class="divider" style="border-left: 2px solid #ccc; height: auto;"></div>
-
-                    <!-- Low Players Section -->
-                    <div class="low-players-section" *ngIf="displayLowPlayers.length > 0" style="width: 45%;">
-                        <h5 class="text-center">
-                            Low Players
-                            <span *ngIf="totalLowPlayers.length > 0">({{ totalLowPlayers.length }})</span>
-                        </h5>
-
-                        <div class="player-list text-center">
-                            <!-- Low Players -->
-                            <ng-container *ngFor="let player of displayLowPlayers">
-                                <div [ngClass]="getPlayerClass(player)"
-                                     style="margin: 10px 10px; padding: 5px; border-radius: 5px;"
-                                     [matTooltip]="!isPlayerInSelectedList(player) ? 'Not Selected' : ''">
-                                    {{ player.firstName }} {{ player.lastName }}
-                                </div>
-                            </ng-container>
-                        </div>
-                    </div>
-
-
-                </div>
-            </mat-card>
-
-        </div>
-    </div>
-</div>
-<div class="toggle-button-container" style="text-align: center; margin-top: 8px; ">
-    <button mat-raised-button color="primary" class="mb-1" (click)="toggleTeamSorting()">
-        {{ showTeamSorting ? 'Hide Modify Teams' : 'Show Modify Teams' }}
-    </button>
-</div>
-<!-- Container for all pairs -->
+                    </section>
+<div class="scrambler-results-shell" [hidden]="workspaceSection !== 'scrambler' || !listOfTeams.length">
+<section class="scramble-results-toolbar" #saveTeamsDiv tabindex="-1">
+ <div class="results-heading"><h2>Scramble Results</h2><strong *ngIf="scrambleNumber && !scrambleSelected">Scramble Number: {{ scrambleNumber }}</strong><strong *ngIf="scrambleSelected && listOfRetrievedScrambleNumbers.length">Retrieved Scramble{{ listOfRetrievedScrambleNumbers.length > 1 ? 's' : '' }}: {{ listOfRetrievedScrambleNumbers.join(', ') }}</strong><span *ngIf="!scrambleNumber && !scrambleSelected">Preview — not saved</span></div>
+ <div class="results-control-row">
+  <div class="results-edit-controls">
+  <button mat-stroked-button color="primary" (click)="toggleTeamSorting()">{{ showTeamSorting ? 'Finish Editing' : 'Modify Teams' }}</button>
+  <button mat-raised-button color="primary" (click)="saveKingQueenTeams()" [disabled]="!isActionAllowed || !listOfTeams.length">{{ teamEditsPending && !scrambleSelected ? 'Save Changes / Teams' : 'Save Teams' }}</button>
+  <button mat-button *ngIf="canCancelTeamEditing" (click)="cancelTeamEditing()">Cancel Changes</button>
+  </div>
+  <span *ngIf="!isActionAllowed" class="workspace-help">Administration access is required to save teams.</span>
+  <div class="results-print-action">
+   <button mat-raised-button color="primary" (click)="printMatchups()" [disabled]="!canPrintMatchups" [attr.aria-describedby]="!canPrintMatchups ? 'print-save-help' : null">Print Matchups</button>
+   <p id="print-save-help" class="workspace-help" *ngIf="!canPrintMatchups">Save teams before printing. Unsaved team changes must be saved or cancelled.</p>
+  </div>
+  <div class="results-print-controls">
+   <mat-form-field appearance="outline"><mat-label>Matchups Per Page</mat-label><mat-select [(value)]="selectedMatchupsPerPage" (selectionChange)="onSelectionChange($event)"><mat-option value="2">2 Matchups</mat-option><mat-option value="4">4 Matchups</mat-option><mat-option value="6">6 Matchups</mat-option></mat-select></mat-form-field>
+  <mat-form-field appearance="outline" class="results-rounds"><mat-label>Number of Rounds</mat-label><mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)"><mat-option *ngFor="let round of [1,2,3,4,5,6,7,8,9,10]" [value]="round">{{ round }} Rounds</mat-option></mat-select></mat-form-field>
+  </div>
+  <div class="results-visibility-controls">
+  <button mat-stroked-button (click)="hidePlayerList()">{{ hidePlayers ? 'Show Player List' : 'Hide Player List' }}</button>
+  <button mat-stroked-button (click)="resultsCollapsed = !resultsCollapsed">{{ resultsCollapsed ? 'Show Results' : 'Hide Results' }}</button>
+  <button mat-stroked-button (click)="hideShowEverything()">{{ hideEverything ? 'Show Setup' : 'Hide Setup' }}</button>
+  </div>
+ </div>
+ <p class="editing-state" *ngIf="showTeamSorting || teamEditsPending" role="status"><strong>{{ showTeamSorting ? 'Editing Teams' : 'Team changes staged' }}</strong> — {{ teamEditsPending ? 'Unsaved assignment changes.' : 'Use each player’s Team dropdown to move them.' }} <span *ngIf="scrambleSelected">Retrieved assignments are a local preview; existing save workflows remain unchanged.</span></p>
+</section>
+<div class="generated-matchups" [hidden]="resultsCollapsed"><!-- Container for all pairs -->
 <div style="margin: 1rem;">
 
     <!-- Loop in multiples of 4. (i % 4 === 0) => new row for 4 teams: i, i+1, i+2, i+3 -->
@@ -1826,55 +1642,8 @@
 
 
 
-<div class="d-flex flex-column align-items-center mt-3">
-    <!-- Save Teams Section -->
-    <div class="d-flex flex-column align-items-center mb-3" style="margin-bottom: 5px;">
-        <!--<button mat-raised-button color="primary" class="mb-3" *ngIf="showSaveRoundScores" (click)="saveKingQueenRoundScores()">Save Round Scores</button>-->
-        <button (click)="saveKingQueenTeams()" mat-raised-button color="primary" class="mb-1">
-            Save Teams
-        </button>
-
-        <p class="mb-0 text-center" *ngIf="scrambleNumber" style="margin-bottom: 3px;">Scramble Number: {{ scrambleNumber }}.</p>
-        <p class="mb-0 text-center" *ngIf="scrambleNumber" style="margin-bottom: 3px;">Please save this number for future lookups.</p>
-    </div>
-
-    <!-- Print Matchups Section -->
-    <div class="d-flex flex-column align-items-center">
-
-        <!-- Matchups Per Page Selection -->
-        <mat-form-field appearance="fill" class="w-75 mb-0">
-            <mat-label>Matchups Per Page</mat-label>
-            <mat-select [(value)]="selectedMatchupsPerPage" (selectionChange)="onSelectionChange($event)">
-                <mat-option value="2">2 Matchups</mat-option>
-                <mat-option value="4">4 Matchups</mat-option>
-                <mat-option value="6">6 Matchups</mat-option>
-            </mat-select>
-        </mat-form-field>
-        <button color="primary" mat-raised-button (click)="printMatchups()" class="mb-3">
-            Print Matchups
-        </button>
-        <!--Number of Rounds Selection-->
-        <mat-form-field appearance="fill" class="w-75">
-            <mat-label>Number of Rounds</mat-label>
-            <mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)">
-                <mat-option *ngFor="let round of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]" [value]="round">
-                    {{ round }} Rounds
-                </mat-option>
-            </mat-select>
-        </mat-form-field>
-    </div>
 </div>
-
-
-<div class="text-center" style="margin-top: 10px;">
-
-    <button *ngIf="!hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class" color="primary">Hide</button>
-    <button *ngIf="hideEverything" (click)="hideShowEverything()" mat-raised-button class="my-class" color="primary">Show</button>
-    <button *ngIf="hideEverything && !lockedResults" (click)="scramblePlayers(false)" style="margin-left:10px; " class="my-class" mat-raised-button color="primary">Scramble</button>
 </div>
-
-
-
 <!-- Print Section -->
 <div id="printSection2">
     <div style="text-align: center; margin-bottom: 20px;">

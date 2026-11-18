@@ -203,3 +203,143 @@ button[disabled].apply-top-button {
     color: #ffffff !important;
     box-shadow: 0px 2px 3px rgba(0,0,0,0.12) !important;
 }
+/* Workspace organization only; the roster and algorithms retain their original structure. */
+/* These are print templates, read as innerHTML by printMatchups, not screen results.
+   Visibility alone still lets their off-screen contents widen the mobile document. */
+@media screen {
+ #printSection2, #printSection4, #printSection6 { display: none; }
+}
+.workspace-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px; }
+.scramble-setup { background: #fafbfd !important; padding: 16px; max-width: 1060px; margin: 12px auto !important; border: 1px solid #d8dfe9; border-radius: 6px; box-shadow: none; }
+.scramble-setup h2, .scramble-workflow-actions h2 { font-size: 19px; margin: 0 0 8px; color: #293d69; }
+.scramble-setup h3 { font-size: 17px; margin: 0 0 8px; }
+.workspace-help, .player-action-key { font-size: 13px; color: #4d5664; margin: 6px 0; }
+.player-action-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; }
+.player-action-legend > span { display: inline-flex; align-items: center; gap: 4px; }
+.player-action-legend mat-icon { width: 16px; height: 16px; font-size: 16px; line-height: 16px; }
+.scramble-setup > .row > .col { flex: 1 1 225px; min-width: 0; padding: 0 6px; margin-top: 8px !important; }
+.scramble-setup > .row > .col:last-child { flex-grow: 1.5; }
+.scramble-setup mat-card { box-shadow: none; background: #fff !important; padding: 12px; height: 100%; border: 1px solid #e0e5ed; border-radius: 5px; }
+.scramble-setup mat-card h4 { font-size: 16px; font-weight: 600; margin: 0 0 6px; color: #293d69; }
+.scramble-setup mat-card h5 { font-size: 16px; margin: 8px 0 0; }
+.scramble-setup mat-card .mt-3 { margin-top: 8px !important; }
+.scramble-setup mat-card .d-flex { gap: 8px !important; }
+.scramble-setup mat-card .d-flex > div { padding: 6px 10px !important; border-color: #d8dfe9 !important; background: #f7f9fc !important; }
+.scramble-setup mat-card .d-flex > div > p:first-child { font-size: 12px !important; }
+.scramble-setup mat-card p { margin-bottom: 0; }
+.scramble-setup mat-form-field { width: 100%; max-width: 200px; }
+.scramble-setup ::ng-deep .mat-form-field-infix { width: auto; min-width: 0; }
+.scramble-setup > .workspace-help { text-align: center; max-width: 650px; margin: 0 auto 8px; }
+.scramble-setup .d-flex { flex-wrap: wrap; }
+.scramble-rules { border-top: 1px solid #d8dfe9; padding-top: 10px; margin-top: 12px !important; }
+.scramble-rules > div { flex: 0 0 100%; max-width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 24px; }
+.scramble-rules mat-checkbox { margin: 0 !important; min-height: 36px; display: inline-flex; align-items: center; }
+.scramble-workflow-actions { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; max-width: 1060px; margin: 12px auto; }
+.selection-actions, .balancing-actions { padding: 14px; border: 1px solid #d8dfe9; border-radius: 6px; background: #fff; }
+.selection-actions { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-content: start; gap: 8px; }
+.selection-actions h2, .selection-summary { grid-column: ~"1 / -1"; }
+.selection-help { grid-column: ~"1 / -1"; text-align: center; margin: 0; }
+.selection-actions button { margin: 0; width: 100%; min-height: 48px; white-space: normal; line-height: 20px; }
+.selection-actions .secondary-action { grid-column: ~"1 / -1"; font-size: 15px; font-weight: 600; }
+.selection-summary { font-weight: 600; color: #293d69; text-align: center; background: #edf3fb; border-radius: 4px; padding: 8px; margin: 0 0 4px; }
+.scramble-setup h2, .scramble-rules h3, .scramble-workflow-actions h2, .results-heading h2 { text-align: center; font-size: 20px; font-weight: 600; line-height: 1.3; color: #293d69; margin: 0 0 10px; }
+.balancing-actions .apply-top-wrapper { width: 100%; flex-wrap: wrap; }
+.primary-action { width: 440px; max-width: 100%; min-width: 0; min-height: 64px; font-size: 24px; line-height: 1.25; padding: 16px 24px; font-weight: 700; }
+.primary-action.enabled { background: #98D0A7 !important; color: #fff !important; box-shadow: 0 3px 7px rgba(28,88,49,.25) !important; }
+.primary-action.enabled:hover { background: #98D0A7 !important; transform: none; }
+.primary-action.disabled, .primary-action[disabled] { background: #e0e4eb !important; color: #606a79 !important; box-shadow: none !important; opacity: 1; }
+.progression-actions { text-align: center; grid-column: 1 / span 2; padding: 12px 0 8px; }
+.reset-actions { grid-column: ~"1 / -1"; justify-self: center; width: 200px; padding-top: 0; }
+.reset-actions button { min-height: 44px; }
+.scramble-empty-state { margin: 12px 20px; padding: 8px 12px; background: #f5f6f8; font-size: 14px; }
+.league-management-page { margin: 12px; }
+@media (max-width: 800px) {
+ .scramble-workflow-actions { grid-template-columns: minmax(0,1fr); }
+ .progression-actions { grid-column: 1; }
+ .apply-top-wrapper .apply-top-button { flex: 1 1 180px; max-width: 100%; white-space: normal; }
+ .scramble-setup mat-form-field { max-width: 100%; }
+ .league-management-page mat-form-field { max-width: 100% !important; }
+}
+.scramble-results-toolbar { margin: 16px; padding: 12px; border: 1px solid #bec8da; border-top: 3px solid #304b83; background: #f5f7fa; border-radius: 4px; }
+.results-heading { text-align: center; margin-bottom: 12px; }
+.results-heading h2 { margin: 0 0 4px; }
+.results-heading strong { color: #304b83; }
+.results-control-row, .results-print-controls { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.results-control-row { flex-direction: column; gap: 12px; }
+.results-print-action { width: 360px; max-width: 100%; text-align: center; }
+.results-print-action > button { width: 100%; min-height: 48px; font-size: 17px; font-weight: 600; }
+.results-print-action > button:not([disabled]) { background: #98D0A7; color: #fff; }
+.results-print-action > button[disabled] { background: #e2e6ec; color: #5a6574; }
+.results-print-action .workspace-help { margin-bottom: 0; }
+.mobile-player-identity { flex: 1 1 auto; min-width: 0; }
+.mobile-player-name { display: block; font-size: 16px; }
+.mobile-player-statuses { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
+.player-status { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 11px; line-height: 17px; font-weight: 600; }
+.status-top { background: #dce8ff; color: #25487c; }
+.status-low { background: #fff0cd; color: #76500c; }
+.status-bye { background: #e6e9ee; color: #46505c; }
+.status-swapped { background: #eee2fa; color: #67398c; }
+.results-edit-controls, .results-visibility-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.results-print-controls { border: 0; padding: 0; }
+.results-control-row ::ng-deep .mat-form-field-wrapper { padding-bottom: 0; }
+.results-control-row ::ng-deep .mat-form-field-infix { padding: 10px 0; }
+.results-visibility-controls button { border-color: #cbd4e2; color: #304b83; }
+.results-print-controls mat-form-field { width: 165px; }
+.results-rounds { width: 155px; }
+.results-control-row button { min-height: 44px; }
+.editing-state { margin: 4px 0 0; padding: 8px; border-left: 3px solid #ad790d; background: #fff8df; }
+@media (max-width: 1000px) {
+ .generated-matchups > div > .row > .col-6, .generated-matchups .row.mb-4 > .col-6 { flex: 0 0 100%; max-width: 100%; margin-bottom: 12px; }
+}
+@media (max-width: 600px) {
+ .no-duplicate-action { width: 100% !important; max-width: 360px !important; min-height: 56px; padding: 12px 16px !important; font-size: 18px; line-height: 24px; white-space: normal; }
+ .no-duplicate-action.enabled:hover { transform: none; }
+ .container-fluid button { max-width: 100%; white-space: normal; }
+ .scramble-results-toolbar { margin: 12px 4px; padding: 10px; }
+ .results-print-controls { border-left: 0; padding-left: 0; }
+ .generated-matchups .col-5 { flex: 0 0 48%; max-width: 48%; padding-left: 4px; padding-right: 4px; }
+ .generated-matchups table { table-layout: fixed; width: 100%; }
+ .generated-matchups table td, .generated-matchups table th { overflow-wrap: break-word; font-size: 12px !important; min-width: 0; }
+ .generated-matchups select { max-width: 100%; }
+ .league-roster ::ng-deep .mat-list-text { white-space: normal; min-width: 0; }
+ .league-roster ::ng-deep .mat-list-option { height: auto !important; min-height: 48px; }
+}
+@media print {
+ .scramble-results-toolbar, .scramble-workflow-actions, .workspace-links, .editing-state { display: none !important; }
+}
+.balancing-actions .apply-top-button { min-height: 44px; padding: 8px 12px; line-height: 20px; }
+.balancing-actions .apply-top-button { flex: 1 1 0; max-width: none; min-height: 48px; font-size: 15px; font-weight: 600; white-space: normal; }
+.balancing-actions .apply-top-wrapper { gap: 8px; align-items: stretch; }
+.scramble-workflow-actions .scramble-button.grey, .scramble-workflow-actions .scramble-button[disabled]:not(.primary-action) { background: #edf0f4 !important; color: #647080 !important; box-shadow: none !important; opacity: 1; }
+.balancing-actions .apply-top-button.enabled { background: #e7eef9 !important; color: #304b83 !important; box-shadow: none !important; }
+.balancing-actions .workspace-help { text-align: center; }
+.secondary-action.enabled { background: #98D0A7 !important; color: #fff !important; }
+@media (max-width: 768px) {
+ .balancing-actions .apply-top-wrapper .apply-top-button { flex: 0 0 auto; width: 100%; }
+}
+@media (max-width: 600px) {
+ .scramble-setup { padding: 12px 10px; }
+ .scramble-setup > .row > .col { flex: 1 1 50%; padding: 0 4px; }
+ .scramble-setup > .row > .col:last-child { flex-basis: 100%; }
+ .scramble-setup mat-card { padding: 10px 6px; }
+ .scramble-setup > .row > .col:not(:last-child) h4 { display: none; }
+ .scramble-setup mat-card button { font-size: 12px; line-height: 18px; padding: 8px; min-height: 44px; }
+ .scramble-workflow-actions { margin: 10px auto; gap: 10px; }
+ .selection-actions, .balancing-actions { padding: 12px; }
+ .selection-actions { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+ .selection-actions button { padding: 8px; font-size: 14px; }
+ .league-roster mat-select { width: 44px !important; height: 44px !important; display: flex; align-items: center; }
+ .primary-action { width: 100%; min-height: 64px; font-size: 23px; }
+ .progression-actions { padding: 8px 0; }
+ .scramble-results-toolbar { border-radius: 6px; background: #fafbfd; }
+ .results-control-row { gap: 10px; }
+ .results-print-controls { flex-wrap: nowrap; max-width: 100%; }
+ .results-print-controls mat-form-field { width: 145px; min-width: 0; }
+ .selection-actions button { max-width: 100%; white-space: normal; min-height: 44px; }
+ .league-roster ::ng-deep mat-list-option { width: 100% !important; }
+ .league-roster ::ng-deep .mat-list-text > div { width: 100%; min-width: 0; }
+ .league-roster ::ng-deep .mat-list-text span { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+ .generated-matchups table { table-layout: auto; }
+ .generated-matchups tr.d-flex > .col-4 { flex: 1 1 auto; width: auto; max-width: 100%; }
+ .generated-matchups tr.d-flex > .col-3 { flex: 0 0 36%; width: 36%; max-width: 36%; padding: 2px; }
+}

@@ -1,0 +1,21 @@
+{
+  "checks": [
+    "Unsaved and failed-save print blocked in UI and method; successful Save enables; staged edits disable and Cancel restores",
+    "Saved scramble retrieval restores print eligibility",
+    "Select All/Deselect All; four sizes: side-by-side selection buttons, counts/help below, green primary action, ordered results rows, no overflow; mobile Top/Low/Bye/Gender-swapped badges",
+    "Reset confirmation cancel preserves state; confirm retains original semantics: clears teams/preferences, retains roster checks; double gender toggle removes badge"
+  ],
+  "pageErrors": [],
+  "writes": [
+    {
+      "path": "/api/scrambledata/savekingqueenteams/synthetic%20league",
+      "mode": "intercepted fixture only"
+    },
+    {
+      "path": "/api/scrambledata/savekingqueenteams/synthetic%20league",
+      "mode": "intercepted fixture only"
+    }
+  ],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

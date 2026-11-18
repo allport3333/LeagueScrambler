@@ -94,6 +94,7 @@
                     </a>
                 </li>
 
+<li class="nav-item" [routerLinkActive]="['link-active']"><a routerLink="/league-management" class="nav-link" (click)="collapse()">League Management</a></li>
                 <!-- Profile and Logout (Visible in collapse on small screens) -->
                 <li *ngIf="authenticationChecked && loggedIn && playerId" class="nav-item d-lg-none" [routerLinkActive]="['link-active']">
                     <a [routerLink]="['/player-stats-tabs', playerId]" class="nav-link" (click)="collapse()">

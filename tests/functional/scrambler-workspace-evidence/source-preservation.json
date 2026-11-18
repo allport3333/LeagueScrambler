@@ -1,0 +1,10 @@
+{
+  "unchangedExistingMethods": 122,
+  "changedExistingMethods": [
+    "saveKingQueenTeams",
+    "scramblePlayers",
+    "toggleTeamSorting"
+  ],
+  "unchangedPrintMethod": true,
+  "printTemplatesByteEquivalentIgnoringCRLF": true
+}

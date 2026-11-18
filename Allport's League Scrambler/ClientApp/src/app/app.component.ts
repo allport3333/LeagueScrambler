@@ -14,4 +14,8 @@ export class AppComponent {
   get isPlayerStandingsPage(): boolean {
     return this.router.url.split(/[?#]/)[0].replace(/\/$/, '') === '/standings';
   }
+
+  get isScramblerPage(): boolean {
+    return this.router.url.split(/[?#]/)[0].replace(/\/$/, '') === '/scrambler';
+  }
 }

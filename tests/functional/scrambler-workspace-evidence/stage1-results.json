@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Management route and return preserve the same live Scrambler state; duplicate standings tab removed"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

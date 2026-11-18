@@ -1,0 +1,12 @@
+{
+  "checks": [],
+  "pageErrors": [],
+  "writes": [
+    {
+      "path": "/sockjs-node/939/e425ncnl/xhr_streaming",
+      "mode": "intercepted fixture only"
+    }
+  ],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

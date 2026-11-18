@@ -8,6 +8,7 @@ import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
 import { HomeComponent } from './home/home.component';
 import { ScramblerComponent } from './scrambler/scrambler.component';
+import { ScramblerWorkspaceComponent, WorkspaceRouteComponent } from './scrambler/scrambler-workspace.component';
 import { FetchDataComponent } from './fetch-data/fetch-data.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {
@@ -63,7 +64,9 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         LeagueTeamStandingsComponent,
         IndividualTeamScoresComponent,
         FaqComponent,
-        KqmatchupsComponent
+        KqmatchupsComponent,
+        ScramblerWorkspaceComponent,
+        WorkspaceRouteComponent
 
     ],
     imports: [
@@ -102,7 +105,10 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         MatSnackBarModule,
         RouterModule.forRoot([
             { path: '', component: HomeComponent, pathMatch: 'full' },
-            { path: 'scrambler', component: ScramblerComponent },
+            { path: '', component: ScramblerWorkspaceComponent, children: [
+                { path: 'scrambler', component: WorkspaceRouteComponent },
+                { path: 'league-management', component: WorkspaceRouteComponent }
+            ] },
             { path: 'fetch-data', component: FetchDataComponent },
             { path: 'team-scores', component: TeamScoresComponent },
             { path: 'player-scores', component: PlayerScoresComponent },

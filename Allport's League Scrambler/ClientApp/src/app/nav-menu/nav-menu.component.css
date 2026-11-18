@@ -1,4 +1,23 @@
 /* Adjusted styles for top navigation */
+/* Keep the existing links and collapse behavior; reserve space for every item. */
+@media (min-width: 992px) {
+    .main-nav .navbar { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+    .main-nav .navbar-brand { justify-self: start; margin-right: 0; max-width: 100%; }
+    .main-nav .navbar > .d-lg-flex { grid-column: 2; grid-row: 1; }
+    .main-nav .navbar > .d-lg-flex > ul { display: flex; flex-direction: row; flex-wrap: nowrap; }
+    .main-nav #navbarNav { grid-column: 1 / -1; grid-row: 2; min-width: 0; width: 100%; border-top: 1px solid #56606b; padding-top: 4px; }
+    .main-nav #navbarNav > ul { display: flex; flex-direction: row; flex-wrap: wrap; gap: 2px; margin: 0 auto; }
+    .main-nav #navbarNav li { margin: 0; }
+    .main-nav .navbar #navbarNav li a { padding: 10px 8px; }
+}
+@media (min-width: 992px) and (max-width: 1259px) {
+    .main-nav #navbarNav > ul { max-width: 800px; }
+}
+@media (min-width: 1260px) and (max-width: 1599px) {
+    .main-nav #navbarNav > ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); width: 100%; }
+    .main-nav .navbar #navbarNav li a { white-space: normal; height: 100%; display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .main-nav #navbarNav .nav-link > span { flex-shrink: 0; }
+}
 @media (min-width: 368px) {
     .main-nav {
         position: static; /* Change from fixed position to static */

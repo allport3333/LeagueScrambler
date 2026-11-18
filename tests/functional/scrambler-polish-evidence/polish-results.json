@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Four viewport visual captures; primary action enabled/disabled states, large button, bounded configuration, four-column roster and no overflow"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

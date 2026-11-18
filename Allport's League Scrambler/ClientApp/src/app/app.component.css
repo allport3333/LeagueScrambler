@@ -9,4 +9,9 @@
   .body-content.standings-page {
     padding-top: 6px;
   }
+
+  /* The Scrambler also follows the in-flow navigation; its card supplies spacing. */
+  .body-content.scrambler-page {
+    padding-top: 0;
+  }
 }

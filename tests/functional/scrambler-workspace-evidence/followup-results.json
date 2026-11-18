@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "Existing Number of Rounds and Matchups Per Page selectors update their original state",
+    "Hide/Show Setup retains selection; saved scramble retrieval restores teams, score and scramble number; Manage Scores remains available",
+    "Direct League Management route works and preserves the existing locked administration form without password use or API writes"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

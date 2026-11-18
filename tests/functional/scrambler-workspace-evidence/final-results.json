@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "Results controls precede cards; hide/show preserves court input; team move is staged, hiding retains draft and Cancel restores assignments",
+    "Modified new-team assignments pass through the existing explicit Save Teams request (mocked transport)",
+    "Actual balanced scramble algorithm keeps all 24 selected players exactly once in 12 balanced teams",
+    "Save remains unavailable without administration access; legacy unlock controls remain available without using a password",
+    "Actual print function: normalized HTML, rendered screenshots and PDF page counts match baseline for 2/4/6 matchups per page",
+    "Desktop 1920/1366, tablet768 and mobile390/375 render without horizontal overflow",
+    "Top, Low and Bye preference actions still update the existing selected-player state",
+    "Fetch signed-in roster, retained standings-driven top selection and temporary gender action execute existing methods"
+  ],
+  "pageErrors": [],
+  "writes": [
+    {
+      "path": "/api/scrambledata/savekingqueenteams/synthetic%20league",
+      "mode": "intercepted fixture only"
+    },
+    {
+      "path": "/api/scrambledata/generatescramble/synthetic%20league",
+      "mode": "intercepted fixture only"
+    }
+  ],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

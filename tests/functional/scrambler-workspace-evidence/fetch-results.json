@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Available signed-in players: enabled Fetch uses original light green; unavailable: disabled neutral state; configuration comparison=false"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

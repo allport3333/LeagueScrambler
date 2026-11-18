@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Hide toggle appears only with results; full-width Fetch; desktop/mobile hide-show preserves selections/teams/print state; reset retains a recovery toggle; no overflow"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

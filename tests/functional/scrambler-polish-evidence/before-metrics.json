@@ -1,0 +1,34 @@
+[
+  {
+    "width": 1920,
+    "overflow": false,
+    "buttonWidth": 220,
+    "buttonHeight": 48,
+    "configurationWidth": 1856,
+    "configurationHeight": 398.484375
+  },
+  {
+    "width": 1366,
+    "overflow": false,
+    "buttonWidth": 220,
+    "buttonHeight": 48,
+    "configurationWidth": 1302,
+    "configurationHeight": 430.484375
+  },
+  {
+    "width": 390,
+    "overflow": false,
+    "buttonWidth": 220,
+    "buttonHeight": 48,
+    "configurationWidth": 326,
+    "configurationHeight": 954.078125
+  },
+  {
+    "width": 375,
+    "overflow": false,
+    "buttonWidth": 220,
+    "buttonHeight": 48,
+    "configurationWidth": 311,
+    "configurationHeight": 954.078125
+  }
+]

@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, Inject, Input, OnInit, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatSelectionListChange, MatTabGroup, MatTabChangeEvent } from '@angular/material';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -29,6 +29,33 @@ import { Subject, Observable } from 'rxjs';
     styleUrls: ['./scrambler.component.less']
 })
 export class ScramblerComponent implements OnInit {
+    @Input() workspaceSection = 'scrambler';
+    resultsCollapsed = false;
+    private savedPrintSignature: string = null;
+    private savedPrintTeams: Team[] = null;
+    private savedPrintLeague: string = null;
+    private originalPlayerGenders = new WeakMap<Player, boolean>();
+    private getPrintSignature(): string {
+        return JSON.stringify({ teams: this.listOfTeams.map(t => t.players.map(p => [p.id, p.isMale])), byes: this.byePlayers.map(p => p.id) });
+    }
+    private rememberSavedTeams(): void {
+        this.savedPrintTeams = this.listOfTeams;
+        this.savedPrintLeague = this.selectedLeague;
+        this.savedPrintSignature = this.getPrintSignature();
+    }
+    get canPrintMatchups(): boolean {
+        return this.listOfTeams.length > 0 && this.savedPrintTeams === this.listOfTeams
+            && this.savedPrintLeague === this.selectedLeague && this.savedPrintSignature === this.getPrintSignature();
+    }
+    isPlayerGenderSwapped(player: Player): boolean {
+        return this.originalPlayerGenders.has(player) && this.originalPlayerGenders.get(player) !== player.isMale;
+    }
+    private teamEditingSnapshot: { team: Team; players: Player[] }[] = null;
+    get canCancelTeamEditing(): boolean { return this.teamEditingSnapshot !== null; }
+    get teamEditsPending(): boolean {
+        return !!this.teamEditingSnapshot && this.teamEditingSnapshot.some(entry =>
+            entry.team.players.map(p => p.id).join(',') !== entry.players.map(p => p.id).join(','));
+    }
     @ViewChild('matchupDiv') matchupDiv!: ElementRef;
     @ViewChild('saveTeamsDiv') saveTeamsDiv!: ElementRef;
     @ViewChild('tabGroup') tabGroup: MatTabGroup; // ViewChild reference
@@ -227,7 +254,47 @@ export class ScramblerComponent implements OnInit {
     }
 
     toggleTeamSorting(): void {
+        if (!this.showTeamSorting && !this.teamEditingSnapshot) {
+            this.teamEditingSnapshot = this.listOfTeams.map(team => ({ team, players: team.players.slice() }));
+        }
         this.showTeamSorting = !this.showTeamSorting;
+    }
+
+    cancelTeamEditing(): void {
+        if (this.teamEditingSnapshot) {
+            this.teamEditingSnapshot.forEach(entry => { entry.team.players = entry.players.slice(); });
+        }
+        this.teamEditingSnapshot = null;
+        this.showTeamSorting = false;
+    }
+
+    requestRetrieveScramble(scramble: KingQueenTeam): void {
+        if (this.teamEditsPending && !window.confirm('Discard staged team changes and retrieve another scramble?')) { return; }
+        this.teamEditingSnapshot = null;
+        this.showTeamSorting = false;
+        this.retrieveScramble(scramble);
+    }
+
+    requestRetrieveMultipleScrambles(): void {
+        if (this.teamEditsPending && !window.confirm('Discard staged team changes and retrieve selected scrambles?')) { return; }
+        this.teamEditingSnapshot = null;
+        this.showTeamSorting = false;
+        this.retrieveMultipleScrambles();
+    }
+
+    requestResetAll(): void {
+        if (this.locked) { this.reset(); return; }
+        if (!window.confirm('Clear current Top/Low/Bye player selections and generated teams? Checked roster players will stay selected.')) { return; }
+        this.reset();
+        this.teamEditingSnapshot = null;
+        this.showTeamSorting = false;
+    }
+
+    requestResetPreferences(kind: 'top' | 'low' | 'bye'): void {
+        if (!window.confirm('Clear current ' + kind.toUpperCase() + ' player selections? Checked roster players will stay selected.')) { return; }
+        if (kind === 'top') { this.resetTopPlayers(); }
+        else if (kind === 'low') { this.resetLowPlayers(); }
+        else { this.resetByePlayers(); }
     }
 
     switchPlayerTeam(player: any, selectedSortingId: string, currentSortingId: number): void {
@@ -305,6 +372,7 @@ export class ScramblerComponent implements OnInit {
 
 
     swapGender(player: any): void {
+        if (!this.originalPlayerGenders.has(player)) { this.originalPlayerGenders.set(player, player.isMale); }
         player.isMale = !player.isMale; // Toggles the value
     }
 
@@ -2616,6 +2684,7 @@ export class ScramblerComponent implements OnInit {
 
 
     retrieveScramble(scramble: KingQueenTeam) {
+        this.savedPrintSignature = null;
         this.scrambleSelected = true;
         this.retrievedPlayersBefore = true;
         this.allowScrambleWithNoDuplicates = true;
@@ -2671,6 +2740,7 @@ export class ScramblerComponent implements OnInit {
                 this.initializeScores();
 
                 // Ensure Angular updates the view immediately
+                this.rememberSavedTeams();
                 this.cdr.detectChanges();
             },
             (error) => {
@@ -2733,6 +2803,7 @@ export class ScramblerComponent implements OnInit {
 
 
     retrieveMultipleScrambles() {
+        this.savedPrintSignature = null;
         this.retrievedPlayersBefore = true;
         this.allowScrambleWithNoDuplicates = true;
         this.showSaveRoundScores = false;
@@ -2766,6 +2837,7 @@ export class ScramblerComponent implements OnInit {
 
                 this.listOfRetrievedScrambleNumbers = [...this.listOfScrambleNumbers];
                 this.byePlayers = response.byePlayers || [];
+                this.rememberSavedTeams();
 
                 // Ensure view updates
                 this.cdr.detectChanges();
@@ -2853,6 +2925,9 @@ export class ScramblerComponent implements OnInit {
 
 
     async saveKingQueenTeams() {
+        const submittedTeams = this.listOfTeams;
+        const submittedLeague = this.selectedLeague;
+        const submittedSignature = this.getPrintSignature();
         // Transform Team[] into KingQueenTeamWithPlayers[]
         const kingQueenTeamsWithPlayers: KingQueenTeamWithPlayers[] = this.listOfTeams.map(team => {
             return {
@@ -2884,6 +2959,12 @@ export class ScramblerComponent implements OnInit {
                 }
 
                 this.showSnackBar('All KingQueenTeams and Bye Players saved successfully!');
+                if (result.kingQueenTeams.length === submittedTeams.length && submittedTeams.length > 0
+                    && this.listOfTeams === submittedTeams && this.selectedLeague === submittedLeague
+                    && this.getPrintSignature() === submittedSignature
+                    && (!this.scrambleSelected || !this.teamEditsPending)) { this.rememberSavedTeams(); }
+                this.teamEditingSnapshot = null;
+                this.showTeamSorting = false;
 
                 // Update the queried scrambles
                 this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe(result => {
@@ -2906,6 +2987,7 @@ export class ScramblerComponent implements OnInit {
     }
 
     printMatchups(): void {
+        if (!this.canPrintMatchups) { this.showSnackBar('Save teams before printing matchups.'); return; }
         let printContent = '';
 
         if (this.selectedMatchupsPerPage == '2') {
@@ -3375,6 +3457,11 @@ export class ScramblerComponent implements OnInit {
 
 
     async scramblePlayers(nonDuplicates: boolean = false) {
+        if (this.teamEditsPending && !window.confirm('Discard staged team changes and generate another scramble?')) { return; }
+        this.savedPrintSignature = null;
+        this.teamEditingSnapshot = null;
+        this.showTeamSorting = false;
+        this.resultsCollapsed = false;
         this.scrambleSelected = false;
         this.showSaveRoundScores = false;
         this.totalTopPlayers = this.displayTopPlayers;

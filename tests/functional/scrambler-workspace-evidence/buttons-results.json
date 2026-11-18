@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "Enabled Print uses original light green; unsaved Print remains disabled/gray; no-duplicate button fits 375/390 without overflow or tall text stacking"
+  ],
+  "pageErrors": [],
+  "writes": [
+    {
+      "path": "/api/scrambledata/savekingqueenteams/synthetic%20league",
+      "mode": "intercepted fixture only"
+    }
+  ],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}
