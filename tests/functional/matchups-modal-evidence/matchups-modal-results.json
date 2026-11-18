@@ -1,0 +1,888 @@
+{
+  "checks": [
+    "Real generation produces compact summary without automatic modal/grid; viewer has all six original pairs, two columns on desktop, focus/scroll restoration and no viewing writes",
+    "Generated assignments use staged original state, cancel/close/Escape confirmations, save failure retains edit mode and one stable-ID save returns view mode",
+    "Retrieved stable-ID assignments save/reload through fixture; retrieving another scramble while viewing uses current objects, identifier and pairings without stale modal state",
+    "Mobile one-card rows, usable assignment controls/no overflow at375/390/430, same modal modes and unsaved transition confirmation",
+    "Actual print method renders all matchups at2/4/6 per page into PDF/screenshots; identical HTML with dialog closed/open, original round count and no modal controls",
+    "Results, Player List and Setup disclosures stay by their sections and retain underlying state",
+    "Original print baseline pixel and PDF page-count comparison passed for2/4/6 per page"
+  ],
+  "pageErrors": [],
+  "writes": [
+    {
+      "path": "/api/scrambledata/generatescramble/synthetic%20league",
+      "mode": "intercepted fixture only"
+    },
+    {
+      "path": "/api/scrambledata/savekingqueenteams/synthetic%20league",
+      "mode": "intercepted fixture only"
+    },
+    {
+      "path": "/api/scrambledata/savekingqueenteams/synthetic%20league",
+      "mode": "intercepted fixture only",
+      "data": {
+        "kingQueenTeams": [
+          {
+            "kingQueenTeam": {
+              "id": 5001,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1018,
+                "firstName": "Synthetic",
+                "lastName": "Player18",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 5002,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1007,
+                "firstName": "Synthetic",
+                "lastName": "Player07",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1010,
+                "firstName": "Synthetic",
+                "lastName": "Player10",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1011,
+                "firstName": "Synthetic",
+                "lastName": "Player11",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 5003,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1015,
+                "firstName": "Synthetic",
+                "lastName": "Player15",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1002,
+                "firstName": "Synthetic",
+                "lastName": "Player02",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 5004,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1005,
+                "firstName": "Synthetic",
+                "lastName": "Player05",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1016,
+                "firstName": "Synthetic",
+                "lastName": "Player16",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 5005,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1019,
+                "firstName": "Synthetic",
+                "lastName": "Player19",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1020,
+                "firstName": "Synthetic",
+                "lastName": "Player20",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 5006,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1021,
+                "firstName": "Synthetic",
+                "lastName": "Player21",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1004,
+                "firstName": "Synthetic",
+                "lastName": "Player04",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 5007,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1017,
+                "firstName": "Synthetic",
+                "lastName": "Player17",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1012,
+                "firstName": "Synthetic",
+                "lastName": "Player12",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 5008,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1003,
+                "firstName": "Synthetic",
+                "lastName": "Player03",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1024,
+                "firstName": "Synthetic",
+                "lastName": "Player24",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 5009,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1023,
+                "firstName": "Synthetic",
+                "lastName": "Player23",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1008,
+                "firstName": "Synthetic",
+                "lastName": "Player08",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 5010,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1009,
+                "firstName": "Synthetic",
+                "lastName": "Player09",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1006,
+                "firstName": "Synthetic",
+                "lastName": "Player06",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 5011,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1013,
+                "firstName": "Synthetic",
+                "lastName": "Player13",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1022,
+                "firstName": "Synthetic",
+                "lastName": "Player22",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 5012,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:07.181Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1001,
+                "firstName": "Synthetic",
+                "lastName": "Player01",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              },
+              {
+                "id": 1014,
+                "firstName": "Synthetic",
+                "lastName": "Player14",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false
+              }
+            ]
+          }
+        ],
+        "byePlayers": []
+      }
+    },
+    {
+      "path": "/api/scrambledata/savekingqueenteams/synthetic%20league",
+      "mode": "intercepted fixture only",
+      "data": {
+        "kingQueenTeams": [
+          {
+            "kingQueenTeam": {
+              "id": 211,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1002,
+                "firstName": "Synthetic",
+                "lastName": "Player02",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 218,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1003,
+                "firstName": "Synthetic",
+                "lastName": "Player03",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1004,
+                "firstName": "Synthetic",
+                "lastName": "Player04",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1001,
+                "firstName": "Synthetic",
+                "lastName": "Player01",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 225,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1005,
+                "firstName": "Synthetic",
+                "lastName": "Player05",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1006,
+                "firstName": "Synthetic",
+                "lastName": "Player06",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 232,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1007,
+                "firstName": "Synthetic",
+                "lastName": "Player07",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1008,
+                "firstName": "Synthetic",
+                "lastName": "Player08",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 239,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1009,
+                "firstName": "Synthetic",
+                "lastName": "Player09",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1010,
+                "firstName": "Synthetic",
+                "lastName": "Player10",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 246,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1011,
+                "firstName": "Synthetic",
+                "lastName": "Player11",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1012,
+                "firstName": "Synthetic",
+                "lastName": "Player12",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 253,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1013,
+                "firstName": "Synthetic",
+                "lastName": "Player13",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1014,
+                "firstName": "Synthetic",
+                "lastName": "Player14",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 260,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1015,
+                "firstName": "Synthetic",
+                "lastName": "Player15",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1016,
+                "firstName": "Synthetic",
+                "lastName": "Player16",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 267,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1017,
+                "firstName": "Synthetic",
+                "lastName": "Player17",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1018,
+                "firstName": "Synthetic",
+                "lastName": "Player18",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 274,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1019,
+                "firstName": "Synthetic",
+                "lastName": "Player19",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1020,
+                "firstName": "Synthetic",
+                "lastName": "Player20",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 281,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1021,
+                "firstName": "Synthetic",
+                "lastName": "Player21",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1022,
+                "firstName": "Synthetic",
+                "lastName": "Player22",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          },
+          {
+            "kingQueenTeam": {
+              "id": 288,
+              "leagueID": 0,
+              "dateOfTeam": "2026-11-18T22:17:08.896Z",
+              "scrambleNumber": 0,
+              "kingQueenPlayers": [],
+              "kingQueenRoundScores": []
+            },
+            "players": [
+              {
+                "id": 1023,
+                "firstName": "Synthetic",
+                "lastName": "Player23",
+                "isMale": true,
+                "gender": "Male",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              },
+              {
+                "id": 1024,
+                "firstName": "Synthetic",
+                "lastName": "Player24",
+                "isMale": false,
+                "gender": "Female",
+                "isSub": false,
+                "isTopPlayer": false,
+                "isLowPlayer": false,
+                "isByePlayer": false,
+                "isSubScore": false
+              }
+            ]
+          }
+        ],
+        "byePlayers": [
+          {
+            "id": 1999,
+            "firstName": "Synthetic",
+            "lastName": "Bye"
+          }
+        ]
+      }
+    }
+  ],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

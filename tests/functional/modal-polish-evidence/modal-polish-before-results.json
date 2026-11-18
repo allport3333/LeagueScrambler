@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Baseline desktop name spacing/card dimensions captured"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

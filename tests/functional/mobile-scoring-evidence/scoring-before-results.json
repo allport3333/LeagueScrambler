@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Desktop Manage Scores baseline captured using original tables and fixture retrieval"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

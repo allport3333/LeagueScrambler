@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Eight widths in View/Edit: content-driven card count and compact names, whole-word names, equal opposing row heights, reserved Court, header/footer visible and no overflow/writes"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

@@ -1,0 +1,1412 @@
+{
+  "checks": [
+    "Saved response order/stable IDs form six original pairs; existing/blank rounds preserved, numeric/win editing and live totals share state with desktop, no navigation writes",
+    "Original player order and per-team player Sub Score API persist immediately, with visible feedback and rollback on failure",
+    "Changing displayed rounds retains entered values/flags and exposes hidden-round retention notice without deleting saved rounds",
+    "Failure keeps edits, retry saves all12 teams with original payload, double click blocked, saved IDs refreshed, repeated save does not duplicate new fixture rows",
+    "Post-save read failure blocks unsafe resubmission; ID refresh recovers without another write",
+    "Canceling scramble, generation or league change preserves selected scramble and all unsaved entries",
+    "Confirmed scramble change loads new saved IDs; unmatched final team and bye data stay visible with no invented opponent",
+    "Retrieving the saved scramble refreshes all persisted fixture scores/sub flags and preserves original stable associations",
+    "Confirmed league change clears old scoring context without showing prior-league teams"
+  ],
+  "pageErrors": [],
+  "writes": [
+    {
+      "path": "/api/scrambledata/updatekingqueenplayersubstatus",
+      "mode": "intercepted fixture only",
+      "data": {
+        "kingQueenTeamId": 211,
+        "playerId": 1001,
+        "isSubScore": true
+      }
+    },
+    {
+      "path": "/api/scrambledata/updatekingqueenplayersubstatus",
+      "mode": "intercepted fixture only",
+      "data": {
+        "kingQueenTeamId": 211,
+        "playerId": 1001,
+        "isSubScore": false
+      }
+    },
+    {
+      "path": "/api/scrambledata/savekingqueenroundscores/synthetic%20league",
+      "mode": "intercepted fixture only",
+      "data": {
+        "roundScores": [
+          {
+            "id": 2111,
+            "roundId": 1,
+            "kingQueenTeamId": 211,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2181,
+            "roundId": 1,
+            "kingQueenTeamId": 218,
+            "roundScore": 23,
+            "roundWon": true
+          },
+          {
+            "id": 2182,
+            "roundId": 2,
+            "kingQueenTeamId": 218,
+            "roundScore": 13,
+            "roundWon": true
+          },
+          {
+            "id": 2183,
+            "roundId": 3,
+            "kingQueenTeamId": 218,
+            "roundScore": 14,
+            "roundWon": true
+          },
+          {
+            "id": 2251,
+            "roundId": 1,
+            "kingQueenTeamId": 225,
+            "roundScore": 31,
+            "roundWon": true
+          },
+          {
+            "id": 2252,
+            "roundId": 2,
+            "kingQueenTeamId": 225,
+            "roundScore": 14,
+            "roundWon": false
+          },
+          {
+            "id": 2253,
+            "roundId": 3,
+            "kingQueenTeamId": 225,
+            "roundScore": 15,
+            "roundWon": false
+          },
+          {
+            "id": 2321,
+            "roundId": 1,
+            "kingQueenTeamId": 232,
+            "roundScore": 14,
+            "roundWon": false
+          },
+          {
+            "id": 2322,
+            "roundId": 2,
+            "kingQueenTeamId": 232,
+            "roundScore": 15,
+            "roundWon": true
+          },
+          {
+            "id": 2323,
+            "roundId": 3,
+            "kingQueenTeamId": 232,
+            "roundScore": 16,
+            "roundWon": true
+          },
+          {
+            "id": 2391,
+            "roundId": 1,
+            "kingQueenTeamId": 239,
+            "roundScore": 15,
+            "roundWon": false
+          },
+          {
+            "id": 2392,
+            "roundId": 2,
+            "kingQueenTeamId": 239,
+            "roundScore": 16,
+            "roundWon": false
+          },
+          {
+            "id": 2393,
+            "roundId": 3,
+            "kingQueenTeamId": 239,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2461,
+            "roundId": 1,
+            "kingQueenTeamId": 246,
+            "roundScore": 16,
+            "roundWon": true
+          },
+          {
+            "id": 2462,
+            "roundId": 2,
+            "kingQueenTeamId": 246,
+            "roundScore": 17,
+            "roundWon": true
+          },
+          {
+            "id": 2463,
+            "roundId": 3,
+            "kingQueenTeamId": 246,
+            "roundScore": 18,
+            "roundWon": true
+          },
+          {
+            "id": 2531,
+            "roundId": 1,
+            "kingQueenTeamId": 253,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2532,
+            "roundId": 2,
+            "kingQueenTeamId": 253,
+            "roundScore": 18,
+            "roundWon": false
+          },
+          {
+            "id": 2533,
+            "roundId": 3,
+            "kingQueenTeamId": 253,
+            "roundScore": 19,
+            "roundWon": false
+          },
+          {
+            "id": 2601,
+            "roundId": 1,
+            "kingQueenTeamId": 260,
+            "roundScore": 18,
+            "roundWon": true
+          },
+          {
+            "id": 2602,
+            "roundId": 2,
+            "kingQueenTeamId": 260,
+            "roundScore": 19,
+            "roundWon": true
+          },
+          {
+            "id": 2603,
+            "roundId": 3,
+            "kingQueenTeamId": 260,
+            "roundScore": 20,
+            "roundWon": true
+          },
+          {
+            "id": 2671,
+            "roundId": 1,
+            "kingQueenTeamId": 267,
+            "roundScore": 19,
+            "roundWon": false
+          },
+          {
+            "id": 2672,
+            "roundId": 2,
+            "kingQueenTeamId": 267,
+            "roundScore": 20,
+            "roundWon": false
+          },
+          {
+            "id": 2673,
+            "roundId": 3,
+            "kingQueenTeamId": 267,
+            "roundScore": 21,
+            "roundWon": false
+          },
+          {
+            "id": 2741,
+            "roundId": 1,
+            "kingQueenTeamId": 274,
+            "roundScore": 20,
+            "roundWon": true
+          },
+          {
+            "id": 2742,
+            "roundId": 2,
+            "kingQueenTeamId": 274,
+            "roundScore": 21,
+            "roundWon": true
+          },
+          {
+            "id": 2743,
+            "roundId": 3,
+            "kingQueenTeamId": 274,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2811,
+            "roundId": 1,
+            "kingQueenTeamId": 281,
+            "roundScore": 21,
+            "roundWon": false
+          },
+          {
+            "id": 2812,
+            "roundId": 2,
+            "kingQueenTeamId": 281,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2813,
+            "roundId": 3,
+            "kingQueenTeamId": 281,
+            "roundScore": 23,
+            "roundWon": false
+          },
+          {
+            "id": 2881,
+            "roundId": 1,
+            "kingQueenTeamId": 288,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2883,
+            "roundId": 3,
+            "kingQueenTeamId": 288,
+            "roundScore": 24,
+            "roundWon": true
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 211,
+            "roundId": 2,
+            "roundScore": 8,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 211,
+            "roundId": 4,
+            "roundScore": 5,
+            "roundWon": true
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 211,
+            "roundId": 3,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 218,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 225,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 232,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 239,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 246,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 253,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 260,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 267,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 274,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 281,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 288,
+            "roundId": 2,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 288,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          }
+        ]
+      }
+    },
+    {
+      "path": "/api/scrambledata/savekingqueenroundscores/synthetic%20league",
+      "mode": "intercepted fixture only",
+      "data": {
+        "roundScores": [
+          {
+            "id": 2111,
+            "roundId": 1,
+            "kingQueenTeamId": 211,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2181,
+            "roundId": 1,
+            "kingQueenTeamId": 218,
+            "roundScore": 23,
+            "roundWon": true
+          },
+          {
+            "id": 2182,
+            "roundId": 2,
+            "kingQueenTeamId": 218,
+            "roundScore": 13,
+            "roundWon": true
+          },
+          {
+            "id": 2183,
+            "roundId": 3,
+            "kingQueenTeamId": 218,
+            "roundScore": 14,
+            "roundWon": true
+          },
+          {
+            "id": 2251,
+            "roundId": 1,
+            "kingQueenTeamId": 225,
+            "roundScore": 31,
+            "roundWon": true
+          },
+          {
+            "id": 2252,
+            "roundId": 2,
+            "kingQueenTeamId": 225,
+            "roundScore": 14,
+            "roundWon": false
+          },
+          {
+            "id": 2253,
+            "roundId": 3,
+            "kingQueenTeamId": 225,
+            "roundScore": 15,
+            "roundWon": false
+          },
+          {
+            "id": 2321,
+            "roundId": 1,
+            "kingQueenTeamId": 232,
+            "roundScore": 14,
+            "roundWon": false
+          },
+          {
+            "id": 2322,
+            "roundId": 2,
+            "kingQueenTeamId": 232,
+            "roundScore": 15,
+            "roundWon": true
+          },
+          {
+            "id": 2323,
+            "roundId": 3,
+            "kingQueenTeamId": 232,
+            "roundScore": 16,
+            "roundWon": true
+          },
+          {
+            "id": 2391,
+            "roundId": 1,
+            "kingQueenTeamId": 239,
+            "roundScore": 15,
+            "roundWon": false
+          },
+          {
+            "id": 2392,
+            "roundId": 2,
+            "kingQueenTeamId": 239,
+            "roundScore": 16,
+            "roundWon": false
+          },
+          {
+            "id": 2393,
+            "roundId": 3,
+            "kingQueenTeamId": 239,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2461,
+            "roundId": 1,
+            "kingQueenTeamId": 246,
+            "roundScore": 16,
+            "roundWon": true
+          },
+          {
+            "id": 2462,
+            "roundId": 2,
+            "kingQueenTeamId": 246,
+            "roundScore": 17,
+            "roundWon": true
+          },
+          {
+            "id": 2463,
+            "roundId": 3,
+            "kingQueenTeamId": 246,
+            "roundScore": 18,
+            "roundWon": true
+          },
+          {
+            "id": 2531,
+            "roundId": 1,
+            "kingQueenTeamId": 253,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2532,
+            "roundId": 2,
+            "kingQueenTeamId": 253,
+            "roundScore": 18,
+            "roundWon": false
+          },
+          {
+            "id": 2533,
+            "roundId": 3,
+            "kingQueenTeamId": 253,
+            "roundScore": 19,
+            "roundWon": false
+          },
+          {
+            "id": 2601,
+            "roundId": 1,
+            "kingQueenTeamId": 260,
+            "roundScore": 18,
+            "roundWon": true
+          },
+          {
+            "id": 2602,
+            "roundId": 2,
+            "kingQueenTeamId": 260,
+            "roundScore": 19,
+            "roundWon": true
+          },
+          {
+            "id": 2603,
+            "roundId": 3,
+            "kingQueenTeamId": 260,
+            "roundScore": 20,
+            "roundWon": true
+          },
+          {
+            "id": 2671,
+            "roundId": 1,
+            "kingQueenTeamId": 267,
+            "roundScore": 19,
+            "roundWon": false
+          },
+          {
+            "id": 2672,
+            "roundId": 2,
+            "kingQueenTeamId": 267,
+            "roundScore": 20,
+            "roundWon": false
+          },
+          {
+            "id": 2673,
+            "roundId": 3,
+            "kingQueenTeamId": 267,
+            "roundScore": 21,
+            "roundWon": false
+          },
+          {
+            "id": 2741,
+            "roundId": 1,
+            "kingQueenTeamId": 274,
+            "roundScore": 20,
+            "roundWon": true
+          },
+          {
+            "id": 2742,
+            "roundId": 2,
+            "kingQueenTeamId": 274,
+            "roundScore": 21,
+            "roundWon": true
+          },
+          {
+            "id": 2743,
+            "roundId": 3,
+            "kingQueenTeamId": 274,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2811,
+            "roundId": 1,
+            "kingQueenTeamId": 281,
+            "roundScore": 21,
+            "roundWon": false
+          },
+          {
+            "id": 2812,
+            "roundId": 2,
+            "kingQueenTeamId": 281,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2813,
+            "roundId": 3,
+            "kingQueenTeamId": 281,
+            "roundScore": 23,
+            "roundWon": false
+          },
+          {
+            "id": 2881,
+            "roundId": 1,
+            "kingQueenTeamId": 288,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2883,
+            "roundId": 3,
+            "kingQueenTeamId": 288,
+            "roundScore": 24,
+            "roundWon": true
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 211,
+            "roundId": 2,
+            "roundScore": 8,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 211,
+            "roundId": 4,
+            "roundScore": 5,
+            "roundWon": true
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 211,
+            "roundId": 3,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 218,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 225,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 232,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 239,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 246,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 253,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 260,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 267,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 274,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 281,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 288,
+            "roundId": 2,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 0,
+            "kingQueenTeamId": 288,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          }
+        ]
+      }
+    },
+    {
+      "path": "/api/scrambledata/savekingqueenroundscores/synthetic%20league",
+      "mode": "intercepted fixture only",
+      "data": {
+        "roundScores": [
+          {
+            "id": 2111,
+            "roundId": 1,
+            "kingQueenTeamId": 211,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2181,
+            "roundId": 1,
+            "kingQueenTeamId": 218,
+            "roundScore": 23,
+            "roundWon": true
+          },
+          {
+            "id": 2182,
+            "roundId": 2,
+            "kingQueenTeamId": 218,
+            "roundScore": 13,
+            "roundWon": true
+          },
+          {
+            "id": 2183,
+            "roundId": 3,
+            "kingQueenTeamId": 218,
+            "roundScore": 14,
+            "roundWon": true
+          },
+          {
+            "id": 2251,
+            "roundId": 1,
+            "kingQueenTeamId": 225,
+            "roundScore": 31,
+            "roundWon": true
+          },
+          {
+            "id": 2252,
+            "roundId": 2,
+            "kingQueenTeamId": 225,
+            "roundScore": 14,
+            "roundWon": false
+          },
+          {
+            "id": 2253,
+            "roundId": 3,
+            "kingQueenTeamId": 225,
+            "roundScore": 15,
+            "roundWon": false
+          },
+          {
+            "id": 2321,
+            "roundId": 1,
+            "kingQueenTeamId": 232,
+            "roundScore": 14,
+            "roundWon": false
+          },
+          {
+            "id": 2322,
+            "roundId": 2,
+            "kingQueenTeamId": 232,
+            "roundScore": 15,
+            "roundWon": true
+          },
+          {
+            "id": 2323,
+            "roundId": 3,
+            "kingQueenTeamId": 232,
+            "roundScore": 16,
+            "roundWon": true
+          },
+          {
+            "id": 2391,
+            "roundId": 1,
+            "kingQueenTeamId": 239,
+            "roundScore": 15,
+            "roundWon": false
+          },
+          {
+            "id": 2392,
+            "roundId": 2,
+            "kingQueenTeamId": 239,
+            "roundScore": 16,
+            "roundWon": false
+          },
+          {
+            "id": 2393,
+            "roundId": 3,
+            "kingQueenTeamId": 239,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2461,
+            "roundId": 1,
+            "kingQueenTeamId": 246,
+            "roundScore": 16,
+            "roundWon": true
+          },
+          {
+            "id": 2462,
+            "roundId": 2,
+            "kingQueenTeamId": 246,
+            "roundScore": 17,
+            "roundWon": true
+          },
+          {
+            "id": 2463,
+            "roundId": 3,
+            "kingQueenTeamId": 246,
+            "roundScore": 18,
+            "roundWon": true
+          },
+          {
+            "id": 2531,
+            "roundId": 1,
+            "kingQueenTeamId": 253,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2532,
+            "roundId": 2,
+            "kingQueenTeamId": 253,
+            "roundScore": 18,
+            "roundWon": false
+          },
+          {
+            "id": 2533,
+            "roundId": 3,
+            "kingQueenTeamId": 253,
+            "roundScore": 19,
+            "roundWon": false
+          },
+          {
+            "id": 2601,
+            "roundId": 1,
+            "kingQueenTeamId": 260,
+            "roundScore": 18,
+            "roundWon": true
+          },
+          {
+            "id": 2602,
+            "roundId": 2,
+            "kingQueenTeamId": 260,
+            "roundScore": 19,
+            "roundWon": true
+          },
+          {
+            "id": 2603,
+            "roundId": 3,
+            "kingQueenTeamId": 260,
+            "roundScore": 20,
+            "roundWon": true
+          },
+          {
+            "id": 2671,
+            "roundId": 1,
+            "kingQueenTeamId": 267,
+            "roundScore": 19,
+            "roundWon": false
+          },
+          {
+            "id": 2672,
+            "roundId": 2,
+            "kingQueenTeamId": 267,
+            "roundScore": 20,
+            "roundWon": false
+          },
+          {
+            "id": 2673,
+            "roundId": 3,
+            "kingQueenTeamId": 267,
+            "roundScore": 21,
+            "roundWon": false
+          },
+          {
+            "id": 2741,
+            "roundId": 1,
+            "kingQueenTeamId": 274,
+            "roundScore": 20,
+            "roundWon": true
+          },
+          {
+            "id": 2742,
+            "roundId": 2,
+            "kingQueenTeamId": 274,
+            "roundScore": 21,
+            "roundWon": true
+          },
+          {
+            "id": 2743,
+            "roundId": 3,
+            "kingQueenTeamId": 274,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2811,
+            "roundId": 1,
+            "kingQueenTeamId": 281,
+            "roundScore": 21,
+            "roundWon": false
+          },
+          {
+            "id": 2812,
+            "roundId": 2,
+            "kingQueenTeamId": 281,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2813,
+            "roundId": 3,
+            "kingQueenTeamId": 281,
+            "roundScore": 23,
+            "roundWon": false
+          },
+          {
+            "id": 2881,
+            "roundId": 1,
+            "kingQueenTeamId": 288,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2883,
+            "roundId": 3,
+            "kingQueenTeamId": 288,
+            "roundScore": 24,
+            "roundWon": true
+          },
+          {
+            "id": 9000,
+            "kingQueenTeamId": 211,
+            "roundId": 2,
+            "roundScore": 8,
+            "roundWon": false
+          },
+          {
+            "id": 9001,
+            "kingQueenTeamId": 211,
+            "roundId": 4,
+            "roundScore": 5,
+            "roundWon": true
+          },
+          {
+            "id": 9002,
+            "kingQueenTeamId": 211,
+            "roundId": 3,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9003,
+            "kingQueenTeamId": 218,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9004,
+            "kingQueenTeamId": 225,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9005,
+            "kingQueenTeamId": 232,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9006,
+            "kingQueenTeamId": 239,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9007,
+            "kingQueenTeamId": 246,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9008,
+            "kingQueenTeamId": 253,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9009,
+            "kingQueenTeamId": 260,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9010,
+            "kingQueenTeamId": 267,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9011,
+            "kingQueenTeamId": 274,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9012,
+            "kingQueenTeamId": 281,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9013,
+            "kingQueenTeamId": 288,
+            "roundId": 2,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9014,
+            "kingQueenTeamId": 288,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          }
+        ]
+      }
+    },
+    {
+      "path": "/api/scrambledata/savekingqueenroundscores/synthetic%20league",
+      "mode": "intercepted fixture only",
+      "data": {
+        "roundScores": [
+          {
+            "id": 2111,
+            "roundId": 1,
+            "kingQueenTeamId": 211,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2181,
+            "roundId": 1,
+            "kingQueenTeamId": 218,
+            "roundScore": 23,
+            "roundWon": true
+          },
+          {
+            "id": 2182,
+            "roundId": 2,
+            "kingQueenTeamId": 218,
+            "roundScore": 13,
+            "roundWon": true
+          },
+          {
+            "id": 2183,
+            "roundId": 3,
+            "kingQueenTeamId": 218,
+            "roundScore": 14,
+            "roundWon": true
+          },
+          {
+            "id": 2251,
+            "roundId": 1,
+            "kingQueenTeamId": 225,
+            "roundScore": 31,
+            "roundWon": true
+          },
+          {
+            "id": 2252,
+            "roundId": 2,
+            "kingQueenTeamId": 225,
+            "roundScore": 14,
+            "roundWon": false
+          },
+          {
+            "id": 2253,
+            "roundId": 3,
+            "kingQueenTeamId": 225,
+            "roundScore": 15,
+            "roundWon": false
+          },
+          {
+            "id": 2321,
+            "roundId": 1,
+            "kingQueenTeamId": 232,
+            "roundScore": 14,
+            "roundWon": false
+          },
+          {
+            "id": 2322,
+            "roundId": 2,
+            "kingQueenTeamId": 232,
+            "roundScore": 15,
+            "roundWon": true
+          },
+          {
+            "id": 2323,
+            "roundId": 3,
+            "kingQueenTeamId": 232,
+            "roundScore": 16,
+            "roundWon": true
+          },
+          {
+            "id": 2391,
+            "roundId": 1,
+            "kingQueenTeamId": 239,
+            "roundScore": 15,
+            "roundWon": false
+          },
+          {
+            "id": 2392,
+            "roundId": 2,
+            "kingQueenTeamId": 239,
+            "roundScore": 16,
+            "roundWon": false
+          },
+          {
+            "id": 2393,
+            "roundId": 3,
+            "kingQueenTeamId": 239,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2461,
+            "roundId": 1,
+            "kingQueenTeamId": 246,
+            "roundScore": 16,
+            "roundWon": true
+          },
+          {
+            "id": 2462,
+            "roundId": 2,
+            "kingQueenTeamId": 246,
+            "roundScore": 17,
+            "roundWon": true
+          },
+          {
+            "id": 2463,
+            "roundId": 3,
+            "kingQueenTeamId": 246,
+            "roundScore": 18,
+            "roundWon": true
+          },
+          {
+            "id": 2531,
+            "roundId": 1,
+            "kingQueenTeamId": 253,
+            "roundScore": 17,
+            "roundWon": false
+          },
+          {
+            "id": 2532,
+            "roundId": 2,
+            "kingQueenTeamId": 253,
+            "roundScore": 18,
+            "roundWon": false
+          },
+          {
+            "id": 2533,
+            "roundId": 3,
+            "kingQueenTeamId": 253,
+            "roundScore": 19,
+            "roundWon": false
+          },
+          {
+            "id": 2601,
+            "roundId": 1,
+            "kingQueenTeamId": 260,
+            "roundScore": 18,
+            "roundWon": true
+          },
+          {
+            "id": 2602,
+            "roundId": 2,
+            "kingQueenTeamId": 260,
+            "roundScore": 19,
+            "roundWon": true
+          },
+          {
+            "id": 2603,
+            "roundId": 3,
+            "kingQueenTeamId": 260,
+            "roundScore": 20,
+            "roundWon": true
+          },
+          {
+            "id": 2671,
+            "roundId": 1,
+            "kingQueenTeamId": 267,
+            "roundScore": 19,
+            "roundWon": false
+          },
+          {
+            "id": 2672,
+            "roundId": 2,
+            "kingQueenTeamId": 267,
+            "roundScore": 20,
+            "roundWon": false
+          },
+          {
+            "id": 2673,
+            "roundId": 3,
+            "kingQueenTeamId": 267,
+            "roundScore": 21,
+            "roundWon": false
+          },
+          {
+            "id": 2741,
+            "roundId": 1,
+            "kingQueenTeamId": 274,
+            "roundScore": 20,
+            "roundWon": true
+          },
+          {
+            "id": 2742,
+            "roundId": 2,
+            "kingQueenTeamId": 274,
+            "roundScore": 21,
+            "roundWon": true
+          },
+          {
+            "id": 2743,
+            "roundId": 3,
+            "kingQueenTeamId": 274,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2811,
+            "roundId": 1,
+            "kingQueenTeamId": 281,
+            "roundScore": 21,
+            "roundWon": false
+          },
+          {
+            "id": 2812,
+            "roundId": 2,
+            "kingQueenTeamId": 281,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2813,
+            "roundId": 3,
+            "kingQueenTeamId": 281,
+            "roundScore": 23,
+            "roundWon": false
+          },
+          {
+            "id": 2881,
+            "roundId": 1,
+            "kingQueenTeamId": 288,
+            "roundScore": 22,
+            "roundWon": true
+          },
+          {
+            "id": 2883,
+            "roundId": 3,
+            "kingQueenTeamId": 288,
+            "roundScore": 24,
+            "roundWon": true
+          },
+          {
+            "id": 9000,
+            "kingQueenTeamId": 211,
+            "roundId": 2,
+            "roundScore": 8,
+            "roundWon": false
+          },
+          {
+            "id": 9001,
+            "kingQueenTeamId": 211,
+            "roundId": 4,
+            "roundScore": 5,
+            "roundWon": true
+          },
+          {
+            "id": 9002,
+            "kingQueenTeamId": 211,
+            "roundId": 3,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9003,
+            "kingQueenTeamId": 218,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9004,
+            "kingQueenTeamId": 225,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9005,
+            "kingQueenTeamId": 232,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9006,
+            "kingQueenTeamId": 239,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9007,
+            "kingQueenTeamId": 246,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9008,
+            "kingQueenTeamId": 253,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9009,
+            "kingQueenTeamId": 260,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9010,
+            "kingQueenTeamId": 267,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9011,
+            "kingQueenTeamId": 274,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9012,
+            "kingQueenTeamId": 281,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9013,
+            "kingQueenTeamId": 288,
+            "roundId": 2,
+            "roundScore": 0,
+            "roundWon": false
+          },
+          {
+            "id": 9014,
+            "kingQueenTeamId": 288,
+            "roundId": 4,
+            "roundScore": 0,
+            "roundWon": false
+          }
+        ]
+      }
+    }
+  ],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

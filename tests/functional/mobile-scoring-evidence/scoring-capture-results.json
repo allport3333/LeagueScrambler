@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Read-only captures of selector, default-open rosters above scores, collapse, navigation, comparative grid and save action"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

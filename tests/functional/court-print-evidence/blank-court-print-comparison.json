@@ -1,0 +1,37 @@
+{
+  "prior": {
+    "2": {
+      "htmlHash": "91d7ef024ba207f539f6b7aeeeff2a1fa35d86ebe48c146f212d1de9a5bf2ffa",
+      "pixels": "7e0197f7fd0a797e2565d0ad6440cc3ec0b17c7d25b9925840584ed37d2bf67b",
+      "pages": 4
+    },
+    "4": {
+      "htmlHash": "e4defdbffe272a2a2c2f3d57971d6a93b9f4f7284b206a568b752a5ccd0e8a2b",
+      "pixels": "4ce919c97fac568d69b2171fb39294912739ced5adbbcd21019c21ec48bb5ae5",
+      "pages": 2
+    },
+    "6": {
+      "htmlHash": "397801bc102803fbbb04c08008f5e97a998c287d0be5e72962c1c9eeba7eb35f",
+      "pixels": "ee954735513d4e5d52cdcf4eeba6cc600dcfee696e31f7ce07ad90c86389a365",
+      "pages": 1
+    }
+  },
+  "current": {
+    "2": {
+      "htmlHash": "9ac6ad1a42369ecb867bfcca45e1e65f50df86da4f2acc2f28549292819168c7",
+      "pixels": "7e0197f7fd0a797e2565d0ad6440cc3ec0b17c7d25b9925840584ed37d2bf67b",
+      "pages": 4
+    },
+    "4": {
+      "htmlHash": "e02cd8dcbeacb44a3514c2f604a992ae5188b6ab6f552e75a7adfad31dea4fe1",
+      "pixels": "4ce919c97fac568d69b2171fb39294912739ced5adbbcd21019c21ec48bb5ae5",
+      "pages": 2
+    },
+    "6": {
+      "htmlHash": "bab2a6caedc62d34eaa052b25d85155f8050ea98dc3c3579c2dd58330291f267",
+      "pixels": "ee954735513d4e5d52cdcf4eeba6cc600dcfee696e31f7ce07ad90c86389a365",
+      "pages": 1
+    }
+  },
+  "pixelsIdentical": true
+}

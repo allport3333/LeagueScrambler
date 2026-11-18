@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Desktop85% centered matching name columns/full-width backgrounds, centered mobile names, editable view-mode court retained on reopen/in print, edit cancel restores court, saved/unsaved footer state, no overflow or writes"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

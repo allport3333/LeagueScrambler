@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Read-only original mobile overflow measurements"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

@@ -368,9 +368,9 @@ button[disabled].apply-top-button {
 .balancing-actions .apply-top-button { flex: 1 1 0; max-width: none; min-height: 48px; font-size: 15px; font-weight: 600; white-space: normal; }
 .balancing-actions .apply-top-wrapper { gap: 8px; align-items: stretch; }
 .scramble-workflow-actions .scramble-button.grey, .scramble-workflow-actions .scramble-button[disabled]:not(.primary-action) { background: #edf0f4 !important; color: #647080 !important; box-shadow: none !important; opacity: 1; }
-.balancing-actions .apply-top-button.enabled { background: #e7eef9 !important; color: #304b83 !important; box-shadow: none !important; }
+.scramble-workflow-actions .balancing-actions .apply-top-button:not([disabled]) { background: #526e9f !important; color: #fff !important; box-shadow: 0 2px 4px rgba(40,55,95,.2) !important; }
 .balancing-actions .workspace-help { text-align: center; }
-.secondary-action.enabled { background: #98D0A7 !important; color: #fff !important; }
+.scramble-workflow-actions .selection-actions .secondary-action:not([disabled]) { background: #98D0A7 !important; color: #203f2a !important; box-shadow: 0 2px 4px rgba(28,88,49,.2) !important; }
 @media (max-width: 768px) {
  .balancing-actions .apply-top-wrapper .apply-top-button { flex: 0 0 auto; width: 100%; }
 }
@@ -400,3 +400,254 @@ button[disabled].apply-top-button {
  .generated-matchups tr.d-flex > .col-4 { flex: 1 1 auto; width: auto; max-width: 100%; }
  .generated-matchups tr.d-flex > .col-3 { flex: 0 0 36%; width: 36%; max-width: 36%; padding: 2px; }
 }
+
+/* Dedicated phone Manage Scores editor. Desktop tables retain their existing layout. */
+.mobile-score-editor { display: none; }
+.scoring-feedback { text-align: center; font-size: 14px; margin: 6px 0 10px; }
+@media (max-width: 767px) {
+ .score-editor-card { padding: 12px 8px !important; margin-top: 10px !important; }
+ .score-editor-card .desktop-score-editor, .score-editor-card .desktop-score-save { display: none !important; }
+ .mobile-score-editor { display: block; width: 100%; min-width: 0; }
+ .score-editor-card > .tab-content h5 { text-align: center; font-size: 17px; }
+ .score-editor-card > .tab-content mat-form-field { max-width: 100%; }
+ .mobile-score-navigation { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin: 0 0 8px; }
+ .mobile-score-navigation button { width: 44px; height: 44px; }
+ .mobile-score-editor h3 { text-align: center; font-size: 17px; margin: 4px 0 10px; }.mobile-score-editor h3 span { color: #6a7788; font-size: 13px; margin: 0 6px; }
+ .mobile-score-grid { width: 100%; table-layout: fixed; border-collapse: collapse; background: white; }
+ .mobile-score-grid th,.mobile-score-grid td { text-align: center; padding: 7px 4px; border: 1px solid #d8e2ed; vertical-align: middle; }.mobile-score-grid th:first-child { width: 20%; }.mobile-score-grid thead { background: #edf3fa; color: #29446c; }.mobile-score-grid tbody th { font-size: 14px; }
+ .mobile-round-input { width: 100%; max-width: 82px; height: 44px; text-align: center; font-size: 18px; border: 1px solid #aebccd; border-radius: 4px; background: #fff; }
+ .mobile-scoring-totals { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 10px 0; text-align: center; }.mobile-scoring-totals > div { background: #f0f5fa; border: 1px solid #d8e2ed; border-radius: 4px; padding: 6px; }.mobile-scoring-totals span { display: block; font-size: 12px; }.mobile-scoring-totals b { margin-left: 5px; }
+ .mobile-score-players { margin-top: 8px; background: white; border: 1px solid #d8e2ed; border-radius: 4px; padding: 0 8px; }.mobile-score-players summary { padding: 12px 0; min-height: 44px; font-size: 14px; font-weight: 600; cursor: pointer; }.mobile-score-players h4 { text-align: center; font-size: 15px; margin: 8px 0; }
+ .mobile-scoring-player { display: flex; align-items: center; gap: 8px; justify-content: space-between; margin-bottom: 6px; padding: 6px; }.mobile-scoring-player > span { min-width: 0; overflow-wrap: break-word; font-size: 13px; }.mobile-scoring-player small { background: #ffcc00; padding: 1px 4px; margin-left: 4px; }.mobile-scoring-player mat-slide-toggle { flex-shrink: 0; min-height: 44px; display: inline-flex; align-items: center; font-size: 12px; }.scoring-player-male { background: lightblue; }.scoring-player-female { background: pink; }
+ .mobile-score-save { text-align: center; margin-top: 12px; }.mobile-score-save button { width: 100%; min-height: 44px; }.score-editor-note { font-size: 12px; text-align: center; color: #526579; margin: 5px 0; }.missing-opponent { font-size: 12px; color: #626b77; }
+}
+
+@media (max-width: 767px) { .mobile-score-players { margin: 0 0 10px; } }
+
+/* Desktop-only matchup grid; the mobile editor above is unchanged. */
+@media (min-width: 768px) {
+ .desktop-score-editor { width: 100%; min-width: 0; }
+ .desktop-score-editor > h5 { text-align: center; margin: 8px 0 4px; }
+ .desktop-matchup-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(460px,1fr)); gap: 16px; width: 100%; align-items: start; }
+ .desktop-matchup-editor { min-width: 0; padding: 12px; border: 1px solid #d5dfea; border-radius: 6px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+ .desktop-matchup-editor h3 { text-align: center; color: #29446c; font-size: 19px; margin: 0 0 8px; }
+ .desktop-score-rosters { display: grid; grid-template-columns: minmax(0,1fr) 18px minmax(0,1fr); gap: 6px; align-items: start; }
+ .desktop-score-rosters section { min-width: 0; }.desktop-score-rosters h4 { text-align: center; margin: 0 0 5px; font-size: 15px; }.desktop-score-vs { align-self: center; text-align: center; color: #697789; font-size: 11px; }
+ .desktop-score-player { display: flex; align-items: center; justify-content: space-between; gap: 5px; padding: 4px 6px; margin-bottom: 4px; min-height: 36px; }.desktop-score-player > span { min-width: 0; font-size: 12px; line-height: 1.35; overflow-wrap: break-word; }.desktop-score-player small { background: #ffcc00; color: #000; padding: 1px 3px; margin-left: 3px; }
+ .desktop-score-player mat-slide-toggle { flex-shrink: 0; font-size: 11px; min-height: 32px; display: inline-flex; align-items: center; }.desktop-player-male { background: lightblue; }.desktop-player-female { background: pink; }
+ .desktop-round-group { margin-top: 8px; max-width: 100%; overflow-x: auto; }
+ .desktop-round-table { width: 100%; min-width: 416px; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
+ .desktop-round-table caption { caption-side: top; padding: 0 0 4px; color: #526579; font-size: 12px; text-align: center; }
+ .desktop-round-table th,.desktop-round-table td { text-align: center; border: 1px solid #d8e2ed; padding: 4px 2px; vertical-align: middle; }.desktop-round-table th:first-child { width: 44px; }.desktop-round-table thead { background: #edf3fa; color: #29446c; }
+ .desktop-round-input { display: block; width: 58px; max-width: 100%; height: 36px; margin: 0 auto; padding: 2px; text-align: center; font-size: 16px; border: 1px solid #aebccd; border-radius: 3px; }
+ .desktop-match-totals { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; text-align: center; margin-top: 8px; }.desktop-match-totals > div { background: #f0f5fa; border-radius: 3px; padding: 5px; }.desktop-match-totals strong { font-size: 12px; }.desktop-match-totals span { font-size: 11px; display: block; }.desktop-match-totals b { margin-left: 4px; }
+ .desktop-score-save { padding: 6px 0; }.desktop-score-save button { min-height: 44px; min-width: 240px; margin-bottom: 4px !important; }.desktop-save-context,.desktop-sub-note { text-align: center; font-size: 12px; color: #526579; margin: 4px 0 8px; }
+}
+
+// Shared score-only winner indication; does not alter team/substitute styling.
+.mobile-round-input.round-score-winner, .desktop-round-input.round-score-winner { background: #e5f4e8; border-color: #62a772; box-shadow: inset 0 0 0 1px #62a772; }
+
+/* Compact results and the single shared view/edit dialog. */
+.workspace-section-header { display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0; }
+.workspace-section-header h2,.workspace-section-header h3 { margin:0;font-size:18px;color:#293d69; }
+.compact-results { max-width:850px;margin:16px auto;padding:12px; }
+.compact-results .results-heading { display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:6px; }
+.compact-results .results-heading h2 { margin:0; }
+.results-summary { display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:6px 0 12px; }
+.compact-results-actions { display:flex;justify-content:center;gap:10px;flex-wrap:wrap; }
+.compact-results-actions button { min-height:44px; }
+.results-print-button:not([disabled]) { background:#98d0a7;color:#203f2a; }
+.compact-print-settings { text-align:center;margin-top:10px; }
+.compact-print-settings summary { cursor:pointer;min-height:40px;padding:8px;color:#304b83; }
+.compact-print-settings .results-print-controls { margin-top:8px; }
+::ng-deep .matchups-dialog-panel .mat-dialog-container { padding:0;overflow:hidden;border-radius:6px; }
+.matchups-dialog-layout { display:flex;flex-direction:column;max-height:94vh;max-height:94dvh; }
+.matchups-dialog-header { display:flex;align-items:center;gap:10px;padding:12px 16px;background:#f5f7fa;border-bottom:1px solid #d6dfec;flex-shrink:0; }
+.matchups-dialog-header > div { flex:1;min-width:0; }
+.matchups-dialog-header h2 { margin:0;font-size:22px;color:#293d69; }
+.matchups-dialog-header span { font-size:13px; }
+.matchups-dialog-layout .mat-dialog-content { margin:0;padding:12px 16px;max-height:none;min-height:0;overflow:auto; }
+.matchups-dialog-layout .mat-dialog-actions { margin:0;padding:8px 16px;border-top:1px solid #d6dfec;flex-shrink:0;min-height:56px; }
+.matchups-save-feedback { text-align:center;color:#304b83; }
+.matchups-dialog-layout .generated-matchups > div { margin:0 !important; }
+.matchups-dialog-layout .generated-matchups .row.mb-4 { margin-bottom:12px !important; }
+.matchups-dialog-layout .generated-matchups .row.mb-4 > .col-6 { flex:0 0 50%;max-width:50%;padding:0 6px; }
+.matchups-dialog-layout .generated-matchups mat-card { border:1px solid #aebccd !important;border-radius:6px;padding:10px !important;height:100%; }
+.matchups-dialog-layout .generated-matchups table { margin-bottom:0; }
+.matchups-dialog-layout .generated-matchups table td { padding:5px !important;overflow-wrap:anywhere; }
+.matchups-dialog-layout .generated-matchups .col-5 { flex:0 0 45%;max-width:45%;padding:0 4px; }
+.matchups-dialog-layout .generated-matchups select { min-height:40px !important;max-width:100%; }
+@media(max-width:767px) {
+ ::ng-deep .matchups-dialog-panel { width:100vw !important;max-width:100vw !important;height:100%;max-height:100% !important; }
+ ::ng-deep .matchups-dialog-panel .mat-dialog-container { border-radius:0; }
+ .matchups-dialog-layout { height:100%;max-height:100%; }
+ .matchups-dialog-header { padding:8px;gap:4px; }
+ .matchups-dialog-header h2 { font-size:19px; }
+ .matchups-dialog-header button { padding:0 8px;min-width:0;min-height:44px; }
+ .matchups-dialog-layout .mat-dialog-content { padding:8px; }
+ .matchups-dialog-layout .generated-matchups .row.mb-4 > .col-6 { flex:0 0 100%;max-width:100%;padding:0 4px;margin-bottom:10px; }
+ .matchups-dialog-layout .generated-matchups .col-5 { flex:0 0 45%;max-width:45%; }
+ .matchups-dialog-layout .generated-matchups .col-1 { flex:0 0 10%;max-width:10%;padding:0; }
+ .matchups-dialog-layout .generated-matchups .col-1 h4 { font-size:11px !important; }
+ .matchups-dialog-layout .generated-matchups .col-1 input { width:28px !important;font-size:14px !important; }
+ .matchups-dialog-layout .generated-matchups mat-card { padding:8px !important; }
+ .compact-results { margin:12px 4px; }
+ .compact-results .results-heading { gap:4px; }
+ .compact-results-actions { gap:8px; }
+}
+
+.viewer-match-number { text-align:center;font-size:17px;color:#293d69;margin:0 0 8px; }
+
+/* Results follow the generate action; hiding setup leaves this one summary available. */
+.scramble-generate-area { width:100%;max-width:1060px;margin:0 auto 12px; }
+.scramble-generate-area .progression-actions { padding-bottom:0; }
+.scramble-generate-area .compact-results { margin:12px auto; }
+.scramble-generate-area .reset-actions { margin:12px auto 0; }
+.team-save-feedback,.team-save-confirmation { margin:8px 0 0;text-align:center;font-size:13px; }
+.team-save-confirmation { color:#2e6d40; }
+.modal-print-hint { font-size:12px;color:#596778;flex:1;min-width:0; }
+/* Bootstrap negative row gutters caused cards to extend outside the content box. */
+.matchups-dialog-layout .generated-matchups .row { margin-left:0;margin-right:0;min-width:0; }
+.matchups-dialog-layout .generated-matchups .row.mb-4 > .col-6,
+.matchups-dialog-layout .generated-matchups .col-5,
+.matchups-dialog-layout .generated-matchups table,
+.matchups-dialog-layout .generated-matchups th,
+.matchups-dialog-layout .generated-matchups td { min-width:0; }
+.matchups-dialog-layout .generated-matchups mat-card { min-width:0;max-width:100%;box-sizing:border-box; }
+.matchups-dialog-layout .generated-matchups .row.mb-4 { align-items:stretch; }
+.matchups-dialog-layout .mat-dialog-content { flex:1 1 auto;min-width:0;overscroll-behavior-y:contain; }
+::ng-deep .matchups-dialog-panel { min-width:0; }
+@media(max-width:767px) {
+ ::ng-deep .matchups-dialog-panel { height:100vh !important;height:100dvh !important;max-height:100vh !important;max-height:100dvh !important;max-width:100% !important; }
+ ::ng-deep .matchups-dialog-panel .mat-dialog-container { height:100%;max-height:100%; }
+ .matchups-dialog-layout { height:100%;max-height:100%;min-width:0; }
+ .matchups-dialog-layout .generated-matchups .row.mb-4 > .col-6 { padding:0; }
+ .matchups-dialog-layout .generated-matchups mat-card { padding:6px !important; }
+ .matchups-dialog-layout .generated-matchups .col-5 { padding:0 2px; }
+ .matchups-dialog-layout .generated-matchups table { width:100%;table-layout:fixed; }
+ .matchups-dialog-layout .generated-matchups table td,
+ .matchups-dialog-layout .generated-matchups table th { padding:4px 2px !important;overflow-wrap:anywhere; }
+ .matchups-dialog-layout .generated-matchups tr.d-flex > .col-4 { flex:1 1 0;width:0;max-width:none; }
+ .matchups-dialog-layout .generated-matchups tr.d-flex > .col-3 { flex:0 0 42px;width:42px;max-width:42px; }
+ .matchups-dialog-layout .generated-matchups select { width:100%;min-width:0; }
+ .matchups-dialog-layout .mat-dialog-actions { padding-bottom:max(8px,env(safe-area-inset-bottom)); }
+}
+
+.scrambler-workspace > .row[hidden], .scramble-generate-area > [hidden] { display:none !important; }
+
+@media(max-width:767px) {
+ /* Block table groups prevent anonymous table columns from squeezing flex rows. */
+ .matchups-dialog-layout .generated-matchups table,
+ .matchups-dialog-layout .generated-matchups thead,
+ .matchups-dialog-layout .generated-matchups tbody { display:block;width:100%; }
+ .matchups-dialog-layout .generated-matchups tr.d-flex { width:100%; }
+ .matchups-dialog-layout .generated-matchups thead > tr:not(.d-flex),
+ .matchups-dialog-layout .generated-matchups thead > tr:not(.d-flex) > th { display:block;width:100%; }
+ .matchups-dialog-layout .viewer-bye-players { flex:0 0 100%;max-width:100%;width:100%;padding:0;margin-top:12px !important; }
+ .matchups-dialog-layout .viewer-bye-players h2 { margin:0 !important;width:100%; }
+ .matchups-dialog-layout .viewer-bye-players .col-5 { flex:0 0 100%;max-width:100%;width:100%; }
+}
+
+.scramble-workflow-actions .balancing-actions .apply-top-button:not([disabled]):hover { background:#455e89 !important; }
+.scramble-workflow-actions .selection-actions .secondary-action:not([disabled]):hover { background:#88c89a !important; }
+.scramble-workflow-actions .apply-top-button:focus-visible, .scramble-workflow-actions .secondary-action:focus-visible { outline:2px solid #18335c;outline-offset:3px; }
+
+.fetch-availability-help { display:block;grid-column:~"1 / -1";width:100%; }
+.fetch-availability-help button[disabled] { pointer-events:none; }
+.fetch-availability-help:focus-visible { outline:2px solid #18335c;outline-offset:3px;border-radius:4px; }
+
+/* Softer blue for existing primary actions within the Scrambler only. */
+.scrambler-workspace .mat-raised-button.mat-primary:not([disabled]), .matchups-dialog-layout .mat-raised-button.mat-primary:not([disabled]) { background-color:#526e9f;color:#fff; }
+.scrambler-workspace .mat-raised-button.mat-primary:not([disabled]):hover, .matchups-dialog-layout .mat-raised-button.mat-primary:not([disabled]):hover { background-color:#455e89; }
+.scrambler-workspace .mat-stroked-button.mat-primary:not([disabled]), .matchups-dialog-layout .mat-stroked-button.mat-primary:not([disabled]) { color:#526e9f; }
+
+/* Matchup viewer polish only: print templates remain untouched. */
+.matchups-dialog-header > div > span { color:#697586;font-size:12px; }
+.matchups-dialog-header .mat-icon-button { flex-shrink:0;width:44px;height:44px; }
+.matchups-dialog-layout .viewer-match-number { margin:0 0 5px;padding-bottom:5px;border-bottom:1px solid #e1e6ee; }
+.matchups-dialog-layout .viewer-team-table .viewer-team-title th { border-top:0;border-bottom:0;padding:6px 0 5px; }
+.matchups-dialog-layout .viewer-name-headings { border-bottom:1px solid #dce3ec; }
+.matchups-dialog-layout .viewer-name-headings th { border-top:0;border-bottom:0; }
+.matchups-dialog-layout .viewer-player-row { margin-bottom:4px; }
+.matchups-dialog-layout .viewer-player-row td { border-top:0; }
+.matchups-dialog-layout .viewer-player-male { background:lightblue; }
+.matchups-dialog-layout .viewer-player-female { background:pink; }
+.matchups-dialog-layout .viewer-court input { width:38px !important;max-width:100%;height:40px !important;padding:2px;text-align:center;border:1px solid #afbed0;border-radius:4px;background:#fff;color:#304b63;font-size:16px !important;box-sizing:border-box; }
+.matchups-dialog-layout .viewer-court input:disabled { opacity:1;background:#f3f6fa;border-color:#cbd5e1;color:#596b80; }
+.matchups-dialog-layout .viewer-court h4 { font-size:14px !important;margin:0 0 4px !important; }
+.matchups-dialog-layout .viewer-court input + h4 { margin-top:4px !important; }
+.matchups-dialog-layout .mat-dialog-actions .modal-print-hint { text-align:left;margin-right:12px;line-height:18px; }
+.matchups-dialog-layout .modal-print-confirmation { color:#4e725a; }
+@media(min-width:768px) {
+ .matchups-dialog-layout .viewer-team-table,
+ .matchups-dialog-layout .viewer-team-table thead,
+ .matchups-dialog-layout .viewer-team-table tbody { display:block;width:100%; }
+ .matchups-dialog-layout .viewer-team-title,
+ .matchups-dialog-layout .viewer-team-title th { display:block;width:100%; }
+ .matchups-dialog-layout .viewer-team-table .viewer-name-headings,
+ .matchups-dialog-layout .viewer-team-table .viewer-player-row { display:grid !important;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);width:100%;box-sizing:border-box;padding:4px 7.5%;align-items:center; }
+ .matchups-dialog-layout .viewer-team-editing .viewer-name-headings,
+ .matchups-dialog-layout .viewer-team-editing .viewer-player-row { grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr) 42px;padding:4px 0; }
+ .matchups-dialog-layout .viewer-team-table .viewer-player-row { min-height:34px; }
+ .matchups-dialog-layout .viewer-team-table .viewer-name-headings > th,
+ .matchups-dialog-layout .viewer-team-table .viewer-player-row > td { width:auto;max-width:none;min-width:0;padding:0 1px !important;text-align:center;overflow-wrap:break-word;line-height:22px;background:transparent; }
+}
+@media(max-width:767px) {
+ .matchups-dialog-layout .viewer-court input { width:32px !important; }
+ .matchups-dialog-layout .viewer-court h4 { font-size:12px !important; }
+ .matchups-dialog-layout .viewer-team-table .viewer-team-title th { padding:5px 0 !important; }
+ .matchups-dialog-layout .viewer-name-headings th { padding:3px 2px !important; }
+ .matchups-dialog-layout .mat-dialog-actions .modal-print-hint { margin-right:6px;font-size:12px; }
+}
+
+.matchups-dialog-layout .generated-matchups mat-card > .row { align-items:flex-start !important; }
+.matchups-dialog-layout .viewer-court { align-self:center; }
+
+@media(max-width:767px) {
+ .matchups-dialog-layout .viewer-team-table .viewer-name-headings th,
+ .matchups-dialog-layout .viewer-team-table .viewer-player-row td { text-align:center; }
+}
+
+/* Content-sized card wrapping; two cards only when their actual minimums fit. */
+.matchups-dialog-layout .generated-matchups .row.mb-4 { display:flex;flex-wrap:wrap;gap:12px; }
+.matchups-dialog-layout .generated-matchups .row.mb-4 > .col-6 { flex:1 1 var(--matchup-min-width,550px);min-width:0;max-width:100%;padding:0;margin-bottom:0; }
+.matchups-dialog-layout .generated-matchups mat-card > .row { display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);gap:6px; }
+.matchups-dialog-layout .generated-matchups mat-card > .row > .col-5,
+.matchups-dialog-layout .generated-matchups .viewer-court { width:100%;max-width:100%;padding:0;min-width:0; }
+.matchups-dialog-layout .viewer-court { text-align:center;justify-self:center; }
+.matchups-dialog-layout .viewer-court h4 { white-space:nowrap; }
+.matchups-dialog-layout .generated-matchups th,
+.matchups-dialog-layout .generated-matchups td { word-break:normal !important;overflow-wrap:normal !important;hyphens:none; }
+.matchups-dialog-layout .viewer-team-table .viewer-player-row { min-height:var(--matchup-player-height,34px); }
+.matchups-dialog-layout:not(.viewer-compact) .viewer-team-table,
+.matchups-dialog-layout:not(.viewer-compact) .viewer-team-table thead,
+.matchups-dialog-layout:not(.viewer-compact) .viewer-team-table tbody,
+.matchups-dialog-layout:not(.viewer-compact) .viewer-team-title,
+.matchups-dialog-layout:not(.viewer-compact) .viewer-team-title th { display:block;width:100%; }
+.matchups-dialog-layout:not(.viewer-compact) .viewer-team-table .viewer-name-headings,
+.matchups-dialog-layout:not(.viewer-compact) .viewer-team-table .viewer-player-row { display:grid !important;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);width:100%;padding:4px 7.5%;box-sizing:border-box;align-items:center; }
+.matchups-dialog-layout:not(.viewer-compact) .viewer-team-editing .viewer-name-headings,
+.matchups-dialog-layout:not(.viewer-compact) .viewer-team-editing .viewer-player-row { grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr) 42px;padding:4px 0; }
+.matchups-dialog-layout:not(.viewer-compact) .viewer-team-table .viewer-name-headings > th,
+.matchups-dialog-layout:not(.viewer-compact) .viewer-team-table .viewer-player-row > td { width:auto;max-width:none;min-width:0;padding:0 1px !important;text-align:center;background:transparent;font-size:16px !important;line-height:22px; }
+.matchups-dialog-layout.viewer-compact .viewer-team-table,
+.matchups-dialog-layout.viewer-compact .viewer-team-table thead,
+.matchups-dialog-layout.viewer-compact .viewer-team-table tbody,
+.matchups-dialog-layout.viewer-compact .viewer-team-title,
+.matchups-dialog-layout.viewer-compact .viewer-team-title th { display:block;width:100%; }
+.matchups-dialog-layout.viewer-compact .viewer-team-table .viewer-name-headings,
+.matchups-dialog-layout.viewer-compact .viewer-team-table .viewer-player-row { display:flex !important;align-items:center;width:100%;padding:4px 0; }
+.matchups-dialog-layout.viewer-compact .viewer-team-table .viewer-name-headings > th,
+.matchups-dialog-layout.viewer-compact .viewer-team-table .viewer-player-row > td { flex:1 1 0;width:0;max-width:none;padding:0 2px !important;font-size:12px !important;text-align:center;line-height:18px; }
+.matchups-dialog-layout.viewer-compact .viewer-team-table .viewer-name-headings > .col-3,
+.matchups-dialog-layout.viewer-compact .viewer-team-table .viewer-player-row > .col-3 { flex:0 0 42px;width:42px;max-width:42px; }
+
+/* Bye names use the same available-width discipline, without old offsets. */
+.matchups-dialog-layout .viewer-bye-players { flex:0 1 100%;width:100%;max-width:600px;padding:0;margin:12px auto 0 !important; }
+.matchups-dialog-layout .viewer-bye-players h2 { margin:0 !important;text-align:center;width:100%; }
+.matchups-dialog-layout .viewer-bye-players tr { width:100%;flex-direction:row !important; }
+.matchups-dialog-layout .viewer-bye-players .col-5 { flex:1 1 0;width:0;max-width:none;min-width:0;text-align:center;padding:4px 2px !important; }
+
+.matchups-dialog-layout .modal-print-button { min-height:40px;border:1px solid #73aa83; }
+.matchups-dialog-layout .modal-print-button:not([disabled]) { background:#98d0a7;color:#203f2a; }
+.matchups-dialog-layout .modal-print-button[disabled] { background:#e3e7ec;color:#657180;border-color:#cbd3dd; }

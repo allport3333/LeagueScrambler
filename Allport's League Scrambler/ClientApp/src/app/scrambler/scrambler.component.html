@@ -9,9 +9,10 @@
         <button mat-raised-button type="button" color="primary" class="ml-2"
                 (click)="unlockAdminPassword()">Unlock Administration</button>
     </mat-card>
-<div class="container-fluid" [hidden]="hideEverything || workspaceSection !== 'scrambler'">
+<div class="workspace-section-header" *ngIf="workspaceSection === 'scrambler'"><h2>Scrambler Setup</h2><button mat-button (click)="hideShowEverything()" [attr.aria-expanded]="!hideEverything">{{ hideEverything ? 'Show Setup' : 'Hide Setup' }}</button></div>
+<div class="container-fluid scrambler-workspace" [hidden]="workspaceSection !== 'scrambler'">
 
-    <div class="row">
+    <div class="row" [hidden]="hideEverything">
         <div class="col-12">
             <mat-card class="scramble-setup ml-1 mt-2"><h2>Team Configuration</h2><p class="workspace-help">Choose Max Team Size or Number of Teams. Choosing one clears the other; your player selection is retained.</p>
                 <div class="row">
@@ -210,7 +211,7 @@
 
             </mat-card>
 <section class="scramble-workflow-actions">
-  <div class="selection-actions"><h2>Player Selection</h2><button mat-raised-button
+  <div class="selection-actions"><h2>Player Selection</h2><span class="fetch-availability-help" matTooltip="No players are currently signed in." [matTooltipDisabled]="hasSignedInPlayersAvailable || fetchClicked" [attr.tabindex]="!hasSignedInPlayersAvailable && !fetchClicked ? 0 : null" [attr.aria-label]="!hasSignedInPlayersAvailable && !fetchClicked ? 'Fetch Signed In Players unavailable: no players are currently signed in.' : null"><button mat-raised-button
                             (click)="fetchSelectedList()"
                             class="scramble-button secondary-action"
                             [ngClass]="{
@@ -219,7 +220,7 @@
                 }"
                             [disabled]="!hasSignedInPlayersAvailable && !fetchClicked">
                         Fetch Signed In Players
-                    </button><p class="selection-summary" role="status">{{ selectedList.length }} selected · {{ getTotalMaleSelectedPlayers() }} male · {{ getTotalFemaleSelectedPlayers() }} female</p></div><div class="balancing-actions"><h2>Player Balancing</h2><div class="apply-top-wrapper"><button mat-raised-button
+                    </button></span><p class="selection-summary" role="status">{{ selectedList.length }} selected · {{ getTotalMaleSelectedPlayers() }} male · {{ getTotalFemaleSelectedPlayers() }} female</p></div><div class="balancing-actions"><h2>Player Balancing</h2><div class="apply-top-wrapper"><button mat-raised-button
                                 class="apply-top-button scramble-button"
                                 (click)="applyTopPlayers()"
                                 [ngClass]="{
@@ -242,7 +243,16 @@
                             [matTooltip]="!(maleStandings && maleStandings.length > 0) ? 'Male standings not available' : ''"
                             [matTooltipDisabled]="maleStandings && maleStandings.length > 0">
                             Apply Top Players (Male Standings)
-                        </button></div><p class="workspace-help">Apply top-player preferences after player selection. Standings remain loaded for balancing.</p></div><div class="progression-actions" *ngIf="!hideInputOptions"><button (click)="scramblePlayers(false)"
+                        </button></div><p class="workspace-help">Apply top-player preferences after player selection. Standings remain loaded for balancing.</p></div></section>
+            <div class="text-center mt-3" *ngIf="hideInputOptions">
+                <button *ngIf="!lockedResults" style="margin-top:10px; margin-left: 10px" (click)="scramblePlayers(false)" mat-raised-button color="primary">Scramble Players</button>
+                <div class="mt-2">
+                    <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
+                </div>
+            </div>
+        </div>
+    </div>
+<div class="scramble-generate-area"><div class="progression-actions" *ngIf="!hideInputOptions" [hidden]="hideEverything"><button (click)="scramblePlayers(false)"
                             mat-raised-button
                             class="scramble-button primary-action"
                             matTooltip="Button is disabled because no players are selected."
@@ -252,7 +262,18 @@
                                             'disabled': !selectedList || selectedList.length === 0
                                             }">
                         Scramble Players
-                    </button><p class="workspace-help" *ngIf="!selectedList.length">Select players before scrambling.</p><p class="workspace-help" *ngIf="locked">Results are locked. Uncheck Lock Results before rescrambling.</p></div><div class="reset-actions"><button mat-raised-button color="warn" [matMenuTriggerFor]="resetMenu" class="w-100">
+                    </button><p class="workspace-help" *ngIf="!selectedList.length">Select players before scrambling.</p><p class="workspace-help" *ngIf="locked">Results are locked. Uncheck Lock Results before rescrambling.</p></div>
+<div class="scrambler-results-shell" [hidden]="workspaceSection !== 'scrambler' || !listOfTeams.length">
+<section class="scramble-results-toolbar compact-results" #saveTeamsDiv tabindex="-1">
+ <div class="results-heading"><h2>Scramble Results</h2><button mat-button (click)="resultsCollapsed=!resultsCollapsed" [attr.aria-expanded]="!resultsCollapsed">{{ resultsCollapsed ? 'Show Results' : 'Hide Results' }}</button></div>
+ <div [hidden]="resultsCollapsed"><p class="results-summary"><strong *ngIf="scrambleNumber && !scrambleSelected">Scramble {{ scrambleNumber }}</strong><strong *ngIf="scrambleSelected">Scramble{{ listOfRetrievedScrambleNumbers.length>1 ? 's' : '' }} {{ listOfRetrievedScrambleNumbers.join(', ') }}</strong><span>{{ listOfTeams.length }} teams &middot; {{ matchupCount }} matchups</span></p>
+ <div class="compact-results-actions"><button mat-raised-button color="primary" (click)="openMatchups()">View Matchups</button><button mat-stroked-button color="primary" (click)="openMatchups(true)" [disabled]="!isActionAllowed || teamSaveBusy">Modify Teams</button><button mat-raised-button color="primary" (click)="saveKingQueenTeams()" [disabled]="!canSaveMatchupTeams || (isScrambleSaved && !teamEditsPending)">{{ teamSaveBusy ? 'Saving...' : 'Save Scramble' }}</button><button mat-raised-button class="results-print-button" (click)="printMatchups()" [disabled]="!canPrintMatchups" [attr.aria-describedby]="!canPrintMatchups ? 'scramble-print-save-help' : null">Print Matchups</button></div>
+ <details class="compact-print-settings"><summary>Print Settings</summary><div class="results-print-controls"><mat-form-field appearance="outline"><mat-label>Matchups Per Page</mat-label><mat-select [(value)]="selectedMatchupsPerPage" (selectionChange)="onSelectionChange($event)"><mat-option value="2">2 Matchups</mat-option><mat-option value="4">4 Matchups</mat-option><mat-option value="6">6 Matchups</mat-option></mat-select></mat-form-field><mat-form-field appearance="outline"><mat-label>Number of Rounds</mat-label><mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)"><mat-option *ngFor="let round of [1,2,3,4,5,6,7,8,9,10]" [value]="round">{{ round }} Rounds</mat-option></mat-select></mat-form-field></div></details>
+ <p id="scramble-print-save-help" class="workspace-help" *ngIf="!canPrintMatchups">{{ teamEditsPending ? 'Save these changes before printing, or cancel to restore the saved teams.' : 'Save this scramble before printing.' }}</p><p class="team-save-feedback" role="status" *ngIf="teamSaveFeedback">{{ teamSaveFeedback }}</p><p class="team-save-confirmation" role="status" *ngIf="isScrambleSaved && !teamEditsPending && !teamSaveFeedback">Scramble saved. Ready to print.</p></div>
+</section>
+
+</div>
+<div class="reset-actions" [hidden]="hideEverything"><button mat-raised-button color="warn" [matMenuTriggerFor]="resetMenu" class="w-100">
                             Reset Players
                         </button>
                         <mat-menu #resetMenu="matMenu">
@@ -268,16 +289,9 @@
                             <button mat-menu-item (click)="requestResetPreferences('bye')">
                                 <span>Reset Bye Players</span>
                             </button>
-                        </mat-menu></div></section>
-            <div class="text-center mt-3" *ngIf="hideInputOptions">
-                <button *ngIf="!lockedResults" style="margin-top:10px; margin-left: 10px" (click)="scramblePlayers(false)" mat-raised-button color="primary">Scramble Players</button>
-                <div class="mt-2">
-                    <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row">
+                        </mat-menu></div></div>
+
+    <div class="row" [hidden]="hideEverything">
         <div class="col-12">
             <mat-card class=" ml-3 mt-2 " style="background-color:lightgray; ">
                 <mat-tab-group mat-align-tabs="center" #tabGroup (selectedTabChange)="onTabChange($event)">
@@ -288,7 +302,7 @@
 
                                 <div class="col-12" id="hideInputOptions">
                                     <div [hidden]="playerLoading">
-                                        <mat-card id="playerListHidden" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                                        <div class="workspace-section-header"><h3>Player List</h3><button mat-button (click)="hidePlayerList()" [attr.aria-expanded]="!hidePlayers">{{ hidePlayers ? 'Show Player List' : 'Hide Player List' }}</button></div><mat-card id="playerListHidden" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                             <mat-card-title style="color: gray; margin: -10px -10px -5px -10px; display: flex; justify-content: center; align-items: center; flex-direction: column;">
                                                 <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap;">
                                                     <button mat-raised-button color="primary" (click)="selectAllPlayers()" style="font-size: 14px; padding: 5px; min-width: 80px;">
@@ -624,12 +638,12 @@
                     </mat-tab>
                     <!-- New Dropdown Retrieve Scramble Tab -->
                     <mat-tab label="Manage Scores" *ngIf="selectedLeague">
-                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                        <mat-card class="score-editor-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <div class="tab-content d-flex flex-column align-items-center">
                                 <h5 class="mb-2">Select Scramble to Retrieve</h5>
                                 <mat-form-field appearance="outline" style="width: 250px;">
                                     <mat-label>Select Scramble</mat-label>
-                                    <mat-select (selectionChange)="retrieveScramble($event.value)">
+                                    <mat-select #scoreScramblePicker [value]="scoringScramble" [disabled]="scoreSaveBusy || scoreSubBusy || scoreEditorLoading" (selectionChange)="requestScoreScramble($event.value,scoreScramblePicker)">
                                         <mat-option *ngFor="let scramble of queriedScrambles" [value]="scramble">
                                             Scramble {{ scramble.scrambleNumber }} - {{ scramble.dateOfTeam | date: 'shortDate' }}
                                         </mat-option>
@@ -637,164 +651,49 @@
                                 </mat-form-field>
                                 <mat-form-field appearance="fill" style="display: inline-block; width: auto;" *ngIf="scrambleSelected">
                                     <mat-label>Number of Rounds</mat-label>
-                                    <mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)">
+                                    <mat-select [disabled]="scoreSaveBusy || scoreRefreshRequired || scoreEditorLoading" [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)">
                                         <mat-option *ngFor="let round of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]" [value]="round">
                                             {{ round }} Rounds
                                         </mat-option>
                                     </mat-select>
                                 </mat-form-field>
                             </div>
-                            <div class="tab-content d-flex flex-column align-items-center" *ngIf="scrambleSelected">
-                                <!-- Title -->
-                                <h5 class="mb-2">Update Team Scores</h5>
+                            <p *ngIf="scoringScramble && scoreHiddenRounds" class="scoring-feedback">Scores in hidden rounds are retained and saved. Increase Number of Rounds to inspect them.</p><p *ngIf="scoreEditorLoading" class="scoring-feedback" role="status">Loading saved scramble...</p><p *ngIf="scoreEditorFeedback" class="scoring-feedback" role="status">{{ scoreEditorFeedback }}</p><button *ngIf="scoreRefreshRequired" mat-stroked-button (click)="refreshSavedScoreIds()" [disabled]="scoreSaveBusy">Refresh Saved Records</button>
+                            <div class="d-flex flex-column align-items-center desktop-score-save" *ngIf="scrambleSelected && !scoreEditorLoading">
+                                <p class="desktop-save-context">Save round scores for every matchup in this scramble.</p>
 
-
-                                <!-- Teams Table: Two-Column Layout -->
-                                <div class="container">
-                                    <div class="row">
-                                        <!-- Left Column: Odd Teams -->
-                                        <div class="col-6">
-                                            <ng-container *ngFor="let team of listOfTeams; let i = index">
-                                                <div *ngIf="(i + 1) % 2 !== 0" style="margin-bottom: 20px;">
-                                                    <!-- Team Header -->
-                                                    <h6 style="text-align: center;">Team {{ i + 1 }}</h6>
-                                                    <!-- Team Scores Table -->
-                                                    <table class="table table-sm table-bordered text-center" style="font-size: 12px;">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Players</th>
-                                                                <ng-container *ngFor="let round of rounds">
-                                                                    <th>
-                                                                        Round {{ round }}<br />
-                                                                        <input type="checkbox"
-                                                                               matTooltip="Round Won"
-                                                                               [checked]="getScore(team.kingQueenTeamId, round)?.roundWon || false"
-                                                                               (change)="updateRoundWon(team.kingQueenTeamId, round, $event.target.checked)"
-                                                                               style="margin-top: 5px;" />
-                                                                    </th>
-                                                                </ng-container>
-                                                                <!-- Total Score Column -->
-                                                                <th>Total Score</th>
-                                                                <!-- Total Wins Column -->
-                                                                <th>Total Wins</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <!-- Team Players -->
-                                                            <tr>
-                                                                <td>
-                                                                    <div *ngFor="let player of team.players">
-                                                                        {{ player.firstName }} {{ player.lastName }}
-                                                                        <span *ngIf="player.isSub">(Sub)</span>
-                                                                        <mat-slide-toggle matTooltip="Mark as Sub Score"
-                                                                                          [checked]="player.isSubScore"
-                                                                                          (change)="updateIsSubScore(team.kingQueenTeamId, player.id, $event.checked)">
-                                                                        </mat-slide-toggle>
-                                                                    </div>
-                                                                </td>
-
-                                                                <!-- Round Scores -->
-                                                                <ng-container *ngFor="let round of rounds">
-                                                                    <td style="text-align: center; vertical-align: middle;">
-                                                                        <input type="number"
-                                                                               [value]="getScore(team.kingQueenTeamId, round) ? getScore(team.kingQueenTeamId, round).roundScore : ''"
-                                                                               (input)="updateRoundScore(team.kingQueenTeamId, round, $event.target.value)"
-                                                                               class="form-control form-control-sm"
-                                                                               style="text-align: center; width: 60px; margin: 0 auto;" />
-                                                                    </td>
-                                                                </ng-container>
-
-                                                                <!-- Total Score Column -->
-                                                                <td style="text-align: center; vertical-align: middle; font-weight: bold;">
-                                                                    {{ calculateTotalScore(team.kingQueenTeamId) }}
-                                                                </td>
-                                                                <!-- Total Wins Column -->
-                                                                <td style="text-align: center; vertical-align: middle; font-weight: bold;">
-                                                                    {{ calculateTotalWins(team.kingQueenTeamId) }}
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-
-                                                </div>
-                                            </ng-container>
-                                        </div>
-
-                                        <!-- Right Column: Even Teams -->
-                                        <div class="col-6">
-                                            <ng-container *ngFor="let team of listOfTeams; let i = index">
-                                                <div *ngIf="(i + 1) % 2 === 0" style="margin-bottom: 20px;">
-                                                    <!-- Team Header -->
-                                                    <h6 style="text-align: center;">Team {{ i + 1 }}</h6>
-                                                    <!-- Team Scores Table -->
-                                                    <table class="table table-sm table-bordered text-center" style="font-size: 12px;">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Players</th>
-                                                                <ng-container *ngFor="let round of rounds">
-                                                                    <th>
-                                                                        Round {{ round }}<br />
-                                                                        <input type="checkbox"
-                                                                               matTooltip="Round Won"
-                                                                               [checked]="getScore(team.kingQueenTeamId, round)?.roundWon || false"
-                                                                               (change)="updateRoundWon(team.kingQueenTeamId, round, $event.target.checked)"
-                                                                               style="margin-top: 5px;" />
-                                                                    </th>
-                                                                </ng-container>
-                                                                <!-- Total Score Column -->
-                                                                <th>Total Score</th>
-                                                                <!-- Total Wins Column -->
-                                                                <th>Total Wins</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <!-- Team Players -->
-                                                            <tr>
-                                                                <td>
-                                                                    <div *ngFor="let player of team.players">
-                                                                        {{ player.firstName }} {{ player.lastName }}
-                                                                        <span *ngIf="player.isSub">(Sub)</span>
-                                                                        <mat-slide-toggle matTooltip="Mark as Sub Score"
-                                                                                          [checked]="player.isSubScore"
-                                                                                          (change)="updateIsSubScore(team.kingQueenTeamId, player.id, $event.checked)">
-                                                                        </mat-slide-toggle>
-                                                                    </div>
-                                                                </td>
-
-                                                                <!-- Round Scores -->
-                                                                <ng-container *ngFor="let round of rounds">
-                                                                    <td style="text-align: center; vertical-align: middle;">
-                                                                        <input type="number"
-                                                                               [value]="getScore(team.kingQueenTeamId, round)?.roundScore || ''"
-                                                                               (input)="updateRoundScore(team.kingQueenTeamId, round, $event.target.value)"
-                                                                               class="form-control form-control-sm"
-                                                                               style="text-align: center; width: 60px; margin: 0 auto;" />
-                                                                    </td>
-                                                                </ng-container>
-
-                                                                <!-- Total Score Column -->
-                                                                <td style="text-align: center; vertical-align: middle; font-weight: bold;">
-                                                                    {{ calculateTotalScore(team.kingQueenTeamId) }}
-                                                                </td>
-                                                                <!-- Total Wins Column -->
-                                                                <td style="text-align: center; vertical-align: middle; font-weight: bold;">
-                                                                    {{ calculateTotalWins(team.kingQueenTeamId) }}
-                                                                </td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-
-                                                </div>
-                                            </ng-container>
-                                        </div>
-                                    </div>
+                                <button mat-raised-button color="primary" class="mb-3" [disabled]="scoreSaveBusy || scoreSubBusy || scoreRefreshRequired || !kingQueenRoundScores.length" *ngIf="showSaveRoundScores" (click)="saveKingQueenRoundScores()">{{ scoreSaveBusy ? 'Saving...' : 'Save Round Scores' }}</button>
+                            </div>
+                            <section class="desktop-score-editor" *ngIf="scrambleSelected && scoringScramble && !scoreEditorLoading" aria-label="Desktop matchup score editors">
+                                <h5>Update Team Scores</h5>
+                                <p class="desktop-sub-note">Sub Score switches save immediately. Save Round Scores saves the entire scramble.</p>
+                                <div class="desktop-matchup-grid">
+                                    <article class="desktop-matchup-editor" *ngFor="let pair of mobileScorePairs;trackBy:trackScorePair;let matchIndex=index" [attr.data-match-number]="matchIndex+1">
+                                        <h3>Match {{ matchIndex+1 }}</h3>
+                                        <div class="desktop-score-rosters"><ng-container *ngFor="let team of pair;let side=index"><section><h4>Team {{ team.sortingId }}</h4><div class="desktop-score-player" *ngFor="let player of team.players" [class.desktop-player-male]="player.isMale" [class.desktop-player-female]="!player.isMale"><span>{{ player.firstName }} {{ player.lastName }}<small *ngIf="player.isSub || player.isSubScore">Sub</small></span><mat-slide-toggle matTooltip="Mark as Sub Score" [aria-label]="'Team '+team.sortingId+' '+player.firstName+' '+player.lastName+' Sub Score'" [checked]="player.isSubScore" [disabled]="scoreSaveBusy || scoreSubPending[team.kingQueenTeamId+':'+player.id]" (change)="updateIsSubScore(team.kingQueenTeamId,player.id,$event.checked)">Sub</mat-slide-toggle></div></section><span *ngIf="side===0 && pair.length>1" class="desktop-score-vs" aria-hidden="true">VS</span></ng-container></div>
+                                        <p *ngIf="pair.length<2" class="desktop-sub-note">No paired opposing team was saved. This team's scores are retained.</p>
+                                        <div class="desktop-round-group" *ngFor="let group of desktopScoreRoundGroups;trackBy:trackScoreRoundGroup"><table class="desktop-round-table"><caption *ngIf="desktopScoreRoundGroups.length>1">Rounds {{ group[0] }} - {{ group[group.length-1] }}</caption><thead><tr><th scope="col">Team</th><th *ngFor="let round of group" scope="col">Round {{ round }}</th></tr></thead><tbody><tr *ngFor="let team of pair" [attr.data-team-id]="team.kingQueenTeamId"><th scope="row">{{ team.sortingId }}</th><td *ngFor="let round of group"><input class="desktop-round-input" [class.round-score-winner]="getScore(team.kingQueenTeamId,round)?.roundWon" type="number" inputmode="numeric" [attr.aria-label]="'Team '+team.sortingId+' Round '+round+' score'" [value]="getScore(team.kingQueenTeamId,round) ? getScore(team.kingQueenTeamId,round).roundScore : ''" [disabled]="scoreSaveBusy" (input)="updateRoundScore(team.kingQueenTeamId,round,$event.target.value)"></td></tr></tbody></table></div>
+                                        <div class="desktop-match-totals"><div *ngFor="let team of pair"><strong>Team {{ team.sortingId }}</strong><span>Total Score <b>{{ calculateTotalScore(team.kingQueenTeamId) }}</b></span><span>Total Wins <b>{{ calculateTotalWins(team.kingQueenTeamId) }}</b></span></div></div>
+                                    </article>
                                 </div>
-                            </div>
-                            <div class="d-flex flex-column align-items-center" *ngIf="scrambleSelected">
-                                <!-- Number of Rounds Selection -->
+                                <p class="desktop-sub-note" *ngIf="!mobileScorePairs.length">No teams were returned for this saved scramble.</p>
+                                <p class="desktop-sub-note" *ngIf="byePlayers.length">Bye players: <span *ngFor="let player of byePlayers;let last=last">{{ player.firstName }} {{ player.lastName }}{{ last ? '' : ', ' }}</span></p>
+                            </section>
+                            <section class="mobile-score-editor" *ngIf="scrambleSelected && scoringScramble && !scoreEditorLoading" aria-label="Mobile round score editor">
+                                <nav *ngIf="mobileScorePairs.length" class="mobile-score-navigation" aria-label="Scoring matchups"><button mat-icon-button type="button" aria-label="Previous Match" [disabled]="mobileScoreMatchIndex===0" (click)="selectScoreMatch(mobileScoreMatchIndex-1)"><mat-icon>chevron_left</mat-icon></button><strong>Match {{ mobileScoreMatchIndex+1 }} of {{ mobileScorePairs.length }}</strong><button mat-icon-button type="button" aria-label="Next Match" [disabled]="mobileScoreMatchIndex>=mobileScorePairs.length-1" (click)="selectScoreMatch(mobileScoreMatchIndex+1)"><mat-icon>chevron_right</mat-icon></button></nav>
+                                <ng-container *ngIf="mobileScorePair.length;else noScoringTeams">
+                                    <h3>Team {{ mobileScorePair[0].sortingId }} <span>vs</span> {{ mobileScorePair[1] ? 'Team '+mobileScorePair[1].sortingId : 'No opposing team' }}</h3>
+                                    <p class="score-editor-note" *ngIf="mobileScorePair.length<2">This saved team has no paired opponent. Its scores are retained.</p>
+                                    <details class="mobile-score-players" open><summary>Player and Substitute Settings</summary><p class="score-editor-note">Sub Score switches save immediately. Round scores save with Save Round Scores.</p><section *ngFor="let team of mobileScorePair"><h4>Team {{ team.sortingId }}</h4><div class="mobile-scoring-player" *ngFor="let player of team.players" [class.scoring-player-male]="player.isMale" [class.scoring-player-female]="!player.isMale"><span>{{ player.firstName }} {{ player.lastName }}<small *ngIf="player.isSub || player.isSubScore">Sub</small></span><mat-slide-toggle [attr.data-player-id]="player.id" [attr.aria-label]="'Team '+team.sortingId+' '+player.firstName+' '+player.lastName+' Sub Score'" [checked]="player.isSubScore" [disabled]="scoreSaveBusy || scoreSubPending[team.kingQueenTeamId+':'+player.id]" (change)="updateIsSubScore(team.kingQueenTeamId,player.id,$event.checked)">Sub Score</mat-slide-toggle></div></section></details>
+                                    <table class="mobile-score-grid"><thead><tr><th scope="col">Round</th><th scope="col">Team {{ mobileScorePair[0].sortingId }}</th><th scope="col">{{ mobileScorePair[1] ? 'Team '+mobileScorePair[1].sortingId : 'Unavailable' }}</th></tr></thead><tbody><tr *ngFor="let round of rounds"><th scope="row">{{ round }}</th><ng-container *ngFor="let team of mobileScorePair"><td [attr.data-team-id]="team.kingQueenTeamId"><input type="number" inputmode="numeric" class="mobile-round-input" [class.round-score-winner]="getScore(team.kingQueenTeamId,round)?.roundWon" [attr.aria-label]="'Team '+team.sortingId+' Round '+round+' score'" [value]="getScore(team.kingQueenTeamId,round) ? getScore(team.kingQueenTeamId,round).roundScore : ''" [disabled]="scoreSaveBusy" (input)="updateRoundScore(team.kingQueenTeamId,round,$event.target.value)"></td></ng-container><td *ngIf="mobileScorePair.length<2" class="missing-opponent">No team</td></tr></tbody></table>
+                                    <div class="mobile-scoring-totals"><div *ngFor="let team of mobileScorePair"><strong>Team {{ team.sortingId }}</strong><span>Total Score <b>{{ calculateTotalScore(team.kingQueenTeamId) }}</b></span><span>Total Wins <b>{{ calculateTotalWins(team.kingQueenTeamId) }}</b></span></div></div>
 
-                                <button mat-raised-button color="primary" class="mb-3" *ngIf="showSaveRoundScores" (click)="saveKingQueenRoundScores()">Save Round Scores</button>
-                            </div>
+                                </ng-container>
+                                <ng-template #noScoringTeams><p>No teams were returned for this saved scramble.</p></ng-template>
+                                <p *ngIf="byePlayers.length" class="score-editor-note">Bye players: <span *ngFor="let player of byePlayers;let last=last">{{ player.firstName }} {{ player.lastName }}{{ last ? '' : ', ' }}</span></p>
+                                <div class="mobile-score-save" *ngIf="showSaveRoundScores"><p *ngIf="scoreEditsPending" class="score-editor-note">Unsaved round scores</p><button mat-raised-button color="primary" type="button" [disabled]="scoreSaveBusy || scoreSubBusy || scoreRefreshRequired || !kingQueenRoundScores.length" (click)="saveKingQueenRoundScores()">{{ scoreSaveBusy ? 'Saving...' : 'Save Round Scores' }}</button><p class="score-editor-note">Saves all teams in this scramble.</p></div>
+                            </section>
+
 
                         </mat-card>
                     </mat-tab>
@@ -1133,474 +1032,7 @@
  <mat-dialog-content><p>Remove <strong>{{ data.player.firstName }} {{ data.player.lastName }}</strong> from <strong>{{ data.leagueName }}</strong>?</p><p>The player's global record, account and other league memberships will be kept.</p></mat-dialog-content>
  <mat-dialog-actions align="end"><button mat-button [mat-dialog-close]="false">Cancel</button><button mat-raised-button color="warn" [mat-dialog-close]="true">Remove from League</button></mat-dialog-actions>
 </ng-template>
-<div class="scrambler-results-shell" [hidden]="workspaceSection !== 'scrambler' || !listOfTeams.length">
-<section class="scramble-results-toolbar" #saveTeamsDiv tabindex="-1">
- <div class="results-heading"><h2>Scramble Results</h2><strong *ngIf="scrambleNumber && !scrambleSelected">Scramble Number: {{ scrambleNumber }}</strong><strong *ngIf="scrambleSelected && listOfRetrievedScrambleNumbers.length">Retrieved Scramble{{ listOfRetrievedScrambleNumbers.length > 1 ? 's' : '' }}: {{ listOfRetrievedScrambleNumbers.join(', ') }}</strong><span *ngIf="!scrambleNumber && !scrambleSelected">Preview — not saved</span></div>
- <div class="results-control-row">
-  <div class="results-edit-controls">
-  <button mat-stroked-button color="primary" (click)="toggleTeamSorting()">{{ showTeamSorting ? 'Finish Editing' : 'Modify Teams' }}</button>
-  <button mat-raised-button color="primary" (click)="saveKingQueenTeams()" [disabled]="!isActionAllowed || !listOfTeams.length">{{ teamEditsPending && !scrambleSelected ? 'Save Changes / Teams' : 'Save Teams' }}</button>
-  <button mat-button *ngIf="canCancelTeamEditing" (click)="cancelTeamEditing()">Cancel Changes</button>
-  </div>
-  <span *ngIf="!isActionAllowed" class="workspace-help">Administration access is required to save teams.</span>
-  <div class="results-print-action">
-   <button mat-raised-button color="primary" (click)="printMatchups()" [disabled]="!canPrintMatchups" [attr.aria-describedby]="!canPrintMatchups ? 'print-save-help' : null">Print Matchups</button>
-   <p id="print-save-help" class="workspace-help" *ngIf="!canPrintMatchups">Save teams before printing. Unsaved team changes must be saved or cancelled.</p>
-  </div>
-  <div class="results-print-controls">
-   <mat-form-field appearance="outline"><mat-label>Matchups Per Page</mat-label><mat-select [(value)]="selectedMatchupsPerPage" (selectionChange)="onSelectionChange($event)"><mat-option value="2">2 Matchups</mat-option><mat-option value="4">4 Matchups</mat-option><mat-option value="6">6 Matchups</mat-option></mat-select></mat-form-field>
-  <mat-form-field appearance="outline" class="results-rounds"><mat-label>Number of Rounds</mat-label><mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)"><mat-option *ngFor="let round of [1,2,3,4,5,6,7,8,9,10]" [value]="round">{{ round }} Rounds</mat-option></mat-select></mat-form-field>
-  </div>
-  <div class="results-visibility-controls">
-  <button mat-stroked-button (click)="hidePlayerList()">{{ hidePlayers ? 'Show Player List' : 'Hide Player List' }}</button>
-  <button mat-stroked-button (click)="resultsCollapsed = !resultsCollapsed">{{ resultsCollapsed ? 'Show Results' : 'Hide Results' }}</button>
-  <button mat-stroked-button (click)="hideShowEverything()">{{ hideEverything ? 'Show Setup' : 'Hide Setup' }}</button>
-  </div>
- </div>
- <p class="editing-state" *ngIf="showTeamSorting || teamEditsPending" role="status"><strong>{{ showTeamSorting ? 'Editing Teams' : 'Team changes staged' }}</strong> — {{ teamEditsPending ? 'Unsaved assignment changes.' : 'Use each player’s Team dropdown to move them.' }} <span *ngIf="scrambleSelected">Retrieved assignments are a local preview; existing save workflows remain unchanged.</span></p>
-</section>
-<div class="generated-matchups" [hidden]="resultsCollapsed"><!-- Container for all pairs -->
-<div style="margin: 1rem;">
 
-    <!-- Loop in multiples of 4. (i % 4 === 0) => new row for 4 teams: i, i+1, i+2, i+3 -->
-    <ng-container *ngFor="let team of listOfTeams; let i = index">
-        <div class="row mb-4" *ngIf="i % 4 === 0">
-
-            <!-- CARD #1: Team i & i+1 (col-6) -->
-            <div class="col-6">
-                <mat-card style="padding: 1rem; border: 2px solid black; box-shadow: none;">
-                    <div class="row justify-content-center align-items-center">
-
-                        <!-- LEFT TEAM (Team i) -->
-                        <div class="col-5" *ngIf="listOfTeams[i]">
-                            <table class="table">
-                                <thead>
-                                    <!-- Team Title -->
-                                    <tr>
-                                        <th colspan="3" style="text-align: center; font-size: 1.4rem;">
-                                            Team {{ listOfTeams[i].sortingId }}
-                                        </th>
-                                    </tr>
-                                    <tr class="d-flex">
-                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">First Name</th>
-                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">Last Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">First Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">Last Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-3">Team</th>
-                                        <th *ngIf="isSmallScreen" class="col-4" style="font-size:12px">Name</th>
-                                        <th *ngIf="isSmallScreen && showTeamSorting" class="col-3">Team</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr *ngFor="let player of listOfTeams[i].players" class="d-flex align-items-center">
-                                        <!-- Male / Female / Sub logic -->
-                                        <td *ngIf="player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-blue">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-blue">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && isSmallScreen"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.firstName[0] }}.{{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
-                                            class="col-6 extended-background-blue-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && player.isSub"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.lastName }} - Sub
-                                        </td>
-
-                                        <td *ngIf="!player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-pink">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-pink">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && isSmallScreen"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.firstName[0] }}.{{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
-                                            class="col-6 extended-background-pink-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && player.isSub"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.lastName }} - Sub
-                                        </td>
-
-                                        <!-- Team-switch dropdown -->
-                                        <td class="col-3" *ngIf="showTeamSorting">
-                                            <select class="form-select"
-                                                    style="width: 100%; min-height: 35px;"
-                                                    [value]="listOfTeams[i].sortingId"
-                                                    (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i].sortingId)">
-                                                <option *ngFor="let otherTeam of listOfTeams"
-                                                        [value]="otherTeam.sortingId"
-                                                        [disabled]="otherTeam.sortingId === listOfTeams[i].sortingId">
-                                                    {{ otherTeam.sortingId }}
-                                                </option>
-                                            </select>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- MIDDLE: Court + VS (only if i+1 exists) -->
-                        <div class="col-1 text-center" *ngIf="listOfTeams[i+1] && !isSmallScreen">
-                            <h4 style="font-size: 18px;">Court</h4>
-                            <input style="width: 35px; height: 35px; font-size: 20px;" type="text" />
-                            <h4 style="font-size: 20px; margin-top: 8px;">VS</h4>
-                        </div>
-
-                        <!-- RIGHT TEAM (Team i+1) -->
-                        <div class="col-5" *ngIf="listOfTeams[i+1]">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th colspan="3" style="text-align: center; font-size: 1.4rem;">
-                                            Team {{ listOfTeams[i+1].sortingId }}
-                                        </th>
-                                    </tr>
-                                    <tr class="d-flex">
-                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">First Name</th>
-                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">Last Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">First Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">Last Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-3">Team</th>
-                                        <th *ngIf="isSmallScreen" class="col-4" style="font-size:12px">Name</th>
-                                        <th *ngIf="isSmallScreen && showTeamSorting" class="col-3">Team</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr *ngFor="let player of listOfTeams[i+1].players" class="d-flex align-items-center">
-                                        <!-- same male/female logic -->
-                                        <td *ngIf="player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-blue">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-blue">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && isSmallScreen"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.firstName[0] }}.{{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
-                                            class="col-6 extended-background-blue-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && player.isSub"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.lastName }} - Sub
-                                        </td>
-
-                                        <td *ngIf="!player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-pink">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-pink">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && isSmallScreen"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.firstName[0] }}.{{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
-                                            class="col-6 extended-background-pink-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && player.isSub"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.lastName }} - Sub
-                                        </td>
-
-                                        <!-- Team-switch dropdown -->
-                                        <td class="col-3" *ngIf="showTeamSorting">
-                                            <select class="form-select"
-                                                    style="width: 100%; min-height: 35px;"
-                                                    [value]="listOfTeams[i+1].sortingId"
-                                                    (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i+1].sortingId)">
-                                                <option *ngFor="let otherTeam of listOfTeams"
-                                                        [value]="otherTeam.sortingId"
-                                                        [disabled]="otherTeam.sortingId === listOfTeams[i+1].sortingId">
-                                                    {{ otherTeam.sortingId }}
-                                                </option>
-                                            </select>
-                                        </td>
-
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                    </div> <!-- /row inside mat-card -->
-                </mat-card>
-            </div>
-
-            <!-- CARD #2: Team i+2 & i+3 (col-6) -->
-            <div class="col-6" *ngIf="listOfTeams[i+2]">
-                <mat-card style="padding: 1rem; border: 2px solid black; box-shadow: none;">
-                    <div class="row justify-content-center align-items-center">
-
-                        <!-- LEFT TEAM (Team i+2) -->
-                        <div class="col-5" *ngIf="listOfTeams[i+2]">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th colspan="3" style="text-align: center; font-size: 1.4rem;">
-                                            Team {{ listOfTeams[i+2].sortingId }}
-                                        </th>
-                                    </tr>
-                                    <tr class="d-flex">
-                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">First Name</th>
-                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">Last Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">First Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">Last Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-3">Team</th>
-                                        <th *ngIf="isSmallScreen" class="col-4" style="font-size:12px">Name</th>
-                                        <th *ngIf="isSmallScreen && showTeamSorting" class="col-3">Team</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr *ngFor="let player of listOfTeams[i+2].players" class="d-flex align-items-center">
-                                        <!-- male/female logic again -->
-                                        <td *ngIf="player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-blue">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-blue">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && isSmallScreen"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.firstName[0] }}.{{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
-                                            class="col-6 extended-background-blue-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && player.isSub"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.lastName }} - Sub
-                                        </td>
-
-                                        <td *ngIf="!player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-pink">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-pink">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && isSmallScreen"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.firstName[0] }}.{{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
-                                            class="col-6 extended-background-pink-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && player.isSub"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.lastName }} - Sub
-                                        </td>
-
-                                        <!-- Team-switch dropdown -->
-                                        <td class="col-3" *ngIf="showTeamSorting">
-                                            <select class="form-select"
-                                                    style="width: 100%; min-height: 35px;"
-                                                    [value]="listOfTeams[i+2].sortingId"
-                                                    (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i+2].sortingId)">
-                                                <option *ngFor="let otherTeam of listOfTeams"
-                                                        [value]="otherTeam.sortingId"
-                                                        [disabled]="otherTeam.sortingId === listOfTeams[i+2].sortingId">
-                                                    {{ otherTeam.sortingId }}
-                                                </option>
-                                            </select>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- MIDDLE: Court + VS (only if i+3 exists) -->
-                        <div class="col-1 text-center" *ngIf="listOfTeams[i+3] && !isSmallScreen">
-                            <h4 style="font-size: 18px;">Court</h4>
-                            <input style="width: 35px; height: 35px; font-size: 20px;" type="text" />
-                            <h4 style="font-size: 20px; margin-top: 8px;">VS</h4>
-                        </div>
-
-                        <!-- RIGHT TEAM (Team i+3) -->
-                        <div class="col-5" *ngIf="listOfTeams[i+3]">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th colspan="3" style="text-align: center; font-size: 1.4rem;">
-                                            Team {{ listOfTeams[i+3].sortingId }}
-                                        </th>
-                                    </tr>
-                                    <tr class="d-flex">
-                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">First Name</th>
-                                        <th *ngIf="!isSmallScreen && !showTeamSorting" class="col-6">Last Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">First Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-4">Last Name</th>
-                                        <th *ngIf="!isSmallScreen && showTeamSorting" class="col-3">Team</th>
-                                        <th *ngIf="isSmallScreen" class="col-4" style="font-size:12px">Name</th>
-                                        <th *ngIf="isSmallScreen && showTeamSorting" class="col-3">Team</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr *ngFor="let player of listOfTeams[i+3].players" class="d-flex align-items-center">
-                                        <!-- male/female logic again -->
-                                        <td *ngIf="player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-blue">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-blue">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && isSmallScreen"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.firstName[0] }}.{{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
-                                            class="col-6 extended-background-blue-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="player.isMale && player.isSub"
-                                            class="col-4 extended-background-blue-lastName">
-                                            {{ player.lastName }} - Sub
-                                        </td>
-
-                                        <td *ngIf="!player.isMale && !isSmallScreen && showTeamSorting" class="col-4 extended-background-pink">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !isSmallScreen && !showTeamSorting" class="col-6 extended-background-pink">
-                                            {{ player.firstName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && isSmallScreen"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.firstName[0] }}.{{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && showTeamSorting"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen && !showTeamSorting"
-                                            class="col-6 extended-background-pink-lastName">
-                                            {{ player.lastName }}
-                                        </td>
-                                        <td *ngIf="!player.isMale && player.isSub"
-                                            class="col-4 extended-background-pink-lastName">
-                                            {{ player.lastName }} - Sub
-                                        </td>
-
-                                        <!-- Team-switch dropdown -->
-                                        <td class="col-3" *ngIf="showTeamSorting">
-                                            <select class="form-select"
-                                                    style="width: 100%; min-height: 35px;"
-                                                    [value]="listOfTeams[i+3].sortingId"
-                                                    (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i+3].sortingId)">
-                                                <option *ngFor="let otherTeam of listOfTeams"
-                                                        [value]="otherTeam.sortingId"
-                                                        [disabled]="otherTeam.sortingId === listOfTeams[i+3].sortingId">
-                                                    {{ otherTeam.sortingId }}
-                                                </option>
-                                            </select>
-                                        </td>
-
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div> <!-- /row inside mat-card -->
-                </mat-card>
-            </div>
-
-        </div> <!-- end of row for 4 teams (2 mat-cards) -->
-    </ng-container>
-
-    <!-- Bye Players Section (unchanged) -->
-    <div class="row col-3 justify-content-center mt-5" *ngIf="byePlayers.length > 0">
-        <h2 *ngIf="isSmallScreen" style="text-align:center; float:none; margin-left:-50px; font-size:18px;">
-            Bye Players
-        </h2>
-        <h2 *ngIf="!isSmallScreen" style="text-align:center; float:none; margin-left:-50px; font-size:28px;">
-            Bye Players
-        </h2>
-        <table class="table mt-3" style="width: 100%;">
-            <thead>
-                <tr class="d-flex">
-                    <th *ngIf="!isSmallScreen" class="col-5">First Name</th>
-                    <th *ngIf="!isSmallScreen" class="col-5">Last Name</th>
-                    <th *ngIf="isSmallScreen" class="col-5" style="font-size:12px">Name</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let player of byePlayers" class="d-flex flex-column flex-sm-row">
-                    <td *ngIf="player.isMale && !isSmallScreen" class="col-5 extended-background-blue">
-                        {{ player.firstName }}
-                    </td>
-                    <td *ngIf="player.isMale && !player.isSub && isSmallScreen" class="col-5 extended-background-blue-lastName">
-                        {{ player.firstName[0] }}.{{ player.lastName }}
-                    </td>
-                    <td *ngIf="player.isMale && !player.isSub && !isSmallScreen" class="col-5 extended-background-blue-lastName">
-                        {{ player.lastName }}
-                    </td>
-                    <td *ngIf="player.isMale && player.isSub" class="col-5 extended-background-blue-lastName">
-                        {{ player.lastName }} - Sub
-                    </td>
-                    <td *ngIf="!player.isMale && !isSmallScreen" class="col-5 extended-background-pink">
-                        {{ player.firstName }}
-                    </td>
-                    <td *ngIf="!player.isMale && !player.isSub && isSmallScreen" class="col-5 extended-background-pink-lastName">
-                        {{ player.firstName[0] }}.{{ player.lastName }}
-                    </td>
-                    <td *ngIf="!player.isMale && !player.isSub && !isSmallScreen" class="col-5 extended-background-pink-lastName">
-                        {{ player.lastName }}
-                    </td>
-                    <td *ngIf="!player.isMale && player.isSub" class="col-5 extended-background-pink-lastName">
-                        {{ player.lastName }} - Sub
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-</div>
-
-
-
-
-</div>
-</div>
 <!-- Print Section -->
 <div id="printSection2">
     <div style="text-align: center; margin-bottom: 20px;">
@@ -1612,7 +1044,7 @@
         <!-- Only show matchups for even-indexed teams -->
         <div *ngIf="i % 2 === 0 && listOfTeams[i + 1]" style="display: table; width: 100%; page-break-inside: avoid;">
             <div style="display: table-cell; width: 48%; vertical-align: top;">
-                <h4 style="text-align: center;">{{ "Team " + (i + 1) }}</h4>
+                <p *ngIf="getMatchCourt(team)" style="text-align:center;">Court {{ getMatchCourt(team) }}</p><h4 style="text-align: center;">{{ "Team " + (i + 1) }}</h4>
                 <table class="table table-bordered" style="width: 100%;">
                     <thead>
                         <tr>
@@ -1714,7 +1146,7 @@
                 <!-- Loop through 4 matchups -->
                 <ng-container *ngFor="let matchIndex of [0, 2, 4, 6]">
                     <ng-container *ngIf="listOfTeams[i + matchIndex] && listOfTeams[i + matchIndex + 1]">
-                        <div style="width: 48%; border: 1px solid black; padding: 5px; margin-bottom: 10px; box-sizing: border-box;">
+                        <div style="width: 48%; border: 1px solid black; padding: 5px; margin-bottom: 10px; box-sizing: border-box;"><p *ngIf="getMatchCourt(listOfTeams[i + matchIndex])" style="text-align:center;">Court {{ getMatchCourt(listOfTeams[i + matchIndex]) }}</p>
                             <!-- Team A -->
                             <div>
                                 <h4 style="text-align: center; margin: 5px 0; font-size: 10px;">{{ "Team A (Team " + (i + matchIndex + 1) + ")" }}</h4>
@@ -1827,13 +1259,12 @@
                                         Court
                                     </span>
                                     <!-- Box -->
-                                    <div style="
+                                    <div class="printed-court-value" [attr.data-team-id]="listOfTeams[i + j].kingQueenTeamId" style="
                                                 width: 40px;
                                                 height: 40px;
                                                 background-color: white;
-                                                border: 1px solid black;
-                                            ">
-                                    </div>
+                                                border: 1px solid black; display:flex;align-items:center;justify-content:center;font-size:16px;
+                                            ">{{ getMatchCourt(listOfTeams[i + j]) }}</div>
                                 </div>
 
 
@@ -1932,3 +1363,446 @@
 </div>
 
 
+
+<ng-template #matchupsDialog>
+ <div class="matchups-dialog-layout" [class.viewer-compact]="matchupCompactNames"><header class="matchups-dialog-header"><div><h2 mat-dialog-title id="matchups-dialog-title">Matchups</h2><span *ngIf="scrambleSelected">Scramble {{ listOfRetrievedScrambleNumbers.join(', ') }}</span><span *ngIf="!scrambleSelected && scrambleNumber">Scramble {{ scrambleNumber }}</span></div><button mat-stroked-button color="primary" *ngIf="!showTeamSorting" (click)="openMatchups(true)" [disabled]="!isActionAllowed">Modify Teams</button><button mat-icon-button (click)="closeMatchups()" [disabled]="teamSaveBusy" aria-label="Close matchups"><mat-icon aria-hidden="true">close</mat-icon></button></header>
+ <mat-dialog-content><p *ngIf="!listOfTeams.length">No matchups are available for the current league. Close this viewer and generate or retrieve a scramble.</p><p *ngIf="!isActionAllowed" class="workspace-help">Administration access is required to save teams.</p><p *ngIf="scrambleSelected && listOfRetrievedScrambleNumbers.length>1" class="workspace-help">Retrieve one scramble at a time to save team changes. Combined scrambles can still be viewed and printed.</p><p class="editing-state" *ngIf="showTeamSorting"><strong>Editing Teams</strong> &mdash; Move players using their Team dropdowns. Court entries are local notes for this scramble.</p><p class="matchups-save-feedback" role="status" *ngIf="teamSaveFeedback">{{ teamSaveFeedback }}</p>
+ <div class="generated-matchups"><!-- Container for all pairs -->
+<div style="margin: 1rem;">
+
+    <!-- Loop in multiples of 4. (i % 4 === 0) => new row for 4 teams: i, i+1, i+2, i+3 -->
+    <ng-container *ngFor="let team of listOfTeams; let i = index">
+        <div class="row mb-4" *ngIf="i % 4 === 0">
+
+            <!-- CARD #1: Team i & i+1 (col-6) -->
+            <div class="col-6">
+                <mat-card style="padding: 1rem; border: 2px solid black; box-shadow: none;"><h3 class="viewer-match-number">Match {{ i / 2 + 1 }}</h3>
+                    <div class="row justify-content-center align-items-center">
+
+                        <!-- LEFT TEAM (Team i) -->
+                        <div class="col-5" *ngIf="listOfTeams[i]">
+                            <table class="table viewer-team-table" [class.viewer-team-editing]="showTeamSorting">
+                                <thead>
+                                    <!-- Team Title -->
+                                    <tr class="viewer-team-title"><th colspan="3" style="text-align: center; font-size: 1.4rem;">
+                                            Team {{ listOfTeams[i].sortingId }}
+                                        </th>
+                                    </tr>
+                                    <tr class="d-flex viewer-name-headings">
+                                        <th *ngIf="!matchupCompactNames && !showTeamSorting" class="col-6">First Name</th>
+                                        <th *ngIf="!matchupCompactNames && !showTeamSorting" class="col-6">Last Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-4">First Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-4">Last Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-3">Team</th>
+                                        <th *ngIf="matchupCompactNames" class="col-4" style="font-size:12px">Name</th>
+                                        <th *ngIf="matchupCompactNames && showTeamSorting" class="col-3">Team</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let player of listOfTeams[i].players" class="d-flex align-items-center viewer-player-row" [class.viewer-player-male]="player.isMale" [class.viewer-player-female]="!player.isMale">
+                                        <!-- Male / Female / Sub logic -->
+                                        <td *ngIf="player.isMale && !matchupCompactNames && showTeamSorting" class="col-4 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !matchupCompactNames && !showTeamSorting" class="col-6 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && matchupCompactNames"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.firstName[0] }}.{{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !matchupCompactNames && showTeamSorting"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !matchupCompactNames && !showTeamSorting"
+                                            class="col-6 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && player.isSub"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }} - Sub
+                                        </td>
+
+                                        <td *ngIf="!player.isMale && !matchupCompactNames && showTeamSorting" class="col-4 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !matchupCompactNames && !showTeamSorting" class="col-6 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && matchupCompactNames"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.firstName[0] }}.{{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !matchupCompactNames && showTeamSorting"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !matchupCompactNames && !showTeamSorting"
+                                            class="col-6 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && player.isSub"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }} - Sub
+                                        </td>
+
+                                        <!-- Team-switch dropdown -->
+                                        <td class="col-3" *ngIf="showTeamSorting">
+                                            <select class="form-select" aria-label="Assigned team" [disabled]="teamSaveBusy"
+                                                    style="width: 100%; min-height: 35px;"
+                                                    [value]="listOfTeams[i].sortingId"
+                                                    (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i].sortingId)">
+                                                <option *ngFor="let otherTeam of listOfTeams"
+                                                        [value]="otherTeam.sortingId"
+                                                        [disabled]="otherTeam.sortingId === listOfTeams[i].sortingId">
+                                                    {{ otherTeam.sortingId }}
+                                                </option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- MIDDLE: Court + VS (only if i+1 exists) -->
+                        <div class="col-1 text-center viewer-court" *ngIf="listOfTeams[i+1]">
+                            <h4 style="font-size: 18px;">Court</h4>
+                            <input aria-label="Court" style="width: 35px; height: 35px; font-size: 20px;" type="text" [value]="getMatchCourt(listOfTeams[i])" [disabled]="teamSaveBusy" (input)="setMatchCourt(listOfTeams[i],$event.target.value)" />
+                            <h4 style="font-size: 20px; margin-top: 8px;">VS</h4>
+                        </div>
+
+                        <!-- RIGHT TEAM (Team i+1) -->
+                        <div class="col-5" *ngIf="listOfTeams[i+1]">
+                            <table class="table viewer-team-table" [class.viewer-team-editing]="showTeamSorting">
+                                <thead>
+                                    <tr class="viewer-team-title"><th colspan="3" style="text-align: center; font-size: 1.4rem;">
+                                            Team {{ listOfTeams[i+1].sortingId }}
+                                        </th>
+                                    </tr>
+                                    <tr class="d-flex viewer-name-headings">
+                                        <th *ngIf="!matchupCompactNames && !showTeamSorting" class="col-6">First Name</th>
+                                        <th *ngIf="!matchupCompactNames && !showTeamSorting" class="col-6">Last Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-4">First Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-4">Last Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-3">Team</th>
+                                        <th *ngIf="matchupCompactNames" class="col-4" style="font-size:12px">Name</th>
+                                        <th *ngIf="matchupCompactNames && showTeamSorting" class="col-3">Team</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let player of listOfTeams[i+1].players" class="d-flex align-items-center viewer-player-row" [class.viewer-player-male]="player.isMale" [class.viewer-player-female]="!player.isMale">
+                                        <!-- same male/female logic -->
+                                        <td *ngIf="player.isMale && !matchupCompactNames && showTeamSorting" class="col-4 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !matchupCompactNames && !showTeamSorting" class="col-6 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && matchupCompactNames"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.firstName[0] }}.{{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !matchupCompactNames && showTeamSorting"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !matchupCompactNames && !showTeamSorting"
+                                            class="col-6 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && player.isSub"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }} - Sub
+                                        </td>
+
+                                        <td *ngIf="!player.isMale && !matchupCompactNames && showTeamSorting" class="col-4 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !matchupCompactNames && !showTeamSorting" class="col-6 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && matchupCompactNames"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.firstName[0] }}.{{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !matchupCompactNames && showTeamSorting"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !matchupCompactNames && !showTeamSorting"
+                                            class="col-6 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && player.isSub"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }} - Sub
+                                        </td>
+
+                                        <!-- Team-switch dropdown -->
+                                        <td class="col-3" *ngIf="showTeamSorting">
+                                            <select class="form-select" aria-label="Assigned team" [disabled]="teamSaveBusy"
+                                                    style="width: 100%; min-height: 35px;"
+                                                    [value]="listOfTeams[i+1].sortingId"
+                                                    (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i+1].sortingId)">
+                                                <option *ngFor="let otherTeam of listOfTeams"
+                                                        [value]="otherTeam.sortingId"
+                                                        [disabled]="otherTeam.sortingId === listOfTeams[i+1].sortingId">
+                                                    {{ otherTeam.sortingId }}
+                                                </option>
+                                            </select>
+                                        </td>
+
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div> <!-- /row inside mat-card -->
+                </mat-card>
+            </div>
+
+            <!-- CARD #2: Team i+2 & i+3 (col-6) -->
+            <div class="col-6" *ngIf="listOfTeams[i+2]">
+                <mat-card style="padding: 1rem; border: 2px solid black; box-shadow: none;"><h3 class="viewer-match-number">Match {{ i / 2 + 2 }}</h3>
+                    <div class="row justify-content-center align-items-center">
+
+                        <!-- LEFT TEAM (Team i+2) -->
+                        <div class="col-5" *ngIf="listOfTeams[i+2]">
+                            <table class="table viewer-team-table" [class.viewer-team-editing]="showTeamSorting">
+                                <thead>
+                                    <tr class="viewer-team-title"><th colspan="3" style="text-align: center; font-size: 1.4rem;">
+                                            Team {{ listOfTeams[i+2].sortingId }}
+                                        </th>
+                                    </tr>
+                                    <tr class="d-flex viewer-name-headings">
+                                        <th *ngIf="!matchupCompactNames && !showTeamSorting" class="col-6">First Name</th>
+                                        <th *ngIf="!matchupCompactNames && !showTeamSorting" class="col-6">Last Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-4">First Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-4">Last Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-3">Team</th>
+                                        <th *ngIf="matchupCompactNames" class="col-4" style="font-size:12px">Name</th>
+                                        <th *ngIf="matchupCompactNames && showTeamSorting" class="col-3">Team</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let player of listOfTeams[i+2].players" class="d-flex align-items-center viewer-player-row" [class.viewer-player-male]="player.isMale" [class.viewer-player-female]="!player.isMale">
+                                        <!-- male/female logic again -->
+                                        <td *ngIf="player.isMale && !matchupCompactNames && showTeamSorting" class="col-4 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !matchupCompactNames && !showTeamSorting" class="col-6 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && matchupCompactNames"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.firstName[0] }}.{{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !matchupCompactNames && showTeamSorting"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !matchupCompactNames && !showTeamSorting"
+                                            class="col-6 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && player.isSub"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }} - Sub
+                                        </td>
+
+                                        <td *ngIf="!player.isMale && !matchupCompactNames && showTeamSorting" class="col-4 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !matchupCompactNames && !showTeamSorting" class="col-6 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && matchupCompactNames"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.firstName[0] }}.{{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !matchupCompactNames && showTeamSorting"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !matchupCompactNames && !showTeamSorting"
+                                            class="col-6 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && player.isSub"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }} - Sub
+                                        </td>
+
+                                        <!-- Team-switch dropdown -->
+                                        <td class="col-3" *ngIf="showTeamSorting">
+                                            <select class="form-select" aria-label="Assigned team" [disabled]="teamSaveBusy"
+                                                    style="width: 100%; min-height: 35px;"
+                                                    [value]="listOfTeams[i+2].sortingId"
+                                                    (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i+2].sortingId)">
+                                                <option *ngFor="let otherTeam of listOfTeams"
+                                                        [value]="otherTeam.sortingId"
+                                                        [disabled]="otherTeam.sortingId === listOfTeams[i+2].sortingId">
+                                                    {{ otherTeam.sortingId }}
+                                                </option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- MIDDLE: Court + VS (only if i+3 exists) -->
+                        <div class="col-1 text-center viewer-court" *ngIf="listOfTeams[i+3]">
+                            <h4 style="font-size: 18px;">Court</h4>
+                            <input aria-label="Court" style="width: 35px; height: 35px; font-size: 20px;" type="text" [value]="getMatchCourt(listOfTeams[i+2])" [disabled]="teamSaveBusy" (input)="setMatchCourt(listOfTeams[i+2],$event.target.value)" />
+                            <h4 style="font-size: 20px; margin-top: 8px;">VS</h4>
+                        </div>
+
+                        <!-- RIGHT TEAM (Team i+3) -->
+                        <div class="col-5" *ngIf="listOfTeams[i+3]">
+                            <table class="table viewer-team-table" [class.viewer-team-editing]="showTeamSorting">
+                                <thead>
+                                    <tr class="viewer-team-title"><th colspan="3" style="text-align: center; font-size: 1.4rem;">
+                                            Team {{ listOfTeams[i+3].sortingId }}
+                                        </th>
+                                    </tr>
+                                    <tr class="d-flex viewer-name-headings">
+                                        <th *ngIf="!matchupCompactNames && !showTeamSorting" class="col-6">First Name</th>
+                                        <th *ngIf="!matchupCompactNames && !showTeamSorting" class="col-6">Last Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-4">First Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-4">Last Name</th>
+                                        <th *ngIf="!matchupCompactNames && showTeamSorting" class="col-3">Team</th>
+                                        <th *ngIf="matchupCompactNames" class="col-4" style="font-size:12px">Name</th>
+                                        <th *ngIf="matchupCompactNames && showTeamSorting" class="col-3">Team</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let player of listOfTeams[i+3].players" class="d-flex align-items-center viewer-player-row" [class.viewer-player-male]="player.isMale" [class.viewer-player-female]="!player.isMale">
+                                        <!-- male/female logic again -->
+                                        <td *ngIf="player.isMale && !matchupCompactNames && showTeamSorting" class="col-4 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !matchupCompactNames && !showTeamSorting" class="col-6 extended-background-blue">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && matchupCompactNames"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.firstName[0] }}.{{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !matchupCompactNames && showTeamSorting"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && !player.isSub && !matchupCompactNames && !showTeamSorting"
+                                            class="col-6 extended-background-blue-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="player.isMale && player.isSub"
+                                            class="col-4 extended-background-blue-lastName">
+                                            {{ player.lastName }} - Sub
+                                        </td>
+
+                                        <td *ngIf="!player.isMale && !matchupCompactNames && showTeamSorting" class="col-4 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !matchupCompactNames && !showTeamSorting" class="col-6 extended-background-pink">
+                                            {{ player.firstName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && matchupCompactNames"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.firstName[0] }}.{{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !matchupCompactNames && showTeamSorting"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && !player.isSub && !matchupCompactNames && !showTeamSorting"
+                                            class="col-6 extended-background-pink-lastName">
+                                            {{ player.lastName }}
+                                        </td>
+                                        <td *ngIf="!player.isMale && player.isSub"
+                                            class="col-4 extended-background-pink-lastName">
+                                            {{ player.lastName }} - Sub
+                                        </td>
+
+                                        <!-- Team-switch dropdown -->
+                                        <td class="col-3" *ngIf="showTeamSorting">
+                                            <select class="form-select" aria-label="Assigned team" [disabled]="teamSaveBusy"
+                                                    style="width: 100%; min-height: 35px;"
+                                                    [value]="listOfTeams[i+3].sortingId"
+                                                    (change)="switchPlayerTeam(player, $event.target.value, listOfTeams[i+3].sortingId)">
+                                                <option *ngFor="let otherTeam of listOfTeams"
+                                                        [value]="otherTeam.sortingId"
+                                                        [disabled]="otherTeam.sortingId === listOfTeams[i+3].sortingId">
+                                                    {{ otherTeam.sortingId }}
+                                                </option>
+                                            </select>
+                                        </td>
+
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div> <!-- /row inside mat-card -->
+                </mat-card>
+            </div>
+
+        </div> <!-- end of row for 4 teams (2 mat-cards) -->
+    </ng-container>
+
+    <!-- Bye Players Section (unchanged) -->
+    <div class="row col-3 justify-content-center mt-5 viewer-bye-players" *ngIf="byePlayers.length > 0">
+        <h2 *ngIf="matchupCompactNames" style="text-align:center; float:none; margin-left:-50px; font-size:18px;">
+            Bye Players
+        </h2>
+        <h2 *ngIf="!matchupCompactNames" style="text-align:center; float:none; margin-left:-50px; font-size:28px;">
+            Bye Players
+        </h2>
+        <table class="table mt-3" style="width: 100%;">
+            <thead>
+                <tr class="d-flex viewer-name-headings">
+                    <th *ngIf="!matchupCompactNames" class="col-5">First Name</th>
+                    <th *ngIf="!matchupCompactNames" class="col-5">Last Name</th>
+                    <th *ngIf="matchupCompactNames" class="col-5" style="font-size:12px">Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let player of byePlayers" class="d-flex flex-column flex-sm-row">
+                    <td *ngIf="player.isMale && !matchupCompactNames" class="col-5 extended-background-blue">
+                        {{ player.firstName }}
+                    </td>
+                    <td *ngIf="player.isMale && !player.isSub && matchupCompactNames" class="col-5 extended-background-blue-lastName">
+                        {{ player.firstName[0] }}.{{ player.lastName }}
+                    </td>
+                    <td *ngIf="player.isMale && !player.isSub && !matchupCompactNames" class="col-5 extended-background-blue-lastName">
+                        {{ player.lastName }}
+                    </td>
+                    <td *ngIf="player.isMale && player.isSub" class="col-5 extended-background-blue-lastName">
+                        {{ player.lastName }} - Sub
+                    </td>
+                    <td *ngIf="!player.isMale && !matchupCompactNames" class="col-5 extended-background-pink">
+                        {{ player.firstName }}
+                    </td>
+                    <td *ngIf="!player.isMale && !player.isSub && matchupCompactNames" class="col-5 extended-background-pink-lastName">
+                        {{ player.firstName[0] }}.{{ player.lastName }}
+                    </td>
+                    <td *ngIf="!player.isMale && !player.isSub && !matchupCompactNames" class="col-5 extended-background-pink-lastName">
+                        {{ player.lastName }}
+                    </td>
+                    <td *ngIf="!player.isMale && player.isSub" class="col-5 extended-background-pink-lastName">
+                        {{ player.lastName }} - Sub
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+
+
+
+</div>
+ </mat-dialog-content><mat-dialog-actions align="end"><ng-container *ngIf="showTeamSorting"><button mat-button (click)="cancelMatchupChanges()" [disabled]="teamSaveBusy">Cancel Changes</button><button mat-raised-button color="primary" (click)="saveKingQueenTeams()" [disabled]="!canSaveMatchupTeams">{{ teamSaveBusy ? 'Saving Teams...' : 'Save Teams' }}</button></ng-container><ng-container *ngIf="!showTeamSorting"><span class="modal-print-hint" role="status" [class.modal-print-confirmation]="canPrintMatchups">{{ canPrintMatchups ? 'Scramble saved' : 'Save this scramble before printing.' }}</span><button mat-raised-button class="modal-print-button" (click)="printMatchups()" [disabled]="!canPrintMatchups">Print Matchups</button></ng-container></mat-dialog-actions></div>
+</ng-template>

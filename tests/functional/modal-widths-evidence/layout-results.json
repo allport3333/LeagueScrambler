@@ -1,0 +1,1186 @@
+[
+  {
+    "viewport": 375,
+    "available": 359,
+    "minimum": 550,
+    "columns": 1,
+    "compact": true,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": false
+  },
+  {
+    "viewport": 375,
+    "available": 359,
+    "minimum": 550,
+    "columns": 1,
+    "compact": true,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": true
+  },
+  {
+    "viewport": 430,
+    "available": 414,
+    "minimum": 550,
+    "columns": 1,
+    "compact": true,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": false
+  },
+  {
+    "viewport": 430,
+    "available": 414,
+    "minimum": 550,
+    "columns": 1,
+    "compact": true,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": true
+  },
+  {
+    "viewport": 600,
+    "available": 584,
+    "minimum": 550,
+    "columns": 1,
+    "compact": true,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": false
+  },
+  {
+    "viewport": 600,
+    "available": 584,
+    "minimum": 550,
+    "columns": 1,
+    "compact": true,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": true
+  },
+  {
+    "viewport": 768,
+    "available": 698,
+    "minimum": 603,
+    "columns": 1,
+    "compact": false,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          52,
+          52,
+          52,
+          52
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": false
+  },
+  {
+    "viewport": 768,
+    "available": 698,
+    "minimum": 603,
+    "columns": 1,
+    "compact": false,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          52,
+          52,
+          52,
+          52
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": true
+  },
+  {
+    "viewport": 850,
+    "available": 776,
+    "minimum": 603,
+    "columns": 1,
+    "compact": false,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": false
+  },
+  {
+    "viewport": 850,
+    "available": 776,
+    "minimum": 603,
+    "columns": 1,
+    "compact": false,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": true
+  },
+  {
+    "viewport": 1024,
+    "available": 941,
+    "minimum": 603,
+    "columns": 1,
+    "compact": false,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": false
+  },
+  {
+    "viewport": 1024,
+    "available": 941,
+    "minimum": 603,
+    "columns": 1,
+    "compact": false,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": true
+  },
+  {
+    "viewport": 1280,
+    "available": 1184,
+    "minimum": 603,
+    "columns": 1,
+    "compact": false,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": false
+  },
+  {
+    "viewport": 1280,
+    "available": 1184,
+    "minimum": 603,
+    "columns": 1,
+    "compact": false,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": true
+  },
+  {
+    "viewport": 1600,
+    "available": 1488,
+    "minimum": 603,
+    "columns": 2,
+    "compact": false,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          52,
+          52,
+          52,
+          52
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          34,
+          34,
+          34,
+          34
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": false
+  },
+  {
+    "viewport": 1600,
+    "available": 1488,
+    "minimum": 603,
+    "columns": 2,
+    "compact": false,
+    "overflow": false,
+    "badWords": [],
+    "pairs": [
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      },
+      {
+        "courtClear": true,
+        "rowHeights": [
+          48,
+          48,
+          48,
+          48
+        ],
+        "headAlignment": 0
+      }
+    ],
+    "headerVisible": true,
+    "footerVisible": true,
+    "edit": true
+  }
+]

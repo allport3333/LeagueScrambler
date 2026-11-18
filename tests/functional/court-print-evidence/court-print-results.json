@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Temporary courts4/9/2 bind to correct print matchups for2/4/6, blank courts remain empty, existing40px box centered, five rounds unchanged; modal reopen/Edit Cancel preserved, raised Print button; blank baseline pixels/page counts identical; no writes"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}

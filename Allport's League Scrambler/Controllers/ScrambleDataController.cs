@@ -662,6 +662,75 @@ namespace Allport_s_League_Scrambler.Controllers
 
                 var leagueId = existingLeague.ID;
 
+                // The viewer supplies stable IDs for both generated and retrieved teams.
+                // Keep the legacy no-ID finalization path below for other existing callers.
+                if (request == null || request.KingQueenTeams == null || request.KingQueenTeams.Count == 0)
+                    return BadRequest("No teams supplied.");
+                if (request.KingQueenTeams.Any(t => t == null || t.KingQueenTeam == null || t.Players == null))
+                    return BadRequest("Invalid team assignments.");
+                if (request.KingQueenTeams.Any(t => t.KingQueenTeam.Id > 0))
+                {
+                    var requestedIds = request.KingQueenTeams.Select(t => t.KingQueenTeam.Id).ToList();
+                    if (requestedIds.Any(id => id <= 0) || requestedIds.Distinct().Count() != requestedIds.Count)
+                        return BadRequest("Supply each saved team exactly once.");
+                    var requestedPlayers = request.KingQueenTeams.SelectMany(t => t.Players).ToList();
+                    if (requestedPlayers.Any(p => p == null)) return BadRequest("Invalid player.");
+                    var playerIds = requestedPlayers.Select(p => p.Id).ToList();
+                    if (playerIds.Any(id => id <= 0) || playerIds.Distinct().Count() != playerIds.Count ||
+                        context.Players.Count(p => playerIds.Contains(p.Id)) != playerIds.Count)
+                        return BadRequest("Supply valid players with no duplicate team assignments.");
+
+                    using (var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                    {
+                        var selectedTeams = context.KingQueenTeam.Where(t => requestedIds.Contains(t.Id)).OrderBy(t => t.Id).ToList();
+                        if (selectedTeams.Count != requestedIds.Count || selectedTeams.Any(t => t.LeagueID != leagueId) ||
+                            selectedTeams.Select(t => t.ScrambleNumber).Distinct().Count() != 1 ||
+                            selectedTeams.Select(t => t.ScrambleWithScoresToBeSaved).Distinct().Count() != 1)
+                            return BadRequest("Teams must belong to one selected league scramble.");
+                        var selectedNumber = selectedTeams[0].ScrambleNumber;
+                        var allScrambleIds = context.KingQueenTeam.Where(t => t.LeagueID == leagueId && t.ScrambleNumber == selectedNumber).Select(t => t.Id).ToList();
+                        if (allScrambleIds.Count != requestedIds.Count || allScrambleIds.Except(requestedIds).Any())
+                            return BadRequest("Save the complete selected scramble.");
+                        var finalized = selectedTeams[0].ScrambleWithScoresToBeSaved;
+                        var links = context.KingQueenPlayer.Where(p => requestedIds.Contains(p.KingQueenTeamId)).ToList();
+                        if (finalized && (links.Count != playerIds.Count || links.Select(p => p.PlayerId).Distinct().Count() != links.Count || links.Any(p => !playerIds.Contains(p.PlayerId))))
+                            return BadRequest("Saved scramble players must remain the same; only team assignments may change.");
+                        if (!finalized && links.Count > 0) return BadRequest("Pending scramble already has assignments. Retrieve it before retrying.");
+                        foreach (var requestedTeam in request.KingQueenTeams)
+                        {
+                            foreach (var player in requestedTeam.Players)
+                            {
+                                if (finalized)
+                                {
+                                    // Move existing membership rows, retaining IDs and substitute-score flags.
+                                    links.Single(p => p.PlayerId == player.Id).KingQueenTeamId = requestedTeam.KingQueenTeam.Id;
+                                }
+                                else context.KingQueenPlayer.Add(new KingQueenPlayer { KingQueenTeamId = requestedTeam.KingQueenTeam.Id, PlayerId = player.Id, isSubScore = false });
+                            }
+                        }
+                        if (!finalized)
+                        {
+                            var byes = request.ByePlayers ?? new List<Player>();
+                            if (byes.Any(p => p == null || p.Id <= 0) || byes.Select(p => p.Id).Distinct().Count() != byes.Count || byes.Any(p => playerIds.Contains(p.Id)))
+                                return BadRequest("Invalid bye assignments.");
+                            var byeIds = byes.Select(p => p.Id).ToList();
+                            if (context.Players.Count(p => byeIds.Contains(p.Id)) != byeIds.Count)
+                                return BadRequest("Invalid bye players.");
+                            var byeRound = new ByeRounds { LeagueID = leagueId, DateOfRound = selectedTeams[0].DateOfTeam, ScrambleNumber = selectedNumber };
+                            context.ByeRounds.Add(byeRound);
+                            context.SaveChanges();
+                            foreach (var player in byes) context.ByePlayer.Add(new ByePlayer { ByeRoundId = byeRound.Id, PlayerId = player.Id });
+                            selectedTeams.ForEach(t => t.ScrambleWithScoresToBeSaved = true);
+                        }
+                        context.SaveChanges();
+                        transaction.Commit();
+                        return Ok(new KingQueenTeamsResponse {
+                            KingQueenTeams = selectedTeams.Select(team => new KingQueenTeamWithPlayers { KingQueenTeam = team, Players = request.KingQueenTeams.Single(t => t.KingQueenTeam.Id == team.Id).Players }).ToList(),
+                            ByePlayers = request.ByePlayers ?? new List<Player>()
+                        });
+                    }
+                }
+
                 // 1) Find the highest ScrambleNumber for unscrambled teams:
                 var latestScrambleNumber = context.KingQueenTeam
                     .Where(kt => kt.LeagueID == leagueId && kt.ScrambleWithScoresToBeSaved == false)

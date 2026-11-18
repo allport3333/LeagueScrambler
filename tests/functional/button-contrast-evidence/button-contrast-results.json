@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Desktop/mobile enabled Fetch green/dark text and Apply slate blue/white; disabled neutral; actual availability unchanged including clickable previously-applied states; no writes"
+  ],
+  "pageErrors": [],
+  "writes": [],
+  "databaseAccess": false,
+  "mode": "browser-only API fixtures; actual component/print function"
+}
