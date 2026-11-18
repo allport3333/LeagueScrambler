@@ -1,0 +1,55 @@
+{
+  "passed": 4,
+  "failed": 0,
+  "checks": [
+    "19 questions in three categories, native keyboard Enter/Space, matching expanded/control IDs and representative expanded answers",
+    "375/390 natural wrapping, aligned expand indicators, 44px question buttons and no horizontal overflow with every answer open",
+    "All rendered link URLs preserve selected league; all five existing destination routes clicked, including Dashboard Schedule tab; no unknown player links",
+    "Revised substitute, randomness and rules wording present without obsolete claims"
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "links": [
+    {
+      "text": "Players",
+      "href": "/fetch-data?leagueId=2"
+    },
+    {
+      "text": "K/Q Standings",
+      "href": "/standings?leagueId=2"
+    },
+    {
+      "text": "League Dashboard",
+      "href": "/league-dashboard?leagueId=2&tab=schedule"
+    },
+    {
+      "text": "League Dashboard",
+      "href": "/league-dashboard?leagueId=2&tab=schedule"
+    },
+    {
+      "text": "Sign In Sheet",
+      "href": "/sign-in?leagueId=2"
+    },
+    {
+      "text": "Sign In Sheet",
+      "href": "/sign-in?leagueId=2"
+    },
+    {
+      "text": "K/Q Standings",
+      "href": "/standings?leagueId=2"
+    },
+    {
+      "text": "K/Q Matchups",
+      "href": "/kqmatchups?leagueId=2"
+    },
+    {
+      "text": "K/Q Standings",
+      "href": "/standings?leagueId=2"
+    },
+    {
+      "text": "K/Q Matchups",
+      "href": "/kqmatchups?leagueId=2"
+    }
+  ],
+  "databaseAccess": false
+}

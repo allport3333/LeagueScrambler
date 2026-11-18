@@ -1,14 +1,10 @@
 <div class="faq-container">
-    <h2>Frequently Asked Questions</h2>
-
-    <div class="faq-item" *ngFor="let item of faqItems; let i = index">
-        <div class="faq-question" (click)="toggleItem(i)">
-            {{ item.question }}
-            <span class="arrow" [class.expanded]="item.expanded">&#9660;</span>
-        </div>
-
-        <div class="faq-answer" *ngIf="item.expanded">
-            {{ item.answer }}
-        </div>
-    </div>
+ <h1>Frequently Asked Questions</h1>
+ <section *ngFor="let category of categories" class="faq-category" [attr.aria-labelledby]="'category-'+category.id">
+  <h2 [id]="'category-'+category.id">{{ category.title }}</h2>
+  <div class="faq-item" *ngFor="let item of category.items">
+   <h3><button type="button" class="faq-question" [id]="'question-'+item.id" [attr.aria-expanded]="item.expanded" [attr.aria-controls]="'answer-'+item.id" (click)="toggleItem(item)"><span>{{ item.question }}</span><span class="arrow" aria-hidden="true"><ng-container *ngIf="item.expanded;else collapsedIndicator">&#8722;</ng-container><ng-template #collapsedIndicator>+</ng-template></span></button></h3>
+   <div class="faq-answer" [hidden]="!item.expanded" [id]="'answer-'+item.id" [attr.aria-labelledby]="'question-'+item.id"><p><ng-container *ngFor="let part of item.answer"><a *ngIf="part.route;else prose" [routerLink]="part.route" [queryParams]="navigationQuery(part)">{{ part.text }}</a><ng-template #prose>{{ part.text }}</ng-template></ng-container></p></div>
+  </div>
+ </section>
 </div>
