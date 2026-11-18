@@ -81,3 +81,13 @@
 .standings-score-link { color: inherit; font-weight: inherit; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
 .standings-score-link:hover, .standings-score-link:focus { color: inherit; background: rgba(63,81,181,.10); outline: 1px solid #6578a7; border-radius: 2px; }
 @media (max-width: 767px) { .mobile-round-scores .standings-score-link { display: flex; justify-content: center; align-items: center; min-height: 44px; } }
+
+.standings-player-profile { color: inherit; text-decoration: underline; text-decoration-color: rgba(45,78,130,.35); text-underline-offset: 2px; }
+.standings-player-profile:hover, .standings-player-profile:focus { color: #315a97; text-decoration-color: currentColor; }
+
+@media (max-width: 767px) {
+ .mobile-player-summary.mobile-player-context { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; padding: 0; }
+ .mobile-player-context .mobile-view-profile { display: inline-flex; align-items: center; justify-content: flex-end; gap: 3px; margin-left: auto; min-height: 44px; padding: 0 2px 0 8px; color: #3f51b5; font-size: 12px; white-space: nowrap; text-decoration: none; }
+ .mobile-player-context .mobile-view-profile:hover, .mobile-player-context .mobile-view-profile:focus { text-decoration: underline; }
+ .mobile-player-context .mobile-view-profile mat-icon { width: 16px; height: 16px; font-size: 16px; }
+}

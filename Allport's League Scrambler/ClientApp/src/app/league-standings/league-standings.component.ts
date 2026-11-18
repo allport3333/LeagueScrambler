@@ -56,6 +56,10 @@ export class LeagueStandingsComponent implements OnInit {
     private navigationLeagueResolved = false;
     private navigationSubscriptions = new Subscription();
 
+    profileQuery(player: PlayerScoreGroup): any {
+        return {leagueId:this.selectedLeagueId,tab:'kq',fromStandings:'1',standingsMode:this.standingsType,
+            divisionId:this.selectedDivisionId,gender:player.isMale?'men':'women',mobileFullTable:this.mobileFullTable?'1':'0'};
+    }
     scoreQuery(player: PlayerScoreGroup, score: any): any {
         return { fromStandings: '1', leagueId: this.selectedLeagueId, playerId: player.playerId,
             kingQueenTeamId: score.kingQueenTeamId, scrambleNumber: score.scrambleNumber,
@@ -93,6 +97,7 @@ export class LeagueStandingsComponent implements OnInit {
 
     ngOnInit(): void {
         const requestedLeague = Number(this.route.snapshot.queryParamMap.get('leagueId'));
+        this.mobileFullTable = this.route.snapshot.queryParamMap.get('mobileFullTable') === '1';
         this.returnGenderIndex = this.route.snapshot.queryParamMap.get('gender') === 'women' ? 1 : 0;
         if (Number.isInteger(requestedLeague) && requestedLeague > 0) {
             this.navigationSubscriptions.add(this.leagueService.selectNavigationLeague(requestedLeague).subscribe());

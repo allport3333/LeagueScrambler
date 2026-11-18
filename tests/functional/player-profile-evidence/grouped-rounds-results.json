@@ -1,0 +1,14 @@
+{
+  "passed": 5,
+  "failed": 0,
+  "checks": [
+    "saved scramble identity separates same-date records",
+    "chronological groups and ascending rounds retain every score/result",
+    "completed-only summary and unknown outcomes",
+    "single outer disclosure defaults closed and no nested disclosures",
+    "desktop 1366/1920 and mobile 375/390/430 without overflow"
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "databaseAccess": false
+}

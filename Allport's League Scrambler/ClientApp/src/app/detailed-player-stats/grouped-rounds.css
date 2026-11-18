@@ -1,0 +1,10 @@
+.round-date-group { border: 1px solid #d8e2ed; border-radius: 4px; overflow: hidden; margin-top: 12px; }
+.round-date-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; background: #edf3fa; color: #26456e; }
+.round-date-group:nth-of-type(even) .round-date-heading { background: #f3f6fa; }
+.round-date-heading h3 { margin: 0; font-size: 16px; font-weight: 600; text-align: left; }
+.round-date-heading small { display: block; font-size: 12px; font-weight: normal; margin-top: 2px; }
+.round-date-heading > span { font-size: 12px; white-space: nowrap; }
+.grouped-round-table { margin: 0; min-width: 0; }
+.grouped-round-table th, .grouped-round-table td, .grouped-round-table th:first-child, .grouped-round-table td:first-child { width: 33.333%; text-align: center; padding: 8px 6px; }
+.grouped-round-table th:first-child, .grouped-round-table td:first-child { text-align: left; }
+@media(max-width: 430px) { .round-date-heading { padding: 9px 8px; }.round-date-heading h3 { font-size: 15px; }.grouped-round-table th, .grouped-round-table td { font-size: 12px; } }

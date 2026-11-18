@@ -3,3 +3,4 @@
  .profile-tabs ::ng-deep .mat-tab-label { min-width: 0; flex: 1 1 0; height: 48px; padding: 0 6px; font-size: 12px; }
  .profile-tabs ::ng-deep .mat-tab-label-content { white-space: normal; text-align: center; line-height: 16px; }
 }
+.profile-return { display: flex; justify-content: center; margin-bottom: 8px; }.profile-return button { min-height: 44px; }

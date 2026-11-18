@@ -1,0 +1,13 @@
+{
+  "passed": 4,
+  "failed": 0,
+  "checks": [
+    "Unified desktop border/rosters/VS/shared scores at 1366/1920; pixel-identical mobile at 375/390, plus 430 layout; original pairs/numbers/bye/colors/subs/results preserved",
+    "Standings deep link preserves original Match 2, selected-round highlight, refresh, View All and return filters",
+    "Actual player profile score click, correct week/team, refresh, same-date different week, manual week resets filter and profile return",
+    "Missing deep-linked team fails safely; missing opposing round scores remain unavailable without invented results"
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "databaseAccess": false
+}

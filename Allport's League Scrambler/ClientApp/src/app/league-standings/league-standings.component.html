@@ -125,7 +125,7 @@
                                             style="padding: 2px; text-align: center; font-weight: bold;">
                                             {{ i + 1 }}
                                         </td>
-                                        <td style="padding: 2px;">{{ player.playerName }}</td>
+                                        <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
                                         <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
@@ -191,7 +191,7 @@
                                             style="padding: 2px; text-align: center; font-weight: bold;">
                                             {{ i + 1 }}
                                         </td>
-                                        <td style="padding: 2px;">{{ player.playerName }}</td>
+                                        <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
                                         <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
@@ -265,7 +265,7 @@
                                             style="padding: 2px; text-align: center; font-weight: bold;">
                                             {{ i + 1 }}
                                         </td>
-                                        <td style="padding: 2px;">{{ player.playerName }}</td>
+                                        <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
                                         <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
@@ -332,7 +332,7 @@
                                             style="padding: 2px; text-align: center; font-weight: bold;">
                                             {{ i + 1 }}
                                         </td>
-                                        <td style="padding: 2px;">{{ player.playerName }}</td>
+                                        <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
                                         <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
@@ -405,8 +405,9 @@
                     <tr class="mobile-player-details" [hidden]="!mobileExpandedPlayers[mobilePlayerKey(group, player.playerId)]"
                         [id]="'details-' + mobilePlayerKey(group, player.playerId)">
                         <td colspan="4">
-                            <div class="mobile-player-summary" *ngIf="player.leagueDivisionId > 0 && player.leagueDivisionCode && player.leagueDivisionCode.trim() && player.leagueDivisionCode !== 'Unassigned'">
-                                <span><strong>Division:</strong> {{ player.leagueDivisionCode }}</span>
+                            <div class="mobile-player-summary mobile-player-context">
+                                <span *ngIf="player.leagueDivisionId > 0 && player.leagueDivisionCode && player.leagueDivisionCode.trim() && player.leagueDivisionCode !== 'Unassigned'"><strong>Division:</strong> {{ player.leagueDivisionCode }}</span>
+                                <a class="mobile-view-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)" (click)="$event.stopPropagation()"><mat-icon aria-hidden="true">person</mat-icon><span>View Profile</span></a>
                             </div>
                             <ul class="mobile-round-scores" aria-label="Individual scores">
                                 <li *ngFor="let score of player.scores; let scoreIndex = index"

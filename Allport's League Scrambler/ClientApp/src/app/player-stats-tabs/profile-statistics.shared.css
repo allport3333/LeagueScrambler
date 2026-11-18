@@ -51,7 +51,7 @@ summary:focus-visible, a:focus-visible, button:focus-visible { outline: 2px soli
 .stats-facts > div { border-bottom: 1px solid #e2e7ef; padding: 8px; text-align: center; }
 .stats-facts dt { color: #596575; font-size: 13px; font-weight: 400; }.stats-facts dd { font-weight: 600; margin: 4px 0; }
 .streak-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: center; }.streak-grid strong { display: block; font-size: 23px; }
-.table-scroll { max-width: 100%; overflow-x: auto; }.full-round-table { min-width: 540px; }.additional-details { margin-top: 12px; }
+.table-scroll { max-width: 100%; overflow-x: auto; }.full-round-table { min-width: 0; }.additional-details { margin-top: 12px; }
 @media (max-width: 600px) {
  .player-profile { padding: 0; margin: 8px auto; }.profile-header h1 { font-size: 23px; }.profile-section { padding: 12px 0; }
  .summary-grid { gap: 6px; margin-bottom: 14px; }.summary-grid > div { padding: 10px 4px; }.summary-grid span { font-size: 12px; }.summary-grid strong { font-size: 23px; }
@@ -61,3 +61,6 @@ summary:focus-visible, a:focus-visible, button:focus-visible { outline: 2px soli
  .stats-card { padding: 10px; }.stats-table th, .stats-table td { padding: 8px 4px; font-size: 12px; }.stats-table th:first-child, .stats-table td:first-child { width: 40%; }
  .streak-grid { gap: 8px; font-size: 13px; } h2 { font-size: 19px; }
 }
+
+.full-round-table { table-layout: fixed; width: 100%; }
+.full-round-table th, .full-round-table td, .full-round-table th:first-child, .full-round-table td:first-child { width: 25%; text-align: center; overflow-wrap: break-word; }

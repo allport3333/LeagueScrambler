@@ -6,9 +6,14 @@
                    "opponent own-perspective/all teams",
                    "empty/solo/co-rostered zero",
                    "raw KQ scores/nullable wins",
-                   "KQ week frequency and score-ID wins"
+                   "KQ week frequency and score-ID wins",
+                   "33 games 19 wins 14 losses",
+                   "all wins and all losses with zero values",
+                   "three games same day two wins",
+                   "unsaved invalid or missing-date records excluded",
+                   "ties preserve existing recorded nonwin rule"
                ],
     "databaseAccess":  false,
     "failed":  0,
-    "passed":  7
+    "passed":  12
 }

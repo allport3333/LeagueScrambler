@@ -14,7 +14,11 @@ namespace Allport_s_League_Scrambler.Models
             var teams = allTeams.Where(t => t.LeagueID == leagueId).ToDictionary(t => t.Id);
             var links = memberships.Where(m => teams.ContainsKey(m.LeagueTeamId)).ToList();
             var ownTeams = new HashSet<int>(links.Where(m => m.PlayerId == playerId).Select(m => m.LeagueTeamId));
-            var games = savedScores.Where(s => ownTeams.Contains(s.LeagueTeamId)).GroupBy(s => s.Id)
+            // Persisted scores have non-nullable points/WonGame. Existing rules count ties as nonwins/losses.
+            // Reject unsaved or structurally invalid rows without changing any stored records.
+            var games = savedScores.Where(s => s.Id > 0 && s.TeamScore >= 0 && s.Date != default(DateTime)
+                && ownTeams.Contains(s.LeagueTeamId) && teams.ContainsKey(s.OpponentsLeagueTeamId)
+                && s.LeagueTeamId != s.OpponentsLeagueTeamId).GroupBy(s => s.Id)
                 .Select(g => g.First()).OrderBy(s => s.Date).ThenBy(s => s.Id).ToList();
             var names = players.GroupBy(p => p.Id).ToDictionary(g => g.Key, g => g.First().FirstName + " " + g.First().LastName);
             int winning = 0, losing = 0, longestWin = 0, longestLoss = 0;
@@ -30,7 +34,7 @@ namespace Allport_s_League_Scrambler.Models
                     var sharedGames = games.Where(g => sharedTeams.Contains(g.LeagueTeamId)).ToList();
                     return new { PlayerId = group.Key, PlayerName = names.ContainsKey(group.Key) ? names[group.Key] : "Unavailable player",
                         TimesPlayedTogether = sharedGames.Count, WinsTogether = sharedGames.Count(g => g.WonGame) };
-                }).OrderBy(t => t.PlayerName).ThenBy(t => t.PlayerId).ToList();
+                }).OrderByDescending(t => t.TimesPlayedTogether).ThenBy(t => t.PlayerName).ThenBy(t => t.PlayerId).ToList();
             var opponents = games.GroupBy(g => g.OpponentsLeagueTeamId).Select(group => new
             {
                 OpponentTeamId = group.Key, OpponentTeamName = teams.ContainsKey(group.Key) ? teams[group.Key].TeamName : "Unavailable team",

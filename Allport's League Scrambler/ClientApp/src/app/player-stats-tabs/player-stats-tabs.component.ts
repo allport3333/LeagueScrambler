@@ -34,6 +34,13 @@ export class PlayerStatsTabsComponent implements OnInit, OnDestroy {
             this.loadHeader();
         }));
     }
+    get fromStandings(): boolean { return this.route.snapshot.queryParams.fromStandings === '1'; }
+    backToStandings() {
+        const p=this.route.snapshot.queryParams;
+        this.router.navigate(['/standings'],{queryParams:{leagueId:this.selectedLeagueId||p.leagueId,
+            standingsMode:p.standingsMode==='matchup'?'matchup':'round',divisionId:Number(p.divisionId)>0?Number(p.divisionId):0,
+            gender:p.gender==='women'?'women':'men',mobileFullTable:p.mobileFullTable==='1'?'1':'0'}});
+    }
     selectTab(index: number) { this.activeTab = index; this.syncUrl(); }
     private syncUrl() {
         if (!this.selectedLeagueId || !this.playerId || this.resolvingLeague) { return; }

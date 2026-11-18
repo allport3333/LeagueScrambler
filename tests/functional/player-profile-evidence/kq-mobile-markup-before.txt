@@ -1,0 +1,9 @@
+        <div class="mobile-matchup">
+            <div class="comparison-team-headings"><div *ngFor="let team of pair"><h4>Team {{ team.sortingId }}</h4><span *ngIf="hasRoundResults(team)">{{ roundWins(team) }} rounds won</span></div><div *ngIf="pair.length < 2"><h4>Team unavailable</h4></div></div>
+            <table class="comparison-table" [attr.aria-label]="'Round scores for Match '+matchNumber(pair)"><thead><tr><th scope="col">Round</th><th scope="col">Team {{ pair[0].sortingId }}</th><th scope="col">{{ pair[1] ? 'Team '+pair[1].sortingId : 'Unavailable' }}</th></tr></thead><tbody><tr *ngFor="let row of comparisonRows(pair)"><th scope="row">Round {{ row.roundId }}</th><td *ngFor="let score of row.scores; let side=index" [class.round-winner]="score && score.roundWon === true" [class.selected-score]="score && pair[side] && isFocusedScore(pair[side],score)"><strong>{{ score && score.roundScore != null ? score.roundScore : '—' }}</strong><span *ngIf="score && score.roundWon === true" class="won-badge">WON</span><span *ngIf="score && score.roundWon !== true && score.roundWon !== false" class="unknown-result">Result not recorded</span></td></tr></tbody></table>
+            <p *ngIf="!comparisonRows(pair).length" class="no-round-scores">No recorded round scores.</p>
+            <div class="comparison-rosters"><section *ngFor="let team of pair"><h4>Team {{ team.sortingId }} players</h4><ul class="players-list"><li *ngFor="let player of team.players" [ngClass]="player.isMale ? 'extended-background-blue-lastName' : 'extended-background-pink-lastName'">{{ player.firstName }} {{ player.lastName }} <span *ngIf="player.isSubScore" class="sub-score-badge">Sub</span></li></ul><p *ngIf="!team.players.length">Roster unavailable.</p></section></div>
+        </div>
+    </div>
+</div>
+

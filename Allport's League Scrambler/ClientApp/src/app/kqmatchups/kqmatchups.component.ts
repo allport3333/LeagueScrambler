@@ -87,6 +87,19 @@ export class KqmatchupsComponent implements OnInit, OnDestroy {
     getSortedScores(scores: KingQueenRoundScore[]): KingQueenRoundScore[] {
         return (scores || []).slice().sort((a, b) => a.roundId - b.roundId);
     }
+    comparisonRows(pair: Team[]): any[] {
+        const ids = Array.from(new Set<number>(pair.reduce((all,team)=>all.concat((team.kingQueenRoundScores||[]).map(score=>score.roundId)),[]))).sort((a,b)=>a-b);
+        const rows:any[]=[];
+        ids.forEach(roundId=>{
+            const scores=pair.map(team=>(team.kingQueenRoundScores||[]).filter(score=>score.roundId===roundId));
+            // Retain duplicate historical round records rather than silently dropping a saved score.
+            const count=Math.max.apply(null,scores.map(values=>values.length));
+            for(let i=0;i<count;i++) rows.push({roundId,scores:[scores[0]&&scores[0][i],scores[1]&&scores[1][i]]});
+        });
+        return rows;
+    }
+    roundWins(team: Team): number { return (team.kingQueenRoundScores||[]).filter(score=>score.roundWon===true).length; }
+    hasRoundResults(team: Team): boolean { return (team.kingQueenRoundScores||[]).some(score=>score.roundWon===true||score.roundWon===false); }
     matchNumber(pair: Team[]): number { return Math.floor((pair[0].sortingId - 1) / 2) + 1; }
     getTeamPairs(): Team[][] {
         if (this.focused && !this.resolved) { return []; }

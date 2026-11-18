@@ -1,4 +1,45 @@
 {
+    "foreign":  {
+                    "TotalScores":  99,
+                    "TotalWins":  1,
+                    "TotalLosses":  0,
+                    "TotalGames":  1,
+                    "WinPercentage":  100,
+                    "AverageScore":  99,
+                    "HighestScore":  99,
+                    "LowestScore":  99,
+                    "LongestWinStreak":  1,
+                    "LongestLossStreak":  0,
+                    "TotalOpponents":  1,
+                    "OpponentStats":  [
+                                          {
+                                              "OpponentTeamId":  21,
+                                              "OpponentTeamName":  "Foreign opponent",
+                                              "GamesPlayed":  1,
+                                              "Wins":  1,
+                                              "WinPercentage":  100,
+                                              "TotalPointsScored":  99,
+                                              "AveragePointsPerGame":  99
+                                          }
+                                      ],
+                    "LeagueStats":  [
+                                        {
+                                            "LeagueTeamId":  20,
+                                            "LeagueName":  "Foreign team",
+                                            "GamesPlayed":  1,
+                                            "Wins":  1,
+                                            "WinPercentage":  100
+                                        }
+                                    ],
+                    "TeammateStats":  [
+                                          {
+                                              "PlayerId":  9,
+                                              "PlayerName":  "Foreign Synthetic",
+                                              "TimesPlayedTogether":  1,
+                                              "WinsTogether":  1
+                                          }
+                                      ]
+                },
     "combined":  {
                      "TotalScores":  72,
                      "TotalWins":  2,
@@ -49,6 +90,12 @@
                                      ],
                      "TeammateStats":  [
                                            {
+                                               "PlayerId":  2,
+                                               "PlayerName":  "Partner Synthetic",
+                                               "TimesPlayedTogether":  4,
+                                               "WinsTogether":  2
+                                           },
+                                           {
                                                "PlayerId":  3,
                                                "PlayerName":  "Alex Synthetic",
                                                "TimesPlayedTogether":  2,
@@ -59,39 +106,6 @@
                                                "PlayerName":  "Alex Synthetic",
                                                "TimesPlayedTogether":  2,
                                                "WinsTogether":  1
-                                           },
-                                           {
-                                               "PlayerId":  2,
-                                               "PlayerName":  "Partner Synthetic",
-                                               "TimesPlayedTogether":  4,
-                                               "WinsTogether":  2
-                                           }
-                                       ]
-                 },
-    "unplayed":  {
-                     "TotalScores":  0,
-                     "TotalWins":  0,
-                     "TotalLosses":  0,
-                     "TotalGames":  0,
-                     "WinPercentage":  0,
-                     "AverageScore":  0,
-                     "HighestScore":  0,
-                     "LowestScore":  0,
-                     "LongestWinStreak":  0,
-                     "LongestLossStreak":  0,
-                     "TotalOpponents":  0,
-                     "OpponentStats":  [
-
-                                       ],
-                     "LeagueStats":  [
-
-                                     ],
-                     "TeammateStats":  [
-                                           {
-                                               "PlayerId":  7,
-                                               "PlayerName":  "NoGamesPartner Synthetic",
-                                               "TimesPlayedTogether":  0,
-                                               "WinsTogether":  0
                                            }
                                        ]
                  },
@@ -131,69 +145,59 @@
 
                                    ]
              },
-    "empty":  {
-                  "TotalScores":  0,
-                  "TotalWins":  0,
-                  "TotalLosses":  0,
-                  "TotalGames":  0,
-                  "WinPercentage":  0,
-                  "AverageScore":  0,
-                  "HighestScore":  0,
-                  "LowestScore":  0,
-                  "LongestWinStreak":  0,
-                  "LongestLossStreak":  0,
-                  "TotalOpponents":  0,
-                  "OpponentStats":  [
-
-                                    ],
-                  "LeagueStats":  [
-
-                                  ],
-                  "TeammateStats":  [
-
-                                    ]
-              },
-    "foreign":  {
-                    "TotalScores":  99,
-                    "TotalWins":  1,
-                    "TotalLosses":  0,
-                    "TotalGames":  1,
-                    "WinPercentage":  100,
-                    "AverageScore":  99,
-                    "HighestScore":  99,
-                    "LowestScore":  99,
-                    "LongestWinStreak":  1,
-                    "LongestLossStreak":  0,
-                    "TotalOpponents":  1,
-                    "OpponentStats":  [
+    "example33":  {
+                      "TotalScores":  693,
+                      "TotalWins":  19,
+                      "TotalLosses":  14,
+                      "TotalGames":  33,
+                      "WinPercentage":  57.575757575757578,
+                      "AverageScore":  21,
+                      "HighestScore":  21,
+                      "LowestScore":  21,
+                      "LongestWinStreak":  19,
+                      "LongestLossStreak":  14,
+                      "TotalOpponents":  1,
+                      "OpponentStats":  [
+                                            {
+                                                "OpponentTeamId":  12,
+                                                "OpponentTeamName":  "Opponent X",
+                                                "GamesPlayed":  33,
+                                                "Wins":  19,
+                                                "WinPercentage":  57.575757575757578,
+                                                "TotalPointsScored":  693,
+                                                "AveragePointsPerGame":  21
+                                            }
+                                        ],
+                      "LeagueStats":  [
                                           {
-                                              "OpponentTeamId":  20,
-                                              "OpponentTeamName":  "Foreign team",
-                                              "GamesPlayed":  1,
-                                              "Wins":  1,
-                                              "WinPercentage":  100,
-                                              "TotalPointsScored":  99,
-                                              "AveragePointsPerGame":  99
+                                              "LeagueTeamId":  10,
+                                              "LeagueName":  "Team A",
+                                              "GamesPlayed":  33,
+                                              "Wins":  19,
+                                              "WinPercentage":  57.575757575757578
                                           }
                                       ],
-                    "LeagueStats":  [
-                                        {
-                                            "LeagueTeamId":  20,
-                                            "LeagueName":  "Foreign team",
-                                            "GamesPlayed":  1,
-                                            "Wins":  1,
-                                            "WinPercentage":  100
-                                        }
-                                    ],
-                    "TeammateStats":  [
-                                          {
-                                              "PlayerId":  9,
-                                              "PlayerName":  "Foreign Synthetic",
-                                              "TimesPlayedTogether":  1,
-                                              "WinsTogether":  1
-                                          }
-                                      ]
-                },
+                      "TeammateStats":  [
+                                            {
+                                                "PlayerId":  3,
+                                                "PlayerName":  "Alex Synthetic",
+                                                "TimesPlayedTogether":  33,
+                                                "WinsTogether":  19
+                                            },
+                                            {
+                                                "PlayerId":  2,
+                                                "PlayerName":  "Partner Synthetic",
+                                                "TimesPlayedTogether":  33,
+                                                "WinsTogether":  19
+                                            },
+                                            {
+                                                "PlayerId":  4,
+                                                "PlayerName":  "Alex Synthetic",
+                                                "TimesPlayedTogether":  0,
+                                                "WinsTogether":  0
+                                            }
+                                        ]
+                  },
     "kingQueen":  {
                       "IndividualRounds":  [
                                                {
@@ -369,6 +373,28 @@
                                              }
                                          ]
                   },
+    "empty":  {
+                  "TotalScores":  0,
+                  "TotalWins":  0,
+                  "TotalLosses":  0,
+                  "TotalGames":  0,
+                  "WinPercentage":  0,
+                  "AverageScore":  0,
+                  "HighestScore":  0,
+                  "LowestScore":  0,
+                  "LongestWinStreak":  0,
+                  "LongestLossStreak":  0,
+                  "TotalOpponents":  0,
+                  "OpponentStats":  [
+
+                                    ],
+                  "LeagueStats":  [
+
+                                  ],
+                  "TeammateStats":  [
+
+                                    ]
+              },
     "teamScores":  [
                        {
                            "date":  "2026-01-01T00:00:00",
@@ -398,5 +424,32 @@
                            "teamScore":  18,
                            "opponentTeam":  "Opponent X"
                        }
-                   ]
+                   ],
+    "unplayed":  {
+                     "TotalScores":  0,
+                     "TotalWins":  0,
+                     "TotalLosses":  0,
+                     "TotalGames":  0,
+                     "WinPercentage":  0,
+                     "AverageScore":  0,
+                     "HighestScore":  0,
+                     "LowestScore":  0,
+                     "LongestWinStreak":  0,
+                     "LongestLossStreak":  0,
+                     "TotalOpponents":  0,
+                     "OpponentStats":  [
+
+                                       ],
+                     "LeagueStats":  [
+
+                                     ],
+                     "TeammateStats":  [
+                                           {
+                                               "PlayerId":  7,
+                                               "PlayerName":  "NoGamesPartner Synthetic",
+                                               "TimesPlayedTogether":  0,
+                                               "WinsTogether":  0
+                                           }
+                                       ]
+                 }
 }

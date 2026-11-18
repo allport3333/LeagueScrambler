@@ -1,4 +1,5 @@
 <section class="player-profile">
+ <div class="profile-return" *ngIf="fromStandings"><button mat-stroked-button color="primary" type="button" (click)="backToStandings()">Back to Standings</button></div>
  <p *ngIf="loading" role="status" class="state-message">Loading player profile...</p>
  <div *ngIf="error" role="alert" class="state-message"><p>{{ error }}</p><button mat-stroked-button (click)="loadHeader(true)">Retry profile</button></div>
  <header class="profile-header" *ngIf="player && !loading && !error">

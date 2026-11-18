@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "Four chronological detailed-round columns retain all six original scores and mobile width",
+    "33 games / 19 wins / 14 losses and unique ID teammates with numeric counts and descending default sort",
+    "Old backend missing fields/duplicated IDs displays explicit error; current backend retry succeeds"
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "databaseAccess": false
+}

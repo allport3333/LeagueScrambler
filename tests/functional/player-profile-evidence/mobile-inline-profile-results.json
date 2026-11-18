@@ -1,0 +1,10 @@
+{
+  "passed": 1,
+  "failed": 0,
+  "checks": [
+    "375/390/430 inline division/profile alignment, 44px target, no overflow; unassigned division omitted/right aligned; expansion retained and correct ID/league/KQ profile navigation"
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "databaseAccess": false
+}

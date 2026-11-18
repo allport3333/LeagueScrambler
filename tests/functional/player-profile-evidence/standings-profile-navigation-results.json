@@ -1,0 +1,13 @@
+{
+  "passed": 4,
+  "failed": 0,
+  "checks": [
+    "Desktop 1366/1920 stable-ID namesake links open KQ profile with league and survive refresh/return",
+    "Mobile 375/390 name still expands; separate profile link opens correct player; division/gender/matchup/compact context restored",
+    "Full Table links preserve full-table state/league2; same-name PlayerId4 selected correctly",
+    "Existing score link still selects exact matchup/round; ordinary direct profile has no standings return button"
+  ],
+  "pageErrors": [],
+  "writeRequests": [],
+  "databaseAccess": false
+}
