@@ -99,6 +99,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 .Where(lt => lt.LeagueID == leagueId)
                 .Select(team => new
                 {
+                    TeamId = team.Id,
                     TeamName = team.TeamName,
                     Division = team.Division,
                     Wins = _context.LeagueTeamScore

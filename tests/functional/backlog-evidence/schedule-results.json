@@ -1,0 +1,28 @@
+{
+  "checks": [
+    "5 Schedule actual-date/previous/next/current navigation, gaps, boundaries and manual week retention; no duplicate schedule requests on tab navigation",
+    "5 Full season viewer groups every week, preserves descriptions/events, two desktop columns/one phone column, prints all weeks, clears stale content after league switch"
+  ],
+  "errors": [],
+  "calls": [
+    "/api/Login/isauthenticated",
+    "/api/Login/GetUsersRole",
+    "/api/Statistics/league-standings/null",
+    "/api/Login/isauthenticated",
+    "/api/Login/GetUsersRole",
+    "/api/Login/GetUsersPlayer",
+    "/api/Login/getuserleagues",
+    "/api/Login/GetUsersRole",
+    "/api/Login/getuserleagues",
+    "/api/Statistics/league-standings/101",
+    "/api/Statistics/available-dates/Synthetic%20League",
+    "/api/Statistics/GetLeagueSchedule/101",
+    "/api/Statistics/GetAllTeamsWithPlayers/101",
+    "/api/Statistics/league-standings/102",
+    "/api/Statistics/available-dates/Second%20Synthetic%20League",
+    "/api/Statistics/GetLeagueSchedule/102",
+    "/api/Statistics/GetAllTeamsWithPlayers/102"
+  ],
+  "mode": "intercepted synthetic browser fixtures",
+  "databaseTests": false
+}

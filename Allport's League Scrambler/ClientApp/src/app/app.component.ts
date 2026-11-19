@@ -1,6 +1,4 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -8,18 +6,4 @@ import { Router } from '@angular/router';
 })
 export class AppComponent {
   title = 'app';
-
-  constructor(private router: Router) { }
-
-  get isPlayerStandingsPage(): boolean {
-    return this.router.url.split(/[?#]/)[0].replace(/\/$/, '') === '/standings';
-  }
-
-  get isScramblerPage(): boolean {
-    return this.router.url.split(/[?#]/)[0].replace(/\/$/, '') === '/scrambler';
-  }
-
-  get isPlayerProfilePage(): boolean {
-    return this.router.url.split(/[?#]/)[0].indexOf('/player-stats-tabs/') === 0;
-  }
 }

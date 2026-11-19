@@ -1,0 +1,9 @@
+{
+  "combinations": 72,
+  "checks": [
+    "Existing adjusted scores, totals, win counts, drop/substitute flags and order exactly match the original implementation",
+    "Round/matchup modes, zero scores, varied substitute allowance/percent/drop counts, duplicate names and divisions",
+    "Input records remain unchanged"
+  ],
+  "databaseTests": false
+}

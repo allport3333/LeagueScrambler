@@ -91,3 +91,5 @@
  .mobile-player-context .mobile-view-profile:hover, .mobile-player-context .mobile-view-profile:focus { text-decoration: underline; }
  .mobile-player-context .mobile-view-profile mat-icon { width: 16px; height: 16px; font-size: 16px; }
 }
+
+.sub-adjustment-marker{display:inline-block;font-size:12px;font-weight:600;color:#9b4d55;margin-left:2px}.mobile-score-dropped .sub-adjustment-marker{color:red}

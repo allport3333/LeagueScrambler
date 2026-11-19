@@ -1,3 +1,4 @@
+import { PlayerHomeDashboardComponent } from './player-home-dashboard/player-home-dashboard.component';
 import { PlayerAttendanceComponent } from './player-attendance/player-attendance.component';
 import { PlayerNextGameComponent } from './player-next-game/player-next-game.component';
 import { BrowserModule } from '@angular/platform-browser';
@@ -45,6 +46,7 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         AppComponent,
         NavMenuComponent,
         HomeComponent,
+        PlayerHomeDashboardComponent,
         ScramblerComponent,
         FetchDataComponent,
         TeamScoresComponent,

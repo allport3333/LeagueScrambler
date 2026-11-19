@@ -1,0 +1,1490 @@
+[
+  {
+    "name": "home",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 72,
+      "text": "Home"
+    },
+    "gap": 16,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "home",
+    "width": 375,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 72,
+      "text": "Home"
+    },
+    "gap": 16,
+    "bodyTop": 56,
+    "bodyWidth": 375,
+    "pageWidth": 375,
+    "viewport": 375
+  },
+  {
+    "name": "home",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 72,
+      "text": "Home"
+    },
+    "gap": 16,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "home",
+    "width": 430,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 72,
+      "text": "Home"
+    },
+    "gap": 16,
+    "bodyTop": 56,
+    "bodyWidth": 430,
+    "pageWidth": 430,
+    "viewport": 430
+  },
+  {
+    "name": "home",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 72,
+      "text": "Home"
+    },
+    "gap": 16,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "home",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 68,
+      "text": "Home"
+    },
+    "gap": 12,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "home",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 66,
+      "text": "Home"
+    },
+    "gap": 6,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "scrambler",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 75.203125,
+      "text": "Scrambler Setup"
+    },
+    "gap": 19.203125,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "scrambler",
+    "width": 375,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 75.203125,
+      "text": "Scrambler Setup"
+    },
+    "gap": 19.203125,
+    "bodyTop": 56,
+    "bodyWidth": 375,
+    "pageWidth": 375,
+    "viewport": 375
+  },
+  {
+    "name": "scrambler",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 75.203125,
+      "text": "Scrambler Setup"
+    },
+    "gap": 19.203125,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "scrambler",
+    "width": 430,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 75.203125,
+      "text": "Scrambler Setup"
+    },
+    "gap": 19.203125,
+    "bodyTop": 56,
+    "bodyWidth": 430,
+    "pageWidth": 430,
+    "viewport": 430
+  },
+  {
+    "name": "scrambler",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 75.203125,
+      "text": "Scrambler Setup"
+    },
+    "gap": 19.203125,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "scrambler",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 75.203125,
+      "text": "Scrambler Setup"
+    },
+    "gap": 19.203125,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "scrambler",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 73.203125,
+      "text": "Scrambler Setup"
+    },
+    "gap": 13.203125,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "team-management",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 85.5,
+      "text": "Enter Team Scores"
+    },
+    "gap": 29.5,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "team-management",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 85.5,
+      "text": "Enter Team Scores"
+    },
+    "gap": 29.5,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "team-management",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 85.5,
+      "text": "Enter Team Scores"
+    },
+    "gap": 29.5,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "team-management",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 85.5,
+      "text": "Enter Team Scores"
+    },
+    "gap": 29.5,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "team-management",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 83.5,
+      "text": "Enter Team Scores"
+    },
+    "gap": 23.5,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "dashboard",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "dashboard",
+    "width": 375,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 375,
+    "pageWidth": 375,
+    "viewport": 375
+  },
+  {
+    "name": "dashboard",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "dashboard",
+    "width": 430,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 430,
+    "pageWidth": 430,
+    "viewport": 430
+  },
+  {
+    "name": "dashboard",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "dashboard",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "dashboard",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 77,
+      "text": "League Dashboard"
+    },
+    "gap": 17,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "schedule-tab",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "schedule-tab",
+    "width": 375,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 375,
+    "pageWidth": 375,
+    "viewport": 375
+  },
+  {
+    "name": "schedule-tab",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "schedule-tab",
+    "width": 430,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 430,
+    "pageWidth": 430,
+    "viewport": 430
+  },
+  {
+    "name": "schedule-tab",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "schedule-tab",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "League Dashboard"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "schedule-tab",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 77,
+      "text": "League Dashboard"
+    },
+    "gap": 17,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "kq-standings",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 78,
+      "text": "Player Standings"
+    },
+    "gap": 22,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "kq-standings",
+    "width": 375,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 78,
+      "text": "Player Standings"
+    },
+    "gap": 22,
+    "bodyTop": 56,
+    "bodyWidth": 375,
+    "pageWidth": 375,
+    "viewport": 375
+  },
+  {
+    "name": "kq-standings",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 78,
+      "text": "Player Standings"
+    },
+    "gap": 22,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "kq-standings",
+    "width": 430,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 78,
+      "text": "Player Standings"
+    },
+    "gap": 22,
+    "bodyTop": 56,
+    "bodyWidth": 430,
+    "pageWidth": 430,
+    "viewport": 430
+  },
+  {
+    "name": "kq-standings",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 78,
+      "text": "Player Standings"
+    },
+    "gap": 22,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "kq-standings",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 98,
+      "text": "Player Standings"
+    },
+    "gap": 42,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "kq-standings",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 96,
+      "text": "Player Standings"
+    },
+    "gap": 36,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "kq-matchups",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 69,
+      "text": "Select Week to Retrieve"
+    },
+    "gap": 13,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "kq-matchups",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 69,
+      "text": "Select Week to Retrieve"
+    },
+    "gap": 13,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "kq-matchups",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 69,
+      "text": "Select Week to Retrieve"
+    },
+    "gap": 13,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "kq-matchups",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 69,
+      "text": "Select Week to Retrieve"
+    },
+    "gap": 13,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "kq-matchups",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 67,
+      "text": "Select Week to Retrieve"
+    },
+    "gap": 7,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "player-list",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Player List"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "player-list",
+    "width": 375,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Player List"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 375,
+    "pageWidth": 375,
+    "viewport": 375
+  },
+  {
+    "name": "player-list",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Player List"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "player-list",
+    "width": 430,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Player List"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 430,
+    "pageWidth": 430,
+    "viewport": 430
+  },
+  {
+    "name": "player-list",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Player List"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "player-list",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Player List"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "player-list",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 77,
+      "text": "Player List"
+    },
+    "gap": 17,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "sign-in",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 83,
+      "text": "Sign In"
+    },
+    "gap": 27,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "sign-in",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 83,
+      "text": "Sign In"
+    },
+    "gap": 27,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "sign-in",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 83,
+      "text": "Sign In"
+    },
+    "gap": 27,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "sign-in",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 83,
+      "text": "Sign In"
+    },
+    "gap": 27,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "sign-in",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 81,
+      "text": "Sign In"
+    },
+    "gap": 21,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "league-management",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 78,
+      "text": "Player and League Management"
+    },
+    "gap": 22,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "league-management",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 78,
+      "text": "Player and League Management"
+    },
+    "gap": 22,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "league-management",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 78,
+      "text": "Player and League Management"
+    },
+    "gap": 22,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "league-management",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 93,
+      "text": "Player and League Management"
+    },
+    "gap": 37,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "league-management",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 91,
+      "text": "Player and League Management"
+    },
+    "gap": 31,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "faq",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 76,
+      "text": "Frequently Asked Questions"
+    },
+    "gap": 20,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "faq",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 76,
+      "text": "Frequently Asked Questions"
+    },
+    "gap": 20,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "faq",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 76,
+      "text": "Frequently Asked Questions"
+    },
+    "gap": 20,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "faq",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 80,
+      "text": "Frequently Asked Questions"
+    },
+    "gap": 24,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "faq",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 78,
+      "text": "Frequently Asked Questions"
+    },
+    "gap": 18,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "profile",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Home"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "profile",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Home"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "profile",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Home"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "profile",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 87,
+      "text": "Home"
+    },
+    "gap": 31,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "profile",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 85,
+      "text": "Home"
+    },
+    "gap": 25,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "legacy-schedule",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 60,
+      "text": "Select League"
+    },
+    "gap": 4,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "legacy-schedule",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 60,
+      "text": "Select League"
+    },
+    "gap": 4,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "legacy-schedule",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 60,
+      "text": "Select League"
+    },
+    "gap": 4,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "legacy-schedule",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 60,
+      "text": "Select League"
+    },
+    "gap": 4,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "legacy-schedule",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 115.796875,
+      "text": "League"
+    },
+    "gap": 55.796875,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "legacy-scores",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 76,
+      "text": "First Name"
+    },
+    "gap": 20,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "legacy-scores",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 76,
+      "text": "First Name"
+    },
+    "gap": 20,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "legacy-scores",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 76,
+      "text": "First Name"
+    },
+    "gap": 20,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "legacy-scores",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 76,
+      "text": "First Name"
+    },
+    "gap": 20,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "legacy-scores",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 74,
+      "text": "First Name"
+    },
+    "gap": 14,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "reset-password",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 98,
+      "text": "Reset Password"
+    },
+    "gap": 42,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "reset-password",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 98,
+      "text": "Reset Password"
+    },
+    "gap": 42,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "reset-password",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 98,
+      "text": "Reset Password"
+    },
+    "gap": 42,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "reset-password",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 98,
+      "text": "Reset Password"
+    },
+    "gap": 42,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "reset-password",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 349.796875,
+      "text": "Reset Password"
+    },
+    "gap": 289.796875,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "profile-redirect",
+    "width": 320,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Home"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 320,
+    "pageWidth": 320,
+    "viewport": 320
+  },
+  {
+    "name": "profile-redirect",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Home"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  },
+  {
+    "name": "profile-redirect",
+    "width": 600,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 79,
+      "text": "Home"
+    },
+    "gap": 23,
+    "bodyTop": 56,
+    "bodyWidth": 600,
+    "pageWidth": 600,
+    "viewport": 600
+  },
+  {
+    "name": "profile-redirect",
+    "width": 768,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 87,
+      "text": "Home"
+    },
+    "gap": 31,
+    "bodyTop": 56,
+    "bodyWidth": 768,
+    "pageWidth": 768,
+    "viewport": 768
+  },
+  {
+    "name": "profile-redirect",
+    "width": 1366,
+    "padding": "0px",
+    "navPosition": "static",
+    "navBottom": 60,
+    "first": {
+      "top": 85,
+      "text": "Home"
+    },
+    "gap": 25,
+    "bodyTop": 60,
+    "bodyWidth": 1366,
+    "pageWidth": 1366,
+    "viewport": 1366
+  },
+  {
+    "name": "player-list-loading",
+    "width": 390,
+    "padding": "6px",
+    "navPosition": "static",
+    "navBottom": 56,
+    "first": {
+      "top": 75,
+      "text": "Loading Players..."
+    },
+    "gap": 19,
+    "bodyTop": 56,
+    "bodyWidth": 390,
+    "pageWidth": 390,
+    "viewport": 390
+  }
+]

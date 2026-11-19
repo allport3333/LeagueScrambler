@@ -46,10 +46,10 @@ async function measure(page){return page.evaluate(()=>{
         assert(m.gap>=12&&m.gap<=16);assert.equal(m.padding,'6px');assert.equal(m.overflow,false);
         await page.reload();await ready();const refreshed=await measure(page);assert.equal(refreshed.gap,m.gap);
         await page.goto(BASE_URL+'/faq');await expect(page.locator('app-league-standings')).toHaveCount(0);
-        assert.equal((await measure(page)).padding,'85px','Other mobile routes retain their existing padding');
+        assert.equal((await measure(page)).padding,'6px','Other mobile routes share the corrected layout spacing');
         await page.evaluate(()=>{const d=window.ng.probe(document.querySelector('app-nav-menu'));d.injector.get(window.ng.coreTokens.NgZone).run(()=>d.componentInstance.router.navigateByUrl('/standings?from=faq#players'));});
         await ready();assert.equal((await measure(page)).gap,m.gap,'Route navigation/query/fragment must get the same gap');
-        checks.push(`${width}px: direct load, refresh and FAQ-to-standings navigation give ${m.gap}px gap; other route unchanged`);
+        checks.push(`${width}px: direct load, refresh and FAQ-to-standings navigation give ${m.gap}px gap; other route shares corrected mobile spacing`);
       }else{
         assert.deepEqual(m,b,'Tablet/desktop measurements unchanged');
         assert.equal(digest(path.join(out,`${width}-before.png`)),digest(path.join(out,`${width}-after.png`)),'Tablet/desktop screenshots unchanged');

@@ -1,18 +1,18 @@
-<div *ngIf="standings.length > 0; else noData" style="padding: 20px;">
+<div *ngIf="standings.length > 0; else noData" class="league-standings-panel">
     <h2 style="text-align: center;">League Standings</h2>
 
     <!-- Responsive Flexbox Container -->
-    <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+    <div class="division-standings-grid">
         <!-- Iterate over divisions -->
-        <div *ngFor="let division of divisions | keyvalue" style="flex: 1 1 45%; min-width: 300px; max-width: 500px;">
+        <div *ngFor="let division of divisions | keyvalue" class="division-standings">
             <mat-card style="padding: 10px;">
                 <!-- Dynamic Header Color Based on Division Name -->
                 <h3 [ngClass]="getDivisionHeaderClass(division.key)" style="text-align: center; padding: 10px; border-radius: 5px;">
                     {{ division.key }}
                 </h3>
 
-                <!-- Scrollable container to prevent overflow -->
-                <div style="overflow-x: auto; width: 100%;">
+                <!-- Desktop table and narrow-screen list share the same ranked division rows. -->
+                <div class="standings-table-scroll desktop-league-standings">
                     <mat-table [dataSource]="division.value" class="mat-elevation-z8 responsive-table">
                         <!-- Rank Column -->
                         <ng-container matColumnDef="rank">
@@ -60,6 +60,12 @@
                         <mat-row *matRowDef="let row; columns: ['rank', 'teamName', 'wins', 'losses', 'totalPoints']"></mat-row>
                     </mat-table>
                 </div>
+                <ol class="mobile-league-standings" [attr.aria-label]="division.key + ' team standings'">
+                    <li *ngFor="let team of division.value">
+                        <div class="mobile-team-title"><span class="mobile-team-rank" [attr.aria-label]="'Rank '+team.rank">{{ team.rank }}</span><strong>{{ team.teamName }}</strong></div>
+                        <dl class="mobile-team-statistics"><div><dt>Wins</dt><dd>{{ team.wins }}</dd></div><div><dt>Losses</dt><dd>{{ team.losses }}</dd></div><div><dt>Total Points</dt><dd>{{ team.totalPoints }}</dd></div></dl>
+                    </li>
+                </ol>
             </mat-card>
         </div>
     </div>

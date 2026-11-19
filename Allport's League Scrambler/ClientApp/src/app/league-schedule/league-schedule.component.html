@@ -3,11 +3,12 @@
  <div *ngIf="loading" class="schedule-state" role="status"><p>Loading schedule...</p><mat-spinner diameter="40"></mat-spinner></div>
  <div *ngIf="error && !loading" class="schedule-state" role="alert"><p>{{ error }}</p><button mat-stroked-button type="button" (click)="retrySchedule()">Retry Schedule</button></div>
  <ng-container *ngIf="!loading && !error && selectedWeek">
-  <nav class="week-navigation" aria-label="Schedule weeks">
+  <div class="schedule-controls"><nav class="week-navigation" aria-label="Schedule weeks">
    <button mat-icon-button type="button" aria-label="Previous Week" [disabled]="activeTabIndex === 0" (click)="selectWeek(activeTabIndex - 1)"><mat-icon>chevron_left</mat-icon></button>
    <mat-form-field appearance="outline"><mat-label>Scheduled week</mat-label><mat-select aria-label="Scheduled week" [value]="activeTabIndex" (selectionChange)="selectWeek($event.value)"><mat-option *ngFor="let week of schedule;let index=index" [value]="index">Week {{ week.weekNumber }} &middot; {{ week.date | date:'mediumDate' }}</mat-option></mat-select></mat-form-field>
    <button mat-icon-button type="button" aria-label="Next Week" [disabled]="activeTabIndex === schedule.length - 1" (click)="selectWeek(activeTabIndex + 1)"><mat-icon>chevron_right</mat-icon></button>
   </nav>
+  <div class="schedule-actions"><button mat-stroked-button (click)="currentWeek()">Current Week</button><button mat-raised-button color="primary" (click)="openFullSchedule()">Full Schedule</button></div></div>
   <div class="schedule-matchups" aria-live="polite">
    <ng-container *ngFor="let week of [selectedWeek]">
                     <mat-card *ngFor="let match of week.matches"
@@ -64,3 +65,25 @@
  </ng-container>
  <p *ngIf="!loading && !error && !schedule.length" class="schedule-state">No schedule available for this league.</p>
 </section>
+
+<ng-template #fullScheduleDialog>
+ <div class="season-dialog-layout">
+  <header><div><h2 mat-dialog-title>Full Schedule</h2><p>{{ leagueName }}</p></div><button mat-icon-button aria-label="Close full schedule" (click)="closeFullSchedule()"><mat-icon>close</mat-icon></button></header>
+  <mat-dialog-content>
+   <p *ngIf="loading" role="status">Loading schedule...</p><p *ngIf="error" role="alert">{{ error }}</p>
+   <div id="full-season-tables"><p *ngIf="!schedule.length && !loading">No schedule available for this league.</p>
+    <div class="season-week-grid"><section class="season-week" *ngFor="let week of fullScheduleWeeks;let i=index" [class.current-season-week]="i===closestWeekIndex()">
+     <h3>Week {{ week.weekNumber }} &middot; {{ calendarDate(week.date) | date:'mediumDate' }}</h3>
+     <table [attr.aria-label]="'Week '+week.weekNumber+' matchups'"><colgroup><col><col class="season-versus-column"><col></colgroup>
+      <tbody *ngFor="let group of week.groups">
+       <tr class="season-division" *ngIf="group.division"><th colspan="3" scope="rowgroup">{{ group.division }}</th></tr>
+       <tr class="season-match" *ngFor="let match of group.matches"><td>{{ match.team1Name }}</td><td class="season-versus"><span aria-label="versus">v</span></td><td>{{ match.team2Name }}</td></tr>
+      </tbody>
+     </table>
+     <p class="season-event" *ngFor="let event of week.events">{{ event }}</p><p *ngIf="!week.matches || !week.matches.length">No matchups scheduled.</p>
+    </section></div>
+   </div>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end"><button mat-raised-button color="primary" (click)="printFullSchedule()" [disabled]="loading || !!error || !schedule.length">Print Full Schedule</button></mat-dialog-actions>
+ </div>
+</ng-template>

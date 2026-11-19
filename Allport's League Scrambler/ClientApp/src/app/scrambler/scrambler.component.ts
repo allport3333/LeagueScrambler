@@ -64,7 +64,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();this.scoreEditorLoading=false;this.scoringScramble=null;this.scoreSnapshot=null;this.scoreRefreshRequired=false;this.scoreEditorFeedback='';this.mobileScoreMatchIndex=0;
         this.retrievedListOfTeams=[];this.kingQueenRoundScores=[];this.scrambleSelected=false;this.showSaveRoundScores=false;
     }
-    ngOnDestroy():void { if(this.matchupResizeObserver)this.matchupResizeObserver.disconnect();if(this.matchupLayoutFrame!==null)cancelAnimationFrame(this.matchupLayoutFrame); if(this.matchupsDialogRef)this.matchupsDialogRef.close(); this.scoreDestroyed=true;this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();if(this.scoreSaver)this.scoreSaver.unsubscribe(); }
+    ngOnDestroy():void { clearTimeout(this.scrambleNoticeTimer); if(this.matchupResizeObserver)this.matchupResizeObserver.disconnect();if(this.matchupLayoutFrame!==null)cancelAnimationFrame(this.matchupLayoutFrame); if(this.matchupsDialogRef)this.matchupsDialogRef.close(); this.scoreDestroyed=true;this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();if(this.scoreSaver)this.scoreSaver.unsubscribe(); }
     refreshSavedScoreIds():void {
         if(!this.scoringScramble||this.scoreSaveBusy)return;
         this.verifySavedScores();
@@ -371,6 +371,13 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.applyClicked = false;
     }
 
+    scrambleNotice = false;
+    private scrambleNoticeTimer: any;
+    private announceGeneratedScramble(): void {
+        clearTimeout(this.scrambleNoticeTimer);
+        this.scrambleNotice = true;
+        this.scrambleNoticeTimer = setTimeout(() => this.scrambleNotice = false, 4500);
+    }
     private revealScrambleResults(): void {
         if (!this.listOfTeams.length || this.workspaceSection !== 'scrambler') return;
         this.resultsCollapsed = false;
@@ -3680,10 +3687,10 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
                     // Use the function to select players for both males and females with retries
                     if (result) {
                         if (nonDuplicates) {
-                            this.showSnackBar("Scramble with no duplicates completed successfully.");
+                            // Success is shown inline in Scramble Results.
                         }
                         else {
-                            this.showSnackBar("Scramble Succesful.");
+                            // Success is shown inline in Scramble Results.
                         }
                     }
                     else {
@@ -3745,6 +3752,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
                     // The server returns an array of newly created KingQueenTeams
                     this.scrambleNumber = createdTeams[0].scrambleNumber;
                     if(createdTeams.length===this.listOfTeams.length)createdTeams.forEach((team,index)=>this.listOfTeams[index].kingQueenTeamId=team.id);
+                    this.announceGeneratedScramble();
                     this.revealScrambleResults();
                 } else {
                     console.error('Error: No teams returned from server');

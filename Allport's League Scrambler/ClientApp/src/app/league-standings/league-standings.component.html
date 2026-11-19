@@ -62,7 +62,7 @@
             <div style="font-weight: bold; margin-bottom: 5px;">Key:</div>
             <div>
                 <span style="color: red; font-weight: bold;">Dropped Score</span> |
-                <span style="color: red;">Reduced Score from Subs</span> |
+                <span style="color:#9b4d55;">Adjusted substitute score (½ when reduced to 50%; otherwise the applied percentage)</span> |
                 <span style="background-color: #D8BFD8;">Sub Score</span>
             </div>
         </div>
@@ -130,11 +130,11 @@
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
-                                            [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
+                                            [style.color]="score.isDropped ? 'red' : hasSubAdjustment(score) ? '#9b4d55' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
                                             [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
-                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template>
+                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template><span *ngIf="hasSubAdjustment(score)" class="sub-adjustment-marker" [attr.aria-label]="'Score adjusted to ' + subScorePercent + ' percent under substitute rules'"> {{ subAdjustmentLabel() }}</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -196,11 +196,11 @@
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
-                                            [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
+                                            [style.color]="score.isDropped ? 'red' : hasSubAdjustment(score) ? '#9b4d55' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
                                             [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
-                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template>
+                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template><span *ngIf="hasSubAdjustment(score)" class="sub-adjustment-marker" [attr.aria-label]="'Score adjusted to ' + subScorePercent + ' percent under substitute rules'"> {{ subAdjustmentLabel() }}</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -270,11 +270,11 @@
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
-                                            [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
+                                            [style.color]="score.isDropped ? 'red' : hasSubAdjustment(score) ? '#9b4d55' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
                                             [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
-                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template>
+                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template><span *ngIf="hasSubAdjustment(score)" class="sub-adjustment-marker" [attr.aria-label]="'Score adjusted to ' + subScorePercent + ' percent under substitute rules'"> {{ subAdjustmentLabel() }}</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -337,11 +337,11 @@
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
-                                            [style.color]="score.isDropped || (score.isReduced && score.isSubScore) ? 'red' : 'inherit'"
+                                            [style.color]="score.isDropped ? 'red' : hasSubAdjustment(score) ? '#9b4d55' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
                                             [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
-                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template>
+                                            <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template><span *ngIf="hasSubAdjustment(score)" class="sub-adjustment-marker" [attr.aria-label]="'Score adjusted to ' + subScorePercent + ' percent under substitute rules'"> {{ subAdjustmentLabel() }}</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -412,10 +412,10 @@
                             <ul class="mobile-round-scores" aria-label="Individual scores">
                                 <li *ngFor="let score of player.scores; let scoreIndex = index"
                                     [class.mobile-score-dropped]="score.isDropped"
-                                    [class.mobile-score-reduced]="score.isReduced && score.isSubScore"
+                                    [class.mobile-score-reduced]="hasSubAdjustment(score)"
                                     [class.mobile-score-sub]="score.isSubScore">
                                     <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }} {{ scoreIndex + 1 }}</span>
-                                    <strong><a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template></strong>
+                                    <strong><a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template><span *ngIf="hasSubAdjustment(score)" class="sub-adjustment-marker" [attr.aria-label]="'Score adjusted to ' + subScorePercent + ' percent under substitute rules'"> {{ subAdjustmentLabel() }}</span></strong>
                                     <span class="mobile-score-indicators">
                                         <span *ngIf="score.isDropped">Dropped</span>
                                         <span *ngIf="score.isReduced && score.isSubScore">Reduced</span>

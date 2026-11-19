@@ -433,3 +433,21 @@ input {
         transform: rotate(360deg);
     }
 }
+
+/* Loading indicators stay near the page start on phones/tablets. Desktop placement is unchanged. */
+@media (max-width: 1023px) {
+  .page-loading {
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100%;
+    height: auto !important;
+    min-height: 0;
+    margin: 16px 0 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start !important;
+  }
+  .page-loading h2 { margin: 0 0 12px !important; }
+}

@@ -1,4 +1,4 @@
-<div *ngIf="loading" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+<div class="page-loading" *ngIf="loading" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
     <h2 class="ml-4">Loading...</h2>
     <mat-spinner diameter="200"></mat-spinner>
 </div>
@@ -86,14 +86,11 @@
                                     <button mat-raised-button color="primary" type="button" (click)="saveMatchup(matchup)"
                                             [disabled]="matchup.saving || !valid(matchup)">{{ matchup.saving ? 'Saving…' : 'Save matchup scores' }}</button>
                                 </ng-container>
-                                <div *ngIf="hasSaved(matchup)" class="saved-results">
-                                    <p class="score-success" role="status">Saved — existing results will not be inserted again.</p>
-                                    <details>
-                                        <summary>Inspect saved score records</summary>
-                                        <p>Stored records are listed individually. Historical data has no game or matchup identifier, so game pairings are not assumed. Corrections require a separately reviewed, authorized action; this screen never replaces or deletes scores.</p>
-                                        <ul><li *ngFor="let score of storedRows(matchup)">Record #{{ score.id }} · {{ teamName(score.teamId) }}: {{ score.teamScore }} ({{ score.wonGame ? 'win' : 'loss' }})</li></ul>
-                                    </details>
-                                </div>
+                                <section *ngIf="hasSaved(matchup)" class="saved-results" aria-label="Saved Matchup Results">
+                                    <h4>Saved Matchup Results</h4><p class="score-success" role="status">Saved</p>
+                                    <p class="historical-score-note">Individual historical scores are shown because game pairings are unavailable.</p>
+                                    <div class="saved-team-results" *ngFor="let result of savedTeamResults(matchup)"><h5>{{ result.name }}</h5><ul><li *ngFor="let score of result.scores" [class.saved-win]="score.wonGame" [class.saved-loss]="!score.wonGame"><strong>{{ score.teamScore }}</strong><span>{{ score.wonGame ? 'Won' : 'Lost' }}</span></li></ul><p *ngIf="!result.scores.length">No individual results recorded for this team.</p></div>
+                                </section>
                                 <p *ngIf="matchup.message" role="status" class="score-success">{{ matchup.message }}</p>
                                 <p *ngIf="matchup.error" role="alert" class="score-error">{{ matchup.error }}</p>
                             </mat-card>

@@ -174,6 +174,10 @@ export class TeamScoresComponent implements OnInit, OnDestroy {
     storedRows(matchup: MatchupEditor): any[] {
         return this.savedScores.filter(s => this.isPair(matchup, s.teamId, s.opponentsTeamId));
     }
+    savedTeamResults(matchup: MatchupEditor): any[] {
+        return [matchup.team1Id, matchup.team2Id].map(teamId => ({ teamId, name: this.teamName(teamId),
+            scores: this.storedRows(matchup).filter(row => row.teamId === teamId) }));
+    }
     hasSaved(matchup: MatchupEditor): boolean { return this.storedRows(matchup).length > 0; }
     valid(matchup: MatchupEditor): boolean {
         return !!matchup.team1Id && !!matchup.team2Id && matchup.team1Id !== matchup.team2Id &&

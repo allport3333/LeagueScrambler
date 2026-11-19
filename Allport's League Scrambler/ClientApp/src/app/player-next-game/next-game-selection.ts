@@ -26,5 +26,5 @@ export function selectNextGames(playerId:number,teams:any[],schedule:any[],today
  });
  games.sort((a,b)=>a.date.localeCompare(b.date)||a.weekNumber-b.weekNumber||(a.scheduleId||0)-(b.scheduleId||0));
  const next=games.length?games.filter(game=>game.date===games[0].date):[];
- return {hasTeam:own.length>0,hasSchedule:schedule.length>0,games:next,weeks:next.filter((game,index)=>next.findIndex(other=>other.weekNumber===game.weekNumber&&other.date===game.date)===index)};
+ return {ownTeamIds:Array.from(ids),upcoming:games.slice(0,3),hasTeam:own.length>0,hasSchedule:schedule.length>0,games:next,weeks:next.filter((game,index)=>next.findIndex(other=>other.weekNumber===game.weekNumber&&other.date===game.date)===index)};
 }

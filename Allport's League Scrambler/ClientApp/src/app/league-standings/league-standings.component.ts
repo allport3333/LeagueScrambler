@@ -8,6 +8,7 @@ import { LeagueService } from '../services/league.service';
 import { LoginService } from '../services/login.service';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { transformKingQueenStandings } from './king-queen-standings';
 
 @Component({
     selector: 'app-league-standings',
@@ -56,6 +57,11 @@ export class LeagueStandingsComponent implements OnInit {
     private navigationLeagueResolved = false;
     private navigationSubscriptions = new Subscription();
 
+    hasSubAdjustment(score: any): boolean {
+        return !!score && score.isReduced === true && score.isSubScore === true &&
+            Number.isFinite(Number(score.unadjustedScore)) && Number(score.score) < Number(score.unadjustedScore);
+    }
+    subAdjustmentLabel(): string { return Number(this.subScorePercent) === 50 ? '½' : this.subScorePercent + '%'; }
     profileQuery(player: PlayerScoreGroup): any {
         return {leagueId:this.selectedLeagueId,tab:'kq',fromStandings:'1',standingsMode:this.standingsType,
             divisionId:this.selectedDivisionId,gender:player.isMale?'men':'women',mobileFullTable:this.mobileFullTable?'1':'0'};
@@ -359,129 +365,7 @@ export class LeagueStandingsComponent implements OnInit {
             }
         }
 
-        const transformStandings = (input: PlayerScoreGroup[]) => {
-            const output: PlayerScoreGroup[] = [];
-
-            for (let i = 0; i < input.length; i++) {
-                const player = input[i];
-
-                const updatedScores: any[] = [];
-                for (let j = 0; j < player.scores.length; j++) {
-                    const s: any = player.scores[j];
-                    const copy = { ...s, isDropped: false, isReduced: false };
-                    updatedScores.push(copy);
-                }
-
-                const subScores: any[] = [];
-                for (let j = 0; j < updatedScores.length; j++) {
-                    const s: any = updatedScores[j];
-                    if (s.isSubScore === true) {
-                        subScores.push(s);
-                    }
-                }
-
-                for (let j = 0; j < subScores.length; j++) {
-                    const subScore = subScores[j];
-
-                    let isReduced = false;
-                    if (j >= options.numberOfSubsAllowed) {
-                        isReduced = true;
-                    }
-
-                    let index = -1;
-                    for (let k = 0; k < updatedScores.length; k++) {
-                        if (updatedScores[k] === subScore) {
-                            index = k;
-                            break;
-                        }
-                    }
-
-                    if (index !== -1) {
-                        let newScore = updatedScores[index].score;
-
-                        if (isReduced === true) {
-                            newScore = (updatedScores[index].score * options.subScorePercent) / 100;
-                        }
-
-                        updatedScores[index] = {
-                            ...updatedScores[index],
-                            score: newScore,
-                            isReduced: isReduced
-                        };
-                    }
-                }
-
-                const sortedByScore = [...updatedScores].sort((a, b) => a.score - b.score);
-
-                const toDrop = sortedByScore.slice(0, options.dropLowestNumber);
-                for (let j = 0; j < toDrop.length; j++) {
-                    const dropItem = toDrop[j];
-
-                    let dropIndex = -1;
-                    for (let k = 0; k < updatedScores.length; k++) {
-                        if (updatedScores[k] === dropItem) {
-                            dropIndex = k;
-                            break;
-                        }
-                    }
-
-                    if (dropIndex !== -1) {
-                        updatedScores[dropIndex] = { ...updatedScores[dropIndex], isDropped: true };
-                    }
-                }
-
-                let totalScore = 0;
-                let totalWins = 0;
-
-                for (let j = 0; j < updatedScores.length; j++) {
-                    const s: any = updatedScores[j];
-                    if (s.isDropped !== true) {
-                        totalScore = totalScore + s.score;
-
-                        if (s.roundWon === true) {
-                            totalWins = totalWins + 1;
-                        }
-                    }
-                }
-
-                let totalScoreBeforeReduction = 0;
-                for (let j = 0; j < player.scores.length; j++) {
-                    totalScoreBeforeReduction = totalScoreBeforeReduction + (player.scores[j] as any).score;
-                }
-
-                const updatedPlayer: any = {
-                    ...player,
-                    scores: updatedScores,
-                    totalScore: totalScore,
-                    totalWins: totalWins,
-                    totalScoreBeforeReduction: totalScoreBeforeReduction
-                };
-
-                output.push(updatedPlayer);
-            }
-
-            output.sort((a: any, b: any) => {
-                if (this.standingsType === 'matchup') {
-                    if (b.totalScore !== a.totalScore) {
-                        return b.totalScore - a.totalScore;
-                    }
-
-                    if (b.totalScoreBeforeReduction !== a.totalScoreBeforeReduction) {
-                        return b.totalScoreBeforeReduction - a.totalScoreBeforeReduction;
-                    }
-
-                    return b.totalWins - a.totalWins;
-                } else {
-                    if (b.totalScore !== a.totalScore) {
-                        return b.totalScore - a.totalScore;
-                    }
-
-                    return b.totalWins - a.totalWins;
-                }
-            });
-
-            return output;
-        };
+        const transformStandings = (input: PlayerScoreGroup[]) => transformKingQueenStandings(input, options, this.standingsType);
 
         this.maleStandings = transformStandings(male);
         this.femaleStandings = transformStandings(female);

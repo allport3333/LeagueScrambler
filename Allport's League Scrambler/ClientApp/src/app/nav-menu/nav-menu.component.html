@@ -10,18 +10,18 @@
     </mat-menu>
 
     <div class="desktop-navigation" #desktopLinks [class.navigation-measuring]="!layoutReady">
-        <a *ngFor="let item of primaryLinks; trackBy: trackDestination" [routerLink]="item.route" routerLinkActive="active" #primaryActive="routerLinkActive" [routerLinkActiveOptions]="{exact: item.route === '/'}" [attr.aria-current]="primaryActive.isActive ? 'page' : null" class="navigation-link" (click)="collapse()">
+        <a *ngFor="let item of primaryLinks; trackBy: trackDestination" [routerLink]="item.route" [queryParams]="item.queryParams" [class.active]="destinationActive(item)" [attr.aria-current]="destinationActive(item) ? 'page' : null" class="navigation-link" (click)="collapse()">
             <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span>
         </a>
         <button *ngIf="secondaryLinks.length" type="button" mat-button class="menu-trigger more-trigger" [class.active]="secondaryPageActive" [matMenuTriggerFor]="moreMenu">More<mat-icon aria-hidden="true">arrow_drop_down</mat-icon></button>
         <mat-menu #moreMenu="matMenu">
-            <a mat-menu-item *ngFor="let item of secondaryLinks; trackBy: trackDestination" [routerLink]="item.route" routerLinkActive="selected-destination" #moreActive="routerLinkActive" [attr.aria-current]="moreActive.isActive ? 'page' : null" (click)="collapse()"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>{{ item.label }}</a>
+            <a mat-menu-item *ngFor="let item of secondaryLinks; trackBy: trackDestination" [routerLink]="item.route" [queryParams]="item.queryParams" [class.selected-destination]="destinationActive(item)" [attr.aria-current]="destinationActive(item) ? 'page' : null" (click)="collapse()"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>{{ item.label }}</a>
         </mat-menu>
     </div>
     <div class="desktop-account" *ngIf="authenticationChecked && loggedIn">
         <button type="button" mat-button class="menu-trigger" [class.active]="profilePageActive" [matMenuTriggerFor]="accountMenu"><mat-icon aria-hidden="true">account_circle</mat-icon> Account<mat-icon aria-hidden="true">arrow_drop_down</mat-icon></button>
         <mat-menu #accountMenu="matMenu">
-            <a mat-menu-item *ngIf="playerId" [routerLink]="['/player-stats-tabs', playerId]" routerLinkActive="selected-destination" #accountActive="routerLinkActive" [attr.aria-current]="accountActive.isActive ? 'page' : null" (click)="collapse()"><mat-icon aria-hidden="true">person</mat-icon>Profile</a>
+            <a mat-menu-item *ngIf="playerId" [routerLink]="['/player-stats-tabs', playerId]" [queryParams]="{leagueId:selectedLeagueId,tab:'kq'}" routerLinkActive="selected-destination" #accountActive="routerLinkActive" [attr.aria-current]="accountActive.isActive ? 'page' : null" (click)="collapse()"><mat-icon aria-hidden="true">person</mat-icon>Profile</a>
             <button type="button" mat-menu-item (click)="collapse(); logoutAndNavigate()"><mat-icon aria-hidden="true">exit_to_app</mat-icon>Logout</button>
         </mat-menu>
     </div>
@@ -42,7 +42,7 @@
     </mat-sidenav>
 </mat-sidenav-container>
 <ng-template #drawerLink let-item>
-    <a [routerLink]="item.route" routerLinkActive="active" #drawerActive="routerLinkActive" [routerLinkActiveOptions]="{exact: item.route === '/'}" [attr.aria-current]="drawerActive.isActive ? 'page' : null" class="drawer-link" (click)="collapse()"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span></a>
+    <a [routerLink]="item.route" [queryParams]="item.queryParams" [class.active]="destinationActive(item)" [attr.aria-current]="destinationActive(item) ? 'page' : null" class="drawer-link" (click)="collapse()"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span></a>
 </ng-template>
 
 <div class="nav-width-probe" #widthProbe aria-hidden="true"><span *ngFor="let item of visibleDestinations;trackBy:trackDestination" class="navigation-link" data-measure-route><mat-icon>{{ item.icon }}</mat-icon><span>{{ item.label }}</span></span><button mat-button class="menu-trigger" data-measure-more tabindex="-1">More<mat-icon>arrow_drop_down</mat-icon></button></div>

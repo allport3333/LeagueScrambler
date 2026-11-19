@@ -15,10 +15,11 @@ import { catchError } from 'rxjs/operators';
 export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoCheck {
     // Presentation metadata only: these are the existing routes and visibility rules.
     readonly destinations = [
-        { route: '/', label: 'Home', icon: 'home', group: 'night', anonymousOnly: true },
+        { route: '/', label: 'Home', icon: 'home', group: 'night', anonymousOnly: false },
         { route: '/scrambler', label: 'Scrambler', icon: 'shuffle', group: 'night', roles: ['Admin', 'Manager'] },
         { route: '/team-scores', label: 'Team Management', icon: 'group', group: 'night', roles: ['Admin', 'Manager'] },
         { route: '/league-dashboard', label: 'League Dashboard', icon: 'dashboard', group: 'night', roles: ['Admin', 'Manager', 'Player'] },
+        { route: '/league-dashboard', queryParams: {tab:'schedule'}, label: 'Schedule', icon: 'event', group: 'night', roles: ['Admin','Manager','Player'] },
         { route: '/standings', label: 'K/Q Standings', icon: 'emoji_events', group: 'results', roles: ['Admin', 'Manager', 'Player'] },
         { route: '/kqmatchups', label: 'K/Q Matchups', icon: 'view_list', group: 'results', roles: ['Admin', 'Manager', 'Player'] },
         { route: '/fetch-data', label: 'Players', icon: 'people', group: 'night', signedInOnly: true },
@@ -75,9 +76,10 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         this.primaryLinks=entries.slice(0,count);this.secondaryLinks=entries.slice(count);this.layoutReady=true;
     }
     drawerLinks(group: string) { return this.visibleDestinations.filter(item => item.group === group); }
-    trackDestination(index: number, item: { route: string }) { return item.route; }
+    trackDestination(index: number, item: { route: string; queryParams?: any }) { return item.route + (item.queryParams ? JSON.stringify(item.queryParams) : ''); }
+    destinationActive(item:any):boolean { const url=this.router.parseUrl(this.router.url),path=this.router.url.split(/[?#]/)[0];if(item.route==='/league-dashboard')return path===item.route && (item.queryParams ? url.queryParams.tab==='schedule' : url.queryParams.tab!=='schedule');return path===item.route; }
     get secondaryPageActive(): boolean {
-        return this.secondaryLinks.some(item => this.router.url.split(/[?#]/)[0] === item.route);
+        return this.secondaryLinks.some(item => this.destinationActive(item));
     }
     get profilePageActive(): boolean { return this.router.url.indexOf('/player-stats-tabs/') === 0; }
     @HostListener('window:resize') onNavigationResize() {
