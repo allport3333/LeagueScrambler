@@ -1,0 +1,12 @@
+<div class="roster-layout">
+ <header><div><h2 mat-dialog-title>{{ teamName }}</h2><p *ngIf="data.leagueName || division">{{ data.leagueName }}<span *ngIf="data.leagueName && division"> &middot; </span>{{ division }}</p></div><button mat-icon-button type="button" aria-label="Close team roster" (click)="dialogRef.close()" cdkFocusInitial><mat-icon>close</mat-icon></button></header>
+ <mat-dialog-content>
+  <p *ngIf="loading" role="status">Loading roster...</p>
+  <p *ngIf="error" role="alert">{{ error }}</p>
+  <ng-container *ngIf="!loading && !error">
+   <p class="roster-note">Current available roster for this league; historical assignments may differ.</p>
+   <table *ngIf="players.length;else emptyRoster"><thead><tr><th scope="col">First Name</th><th scope="col">Last Name</th></tr></thead><tbody><tr *ngFor="let player of players"><td>{{ player.firstName }}</td><td>{{ player.lastName }}</td></tr></tbody></table>
+   <ng-template #emptyRoster><p>No players are currently available for this team.</p></ng-template>
+  </ng-container>
+ </mat-dialog-content>
+</div>

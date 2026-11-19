@@ -1,3 +1,4 @@
+import { TeamRosterButtonComponent, TeamRosterDialogComponent } from './team-roster/team-roster.component';
 import { PlayerHomeDashboardComponent } from './player-home-dashboard/player-home-dashboard.component';
 import { PlayerAttendanceComponent } from './player-attendance/player-attendance.component';
 import { PlayerNextGameComponent } from './player-next-game/player-next-game.component';
@@ -65,6 +66,8 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         LeagueTeamPlayerScoresComponent,
         PlayerStatsTabsComponent,
         PlayerNextGameComponent,
+        TeamRosterButtonComponent,
+        TeamRosterDialogComponent,
         PlayerAttendanceComponent,
         CombinedStatsTabComponent,
         LeagueTeamStandingsComponent,
@@ -132,6 +135,6 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
     ],
     providers: [MatSnackBar, AuthService], 
     bootstrap: [AppComponent],
-    entryComponents: [MatSnackBarContainer, ForgotPasswordDialogComponent]
+    entryComponents: [TeamRosterDialogComponent, MatSnackBarContainer, ForgotPasswordDialogComponent]
 })
 export class AppModule { }
