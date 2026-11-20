@@ -207,6 +207,12 @@
                         <mat-checkbox [(ngModel)]="completeRandom" aria-label="check box 1" style="margin-right: 10px"> Completely Random</mat-checkbox>
                         <mat-checkbox [(ngModel)]="lockedResults" aria-label="check box 2" style="margin-right: 10px"> Lock Results</mat-checkbox>
                     </div>
+                    <div class="col-12 history-rules">
+                        <mat-checkbox [(ngModel)]="prioritizePreviousTeammates" [disabled]="generationBusy">Prioritize fewer previous teammates</mat-checkbox>
+                        <p class="workspace-help">Prefer players who have been teammates less often across this league's history.</p>
+                        <mat-checkbox [(ngModel)]="allowMinimumRepeats" [disabled]="generationBusy">Allow minimum repeats if strict scrambling is impossible</mat-checkbox>
+                        <p class="workspace-help">Selected previous scrambles prohibit all repeated teammates. Optional fallback applies only after strict impossibility is proven.</p>
+                    </div>
                 </div>
 
             </mat-card>
@@ -245,7 +251,7 @@
                             Apply Top Players (Male Standings)
                         </button></div><p class="workspace-help">Apply top-player preferences after player selection. Standings remain loaded for balancing.</p></div></section>
             <div class="text-center mt-3" *ngIf="hideInputOptions">
-                <button *ngIf="!lockedResults" style="margin-top:10px; margin-left: 10px" (click)="scramblePlayers(false)" mat-raised-button color="primary">Scramble Players</button>
+                <button *ngIf="!lockedResults" style="margin-top:10px; margin-left: 10px" (click)="scramblePlayers(false)" [disabled]="generationBusy" mat-raised-button color="primary">Scramble Players</button>
                 <div class="mt-2">
                     <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
                 </div>
@@ -257,15 +263,22 @@
                             class="scramble-button primary-action"
                             matTooltip="Button is disabled because no players are selected."
                             [matTooltipDisabled]="selectedList && selectedList.length > 0"
-                            [disabled]="!selectedList || selectedList.length === 0"
+                            [disabled]="generationBusy || !selectedList || selectedList.length === 0"
                             [ngClass]="{'enabled' : selectedList && selectedList.length > 0,
                                             'disabled': !selectedList || selectedList.length === 0
                                             }">
                         Scramble Players
                     </button><p class="workspace-help" *ngIf="!selectedList.length">Select players before scrambling.</p><p class="workspace-help" *ngIf="locked">Results are locked. Uncheck Lock Results before rescrambling.</p></div>
+<p class="generation-feedback" role="status" aria-live="polite" *ngIf="generationFeedback">{{ generationFeedback }}</p>
 <div class="scrambler-results-shell" [hidden]="workspaceSection !== 'scrambler' || !listOfTeams.length">
 <section class="scramble-results-toolbar compact-results" #saveTeamsDiv tabindex="-1">
  <div class="results-heading"><h2>Scramble Results</h2><button mat-button (click)="resultsCollapsed=!resultsCollapsed" [attr.aria-expanded]="!resultsCollapsed">{{ resultsCollapsed ? 'Show Results' : 'Hide Results' }}</button></div>
+ <details class="generation-report" *ngIf="generationResult" [open]="generationResult.repeatedPairs.length > 0"><summary>Generated arrangement report<span *ngIf="generationResult.repeatedPairs.length">: {{ generationResult.repeatedPairs.length }} repeated teammate pairings</span></summary>
+ <p *ngIf="generationResult.strictImpossible">Strict scrambling was proven impossible. This arrangement uses the minimum {{ generationResult.repeatedPairs.length }} repeated teammate pairings.</p>
+ <ul *ngIf="generationResult.repeatedPairs.length"><li *ngFor="let pair of generationResult.repeatedPairs">{{ generationPlayerName(pair[0]) }} and {{ generationPlayerName(pair[1]) }}</li></ul>
+ <p *ngIf="generationResult.demotedTopIds.length">{{ generationResult.demotedTopIds.length }} excess Top Players remain included as regular players for this scramble.</p>
+ <p *ngIf="prioritizePreviousTeammates">League history pair cost: {{ generationResult.historyCost }}.</p>
+ <p *ngFor="let warning of generationResult.warnings">{{ warning }}</p></details>
  <div [hidden]="resultsCollapsed"><p *ngIf="scrambleNotice" class="scramble-inline-notice" role="status">New scramble generated</p><p class="results-summary"><strong *ngIf="scrambleNumber && !scrambleSelected">Scramble {{ scrambleNumber }}</strong><strong *ngIf="scrambleSelected">Scramble{{ listOfRetrievedScrambleNumbers.length>1 ? 's' : '' }} {{ listOfRetrievedScrambleNumbers.join(', ') }}</strong><span>{{ listOfTeams.length }} teams &middot; {{ matchupCount }} matchups</span></p>
  <div class="compact-results-actions"><button mat-raised-button color="primary" (click)="openMatchups()">View Matchups</button><button mat-stroked-button color="primary" (click)="openMatchups(true)" [disabled]="!isActionAllowed || teamSaveBusy">Modify Teams</button><button mat-raised-button color="primary" (click)="saveKingQueenTeams()" [disabled]="!canSaveMatchupTeams || (isScrambleSaved && !teamEditsPending)">{{ teamSaveBusy ? 'Saving...' : 'Save Scramble' }}</button><button mat-raised-button class="results-print-button" (click)="printMatchups()" [disabled]="!canPrintMatchups" [attr.aria-describedby]="!canPrintMatchups ? 'scramble-print-save-help' : null">Print Matchups</button></div>
  <details class="compact-print-settings"><summary>Print Settings</summary><div class="results-print-controls"><mat-form-field appearance="outline"><mat-label>Matchups Per Page</mat-label><mat-select [(value)]="selectedMatchupsPerPage" (selectionChange)="onSelectionChange($event)"><mat-option value="2">2 Matchups</mat-option><mat-option value="4">4 Matchups</mat-option><mat-option value="6">6 Matchups</mat-option></mat-select></mat-form-field><mat-form-field appearance="outline"><mat-label>Number of Rounds</mat-label><mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)"><mat-option *ngFor="let round of [1,2,3,4,5,6,7,8,9,10]" [value]="round">{{ round }} Rounds</mat-option></mat-select></mat-form-field></div></details>
@@ -621,7 +634,7 @@
                                 </div>
 
                                 <br />
-                                <button (click)="scramblePlayers(true)"
+                                <button [disabled]="generationBusy" (click)="scramblePlayers(true)"
                                         mat-raised-button
                                         class="w-50 py-3 scramble-button no-duplicate-action"
                                         matTooltip="Scramble With No Duplicate Teams"

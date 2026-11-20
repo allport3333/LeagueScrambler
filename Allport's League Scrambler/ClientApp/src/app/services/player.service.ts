@@ -207,6 +207,10 @@ export class PlayerService {
         );
     }
 
+    public getTeammateHistory(leagueId: number): Observable<any> {
+        return this.httpClient.get<any>(`${this.baseUrl}api/ScrambleData/TeammateHistory/${leagueId}`);
+    }
+
     public saveKingQueenRoundScores(
         roundScores: KingQueenRoundScore[],
         leagueName: string

@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>netcoreapp2.2</TargetFramework></PropertyGroup>
+ <ItemGroup><ProjectReference Include="../../Allport's League Scrambler/Allport's League Scrambler.csproj" /><PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.2.0" /></ItemGroup>
+</Project>

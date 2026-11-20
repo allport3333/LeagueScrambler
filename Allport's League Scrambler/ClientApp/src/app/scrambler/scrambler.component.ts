@@ -24,12 +24,100 @@ import { LeagueService } from '../services/league.service';
 import { KingQueenTeamsResponse } from '../data-models/kingQueenTeamsResponse';
 import { Subject, Observable, forkJoin, of, Subscription } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { timeout } from 'rxjs/operators';
+import { generateScramble as runScrambleV2, rankTopPlayers, capacitiesFor, historyIndex, pairKey, validateAllocation, ScrambleInput, ScrambleResult, TopPriority } from './scramble-engine';
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
     styleUrls: ['./scrambler.component.less']
 })
 export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
+    prioritizePreviousTeammates = false;
+    allowMinimumRepeats = false;
+    generationBusy = false;
+    generationFeedback = '';
+    generationResult: ScrambleResult = null;
+    configuredTopPriorities: TopPriority[] = [];
+    private generationVersion = 0;
+    private generatedInput: ScrambleInput = null;
+    private generatedLeagueId: number = null;
+
+    private generationSignature(): string {
+        return JSON.stringify({league:this.leagueId,players:this.selectedList.map(p=>[p.id,p.isMale,p.isByePlayer,p.isTopPlayer,p.isLowPlayer]),
+            tops:this.displayTopPlayers.map(p=>p.id),lows:this.displayLowPlayers.map(p=>p.id),size:this.teamSize,teams:this.numberOfTeams,
+            random:this.completeRandom,history:this.prioritizePreviousTeammates,fallback:this.allowMinimumRepeats,selected:this.listOfScrambleNumbers});
+    }
+    private async loadGenerationTopPriorities(leagueId:number): Promise<TopPriority[]> {
+        const rows=await this.playerService.getTopPlayersForLeague(leagueId,0).pipe(timeout(15000)).toPromise();
+        if(!Array.isArray(rows)||rows.some(p=>!p||!Number.isInteger(p.id)||p.id<=0))throw new Error('Top player priority data is unavailable.');
+        const priorities=rows.map(p=>({playerId:p.id,rank:p.rank}));
+        if(this.leagueId===leagueId)this.configuredTopPriorities=priorities;
+        return priorities;
+    }
+    private currentGenerationCount(): number {
+        return capacitiesFor(this.selectedList.filter(p=>!p.isByePlayer).length,this.teamSize,this.numberOfTeams).length;
+    }
+    generationPlayerName(id:number):string {
+        const player=this.selectedList.find(p=>p.id===id)||this.listOfTeams.reduce((all,t)=>all.concat(t.players),[] as Player[]).find(p=>p.id===id);
+        return player?((player.firstName||'')+' '+(player.lastName||'')).trim():'Player '+id;
+    }
+
+    async scramblePlayers(nonDuplicates:boolean=false): Promise<void> {
+        if(this.generationBusy||this.teamSaveBusy)return;
+        if(this.lockedResults&&this.locked){this.showSnackBar('Results are currently locked. Please uncheck lock results to rescramble.');return;}
+        if(!this.cancelMatchupChanges()||(this.scoringScramble&&!this.canLeaveScores()))return;
+        const leagueId=this.leagueId,leagueName=this.selectedLeague,signature=this.generationSignature(),version=++this.generationVersion;
+        this.generationBusy=true;this.generationFeedback='Generating and validating teams...';
+        try {
+            if(leagueId&&this.selectedList.some(p=>!this.queriedPlayers.some(member=>member.id===p.id)))
+                throw new Error('Wait for this league roster to load and select its eligible players.');
+            const selected=this.selectedList.slice(),topIds=Array.from(new Set(this.displayTopPlayers.map(p=>p.id).concat(selected.filter(p=>p.isTopPlayer).map(p=>p.id)))),lowIds=Array.from(new Set(this.displayLowPlayers.map(p=>p.id).concat(selected.filter(p=>p.isLowPlayer).map(p=>p.id))));
+            const input:ScrambleInput={players:selected.map(p=>({...p})),mode:this.completeRandom?'random':'balanced',maxTeamSize:this.teamSize,numberOfTeams:this.numberOfTeams,
+                topIds,lowIds,configuredTop:[],standings:[...(this.maleStandings||[]),...(this.femaleStandings||[])],prioritizeHistory:this.prioritizePreviousTeammates,allowMinimumRepeats:this.allowMinimumRepeats,
+                cancelled:()=>version!==this.generationVersion||this.scoreDestroyed};
+            if(!this.completeRandom&&topIds.length)input.configuredTop=await this.loadGenerationTopPriorities(leagueId);
+            const numbers=Array.from(new Set(this.listOfScrambleNumbers.length?this.listOfScrambleNumbers:nonDuplicates?this.listOfRetrievedScrambleNumbers:[]));
+            if(nonDuplicates&&!numbers.length)throw new Error('Select saved previous scrambles before requesting strict teammate avoidance.');
+            if(numbers.length){
+                if(!leagueId||numbers.some(n=>!Number.isInteger(n)||n<0))throw new Error('Selected historical scramble identities are invalid.');
+                const response=await this.playerService.getMultipleKingQueenTeamsByScrambleNumbers(leagueName,numbers).pipe(timeout(15000)).toPromise();
+                if(!response||!Array.isArray(response.kingQueenTeams))throw new Error('Selected scramble history could not be loaded.');
+                const index=historyIndex(leagueId,response.kingQueenTeams.map(row=>({leagueId:row.kingQueenTeam.leagueID,teamId:row.kingQueenTeam.id,scrambleNumber:row.kingQueenTeam.scrambleNumber,saved:(row.kingQueenTeam as any).scrambleWithScoresToBeSaved===true,playerIds:(row.players||[]).map(p=>p.id)})));
+                if(numbers.some(n=>index.scrambles.indexOf(n)<0))throw new Error('A selected scramble has no reliable saved team history. Retrieve a saved scramble or clear that selection.');
+                input.prohibitedPairs=index.frequencies.map(p=>pairKey(p.player1Id,p.player2Id));
+            }
+            if(input.prioritizeHistory){
+                if(!leagueId)throw new Error('Select a league before loading teammate history.');
+                const history=await this.playerService.getTeammateHistory(leagueId).pipe(timeout(15000)).toPromise();
+                if(!history||history.leagueId!==leagueId||!Array.isArray(history.pairs))throw new Error('League teammate history could not be loaded. No zero-history assumption was made.');
+                input.frequencies=history.pairs;
+            }
+            if(version!==this.generationVersion)return;
+            const result=await runScrambleV2(input);
+            if(version!==this.generationVersion)return;
+            if(this.generationSignature()!==signature){this.generationFeedback='Inputs changed during generation. Previous results are unchanged; please scramble again.';return;}
+            if(result.status!=='success'){this.generationFeedback=result.reason+' No new scramble was saved; previous results are unchanged.';this.showSnackBar(result.reason,true);return;}
+            const teams:Team[]=result.teams.map((players,index)=>({players:players.map(p=>selected.find(original=>original.id===p.id)),maleCount:players.filter(p=>p.isMale).length,femaleCount:players.filter(p=>!p.isMale).length,
+                kingQueenTeamId:0,kingQueenRoundScores:[],scrambleNumber:null,sortingId:index+1}));
+            let number=0;
+            if(this.isActionAllowed){
+                const body:KingQueenTeamsResponse={kingQueenTeams:teams.map(team=>({kingQueenTeam:{id:0,leagueID:0,dateOfTeam:new Date(),kingQueenPlayers:[],scrambleNumber:0,scrambleWithScoresToBeSaved:false,kingQueenRoundScores:[]},players:team.players})),byePlayers:[]};
+                const created=await this.playerService.generateScramble(leagueName,body).toPromise();
+                if(!created||created.length!==teams.length||created.some(t=>!t||!(t.id>0))||new Set(created.map(t=>t.id)).size!==teams.length||created.some(t=>t.scrambleNumber!==created[0].scrambleNumber))throw new Error('The server did not confirm the complete scramble. Previous results are unchanged.');
+                if(version!==this.generationVersion||this.leagueId!==leagueId)return;
+                if(this.generationSignature()!==signature){this.generationFeedback='Inputs changed during generation. Please scramble again.';return;}
+                number=created[0].scrambleNumber;created.forEach((team,index)=>teams[index].kingQueenTeamId=team.id);
+            }
+            if(this.scoringScramble)this.clearScoreEditor();
+            this.savedPrintSignature=null;this.teamSaveFeedback='';this.teamEditingSnapshot=null;this.showTeamSorting=false;this.scrambleSelected=false;this.showSaveRoundScores=false;
+            this.listOfTeams=teams;this.byePlayers=result.byes.map(p=>selected.find(original=>original.id===p.id));this.teamCount=teams.length;this.scrambleNumber=number;
+            this.topPlayerCount=result.retainedTopIds.length;this.lowPlayerCount=lowIds.filter(id=>topIds.indexOf(id)<0).length;this.generationResult=result;this.generatedInput=input;this.generatedLeagueId=leagueId;
+            this.locked=this.lockedResults;this.resultsCollapsed=false;this.generationFeedback=result.reason;
+            if(!this.isActionAllowed)this.generationFeedback+=' Preview only; unlock administration and generate again before saving.';
+            this.announceGeneratedScramble();this.revealScrambleResults();this.cdr.detectChanges();
+        }catch(error){if(version===this.generationVersion){this.generationFeedback=(error&&error.message&&!(error.status)?error.message:'History or generation service is unavailable. Please retry.')+' No new scramble was saved; your selections and previous results are retained.';this.showSnackBar(this.generationFeedback,true);}}
+        finally{if(version===this.generationVersion){this.generationBusy=false;this.cdr.detectChanges();}}
+    }
 
     scoringScramble: KingQueenTeam = null;
     mobileScoreMatchIndex = 0;
@@ -64,7 +152,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();this.scoreEditorLoading=false;this.scoringScramble=null;this.scoreSnapshot=null;this.scoreRefreshRequired=false;this.scoreEditorFeedback='';this.mobileScoreMatchIndex=0;
         this.retrievedListOfTeams=[];this.kingQueenRoundScores=[];this.scrambleSelected=false;this.showSaveRoundScores=false;
     }
-    ngOnDestroy():void { clearTimeout(this.scrambleNoticeTimer); if(this.matchupResizeObserver)this.matchupResizeObserver.disconnect();if(this.matchupLayoutFrame!==null)cancelAnimationFrame(this.matchupLayoutFrame); if(this.matchupsDialogRef)this.matchupsDialogRef.close(); this.scoreDestroyed=true;this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();if(this.scoreSaver)this.scoreSaver.unsubscribe(); }
+    ngOnDestroy():void { this.generationVersion++; clearTimeout(this.scrambleNoticeTimer); if(this.matchupResizeObserver)this.matchupResizeObserver.disconnect();if(this.matchupLayoutFrame!==null)cancelAnimationFrame(this.matchupLayoutFrame); if(this.matchupsDialogRef)this.matchupsDialogRef.close(); this.scoreDestroyed=true;this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();if(this.scoreSaver)this.scoreSaver.unsubscribe(); }
     refreshSavedScoreIds():void {
         if(!this.scoringScramble||this.scoreSaveBusy)return;
         this.verifySavedScores();
@@ -442,7 +530,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     teamSaveBusy = false;
     teamSaveFeedback = '';
     get matchupCount(): number { return Math.ceil(this.listOfTeams.length / 2); }
-    get canSaveMatchupTeams(): boolean { return this.isActionAllowed && !this.teamSaveBusy && (!this.scrambleSelected || this.listOfRetrievedScrambleNumbers.length === 1) && this.listOfTeams.length > 0 && this.listOfTeams.every(team => team.kingQueenTeamId > 0); }
+    get canSaveMatchupTeams(): boolean { return this.isActionAllowed && !this.generationBusy && !this.teamSaveBusy && (!this.scrambleSelected || this.listOfRetrievedScrambleNumbers.length === 1) && this.listOfTeams.length > 0 && this.listOfTeams.every(team => team.kingQueenTeamId > 0); }
     getMatchCourt(team: Team): string { return this.matchCourts.get(team) || ''; }
     setMatchCourt(team: Team, value: string): void { if (!this.teamSaveBusy) this.matchCourts.set(team, value); }
     openMatchups(edit: boolean = false): void {
@@ -496,14 +584,14 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     requestRetrieveScramble(scramble: KingQueenTeam): void {
-        if (this.teamSaveBusy || !this.cancelMatchupChanges()) { return; }
+        if (this.generationBusy || this.teamSaveBusy || !this.cancelMatchupChanges()) { return; }
         this.teamEditingSnapshot = null;
         this.showTeamSorting = false;
         this.retrieveScramble(scramble);
     }
 
     requestRetrieveMultipleScrambles(): void {
-        if (this.teamSaveBusy || !this.cancelMatchupChanges()) { return; }
+        if (this.generationBusy || this.teamSaveBusy || !this.cancelMatchupChanges()) { return; }
         this.teamEditingSnapshot = null;
         this.showTeamSorting = false;
         this.retrieveMultipleScrambles();
@@ -512,6 +600,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     requestResetAll(): void {
         if (this.locked) { this.reset(); return; }
         if (!window.confirm('Clear current Top/Low/Bye player selections and generated teams? Checked roster players will stay selected.')) { return; }
+        this.generationVersion++;this.generationBusy=false;
         this.reset();
         this.teamEditingSnapshot = null;
         this.showTeamSorting = false;
@@ -1242,6 +1331,11 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             return;
         }
 
+        this.generationVersion++; this.generationBusy=false; this.generationResult=null; this.generatedInput=null; this.generationFeedback=''; this.configuredTopPriorities=[];
+        const contextVersion=this.generationVersion;
+        // Results locks and selections belong to their league, not the next league loaded.
+        this.locked=false;this.lockedResults=false;this.selectedList=[];this.queriedPlayers=[];this.savedPrintSignature=null;
+        this.listOfScrambleNumbers=[]; this.listOfRetrievedScrambleNumbers=[]; this.retrievedListOfTeams=[];
         this.playerLoading = true;
 
         // Clear and reset relevant properties
@@ -1271,6 +1365,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         }
         // Fetch players for the selected league
         this.playerService.SelectLeague(this.selectedLeague).subscribe((result) => {
+            if(contextVersion!==this.generationVersion||this.scoreDestroyed)return;
             this.queriedPlayers = result;
             this.malePlayers1 = result.filter((player) => player.isMale);
             this.femalePlayers1 = result.filter((player) => !player.isMale);
@@ -1283,6 +1378,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
         // Fetch scrambles for the selected league
         this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe((result) => {
+            if(contextVersion!==this.generationVersion||this.scoreDestroyed)return;
             this.queriedScrambles = result;
             this.playerLoading = false;
         });
@@ -1291,46 +1387,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.initializeStandings();
     }
 
-    selectLeague() {
-        if (!this.selectedLeague) {
-            return;
-        }
-
-        this.playerLoading = true;
-        this.clearStandings();
-        this.reset();
-
-        const selectedLeague = this.leaguesAvailable.find((league) => league.leagueName === this.selectedLeague);
-
-        if (selectedLeague) {
-            this.selectedLeagueDto = selectedLeague;
-            this.leagueId = selectedLeague.id;
-            console.log('load1');
-        }
-
-        this.refreshManagementRoster();
-        // Reset fetch state when selecting a league
-        this.fetchClicked = false;
-        this.checkForSignedInPlayers();
-
-        this.playerService.SelectLeague(this.selectedLeague).subscribe((result) => {
-            this.queriedPlayers = result;
-            this.malePlayers1 = result.filter((player) => player.isMale);
-            this.femalePlayers1 = result.filter((player) => !player.isMale);
-            this.malePlayerCount = this.malePlayers1.length;
-            this.femalePlayerCount = this.femalePlayers1.length;
-
-            this.playerLoading = false;
-            this.awaitSettingsAndInitialize();
-        });
-
-        this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe((result) => {
-            this.queriedScrambles = result;
-            this.playerLoading = false;
-        });
-
-        this.initializeStandings();
-    }
+    selectLeague() { this.onLeagueChanged(); }
 
     getTooltipText(): string {
         if (this.allowScrambleWithNoDuplicates) {
@@ -1597,7 +1654,30 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.playerLoading = false;
     }
 
-    applyTopPlayersFromMaleStandings(): void {
+    async applyTopPlayersFromMaleStandings(): Promise<void> {
+        await this.applyRankedTopPlayers(true);
+    }
+
+    private async applyRankedTopPlayers(maleStandingsOnly: boolean): Promise<void> {
+        if(this.generationBusy)return;
+        const league=this.leagueId,signature=this.generationSignature();
+        try {
+            const count=this.currentGenerationCount(), priorities=await this.loadGenerationTopPriorities(league);
+            if(this.leagueId!==league||this.generationSignature()!==signature)return;
+            const standings=[...(this.maleStandings||[]),...(this.femaleStandings||[])];
+            const candidates=this.selectedList.filter(p=>!p.isByePlayer&&(maleStandingsOnly
+                ? p.isMale&&(this.maleStandings||[]).some(s=>s.playerId===p.id)
+                : priorities.some(priority=>priority.playerId===p.id)));
+            if(!candidates.length){this.showSnackBar('No eligible selected players have '+(maleStandingsOnly?'male standings.':'configured Top Player entries.'),true);return;}
+            const retained=rankTopPlayers(candidates,priorities,standings).slice(0,count);
+            this.selectedList.concat(this.malePlayers1,this.femalePlayers1).forEach(p=>p.isTopPlayer=false);
+            this.totalTopPlayers=[];this.displayTopPlayers=[];
+            retained.forEach(p=>this.addPlayerToTopPlayerList(this.selectedList.find(player=>player.id===p.id)));
+            this.applyClicked=true;
+        }catch(error){this.showSnackBar('Top player priorities could not be applied. Selections are unchanged.',true);}
+    }
+
+    legacyApplyTopPlayersFromMaleStandings(): void {
         const maxPlayers = this.teamCount;
 
         if (maxPlayers == null || maxPlayers <= 0) {
@@ -2263,7 +2343,9 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.calculateTeamsNeeded();
     }
 
-    applyTopPlayers(): void {
+    applyTopPlayers(): void { this.applyRankedTopPlayers(false); }
+
+    legacyApplyTopPlayers(): void {
         const maxPlayers = this.teamCount;
         this.playerService.getTopPlayersForLeague(this.leagueId, maxPlayers).subscribe(
             (topPlayers: Player[]) => {
@@ -2608,8 +2690,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     arePlayersEqual(playerA: Player, playerB: Player): boolean {
-        // Compare players based on criteria like first name and last name
-        return playerA.firstName === playerB.firstName && playerA.lastName === playerB.lastName;
+        return !!playerA&&!!playerB&&Number.isInteger(playerA.id)&&playerA.id>0&&playerA.id===playerB.id;
     }
 
 
@@ -2735,6 +2816,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             this.showSnackBar('Can not reset while results are locked. Please uncheck lock results and scramble again.');
         }
         else {
+            this.generationResult=null;this.generatedInput=null;this.generationFeedback='';
             this.listOfTeams = [];
             this.clearTopPLayers();
             this.clearLowPlayers();
@@ -2772,7 +2854,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             this.removePlayerFromLowPlayerList(player);
         }
         // Check if the player already exists in the totalTopPlayers array
-        const playerExists = this.totalTopPlayers.some(existingPlayer => existingPlayer === player);
+        const playerExists = this.totalTopPlayers.some(existingPlayer => existingPlayer.id === player.id);
 
         if (!playerExists) {
             // If the player doesn't exist, add them to the totalTopPlayers array
@@ -2796,7 +2878,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     removePlayerFromTopPlayerList(player: Player) {
         // Find all indices of the player in the totalTopPlayers array
         const playerIndices = this.totalTopPlayers.reduce((indices, current, index) => {
-            if (current === player) {
+            if (current.id === player.id) {
                 indices.push(index);
             }
             return indices;
@@ -2825,7 +2907,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             this.removePlayerFromTopPlayerList(player);
         }
         // Check if the player already exists in the totalLowPlayers array
-        const playerExists = this.totalLowPlayers.some(existingPlayer => existingPlayer === player);
+        const playerExists = this.totalLowPlayers.some(existingPlayer => existingPlayer.id === player.id);
 
         if (!playerExists) {
             // If the player doesn't exist, add them to the totalLowPlayers array
@@ -2855,7 +2937,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     removePlayerFromLowPlayerList(player: Player) {
         // Find all indices of the player in the totalLowPlayers array
         const playerIndices = this.totalLowPlayers.reduce((indices, current, index) => {
-            if (current === player) {
+            if (current.id === player.id) {
                 indices.push(index);
             }
             return indices;
@@ -2917,13 +2999,14 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     retrieveScramble(scramble: KingQueenTeam):boolean {
-        if(!scramble||this.teamSaveBusy||!this.cancelMatchupChanges()||!this.canLeaveScores())return false;
+        if(!scramble||this.generationBusy||this.teamSaveBusy||!this.cancelMatchupChanges()||!this.canLeaveScores())return false;
         if(this.scoreReader)this.scoreReader.unsubscribe();const version=++this.scoreVersion;
         this.scoreEditorLoading=true;this.scoreEditorFeedback='';this.teamSaveFeedback='';
         this.scoreReader=this.playerService.getKingQueenTeamsByScrambleNumber(this.selectedLeague,scramble.scrambleNumber).subscribe(response=>{
             if(version!==this.scoreVersion||this.scoreDestroyed)return;
             if(!response||!Array.isArray(response.kingQueenTeams)){this.scoreEditorLoading=false;this.scoreEditorFeedback='Could not read the saved teams. Existing entries were retained.';return;}
             const matchups=response.kingQueenTeams;
+            this.generationResult=null;this.generatedInput=null;this.generationFeedback='';
             const savedRounds:number[]=[];matchups.forEach(entry=>(entry.kingQueenTeam.kingQueenRoundScores||[]).forEach(row=>{if(row.roundId>0)savedRounds.push(row.roundId);}));
             this.selectedRounds=savedRounds.length?Math.max.apply(null,savedRounds):(this.selectedRounds||5);
             // Keep the server's saved order: the existing desktop pairs adjacent positions.
@@ -2979,6 +3062,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
 
     retrieveMultipleScrambles() {
+        if(this.generationBusy)return;
         if(!this.canLeaveScores())return;this.scoreSnapshot=null;this.scoringScramble=null;this.scoreVersion++;
         this.savedPrintSignature = null;
         this.retrievedPlayersBefore = true;
@@ -2987,6 +3071,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
         this.playerService.getMultipleKingQueenTeamsByScrambleNumbers(this.selectedLeague, this.listOfScrambleNumbers).subscribe(
             (response) => {
+                this.generationResult=null;this.generatedInput=null;this.generationFeedback='';
                 this.listOfRetrievedScrambleNumbers = [];
                 this.listOfTeams = [];
                 this.retrievedListOfTeams = [];
@@ -3110,6 +3195,13 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         if (new Set(players.map(player => player.id)).size !== players.length) {
             this.teamSaveFeedback = 'A player cannot be assigned to more than one team.';
             return;
+        }
+        if(this.generatedInput&&this.generatedLeagueId===this.leagueId&&this.generationResult){
+            // Manual team editing intentionally permits different sizes/roles. Preserve that workflow,
+            // while guarding roster identity and the explicitly selected historical exclusions.
+            const errors=validateAllocation(this.generatedInput.players,this.listOfTeams.map(t=>t.players.length),
+                this.listOfTeams.map(t=>t.players),[],new Set(this.generatedInput.prohibitedPairs||[]),this.generationResult.repeatedPairs.length);
+            if(errors.length){this.teamSaveFeedback=errors[0]+' Correct the assignments before saving.';this.showSnackBar(this.teamSaveFeedback,true);return;}
         }
         const payload: KingQueenTeamWithPlayers[] = submittedTeams.map(team => ({
             kingQueenTeam: { id: team.kingQueenTeamId, leagueID: 0, dateOfTeam: new Date(),
@@ -3614,7 +3706,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     }
 
 
-    async scramblePlayers(nonDuplicates: boolean = false) {
+    async legacyScramblePlayers(nonDuplicates: boolean = false) {
         if(this.teamSaveBusy || !this.cancelMatchupChanges())return;
         if(this.scoringScramble){if(!this.canLeaveScores())return;this.clearScoreEditor();}
         this.savedPrintSignature = null;
