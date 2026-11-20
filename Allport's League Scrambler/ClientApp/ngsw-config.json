@@ -1,0 +1,14 @@
+{
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app-shell",
+      "installMode": "prefetch",
+      "resources": {
+        "files": ["/index.html", "/*.css", "/*.js", "!/ngsw-worker.js", "!/safety-worker.js", "!/worker-basic.min.js", "/manifest.webmanifest", "/assets/icons/*.png", "/assets/img/sitelogo1.png"]
+      }
+    }
+  ],
+  "dataGroups": [],
+  "navigationUrls": ["/**", "!/api/**", "!/**/*.*", "!/**/*__*", "!/**/*__*/**", "!/Error", "!/error"]
+}

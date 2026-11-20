@@ -25,6 +25,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         { route: '/fetch-data', label: 'Players', icon: 'people', group: 'night', signedInOnly: true },
         { route: '/sign-in', label: 'Sign In Sheet', icon: 'how_to_reg', group: 'night', signedInOnly: true },
         { route: '/league-management', label: 'League Management', icon: 'settings', group: 'management', roles: ['Admin', 'Manager'] },
+        { route: '/install-locally', label: 'Install Locally', icon: 'get_app', group: 'management' },
         { route: '/faq', label: 'F.A.Q', icon: 'help_outline', group: 'management', primary: false }
     ];
     get visibleDestinations() {

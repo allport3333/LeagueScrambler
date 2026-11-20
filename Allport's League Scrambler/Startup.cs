@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SpaServices.AngularCli;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -123,8 +124,8 @@ namespace Allport_s_League_Scrambler
             }
 
             app.UseHttpsRedirection();
-            app.UseStaticFiles();
-            app.UseSpaStaticFiles();
+            app.UseStaticFiles(PwaStaticFiles());
+            app.UseSpaStaticFiles(PwaStaticFiles());
             app.UseAuthentication();
 
             app.UseMvc(routes =>
@@ -137,12 +138,34 @@ namespace Allport_s_League_Scrambler
             app.UseSpa(spa =>
             {
                 spa.Options.SourcePath = "ClientApp";
+                spa.Options.DefaultPageStaticFileOptions = PwaStaticFiles();
 
                 if (env.IsDevelopment())
                 {
                     spa.UseAngularCliServer(npmScript: "start");
                 }
             });
+        }
+
+        // Manifest MIME support on ASP.NET Core 2.2; revalidate PWA metadata on every deployment.
+        // This applies only to static files, never authentication or API responses.
+        private static StaticFileOptions PwaStaticFiles()
+        {
+            var types = new FileExtensionContentTypeProvider();
+            types.Mappings[".webmanifest"] = "application/manifest+json";
+            return new StaticFileOptions
+            {
+                ContentTypeProvider = types,
+                OnPrepareResponse = context =>
+                {
+                    var name = context.File.Name;
+                    if (name == "index.html" || name == "manifest.webmanifest" || name == "ngsw.json" ||
+                        name == "ngsw-worker.js" || name == "safety-worker.js" || name == "worker-basic.min.js")
+                    {
+                        context.Context.Response.Headers["Cache-Control"] = "no-cache";
+                    }
+                }
+            };
         }
     }
 }

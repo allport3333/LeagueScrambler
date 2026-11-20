@@ -3,3 +3,5 @@
 @media (max-width: 1023px) {
   .body-content { padding-top: 6px; }
 }
+
+.pwa-notice{padding:8px 14px;background:#fff6dc;color:#53451e;text-align:center;font-size:14px}.pwa-update{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;background:#eef5fb;color:#29446c}.pwa-update button{min-height:40px}@media print{.pwa-notice{display:none}}

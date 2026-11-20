@@ -1,3 +1,6 @@
+import { ServiceWorkerModule } from '@angular/service-worker';
+import { environment } from '../environments/environment';
+import { InstallLocallyComponent } from './pwa/install-locally.component';
 import { TeamRosterButtonComponent, TeamRosterDialogComponent } from './team-roster/team-roster.component';
 import { PlayerHomeDashboardComponent } from './player-home-dashboard/player-home-dashboard.component';
 import { PlayerAttendanceComponent } from './player-attendance/player-attendance.component';
@@ -66,6 +69,7 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         LeagueTeamPlayerScoresComponent,
         PlayerStatsTabsComponent,
         PlayerNextGameComponent,
+        InstallLocallyComponent,
         TeamRosterButtonComponent,
         TeamRosterDialogComponent,
         PlayerAttendanceComponent,
@@ -129,8 +133,10 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
             { path: 'player-stats-tabs/:playerId', component: PlayerStatsTabsComponent },
             { path: 'league-dashboard', component: LeagueDashboardComponent },
             { path: 'faq', component: FaqComponent },
+            { path: 'install-locally', component: InstallLocallyComponent },
             { path: 'kqmatchups', component: KqmatchupsComponent }
         ]),
+        ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production }),
         BrowserAnimationsModule
     ],
     providers: [MatSnackBar, AuthService], 
