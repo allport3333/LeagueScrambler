@@ -1,0 +1,37 @@
+const fs=require('fs'),path=require('path'),crypto=require('crypto'),Module=require('module'),assert=require('assert/strict');
+const root=path.resolve(__dirname,'../../../..'),ts=require(path.join(root,"Allport's League Scrambler/ClientApp/node_modules/typescript"));
+const file=path.join(root,"Allport's League Scrambler/ClientApp/src/app/scrambler/scramble-engine.ts"),source=fs.readFileSync(file,'utf8');
+const m=new Module(file,module);m.filename=file;m.paths=module.paths;m._compile(ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES5,module:ts.ModuleKind.CommonJS}}).outputText,file);
+const e=m.exports,out=path.join(root,'tests/functional/artifacts/scrambler-v2-audit');fs.mkdirSync(out,{recursive:true});
+const sourceHash=crypto.createHash('sha256').update(source).digest('hex');
+// Xoshiro128** streams seeded independently from named SHA-256 labels. Test injection only.
+function rng(label){let [a,b,c,d]=new Uint32Array(crypto.createHash('sha256').update('V2-independent-audit:'+label).digest().buffer.slice(0,16));if(!(a|b|c|d))a=1;return max=>{assert(Number.isInteger(max)&&max>0);const limit=4294967296-4294967296%max;let r;do{const x=Math.imul(b,5)>>>0;r=Math.imul(((x<<7)|(x>>>25))>>>0,9)>>>0;const t=b<<9;c^=a;d^=b;b^=c;a^=d;c^=t;d=(d<<11)|(d>>>21);}while(r>=limit);return r%max;};}
+function shuffle(xs,r){const a=xs.slice();for(let i=a.length-1;i>0;i--){const j=r(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+const pair=(a,b)=>a<b?a+':'+b:b+':'+a;
+const key=teams=>teams.map(t=>t.map(p=>typeof p==='number'?p:p.id).sort((a,b)=>a-b).join(',')).join('|');
+const unlabeled=teams=>teams.map(t=>t.map(p=>typeof p==='number'?p:p.id).sort((a,b)=>a-b).join(',')).sort().join('|');
+function combinations(a,n,start=0,prefix=[],out=[]){if(!n){out.push(prefix);return out;}for(let i=start;i<=a.length-n;i++)combinations(a,n-1,i+1,prefix.concat(a[i]),out);return out;}
+function allocations(ids,caps){if(!caps.length)return [[]];return combinations(ids,caps[0]).flatMap(team=>allocations(ids.filter(id=>!team.includes(id)),caps.slice(1)).map(tail=>[team,...tail]));}
+function independentlyCheck(input,result,caps,{tops=result.retainedTopIds||[],repeatLimit=0}={}){
+ assert.equal(result.status,'success',result.reason);const eligible=input.players.filter(p=>!p.isByePlayer),ids=result.teams.flat().map(p=>p.id),expected=eligible.map(p=>p.id).sort((a,b)=>a-b);
+ const designated=(input.topIds||eligible.filter(p=>p.isTopPlayer).map(p=>p.id)).filter(id=>expected.includes(id));
+ if(input.mode==='random')assert.deepEqual(result.retainedTopIds,[]);
+ else if(new Set(designated).size<=caps.length){assert.deepEqual(result.retainedTopIds.slice().sort((a,b)=>a-b),Array.from(new Set(designated)).sort((a,b)=>a-b));tops=designated;}
+ assert.equal(new Set(ids).size,ids.length);assert.deepEqual(ids.slice().sort((a,b)=>a-b),expected);assert.deepEqual(result.teams.map(t=>t.length).sort((a,b)=>a-b),caps.slice().sort((a,b)=>a-b));
+ assert.deepEqual(result.byes.map(p=>p.id).sort((a,b)=>a-b),input.players.filter(p=>p.isByePlayer).map(p=>p.id).sort((a,b)=>a-b));
+ const blocked=new Set(input.prohibitedPairs||[]),repeats=[],freq=new Map((input.frequencies||[]).map(x=>[pair(x.player1Id,x.player2Id),x.count]));let cost=0;
+ for(const t of result.teams){assert(t.filter(p=>tops.includes(p.id)).length<=1);for(const p of t)assert.equal(p.isMale,input.players.find(x=>x.id===p.id).isMale);for(let i=0;i<t.length;i++)for(let j=i+1;j<t.length;j++){const k=pair(t[i].id,t[j].id);if(blocked.has(k))repeats.push(k);if(input.prioritizeHistory)cost+=freq.get(k)||0;}}
+ assert(repeats.length<=repeatLimit);assert.deepEqual(result.repeatedPairs.map(p=>pair(...p)).sort(),repeats.sort());assert.equal(result.historyCost,cost);
+ if(input.mode==='balanced'){const compositions=result.teams.map(t=>[t.filter(p=>p.isMale).length,t.filter(p=>!p.isMale).length]);for(let i=1;i<compositions.length;i++)assert(compositions[i-1][0]>compositions[i][0]||compositions[i-1][0]===compositions[i][0]&&compositions[i-1][1]>=compositions[i][1]);for(const t of result.teams)for(let i=1;i<t.length;i++)assert(!(t[i].isMale&&!t[i-1].isMale));}
+ return {cost,repeats:repeats.length};
+}
+function write(name,data){fs.writeFileSync(path.join(out,name+'.json'),JSON.stringify({sourceHash,generatedAt:new Date().toISOString(),...data},null,2));}
+function logGamma(z){const c=[676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];if(z<.5)return Math.log(Math.PI)-Math.log(Math.sin(Math.PI*z))-logGamma(1-z);z--;let x=.99999999999980993;for(let i=0;i<c.length;i++)x+=c[i]/(z+i+1);const t=z+c.length-.5;return .5*Math.log(2*Math.PI)+(z+.5)*Math.log(t)-t+Math.log(x);}
+function gammaQ(a,x){if(x===0)return 1;const factor=Math.exp(-x+a*Math.log(x)-logGamma(a)),eps=1e-14,tiny=1e-300;if(x<a+1){let s=1/a,delta=s,ap=a;for(let i=0;i<10000;i++){ap++;delta*=x/ap;s+=delta;if(Math.abs(delta)<Math.abs(s)*eps)break;}return Math.max(0,1-s*factor);}let b=x+1-a,c=1/tiny,d=1/b,h=d;for(let i=1;i<10000;i++){const an=-i*(i-a);b+=2;d=an*d+b;if(Math.abs(d)<tiny)d=tiny;c=b+an/c;if(Math.abs(c)<tiny)c=tiny;d=1/d;const delta=d*c;h*=delta;if(Math.abs(delta-1)<eps)break;}return Math.max(0,Math.min(1,factor*h));}
+function fit(counts){const n=counts.reduce((s,x)=>s+x,0),k=counts.length,expected=n/k,chi=counts.reduce((s,x)=>s+(x-expected)**2/expected,0);return {n,categories:k,chiSquare:chi,df:k-1,p:gammaQ((k-1)/2,chi/2),cohensW:Math.sqrt(chi/n),totalVariation:counts.reduce((s,x)=>s+Math.abs(x/n-1/k),0)/2,maxProbabilityDeviation:Math.max(...counts.map(x=>Math.abs(x/n-1/k)))};}
+function homogeneity(rows){const cols=rows[0].length,ns=rows.map(r=>r.reduce((s,x)=>s+x,0)),totals=Array.from({length:cols},(_,j)=>rows.reduce((s,r)=>s+r[j],0)),n=ns.reduce((s,x)=>s+x,0);let chi=0;rows.forEach((r,i)=>r.forEach((x,j)=>{const expected=ns[i]*totals[j]/n;if(expected)chi+=(x-expected)**2/expected;}));const df=(rows.length-1)*(cols-1);return {n,chiSquare:chi,df,p:gammaQ(df/2,chi/2),cramersV:Math.sqrt(chi/(n*Math.min(rows.length-1,cols-1)))};}
+function holm(tests){const ordered=tests.slice().sort((a,b)=>a.p-b.p);let prior=0;ordered.forEach((t,i)=>{t.adjustedP=Math.min(1,Math.max(prior,(tests.length-i)*t.p));prior=t.adjustedP;t.rejected=t.adjustedP<.01;});return tests;}
+function wilson(success,n,z=3.2905267314919255){const p=success/n,den=1+z*z/n,center=(p+z*z/(2*n))/den,half=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/den;return {p,low:center-half,high:center+half,confidence:.999,pointwise:true};}
+function summary(a){const sorted=a.slice().sort((a,b)=>a-b),mean=a.reduce((s,x)=>s+x,0)/a.length;return {n:a.length,mean,median:sorted[Math.floor(a.length/2)],variance:a.reduce((s,x)=>s+(x-mean)**2,0)/(a.length-1),min:sorted[0],max:sorted[sorted.length-1],p95:sorted[Math.floor(sorted.length*.95)],p99:sorted[Math.floor(sorted.length*.99)]};}
+assert(Math.abs(gammaQ(1,4)-Math.exp(-4))<1e-12);assert(Math.abs(gammaQ(2,4)-5*Math.exp(-4))<1e-12);
+module.exports={e,fs,path,crypto,root,ts,out,sourceHash,assert,rng,shuffle,pair,key,unlabeled,combinations,allocations,independentlyCheck,write,fit,homogeneity,holm,wilson,summary,gammaQ};

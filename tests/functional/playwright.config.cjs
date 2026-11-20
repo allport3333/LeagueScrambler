@@ -29,6 +29,6 @@ module.exports = defineConfig({
   },
   projects: [
     { name: 'readonly', testMatch: /(?:readonly|manual-guard|standings-math)\.spec\.cjs/ },
-    { name: 'mutating', testMatch: /(?:registration|league-regression|session-preview|integrity-regression|legacy-session|csrf|team-scores)\.spec\.cjs/ }
+    { name: 'mutating', testMatch: /(?:registration|league-regression|session-preview|integrity-regression|legacy-session|csrf|team-scores|scrambler-v2-persistence)\.spec\.cjs/ }
   ]
 });

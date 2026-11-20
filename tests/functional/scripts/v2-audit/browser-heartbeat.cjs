@@ -1,0 +1,13 @@
+const c=require('./common.cjs'),{chromium,expect}=require('@playwright/test');
+(async()=>{
+ const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:390,height:844}});try{
+  await page.setContent('<button id="start">Generate constrained fixture</button><button id="check">Check UI responsiveness</button><p id="state">Ready</p><p id="pulse"></p>');
+  const source=c.fs.readFileSync(c.path.join(c.root,"Allport's League Scrambler/ClientApp/src/app/scrambler/scramble-engine.ts"),'utf8'),code=c.ts.transpileModule(source,{compilerOptions:{target:c.ts.ScriptTarget.ES5,module:c.ts.ModuleKind.CommonJS}}).outputText;
+  await page.addScriptTag({content:'{const exports={};'+code+';window.auditEngine=exports;}'});
+  await page.evaluate(()=>{window.result=null;window.uiClicks=0;window.clickedDuringGeneration=false;document.querySelector('#check').onclick=()=>{window.uiClicks++;window.clickedDuringGeneration=document.querySelector('#state').textContent==='Generating';};document.querySelector('#start').onclick=async()=>{
+   const players=Array.from({length:128},(_,i)=>({id:i+1,isMale:i<64})),frequencies=players.flatMap((p,i)=>players.slice(i+1).map(q=>({player1Id:p.id,player2Id:q.id,count:1})));let ticks=0,maxGap=0,last=performance.now();const timer=setInterval(()=>{const now=performance.now();maxGap=Math.max(maxGap,now-last);last=now;ticks++;document.querySelector('#pulse').textContent='Heartbeat '+ticks;},4);
+   document.querySelector('#state').textContent='Generating';const start=performance.now(),r=await window.auditEngine.generateScramble({players,mode:'balanced',numberOfTeams:32,prioritizeHistory:true,frequencies,maxMilliseconds:400});clearInterval(timer);window.result={status:r.status,elapsedMs:performance.now()-start,ticks,maxGap,players:r.teams.flat().length,nodes:r.nodes,warnings:r.warnings};document.querySelector('#state').textContent=r.status;
+  };});
+  await page.locator('#start').click();await page.locator('#check').click();await page.waitForFunction(()=>window.result!==null);const actual=await page.evaluate(()=>({...window.result,uiClicks:window.uiClicks,clickedDuringGeneration:window.clickedDuringGeneration}));c.assert.equal(actual.status,'success');c.assert.equal(actual.players,128);c.assert(actual.ticks>1);c.assert(actual.clickedDuringGeneration);c.write('browser-heartbeat',{pass:true,actual,scope:'Actual ES5 production engine in Chromium; isolated DOM controls, not a real account/session or database.'});await page.screenshot({path:c.path.join(c.out,'browser-heartbeat.png')});console.log(actual);
+ }finally{await browser.close();}
+})().catch(error=>{c.write('browser-heartbeat-failure',{message:error.message,stack:error.stack});console.error(error.stack);process.exitCode=1;});
