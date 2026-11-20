@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const { chromium } = require('@playwright/test');
 const { envSettings, assertLocalUrl, BASE_URL } = require('../helpers/safety.cjs');
 assert.match(process.version, /^v22\./);
-assert.equal(require('@playwright/test/package.json').version, '1.51.1');
+assert.equal(require('@playwright/test/package.json').version, '1.55.1');
 assert.ok(fs.existsSync(chromium.executablePath()), 'Matching Chromium is missing.');
 assert.deepEqual(envSettings(), { server: 'localhost', database: 'LeagueScramblerDev', windowsAuthentication: true });
 assertLocalUrl(BASE_URL + '/api/Login/isauthenticated');

@@ -54,7 +54,10 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "Allport_s_League_Scrambler:build"
+            "browserTarget": "Allport_s_League_Scrambler:build",
+            "host": "localhost",
+            "disableHostCheck": false,
+            "servePath": "/"
           },
           "configurations": {
             "production": {

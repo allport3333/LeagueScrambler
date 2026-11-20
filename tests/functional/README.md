@@ -1,6 +1,6 @@
 # LeagueScrambler local functional tests
 
-This harness attaches to the existing Visual Studio application at exactly `https://localhost:5001`. It never launches, builds, or publishes the application. Angular's Node 10, package.json, dependencies, and lockfile are unchanged. Portable Node 22 and Playwright 1.51.1/Chromium are test-only tools. Playwright is pinned for historical Windows 10 compatibility; its older bundled browser must only be used for these local tests.
+This harness attaches to the existing Visual Studio application at exactly `https://localhost:5001`. It never launches, builds, or publishes the application. Portable Node 22 and Playwright 1.55.1/Chromium are test-only tools. Playwright is pinned to the first patched release for GHSA-7mvr-c777-76hp; its bundled browser must only be used for these local tests. Angular keeps its separate Node 10 build environment; see the dependency security report for targeted frontend dependency pins.
 
 ## Setup and commands
 

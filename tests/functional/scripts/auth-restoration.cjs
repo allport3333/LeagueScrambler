@@ -60,7 +60,9 @@ const checks=[],errors=[],writes=[];let browser;
  for(const [role,route] of [['Player','/player-stats-tabs/-801'],['Manager','/scrambler'],['Admin','/standings']]){
   const {page,context,state}=await scenario(role,true,{delay:500});
   await page.goto(BASE_URL+route);
-  await expect(page.locator('app-nav-menu').getByRole('link',{name:'Home',exact:true})).toHaveCount(0);
+  // Home is now public during session restoration; account/admin controls must still wait.
+  await expect(page.locator('app-nav-menu').getByRole('link',{name:'Home',exact:true})).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'Account',exact:true})).toHaveCount(0);
   await ready(page);assert.deepEqual(await navState(page),{loggedIn:true,role,player:-801,league:-501,checked:true});
   assert.equal(new URL(page.url()).pathname,route);
   const management=page.locator('app-nav-menu').getByRole('link',{name:'Team Management',exact:true});
