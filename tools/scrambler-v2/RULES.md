@@ -21,4 +21,26 @@ Hard: unique positive IDs, every eligible ID exactly once, byes excluded, exact 
 
 Soft (balanced): minimum gender-count dispersion, then low-count dispersion, then optional whole-league pair frequency. Retained top distribution is already enforced by capacity. Equivalent choices are randomized. Explicit historical options also work in Random mode but omit gender/top/low balancing; plain Random without extra constraints is Fisher–Yates plus fixed-capacity allocation.
 
+Individual gender balance is now verified by bounded constraint search after mandatory
+feasibility and the minimum selected-history repeat count are established. A first legal
+assignment and bounded pairwise swaps are insufficient proof of adequate gender balance.
+Search starts at the existing ideal dispersion lower bound and proves lower targets
+impossible before accepting a compromise. Exhausted search returns an inconclusive
+result with no new teams. Ideal gender infeasibility never implies strict-history
+infeasibility and never enables fallback by itself. Opposing composition similarity is
+separate from individual team balance; identical opposing counts are not required.
+
+After balanced teams are formed, matchup pairing maximizes retained Top-versus-Top
+matches, then prefers similar opposing compositions. A possible remaining Top team joins
+the ordinary matchup pool. Equivalent pairings and choices of the remaining Top team are
+randomized. This changes only new matchup order, never team membership or saved records.
+Expected odd Top counts and minor opposing composition differences are not exceptions.
+
+Generation diagnostics retain their complete warnings and metrics. The user-facing
+arrangement report uses structured issues: failed/inconclusive attempts, necessary strict
+fallback repeats, a proven individual gender compromise, or unresolved Low Player balance.
+Routine top overflow, resolved Top/Low precedence, and a positive soft-history preference
+cost do not alone trigger a report. Latest-attempt diagnostics are separate from the result
+belonging to the displayed teams so a failed retry does not invalidate their save state.
+
 Strict search failure means exhaustive proof or a valid combinatorial lower bound, never timeout. Fallback starts only after such proof and increases the selected-pair violation bound; the first feasible bound is minimum only when every smaller bound was disproved. Budget exhaustion cannot justify fallback. Optional full-history optimization is bounded and must disclose when global optimality is unproved. Balanced complete arrangements are not claimed uniformly distributed.

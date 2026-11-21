@@ -2,6 +2,9 @@ import { ServiceWorkerModule } from '@angular/service-worker';
 import { environment } from '../environments/environment';
 import { InstallLocallyComponent } from './pwa/install-locally.component';
 import { TeamRosterButtonComponent, TeamRosterDialogComponent } from './team-roster/team-roster.component';
+import { ExistingPlayerBrowserComponent } from './league-management/existing-player-browser.component';
+import { PlayerImportComponent } from './league-management/player-import.component';
+import { LeaguePlayerEditComponent, ImportPlayerCreateComponent } from './league-management/player-management-dialogs.component';
 import { PlayerHomeDashboardComponent } from './player-home-dashboard/player-home-dashboard.component';
 import { PlayerAttendanceComponent } from './player-attendance/player-attendance.component';
 import { PlayerNextGameComponent } from './player-next-game/player-next-game.component';
@@ -72,6 +75,10 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         InstallLocallyComponent,
         TeamRosterButtonComponent,
         TeamRosterDialogComponent,
+        ExistingPlayerBrowserComponent,
+        PlayerImportComponent,
+        LeaguePlayerEditComponent,
+        ImportPlayerCreateComponent,
         PlayerAttendanceComponent,
         CombinedStatsTabComponent,
         LeagueTeamStandingsComponent,
@@ -141,6 +148,6 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
     ],
     providers: [MatSnackBar, AuthService], 
     bootstrap: [AppComponent],
-    entryComponents: [TeamRosterDialogComponent, MatSnackBarContainer, ForgotPasswordDialogComponent]
+    entryComponents: [LeaguePlayerEditComponent, ImportPlayerCreateComponent, PlayerImportComponent, ExistingPlayerBrowserComponent, TeamRosterDialogComponent, MatSnackBarContainer, ForgotPasswordDialogComponent]
 })
 export class AppModule { }

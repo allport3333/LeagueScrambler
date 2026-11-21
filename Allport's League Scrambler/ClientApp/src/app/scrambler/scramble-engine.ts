@@ -44,6 +44,10 @@ export interface ScrambleInput {
     cancelled?: () => boolean;
 }
 export type ScrambleStatus = 'success' | 'impossible' | 'budget-exhausted' | 'invalid-configuration' | 'cancelled' | 'unexpected-error';
+export interface ScrambleIssue {
+    code: ScrambleStatus | 'repeated-teammates' | 'gender-balance-compromise' | 'low-balance-unresolved' | 'service-error' | 'inputs-changed';
+    message: string;
+}
 export interface ScrambleResult {
     status: ScrambleStatus;
     reason: string;
@@ -60,6 +64,7 @@ export interface ScrambleResult {
     nodes: number;
     elapsedMilliseconds: number;
     warnings: string[];
+    issues: ScrambleIssue[];
 }
 export type RandomInt = (exclusiveMaximum: number) => number;
 export const pairKey = (a: number, b: number): string => a < b ? a + ':' + b : b + ':' + a;
@@ -149,10 +154,55 @@ export function capacitiesFor(count: number, maxSize?: number, requested?: numbe
         throw new Error('Choose a valid team count or maximum size; every team needs a player.');
     return Array.from({ length: teams }, (_, i) => Math.floor(count / teams) + (i < count % teams ? 1 : 0));
 }
-// Existing composition ordering: males descending, then females descending; equal groups shuffled.
-export function pairByComposition(teams: ScramblePlayer[][], random: RandomInt): ScramblePlayer[][] {
-    return shuffled(teams, random).map(players => players.slice().sort((a, b) => Number(b.isMale) - Number(a.isMale)))
-        .sort((a, b) => b.filter(p => p.isMale).length - a.filter(p => p.isMale).length || b.filter(p => !p.isMale).length - a.filter(p => !p.isMale).length);
+// Preserve the established similar-composition pairing, not an exact-composition constraint.
+// Odd gender totals and uneven attendance can make identical opposing compositions impossible.
+// Balancing happens before this ordering; equal-composition teams remain randomized.
+export function pairByComposition(teams: ScramblePlayer[][], random: RandomInt, retainedTopIds: number[] = []): ScramblePlayer[][] {
+    const tops = new Set(retainedTopIds);
+    const entries = shuffled(teams, random).map(team => ({
+        players: team.slice().sort((a, b) => Number(b.isMale) - Number(a.isMale)),
+        male: team.filter(p => p.isMale).length, female: team.filter(p => !p.isMale).length,
+        top: team.some(p => tops.has(p.id))
+    }));
+    type Entry = typeof entries[0];
+    const compare = (a: Entry, b: Entry) => b.male - a.male || b.female - a.female;
+    const distance = (a: Entry, b: Entry) => Math.abs(a.male - b.male) + Math.abs(a.female - b.female);
+    entries.sort(compare);
+    const topTeams = entries.filter(team => team.top), ordinary = entries.filter(team => !team.top);
+    if (topTeams.length < 2 || !ordinary.length && teams.length % 2 === 0) return entries.map(team => team.players);
+    // Pair adjacent similar compositions within each group. For odd groups, examine
+    // each possible unmatched team rather than always choosing an array endpoint.
+    const pairGroup = (group: Entry[]) => {
+        let best: { pairs: Entry[][]; bye: Entry; cost: number } = null, ties = 0;
+        const options = group.length % 2 ? group.length : 1;
+        for (let skipped = 0; skipped < options; skipped++) {
+            const bye = group.length % 2 ? group[skipped] : null;
+            const rest = bye ? group.filter(team => team !== bye) : group;
+            const pairs: Entry[][] = []; let cost = 0;
+            for (let i = 0; i < rest.length; i += 2) { pairs.push([rest[i], rest[i + 1]]); cost += distance(rest[i], rest[i + 1]); }
+            if (!best || cost < best.cost) { best = { pairs, bye, cost }; ties = 1; }
+            else if (cost === best.cost && random(++ties) === 0) best = { pairs, bye, cost };
+        }
+        return best;
+    };
+    let chosen: { pairs: Entry[][]; bye: Entry; cost: number } = null, ties = 0;
+    // Every retained Top team is paired with another Top team except at most one.
+    // That remaining team joins the ordinary pool; it is not a balancing failure.
+    const options = topTeams.length % 2 ? topTeams.length : 1;
+    for (let leftover = 0; leftover < options; leftover++) {
+        const single = topTeams.length % 2 ? topTeams[leftover] : null;
+        const topPairs = pairGroup(single ? topTeams.filter(team => team !== single) : topTeams);
+        const rest = pairGroup((single ? ordinary.concat(single) : ordinary).slice().sort(compare));
+        const candidate = { pairs: topPairs.pairs.concat(rest.pairs), bye: rest.bye, cost: topPairs.cost + rest.cost };
+        if (!chosen || candidate.cost < chosen.cost) { chosen = candidate; ties = 1; }
+        else if (candidate.cost === chosen.cost && random(++ties) === 0) chosen = candidate;
+    }
+    // Number complete matches by composition as before; randomize equal matches and
+    // equal-composition sides. Never reorder a saved scramble or move a team member.
+    const pairs = shuffled(chosen.pairs, random).map(pair => shuffled(pair, random).sort(compare))
+        .sort((a, b) => b[0].male + b[1].male - a[0].male - a[1].male || b[0].female + b[1].female - a[0].female - a[1].female);
+    return pairs.reduce((all, pair) => all.concat(pair.map(team => team.players)), [] as ScramblePlayer[][])
+        .concat(chosen.bye ? [chosen.bye.players] : []);
 }
 function minimumCost(capacities: number[], count: number, gender: boolean): number {
     let dp: number[] = Array(count + 1).fill(Infinity);
@@ -162,6 +212,23 @@ function minimumCost(capacities: number[], count: number, gender: boolean): numb
             for (let n = 0; n <= size && used + n <= count; n++)
                 next[used + n] = Math.min(next[used + n], dp[used] + n * n + (gender ? (size - n) * (size - n) : 0)); dp = next; });
     return dp[count];
+}
+// Exact lower bound for completing the current gender counts, ignoring role/history
+// restrictions. Convex marginal costs can be filled cheapest first; this only prunes
+// branches that cannot meet the requested whole-arrangement gender cost.
+function minimumGenderCompletion(capacities: number[], teams: ScramblePlayer[][], totalMale: number): number {
+    let remaining = totalMale, cost = 0;
+    const increments: number[] = [];
+    teams.forEach((team, i) => {
+        const male = team.filter(p => p.isMale).length, female = team.length - male;
+        remaining -= male;
+        cost += male * male + (capacities[i] - male) * (capacities[i] - male);
+        for (let n = male; n < capacities[i] - female; n++) increments.push(4 * n + 2 - 2 * capacities[i]);
+    });
+    if (remaining < 0 || remaining > increments.length) return Infinity;
+    increments.sort((a, b) => a - b);
+    for (let i = 0; i < remaining; i++) cost += increments[i];
+    return cost;
 }
 export function validateAllocation(players: ScramblePlayer[], capacities: number[], teams: ScramblePlayer[][], topIds: number[], prohibited: Set<string>, repeatLimit: number): string[] {
     const errors: string[] = [], eligible = players.filter(p => !p.isByePlayer), expected = new Set(eligible.map(p => p.id)), seen = new Set<number>(), top = new Set(topIds);
@@ -181,8 +248,12 @@ export function validateAllocation(players: ScramblePlayer[], capacities: number
     return errors;
 }
 export async function generateScramble(input: ScrambleInput, random: RandomInt = secureRandomInt): Promise<ScrambleResult> {
-    const started = Date.now(), result: ScrambleResult = { status: 'invalid-configuration', reason: '', teams: [], byes: [], retainedTopIds: [], demotedTopIds: [], repeatedPairs: [], historyCost: 0, strictImpossible: false, minimumRepeatsProven: false, balancingOptimal: false, historyOptimal: false, nodes: 0, elapsedMilliseconds: 0, warnings: [] };
-    const finish = (status: ScrambleStatus, reason: string) => { result.status = status; result.reason = reason; result.elapsedMilliseconds = Date.now() - started; return result; };
+    const started = Date.now(), result: ScrambleResult = { status: 'invalid-configuration', reason: '', teams: [], byes: [], retainedTopIds: [], demotedTopIds: [], repeatedPairs: [], historyCost: 0, strictImpossible: false, minimumRepeatsProven: false, balancingOptimal: false, historyOptimal: false, nodes: 0, elapsedMilliseconds: 0, warnings: [], issues: [] };
+    const finish = (status: ScrambleStatus, reason: string) => {
+        result.status = status; result.reason = reason; result.elapsedMilliseconds = Date.now() - started;
+        if (status !== 'success' && status !== 'cancelled') result.issues.push({ code: status, message: reason });
+        return result;
+    };
     try {
         if (!input || !Array.isArray(input.players) || input.players.length > 256 || !['random', 'balanced'].includes(input.mode))
             return finish('invalid-configuration', 'Select a valid roster of up to 256 players and a scramble mode.');
@@ -273,6 +344,31 @@ export async function generateScramble(input: ScrambleInput, random: RandomInt =
             pairLowerBound = Math.max(pairLowerBound, caps.length * q * (q - 1) / 2 + r * q);
         }
         const teams: ScramblePlayer[][] = caps.map(() => []), used = new Set<number>();
+        const totalMale = players.filter(p => p.isMale).length;
+        const genderCost = (all: ScramblePlayer[][]) => all.reduce((cost, team) => {
+            const male = team.filter(p => p.isMale).length;
+            return cost + male * male + (team.length - male) * (team.length - male);
+        }, 0);
+        let genderBound = Infinity;
+        let genderHints: Map<number, number> = null;
+        let maleRanges = caps.map(size => ({ min: 0, max: size }));
+        const setGenderBound = (bound: number) => {
+            genderBound = bound;
+            const ranges = new Map<number, { min: number; max: number }>();
+            maleRanges = caps.map((size, i) => {
+                if (!ranges.has(size)) {
+                    const other = caps.filter((_, t) => t !== i), slots = other.reduce((sum, n) => sum + n, 0);
+                    const allowed: number[] = [];
+                    for (let male = 0; male <= size; male++) {
+                        const remaining = totalMale - male;
+                        if (remaining >= 0 && remaining <= slots && male * male + (size - male) * (size - male) + minimumCost(other, remaining, true) <= bound)
+                            allowed.push(male);
+                    }
+                    ranges.set(size, { min: Math.min(...allowed), max: Math.max(...allowed) });
+                }
+                return ranges.get(size);
+            });
+        };
         let repeatCount = 0;
         const candidates = (player: ScramblePlayer, limit: number): {
             team: number;
@@ -292,6 +388,8 @@ export async function generateScramble(input: ScrambleInput, random: RandomInt =
                 if (repeatCount + extra > limit)
                     continue;
                 const male = team.filter(p => p.isMale).length, female = team.length - male, low = team.filter(p => lows.has(p.id)).length;
+                if (player.isMale ? male + 1 > maleRanges[t].max : female + 1 > caps[t] - maleRanges[t].min)
+                    continue;
                 choices.push({ team: t, extra, gender: balanced ? 2 * (player.isMale ? male : female) + 1 : 0, low: lows.has(player.id) ? 2 * low + 1 : 0, history });
             }
             return choices;
@@ -300,18 +398,26 @@ export async function generateScramble(input: ScrambleInput, random: RandomInt =
             if (!await checkpoint())
                 return false;
             result.nodes++;
+            if (genderBound !== Infinity && minimumGenderCompletion(caps, teams, totalMale) > genderBound)
+                return false;
             if (used.size === players.length)
                 return true;
             const remainingTop = players.filter(p => !used.has(p.id) && tops.has(p.id)).length;
             if (remainingTop > teams.filter((team, i) => team.length < caps[i] && !team.some(p => tops.has(p.id))).length)
                 return false;
             let best: ScramblePlayer = null, choices: any[] = null, ties = 0, bestDegree = -1, bestRole = -1;
+            const maleAvailable = caps.map(() => 0), femaleAvailable = caps.map(() => 0);
+            const genderOptions: { id: number; male: boolean; teams: number[] }[] = [];
             for (const p of players) {
                 if (used.has(p.id))
                     continue;
                 const allowed = candidates(p, limit);
                 if (!allowed.length)
                     return false;
+                if (genderBound !== Infinity) {
+                    allowed.forEach(choice => (p.isMale ? maleAvailable : femaleAvailable)[choice.team]++);
+                    genderOptions.push({ id: p.id, male: p.isMale, teams: allowed.map(choice => choice.team) });
+                }
                 const d = degree.get(p.id), role = tops.has(p.id) ? 2 : lows.has(p.id) ? 1 : 0;
                 if (!choices || allowed.length < choices.length || allowed.length === choices.length && (d > bestDegree || d === bestDegree && role > bestRole)) {
                     best = p;
@@ -325,7 +431,34 @@ export async function generateScramble(input: ScrambleInput, random: RandomInt =
                     choices = allowed;
                 }
             }
-            choices = shuffled(choices, random).sort((a, b) => a.extra - b.extra || a.gender - b.gender || a.low - b.low || a.history - b.history);
+            if (genderBound !== Infinity && teams.some((team, t) => {
+                const male = team.filter(p => p.isMale).length, female = team.length - male;
+                return maleAvailable[t] < maleRanges[t].min - male || femaleAvailable[t] < caps[t] - maleRanges[t].max - female;
+            })) return false;
+            // Necessary Hall check: distinct remaining players must cover each team's
+            // minimum missing genders. Counting candidates separately misses shared bottlenecks.
+            const canCoverGender = (male: boolean): boolean => {
+                const slots: number[] = [], owners = new Map<number, number>();
+                teams.forEach((team, t) => {
+                    const have = team.filter(p => p.isMale === male).length;
+                    const need = (male ? maleRanges[t].min : caps[t] - maleRanges[t].max) - have;
+                    for (let n = 0; n < need; n++) slots.push(t);
+                });
+                const options = genderOptions.filter(p => p.male === male);
+                const assign = (slot: number, visited: Set<number>): boolean => {
+                    for (const p of options) {
+                        if (visited.has(p.id) || p.teams.indexOf(slots[slot]) < 0) continue;
+                        visited.add(p.id);
+                        if (!owners.has(p.id) || assign(owners.get(p.id), visited)) { owners.set(p.id, slot); return true; }
+                    }
+                    return false;
+                };
+                return slots.every((_, slot) => assign(slot, new Set<number>()));
+            };
+            if (genderBound !== Infinity && (!canCoverGender(false) || !canCoverGender(true))) return false;
+            choices = shuffled(choices, random).sort((a, b) => a.extra - b.extra ||
+                (genderHints ? Number(genderHints.get(best.id) !== a.team) - Number(genderHints.get(best.id) !== b.team) : 0) ||
+                a.gender - b.gender || a.low - b.low || a.history - b.history);
             const empty = new Set<number>();
             for (const choice of choices) {
                 const team = teams[choice.team];
@@ -368,6 +501,33 @@ export async function generateScramble(input: ScrambleInput, random: RandomInt =
                 return finish(cancelled ? 'cancelled' : exhausted ? 'budget-exhausted' : 'impossible', exhausted ? 'Minimum-repeat search budget exhausted; no unproved fallback was returned.' : 'No valid arrangement found.');
         }
         result.minimumRepeatsProven = true;
+        // A history-valid first solution plus pairwise swaps can be trapped at a local
+        // gender minimum. Prove the best feasible gender cost before returning teams.
+        // Keep strict feasibility / minimum-repeat proof separate from gender targets:
+        // failing an ideal target is never proof that the history restrictions fail.
+        let bestGender = balanced ? genderCost(teams) : 0;
+        if (balanced && bestGender > minimumGender) {
+            const witness = teams.map(team => team.slice());
+            // Reuse the known history-valid assignment as a search hint, not a constraint.
+            // Repairing its small imbalance avoids rebuilding every valid teammate group.
+            genderHints = new Map<number, number>();
+            witness.forEach((team, t) => team.forEach(p => genderHints.set(p.id, t)));
+            teams.forEach(team => team.splice(0)); used.clear(); repeatCount = 0;
+            let improved = false;
+            // Every gender cost has the same parity for fixed capacities.
+            for (let target = minimumGender; target < bestGender; target += 2) {
+                setGenderBound(target);
+                if (await find(limit)) { bestGender = genderCost(teams); improved = true; break; }
+                if (cancelled || exhausted)
+                    return finish(cancelled ? 'cancelled' : 'budget-exhausted', cancelled ? 'Generation canceled.' : 'Search budget exhausted before determining the best feasible gender balance. No unbalanced scramble was returned.');
+            }
+            if (!improved) witness.forEach((team, i) => teams[i].push(...team));
+        }
+        const idealGenderImpossible = balanced && bestGender > minimumGender;
+        if (idealGenderImpossible)
+            result.warnings.push('Ideal gender balance is impossible under the selected team, Top Player and teammate restrictions. The best feasible gender balance was proved and used.');
+        if (idealGenderImpossible)
+            result.issues.push({ code: 'gender-balance-compromise', message: result.warnings[result.warnings.length - 1] });
         const metric = (all: ScramblePlayer[][]): number[] => { let gender = 0, low = 0, history = 0, repeats = 0; all.forEach(team => { const m = team.filter(p => p.isMale).length, l = team.filter(p => lows.has(p.id)).length; gender += balanced ? m * m + (team.length - m) * (team.length - m) : 0; low += l * l; for (let i = 0; i < team.length; i++)
             for (let j = i + 1; j < team.length; j++) {
                 const key = pairKey(team[i].id, team[j].id);
@@ -419,8 +579,10 @@ export async function generateScramble(input: ScrambleInput, random: RandomInt =
         }
         if (cancelled)
             return finish('cancelled', 'Generation canceled.');
-        result.teams = balanced ? pairByComposition(teams, random) : teams.map(team => team.slice());
+        result.teams = balanced ? pairByComposition(teams, random, result.retainedTopIds) : teams.map(team => team.slice());
         const errors = validateAllocation(input.players, caps, result.teams, result.retainedTopIds, prohibited, limit);
+        if (balanced && genderCost(result.teams) !== bestGender)
+            errors.push('The proved gender balance was not preserved.');
         if (errors.length) {
             result.teams = [];
             return finish('unexpected-error', 'Final validation failed: ' + errors.join(' '));
@@ -432,11 +594,16 @@ export async function generateScramble(input: ScrambleInput, random: RandomInt =
         result.historyCost = score[3];
         result.balancingOptimal = score[1] === 0 && score[2] === 0;
         result.historyOptimal = score[3] === 0;
-        if (!result.balancingOptimal)
-            result.warnings.push('A valid scramble was found; globally best gender/low balance was not proved within the improvement budget.');
+        if (result.repeatedPairs.length)
+            result.issues.push({ code: 'repeated-teammates', message: 'Strict scrambling was proven impossible. This arrangement uses the minimum ' + result.repeatedPairs.length + ' repeated teammate pairings.' });
+        if (score[2] !== 0)
+            result.warnings.push('The best feasible gender balance was preserved; globally best Low Player balance was not proved within the improvement budget.');
+        if (score[2] !== 0)
+            result.issues.push({ code: 'low-balance-unresolved', message: result.warnings[result.warnings.length - 1] });
         if (input.prioritizeHistory && !result.historyOptimal)
             result.warnings.push('League history preference was optimized within a bounded search; global minimum history cost is not proved.');
-        return finish('success', result.strictImpossible ? 'Strict scrambling was impossible. This arrangement contains ' + result.repeatedPairs.length + ' repeated teammate pairings.' : 'Scramble generated within the selected constraints.');
+        return finish('success', (result.strictImpossible ? 'Strict scrambling was impossible. This arrangement contains ' + result.repeatedPairs.length + ' repeated teammate pairings.' : 'Scramble generated within the selected constraints.') +
+            (idealGenderImpossible ? ' Ideal gender balance is impossible under these constraints; the best feasible balance was used.' : ''));
     }
     catch (_) {
         result.teams = [];

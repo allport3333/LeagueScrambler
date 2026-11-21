@@ -287,7 +287,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("[action]/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
-        public IActionResult AddPlayer([FromBody] Player player, string leagueName, [FromQuery] int leagueDivisionId = 0)
+        public IActionResult AddPlayer([FromBody] Player player, string leagueName, [FromQuery] int leagueDivisionId = 0, [FromQuery] bool existingOnly = false, [FromQuery] int expectedLeagueId = 0)
         {
             var context = new DataContext();
 
@@ -311,12 +311,40 @@ namespace Allport_s_League_Scrambler.Controllers
             if (!LeagueAccess.CanManage(User, context, existingLeague.ID))
                 return Forbid();
 
+            if (existingOnly && (player.Id <= 0 || leagueDivisionId < 0 || expectedLeagueId != existingLeague.ID))
+                return BadRequest("Select a valid existing player and division.");
+
             if (divisionIdToSave.HasValue && !context.LeagueDivision.Any(d =>
                 d.Id == divisionIdToSave.Value && d.LeagueID == existingLeague.ID))
             {
                 return BadRequest("The selected division does not belong to this league.");
             }
 
+            if (existingOnly)
+            {
+                // ID-based immediate addition never creates a profile or changes a
+                // membership another administrator may already have added.
+                var selected = context.Players.SingleOrDefault(p => p.Id == player.Id);
+                if (selected == null) return NotFound("This player is no longer available.");
+                using (var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                {
+                    var memberships = context.PlayersLeagues.Where(m => m.LeagueID == existingLeague.ID && m.PlayerID == selected.Id).ToDictionary(m => m.PlayerID);
+                    var alreadyMember = memberships.ContainsKey(selected.Id);
+                    var membership = EnsureExistingMembership(context, memberships, existingLeague.ID, selected.Id, leagueDivisionId);
+                    if (!alreadyMember)
+                    {
+                        context.SaveChanges();
+                    }
+                    var divisionName = context.LeagueDivision.Where(d => d.Id == membership.LeagueDivisionId && d.LeagueID == existingLeague.ID)
+                        .Select(d => string.IsNullOrEmpty(d.Name) ? d.Code : d.Name).FirstOrDefault();
+                    transaction.Commit();
+                    return Ok(new { player = selected, leagueId = existingLeague.ID,
+                        leagueDivisionId = membership.LeagueDivisionId ?? 0, leagueDivisionName = divisionName, alreadyMember });
+                }
+            }
+
+            using (var membershipTransaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
+            {
             var playerExists = context.Players
                 .Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName)
                 .FirstOrDefault();
@@ -342,6 +370,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     }
 
                     context.SaveChanges();
+                    membershipTransaction.Commit();
                     return Ok(playerExists);
                 }
                 else
@@ -356,7 +385,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
                     context.PlayersLeagues.Add(addNewLink);
                     context.SaveChanges();
-
+                    membershipTransaction.Commit();
                     return Ok(playerExists);
                 }
             }
@@ -392,15 +421,148 @@ namespace Allport_s_League_Scrambler.Controllers
 
             context.PlayersLeagues.Add(addedPlayersLeagues);
             context.SaveChanges();
-
+            membershipTransaction.Commit();
             return Ok(addedPlayer);
+            }
+        }
+
+        [HttpGet("AvailableLeaguePlayers/{leagueId:int}")]
+        [Authorize(Policy = "LeagueManagement")]
+        public IActionResult AvailableLeaguePlayers(int leagueId, [FromQuery] int? memberPlayerId = null, [FromQuery] bool includeMembers = false, [FromQuery] bool membersOnly = false)
+        {
+            using (var context = new DataContext())
+            {
+                if (!context.Leagues.Any(l => l.ID == leagueId)) return NotFound();
+                if (!LeagueAccess.CanManage(User, context, leagueId)) return Forbid();
+                if (memberPlayerId.HasValue)
+                {
+                    var membership = context.PlayersLeagues.SingleOrDefault(m => m.LeagueID == leagueId && m.PlayerID == memberPlayerId.Value);
+                    if (membership == null) return NotFound();
+                    var player = context.Players.AsNoTracking().Single(p => p.Id == membership.PlayerID);
+                    var divisionName = context.LeagueDivision.Where(d => d.Id == membership.LeagueDivisionId && d.LeagueID == leagueId).Select(d => string.IsNullOrEmpty(d.Name) ? d.Code : d.Name).FirstOrDefault();
+                    var teams = (from link in context.LeagueTeamPlayer.AsNoTracking() join team in context.LeagueTeam.AsNoTracking() on link.LeagueTeamId equals team.Id
+                        where link.PlayerId == memberPlayerId.Value && team.LeagueID == leagueId select new { team.Id, team.TeamName, team.Division }).Distinct().ToList();
+                    return Ok(new { player, leagueId, membershipId = membership.Id, leagueDivisionId = membership.LeagueDivisionId ?? 0, leagueDivisionName = divisionName, teams, canEditProfile = User.IsInRole("Admin"), alreadyMember = true });
+                }
+                var players = context.Players.AsNoTracking()
+                    .Where(p => membersOnly ? context.PlayersLeagues.Any(m => m.LeagueID == leagueId && m.PlayerID == p.Id) : includeMembers || !context.PlayersLeagues.Any(m => m.LeagueID == leagueId && m.PlayerID == p.Id))
+                    .OrderBy(p => p.FirstName).ThenBy(p => p.LastName).ThenBy(p => p.Id)
+                    .Select(p => new { p.Id, p.FirstName, p.LastName, p.IsMale }).ToList();
+                var divisions = context.LeagueDivision.AsNoTracking().Where(d => d.LeagueID == leagueId)
+                    .OrderBy(d => d.SortOrder).ThenBy(d => d.Name)
+                    .Select(d => new { d.Id, d.Code, d.Name }).ToList();
+                if (includeMembers)
+                    return Ok(new { players, divisions, members = context.PlayersLeagues.AsNoTracking().Where(m => m.LeagueID == leagueId)
+                        .Select(m => new { playerId = m.PlayerID, divisionId = m.LeagueDivisionId ?? 0 }).ToList() });
+                return Ok(new { players, divisions });
+            }
+        }
+
+        [HttpPut("LeaguePlayer/{leagueId:int}/{playerId:int}")]
+        [HttpPut("LeaguePlayerDivision/{leagueId:int}/{playerId:int}")]
+        [SameOrigin]
+        [Authorize(Policy = "LeagueManagement")]
+        public IActionResult UpdateLeaguePlayerDivision(int leagueId, int playerId, [FromBody] LeaguePlayerDivisionRequest request)
+        {
+            using (var context = new DataContext())
+            {
+                if (!LeagueAccess.CanManage(User, context, leagueId)) return Forbid();
+                if (playerId <= 0 || request == null || request.DivisionId < 0 || !request.ExpectedDivisionId.HasValue || request.ExpectedDivisionId < 0)
+                    return BadRequest("Choose a valid player and division.");
+                using (var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                {
+                    var membership = context.PlayersLeagues.SingleOrDefault(m => m.LeagueID == leagueId && m.PlayerID == playerId);
+                    if (membership == null) return NotFound("This player is no longer in the selected league.");
+                    var player = context.Players.Single(p => p.Id == playerId);
+                    bool profileChanged = false;
+                    if (request.FirstName != null || request.LastName != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName) ||
+                            request.FirstName.Length > 100 || request.LastName.Length > 100 ||
+                            System.Text.RegularExpressions.Regex.IsMatch(request.FirstName + request.LastName, @"[\x00-\x1F\x7F]"))
+                            return BadRequest("Enter valid first and last names of up to 100 characters.");
+                        var first = System.Text.RegularExpressions.Regex.Replace(request.FirstName.Trim(), @"\s+", " ");
+                        var last = System.Text.RegularExpressions.Regex.Replace(request.LastName.Trim(), @"\s+", " ");
+                        profileChanged = first != player.FirstName || last != player.LastName;
+                        // League managers and password-only administration do not grant
+                        // authority to rename a global profile shared by other leagues.
+                        if (profileChanged && !User.IsInRole("Admin")) return Forbid();
+                        if (profileChanged && (request.ExpectedFirstName != player.FirstName || request.ExpectedLastName != player.LastName))
+                            return Conflict(new { message = "This player's name changed. Reopen Edit to review the current profile." });
+                        if (profileChanged && context.Players.Any(p => p.Id != playerId && p.FirstName == first && p.LastName == last))
+                            return Conflict(new { message = "Another player already uses this name. Review the existing profiles before changing it." });
+                        // Both profile and division validation complete before a single commit.
+                        if (profileChanged) { player.FirstName = first; player.LastName = last; }
+                    }
+                    if ((membership.LeagueDivisionId ?? 0) != request.ExpectedDivisionId.Value)
+                        return Conflict(new { message = "This membership changed. Reopen Edit to review its current division." });
+                    var division = request.DivisionId > 0 ? context.LeagueDivision.SingleOrDefault(d => d.Id == request.DivisionId && d.LeagueID == leagueId) : null;
+                    if (request.DivisionId > 0 && division == null) return BadRequest("The division does not belong to this league.");
+                    // Team divisions and team-player assignments have independent records.
+                    // Changing the player's current division never rewrites either or history.
+                    membership.LeagueDivisionId = request.DivisionId > 0 ? (int?)request.DivisionId : null;
+                    context.SaveChanges(); transaction.Commit();
+                    return Ok(new { leagueId, membershipId = membership.Id, player, profileChanged,
+                        leagueDivisionId = membership.LeagueDivisionId ?? 0, leagueDivisionName = division == null ? "" : string.IsNullOrEmpty(division.Name) ? division.Code : division.Name });
+                }
+            }
+        }
+
+        // Shared create-only rule for the browser and file import. The caller owns
+        // the transaction; existing memberships and their assignments are untouched.
+        private static PlayersLeague EnsureExistingMembership(DataContext context, IDictionary<int, PlayersLeague> memberships,
+            int leagueId, int playerId, int divisionId)
+        {
+            if (memberships.TryGetValue(playerId, out var existing)) return existing;
+            var member = new PlayersLeague { LeagueID = leagueId, PlayerID = playerId,
+                LeagueDivisionId = divisionId > 0 ? (int?)divisionId : null, IsSub = null };
+            context.PlayersLeagues.Add(member); memberships.Add(playerId, member); return member;
+        }
+
+        [HttpPost("ImportLeaguePlayers/{leagueId:int}")]
+        [RequestSizeLimit(131072)]
+        [SameOrigin]
+        [Authorize(Policy = "LeagueManagement")]
+        public IActionResult ImportLeaguePlayers(int leagueId, [FromBody] LeaguePlayerImportRequest request)
+        {
+            using (var context = new DataContext())
+            {
+                if (!context.Leagues.Any(l => l.ID == leagueId)) return NotFound();
+                if (!LeagueAccess.CanManage(User, context, leagueId)) return Forbid();
+                if (request?.Players == null || request.Players.Count == 0 || request.Players.Count > 1000 ||
+                    request.Players.Any(p => p == null || p.PlayerId <= 0 || p.DivisionId < 0) ||
+                    request.Players.Select(p => p.PlayerId).Distinct().Count() != request.Players.Count)
+                    return BadRequest("Choose between 1 and 1000 distinct existing players with valid divisions.");
+                var ids = request.Players.Select(p => p.PlayerId).ToList();
+                var divisionIds = request.Players.Where(p => p.DivisionId > 0).Select(p => p.DivisionId).Distinct().ToList();
+                using (var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                {
+                    var players = context.Players.Where(p => ids.Contains(p.Id)).ToDictionary(p => p.Id);
+                    if (players.Count != ids.Count) return BadRequest("A selected player no longer exists. Reload the preview before importing.");
+                    var divisions = context.LeagueDivision.Where(d => d.LeagueID == leagueId).ToDictionary(d => d.Id);
+                    if (divisionIds.Any(id => !divisions.ContainsKey(id))) return BadRequest("A selected division does not belong to this league. Reload the preview before importing.");
+                    var memberships = context.PlayersLeagues.Where(m => m.LeagueID == leagueId && ids.Contains(m.PlayerID)).ToDictionary(m => m.PlayerID);
+                    var existingIds = new HashSet<int>(memberships.Keys);
+                    foreach (var entry in request.Players) EnsureExistingMembership(context, memberships, leagueId, entry.PlayerId, entry.DivisionId);
+                    context.SaveChanges();
+                    var results = request.Players.Select(entry => {
+                        var membership = memberships[entry.PlayerId];
+                        return new { player = players[entry.PlayerId], leagueId, leagueDivisionId = membership.LeagueDivisionId ?? 0,
+                            leagueDivisionName = membership.LeagueDivisionId.HasValue && divisions.ContainsKey(membership.LeagueDivisionId.Value) ?
+                                (divisions[membership.LeagueDivisionId.Value].Name ?? divisions[membership.LeagueDivisionId.Value].Code) : null,
+                            alreadyMember = existingIds.Contains(entry.PlayerId) };
+                    }).ToList();
+                    transaction.Commit();
+                    return Ok(new { leagueId, atomic = true, results });
+                }
+            }
         }
 
 
         [HttpPost("[action]")]
         [SameOrigin]
         [Authorize]
-        public IActionResult AddPlayerWithoutLeague([FromBody] Player player)
+        public IActionResult AddPlayerWithoutLeague([FromBody] Player player, [FromQuery] int? importLeagueId = null)
         {
             // Registration uses this endpoint before the new player has a league.
             // It is never available anonymously, and existing player accounts
@@ -417,6 +579,25 @@ namespace Allport_s_League_Scrambler.Controllers
             }
 
             var context = new DataContext();
+            if (importLeagueId.HasValue)
+            {
+                if (!LeagueAccess.CanManage(User, context, importLeagueId.Value)) return Forbid();
+                if (!context.Leagues.Any(l => l.ID == importLeagueId.Value)) return NotFound();
+                if (player.FirstName.Length > 100 || player.LastName.Length > 100 ||
+                    (player.Gender != "Male" && player.Gender != "Female")) return BadRequest("Enter valid names and choose a gender.");
+                Func<string, string> normalize = name => System.Text.RegularExpressions.Regex.Replace(name.Normalize(System.Text.NormalizationForm.FormKC).Trim(), @"\s+", " ");
+                player.FirstName = normalize(player.FirstName); player.LastName = normalize(player.LastName);
+                using (var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                {
+                    var name = normalize(player.FirstName + " " + player.LastName);
+                    var existing = context.Players.AsEnumerable().Where(p => string.Equals(normalize(p.FirstName + " " + p.LastName), name, StringComparison.OrdinalIgnoreCase)).ToList();
+                    if (existing.Count > 1) return Conflict(new { message = "Several players already have this name. Choose the correct existing player." });
+                    if (existing.Count == 1) { transaction.Commit(); return Ok(existing[0]); }
+                    // Same profile creation model as registration; no membership is created.
+                    var created = new Player { FirstName = player.FirstName, LastName = player.LastName, Gender = player.Gender, IsMale = player.Gender == "Male", IsSub = null };
+                    context.Players.Add(created); context.SaveChanges(); transaction.Commit(); return Ok(created);
+                }
+            }
             bool isManager = User.IsInRole("Admin") || User.IsInRole("Manager");
             if (!isManager && context.UsersPlayer.Any(up => up.UserId == currentUserId))
             {
@@ -1883,6 +2064,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("[action]/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
+        [SameOrigin]
         public IActionResult DeletePlayer([FromBody] Player player, string leagueName)
         {
             var context = new DataContext();
@@ -1894,8 +2076,10 @@ namespace Allport_s_League_Scrambler.Controllers
             if (player == null)
                 return BadRequest("Player is required.");
 
-            var playerExists = context.Players.FirstOrDefault(x =>
-                x.FirstName == player.FirstName && x.LastName == player.LastName);
+            var candidates = player.Id > 0 ? context.Players.Where(x => x.Id == player.Id).ToList() :
+                context.Players.Where(x => x.FirstName == player.FirstName && x.LastName == player.LastName).ToList();
+            if (candidates.Count > 1) return BadRequest("Select the player by ID; this name is ambiguous.");
+            var playerExists = candidates.SingleOrDefault();
             if (playerExists == null)
                 return NotFound("Player not found.");
 

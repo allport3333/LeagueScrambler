@@ -1,5 +1,18 @@
 /* You can add global styles to this file, and also import other style files */
 
+.existing-player-browser-panel { height: 94vh !important; height: 94dvh !important; max-height: 96vh !important; max-height: 96dvh !important; }
+.player-import-panel { height: 94vh !important; height: 94dvh !important; max-height: 96vh !important; max-height: 96dvh !important; }
+.player-import-panel .mat-dialog-container { padding: 16px; height: 100%; overflow: visible; box-sizing: border-box; }
+@media (max-width: 600px) {
+  .player-import-panel { width: 100vw !important; max-width: 100vw !important; height: 100vh !important; height: 100dvh !important; max-height: 100vh !important; max-height: 100dvh !important; }
+  .player-import-panel .mat-dialog-container { padding: 10px 8px; border-radius: 0; }
+}
+.existing-player-browser-panel .mat-dialog-container { padding: 16px; height: 100%; overflow: visible; box-sizing: border-box; }
+@media (max-width: 600px) {
+  .existing-player-browser-panel { width: 100vw !important; max-width: 100vw !important; height: 100vh !important; height: 100dvh !important; max-height: 100vh !important; max-height: 100dvh !important; }
+  .existing-player-browser-panel .mat-dialog-container { padding: 10px 8px; border-radius: 0; }
+}
+
 html, body {
     height: 100%;
 }

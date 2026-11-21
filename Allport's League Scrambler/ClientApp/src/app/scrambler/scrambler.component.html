@@ -269,16 +269,17 @@
                                             }">
                         Scramble Players
                     </button><p class="workspace-help" *ngIf="!selectedList.length">Select players before scrambling.</p><p class="workspace-help" *ngIf="locked">Results are locked. Uncheck Lock Results before rescrambling.</p></div>
-<p class="generation-feedback" role="status" aria-live="polite" *ngIf="generationFeedback">{{ generationFeedback }}</p>
+<p class="generation-feedback" role="status" aria-live="polite" *ngIf="generationFeedback && !generationReport">{{ generationFeedback }}</p>
+<details class="generation-report" *ngIf="generationReport as report" open aria-live="polite"><summary>Generated arrangement report<span *ngIf="report.repeatedPairs.length">: {{ report.repeatedPairs.length }} repeated teammate pairings</span></summary>
+ <p *ngIf="report.status !== 'success'">No new scramble was generated. {{ report.reason }}</p>
+ <ng-container *ngIf="report.status === 'success'"><p>A scramble was generated with the following limitations:</p><ul><li *ngFor="let issue of report.issues">{{ issue.message }}</li></ul></ng-container>
+ <ul *ngIf="report.repeatedPairs.length"><li *ngFor="let pair of report.repeatedPairs">{{ generationPlayerName(pair[0]) }} and {{ generationPlayerName(pair[1]) }}</li></ul>
+ <p *ngIf="report.demotedTopIds.length">{{ report.demotedTopIds.length }} excess Top Players remain included as regular players for this scramble.</p>
+ <p *ngIf="report.status === 'success' && prioritizePreviousTeammates">League history pair cost: {{ report.historyCost }}.</p>
+</details>
 <div class="scrambler-results-shell" [hidden]="workspaceSection !== 'scrambler' || !listOfTeams.length">
 <section class="scramble-results-toolbar compact-results" #saveTeamsDiv tabindex="-1">
  <div class="results-heading"><h2>Scramble Results</h2><button mat-button (click)="resultsCollapsed=!resultsCollapsed" [attr.aria-expanded]="!resultsCollapsed">{{ resultsCollapsed ? 'Show Results' : 'Hide Results' }}</button></div>
- <details class="generation-report" *ngIf="generationResult" [open]="generationResult.repeatedPairs.length > 0"><summary>Generated arrangement report<span *ngIf="generationResult.repeatedPairs.length">: {{ generationResult.repeatedPairs.length }} repeated teammate pairings</span></summary>
- <p *ngIf="generationResult.strictImpossible">Strict scrambling was proven impossible. This arrangement uses the minimum {{ generationResult.repeatedPairs.length }} repeated teammate pairings.</p>
- <ul *ngIf="generationResult.repeatedPairs.length"><li *ngFor="let pair of generationResult.repeatedPairs">{{ generationPlayerName(pair[0]) }} and {{ generationPlayerName(pair[1]) }}</li></ul>
- <p *ngIf="generationResult.demotedTopIds.length">{{ generationResult.demotedTopIds.length }} excess Top Players remain included as regular players for this scramble.</p>
- <p *ngIf="prioritizePreviousTeammates">League history pair cost: {{ generationResult.historyCost }}.</p>
- <p *ngFor="let warning of generationResult.warnings">{{ warning }}</p></details>
  <div [hidden]="resultsCollapsed"><p *ngIf="scrambleNotice" class="scramble-inline-notice" role="status">New scramble generated</p><p class="results-summary"><strong *ngIf="scrambleNumber && !scrambleSelected">Scramble {{ scrambleNumber }}</strong><strong *ngIf="scrambleSelected">Scramble{{ listOfRetrievedScrambleNumbers.length>1 ? 's' : '' }} {{ listOfRetrievedScrambleNumbers.join(', ') }}</strong><span>{{ listOfTeams.length }} teams &middot; {{ matchupCount }} matchups</span></p>
  <div class="compact-results-actions"><button mat-raised-button color="primary" (click)="openMatchups()">View Matchups</button><button mat-stroked-button color="primary" (click)="openMatchups(true)" [disabled]="!isActionAllowed || teamSaveBusy">Modify Teams</button><button mat-raised-button color="primary" (click)="saveKingQueenTeams()" [disabled]="!canSaveMatchupTeams || (isScrambleSaved && !teamEditsPending)">{{ teamSaveBusy ? 'Saving...' : 'Save Scramble' }}</button><button mat-raised-button class="results-print-button" (click)="printMatchups()" [disabled]="!canPrintMatchups" [attr.aria-describedby]="!canPrintMatchups ? 'scramble-print-save-help' : null">Print Matchups</button></div>
  <details class="compact-print-settings"><summary>Print Settings</summary><div class="results-print-controls"><mat-form-field appearance="outline"><mat-label>Matchups Per Page</mat-label><mat-select [(value)]="selectedMatchupsPerPage" (selectionChange)="onSelectionChange($event)"><mat-option value="2">2 Matchups</mat-option><mat-option value="4">4 Matchups</mat-option><mat-option value="6">6 Matchups</mat-option></mat-select></mat-form-field><mat-form-field appearance="outline"><mat-label>Number of Rounds</mat-label><mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)"><mat-option *ngFor="let round of [1,2,3,4,5,6,7,8,9,10]" [value]="round">{{ round }} Rounds</mat-option></mat-select></mat-form-field></div></details>
@@ -766,98 +767,26 @@
         </div>
     </div>
 </div>
-<p class="scramble-empty-state" *ngIf="workspaceSection === 'scrambler' && !listOfTeams.length">No scramble has been generated yet. Select players and configure teams above. <button mat-button *ngIf="hideEverything" (click)="hideShowEverything()">Show Setup</button> <button mat-button *ngIf="hidePlayers" (click)="hidePlayerList()">Show Player List</button></p><section class="league-management-page consolidated-management" [hidden]="workspaceSection !== 'league-management'"><mat-card class="management-workspace"><h1>Player and League Management</h1><mat-tab-group class="management-tabs" mat-align-tabs="center"><mat-tab label="Manage Players"><div class="management-players-section"><mat-card class="management-form-card management-roster-card">
- <h2>Current League Players</h2><p class="management-context">{{ selectedLeague || 'Select a league to manage its players.' }}</p>
- <mat-form-field appearance="outline" class="roster-search"><mat-label>Search current league players</mat-label><input matInput [(ngModel)]="managementRosterSearch" (ngModelChange)="showAllManagementPlayers = false" placeholder="Player name" /></mat-form-field>
- <div class="roster-visibility"><button mat-stroked-button type="button" (click)="toggleManagementRoster()" [disabled]="managementRosterLoading || !!managementRosterError || !managementRoster.length" [attr.aria-expanded]="showAllManagementPlayers">{{ showAllManagementPlayers ? 'Hide All Players' : 'Show All Players' }}</button></div>
- <p *ngIf="managementRosterLoading" role="status">Loading league players...</p>
- <div *ngIf="managementRosterError" role="alert"><p>{{ managementRosterError }}</p><button mat-stroked-button (click)="refreshManagementRoster()">Retry roster</button></div>
- <p *ngIf="!managementRosterLoading && !managementRosterError && !managementRoster.length">No players belong to this league yet.</p>
- <p class="management-context" *ngIf="!managementRosterLoading && !managementRosterError && managementRoster.length && !managementRosterSearch.trim() && !showAllManagementPlayers">Search for a player, or select Show All Players.</p>
- <p *ngIf="!managementRosterLoading && !managementRosterError && managementRoster.length && managementRosterSearch.trim() && !filteredManagementRoster.length">No players match your search.</p>
- <ul class="management-roster" *ngIf="!managementRosterLoading && !managementRosterError && (showAllManagementPlayers || managementRosterSearch.trim())">
-  <li *ngFor="let player of filteredManagementRoster; trackBy: trackManagementPlayer">
-   <div class="roster-player-name"><strong>{{ player.firstName }} {{ player.lastName }}</strong><span *ngIf="player.managementDivision">{{ player.managementDivision }}</span></div>
-   <button mat-stroked-button color="warn" type="button" [disabled]="!isActionAllowed || managementRemovalPending" (click)="confirmRemoveFromLeague(player, removeMembershipDialog)">Remove from League</button>
-  </li>
- </ul>
-</mat-card>
-                                    <mat-card class="management-form-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                                        <div class="tab-content d-flex flex-column align-items-center" style="margin-bottom:20px">
-                                            <h5 class="mb-2">Add Existing Player</h5>
-                                            <mat-form-field appearance="fill">
-                                                <mat-label>Search Player</mat-label>
-                                                <input matInput
-                                                       [matAutocomplete]="auto"
-                                                       [(ngModel)]="searchTerm"
-                                                       (input)="onSearchPlayer($event)"
-                                                       (blur)="onBlurPlayerInput()" />
-                                                <mat-autocomplete #auto="matAutocomplete"
-                                                                  (optionSelected)="onPlayerSelected($event.option.value)"
-                                                                  [displayWith]="displayPlayer">
-                                                    <mat-option *ngFor="let player of searchedPlayers"
-                                                                [value]="player">
-                                                        {{ player.firstName }} {{ player.lastName }}
-                                                    </mat-option>
-                                                </mat-autocomplete>
-                                            </mat-form-field>
-
-
-                                            <!-- Loading text -->
-                                            <div *ngIf="divisionsLoading" style="margin-top: 6px; font-size: 12px; color: gray;">
-                                                Loading divisions...
-                                            </div>
-
-                                            <!-- Only show the division picker if we are NOT loading AND we have at least 1 division -->
-                                            <div class="existing-player-division" *ngIf="!divisionsLoading && leagueDivisionsForSelectedLeague && leagueDivisionsForSelectedLeague.length > 0">
-                                                <mat-form-field appearance="outline" style="width: 220px;">
-                                                    <mat-label>Division</mat-label>
-                                                    <mat-select [(ngModel)]="selectedLeagueDivisionIdForAddPlayer" name="divisionSelect">
-                                                        <mat-option [value]="0">No Division</mat-option>
-                                                        <mat-option *ngFor="let div of leagueDivisionsForSelectedLeague" [value]="div.id">
-                                                            {{ div.name }}
-                                                        </mat-option>
-                                                    </mat-select>
-                                                </mat-form-field>
-                                            </div>
-
-                                            <!-- Optional: if we have loaded at least once and there are still no divisions, show nothing (or a message) -->
-                                            <div *ngIf="!divisionsLoading && divisionsLoadedOnce && (!leagueDivisionsForSelectedLeague || leagueDivisionsForSelectedLeague.length === 0)"
-                                                 style="margin-top: 6px; font-size: 12px; color: gray;">
-                                                No divisions for this league.
-                                            </div>
-
-                                            <button mat-raised-button
-                                                    style="margin-bottom:20px"
-                                                    color="primary"
-                                                    (click)="addExistingPlayer()"
-                                                    [disabled]="!isActionAllowed">
-                                                Add Existing Player
-                                            </button>
-                                            <mat-form-field style="max-width: 300px" appearance="outline" *ngIf="!isActionAllowed">
-                                                <mat-label>Enter Password</mat-label>
-                                                <input matInput
-                                                       type="password"
-                                                       (input)="onPasswordInput($event.target.value)"
-                                                       placeholder="Password">
-                                            </mat-form-field>
-                                                     <button mat-raised-button color="primary" type="button"
-                                                             *ngIf="!isActionAllowed"
-                                                             (click)="unlockAdminPassword()">
-                                                         Unlock Administration
-                                                     </button>
-                                        </div>
-                                        <div class="tab-content d-flex flex-column align-items-center" style="margin-bottom:20px">
-                                            <button mat-raised-button
-                                                    color="primary"
-                                                    (click)="toggleNewPlayerForm()" [attr.aria-expanded]="showNewPlayerForm"
-                                                    [class.active]="showNewPlayerForm">
-                                                Create New Player
-                                            </button>
-
-                                            <!-- Form to Add New Player -->
-                                            <div *ngIf="showNewPlayerForm" class="mt-3">
-                                                <form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()" class="d-flex flex-column align-items-center">
+<p class="scramble-empty-state" *ngIf="workspaceSection === 'scrambler' && !listOfTeams.length">No scramble has been generated yet. Select players and configure teams above. <button mat-button *ngIf="hideEverything" (click)="hideShowEverything()">Show Setup</button> <button mat-button *ngIf="hidePlayers" (click)="hidePlayerList()">Show Player List</button></p><section class="league-management-page consolidated-management" [hidden]="workspaceSection !== 'league-management'"><mat-card class="management-workspace"><h1>Player and League Management</h1><mat-tab-group class="management-tabs" mat-align-tabs="center"><mat-tab label="Edit / Remove Players"><div class="management-players-section">
+ <mat-card class="management-form-card management-roster-card">
+  <h2>Current League Players</h2><p class="management-context">{{ selectedLeague || 'Select a league to manage its players.' }}</p>
+  <div class="management-roster-tools"><mat-form-field appearance="outline" class="roster-search"><mat-label>Search current league players</mat-label><input matInput [(ngModel)]="managementRosterSearch" (ngModelChange)="showAllManagementPlayers=false" placeholder="Player name"></mat-form-field><button mat-stroked-button type="button" (click)="toggleManagementRoster()" [disabled]="managementRosterLoading || !!managementRosterError || !managementRoster.length" [attr.aria-expanded]="showAllManagementPlayers">{{ showAllManagementPlayers ? 'Hide All Players' : 'Show All Players' }}</button><mat-form-field appearance="outline" class="roster-division-filter"><mat-label>Filter division</mat-label><mat-select [(ngModel)]="managementRosterDivision" (selectionChange)="showAllManagementPlayers=true"><mat-option value="all">All divisions</mat-option><mat-option value="0">No Division</mat-option><mat-option *ngFor="let d of leagueDivisionsForSelectedLeague" [value]="''+d.id">{{d.name || d.code}}</mat-option></mat-select></mat-form-field></div>
+  <p *ngIf="managementRosterLoading" role="status">Loading league players...</p><div *ngIf="managementRosterError" role="alert"><p>{{ managementRosterError }}</p><button mat-stroked-button (click)="refreshManagementRoster()">Retry roster</button></div>
+  <p *ngIf="!managementRosterLoading && !managementRosterError && !managementRoster.length">No players belong to this league yet.</p>
+  <p class="management-context" *ngIf="!managementRosterLoading && !managementRosterError && managementRoster.length && !managementRosterSearch.trim() && !showAllManagementPlayers">Search for a player, or select Show All Players.</p>
+  <p *ngIf="!managementRosterLoading && !managementRosterError && managementRoster.length && managementRosterSearch.trim() && !filteredManagementRoster.length">No players match your search.</p>
+  <table class="management-roster-table" *ngIf="!managementRosterLoading && !managementRosterError && (showAllManagementPlayers || managementRosterSearch.trim())"><thead><tr><th scope="col">Player Name</th><th scope="col">Division</th><th scope="col">Actions</th></tr></thead><tbody><tr *ngFor="let player of filteredManagementRoster; trackBy: trackManagementPlayer" [attr.data-roster-player]="player.id"><td data-label="Player Name">{{player.firstName}} {{player.lastName}}</td><td data-label="Division">{{player.managementDivision || 'No Division'}}</td><td data-label="Actions"><button mat-stroked-button color="primary" type="button" (click)="editLeaguePlayer(player)" [disabled]="!isActionAllowed || managementRemovalPending">Edit</button></td></tr></tbody></table>
+ </mat-card>
+</div></mat-tab><mat-tab label="Add Players"><div class="management-players-section">
+ <mat-card class="management-form-card management-add-card"><h2>Add Players</h2>
+  <div class="management-add-actions"><section><mat-icon aria-hidden="true">people</mat-icon><h3>Browse existing players</h3><p>Find players and add them with one click.</p><button mat-raised-button color="primary" type="button" (click)="openExistingPlayerBrowser()" [disabled]="!isActionAllowed || !leagueId || managementRosterLoading || !!managementRosterError">Browse Existing Players</button></section><section><mat-icon aria-hidden="true">file_upload</mat-icon><h3>Import a roster</h3><p>Review names and divisions before adding players.</p><button mat-raised-button color="primary" type="button" (click)="openPlayerImport()" [disabled]="!isActionAllowed || !leagueId || managementRosterLoading || !!managementRosterError">Import Players From File</button></section></div>
+  <section class="management-quick-add"><h3>Quick Add Existing Player</h3><div class="quick-add-row">
+   <mat-form-field appearance="outline"><mat-label>Search Player</mat-label><input matInput [matAutocomplete]="auto" [(ngModel)]="searchTerm" (input)="onSearchPlayer($event)" (blur)="onBlurPlayerInput()"><mat-autocomplete #auto="matAutocomplete" (optionSelected)="onPlayerSelected($event.option.value)" [displayWith]="displayPlayer"><mat-option *ngFor="let player of searchedPlayers" [value]="player">{{ player.firstName }} {{ player.lastName }}</mat-option></mat-autocomplete></mat-form-field>
+   <div class="existing-player-division" *ngIf="!divisionsLoading && leagueDivisionsForSelectedLeague.length"><mat-form-field appearance="outline"><mat-label>Division</mat-label><mat-select [(ngModel)]="selectedLeagueDivisionIdForAddPlayer" name="divisionSelect"><mat-option [value]="0">No Division</mat-option><mat-option *ngFor="let div of leagueDivisionsForSelectedLeague" [value]="div.id">{{ div.name }}</mat-option></mat-select></mat-form-field></div>
+   <button mat-raised-button color="primary" type="button" (click)="addExistingPlayer()" [disabled]="!isActionAllowed">Add Existing Player</button>
+  </div><p *ngIf="divisionsLoading">Loading divisions...</p><p class="management-context" *ngIf="!divisionsLoading && divisionsLoadedOnce && !leagueDivisionsForSelectedLeague.length">No divisions for this league.</p>
+  <div *ngIf="!isActionAllowed"><mat-form-field appearance="outline"><mat-label>Enter Password</mat-label><input matInput type="password" (input)="onPasswordInput($event.target.value)" placeholder="Password"></mat-form-field><button mat-raised-button color="primary" type="button" (click)="unlockAdminPassword()">Unlock Administration</button></div></section>
+  <section class="create-player-section"><button mat-stroked-button color="primary" type="button" (click)="toggleNewPlayerForm()" [attr.aria-expanded]="showNewPlayerForm">Create New Player</button><div *ngIf="showNewPlayerForm" class="new-player-form"><form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()" class="d-flex flex-column align-items-center">
                                                     <div class="row">
                                                         <div class="col-12 col-lg-6">
                                                             <mat-form-field style="max-width: 180px" appearance="outline">
@@ -897,11 +826,10 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </mat-card>
-                                </div></mat-tab><mat-tab label="League Settings">
+                                                </form></div></section>
+ </mat-card>
+</div></mat-tab>
+<mat-tab label="League Settings">
                                     <div class="container-fluid">
                                         <mat-card class="management-form-card management-settings-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                             <div style="margin: 20px;" class="tab-content d-flex flex-column align-items-center management-settings-grid">

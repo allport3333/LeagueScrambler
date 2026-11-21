@@ -14,13 +14,46 @@ import { PlayerScoresResponse, PlayerScoreGroup, RoundScore } from '../data-mode
 import { PlayerSignIn } from '../data-models/playerSignIn.model';
 import { PlayerSignInResult } from '../data-models/playerSignInResult.model';
 import { Team } from '../data-models/teams.model';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, finalize, shareReplay, timeout } from 'rxjs/operators';
 
 @Injectable({
     providedIn: 'root'
 })
 export class PlayerService {
     players: Player[];
+    private existingMembershipRequests = new Map<string, Observable<any>>();
+
+    availableLeaguePlayers(leagueId: number): Observable<any> {
+        return this.httpClient.get<any>(this.baseUrl + 'api/ScrambleData/AvailableLeaguePlayers/' + leagueId);
+    }
+    leagueImportContext(leagueId: number): Observable<any> {
+        return this.httpClient.get<any>(this.baseUrl + 'api/ScrambleData/AvailableLeaguePlayers/' + leagueId + '?includeMembers=true');
+    }
+    leagueRosterContext(leagueId: number): Observable<any> {
+        return this.httpClient.get<any>(this.baseUrl + 'api/ScrambleData/AvailableLeaguePlayers/' + leagueId + '?includeMembers=true&membersOnly=true');
+    }
+    updateLeaguePlayerDivision(leagueId:number, playerId:number, divisionId:number, expectedDivisionId:number):Observable<any> {
+        return this.httpClient.put<any>(this.baseUrl+'api/ScrambleData/LeaguePlayerDivision/'+leagueId+'/'+playerId,{divisionId,expectedDivisionId}).pipe(timeout(20000));
+    }
+    updateLeaguePlayer(leagueId:number,playerId:number,changes:any):Observable<any>{
+        return this.httpClient.put<any>(this.baseUrl+'api/ScrambleData/LeaguePlayer/'+leagueId+'/'+playerId,changes).pipe(timeout(20000));
+    }
+    importLeaguePlayers(leagueId: number, players: { playerId: number; divisionId: number }[]): Observable<any> {
+        return this.httpClient.post<any>(this.baseUrl + 'api/ScrambleData/ImportLeaguePlayers/' + leagueId, { players })
+            .pipe(timeout(30000), shareReplay(1));
+    }
+    leaguePlayerMembership(leagueId: number, playerId: number): Observable<any> {
+        return this.httpClient.get<any>(this.baseUrl + 'api/ScrambleData/AvailableLeaguePlayers/' + leagueId + '?memberPlayerId=' + playerId);
+    }
+    addExistingLeaguePlayer(leagueId: number, leagueName: string, playerId: number, divisionId: number): Observable<any> {
+        const key = leagueId + ':' + playerId;
+        if (this.existingMembershipRequests.has(key)) return this.existingMembershipRequests.get(key);
+        const request = this.httpClient.post<any>(this.baseUrl + 'api/ScrambleData/AddPlayer/' + encodeURIComponent(leagueName) +
+            '?existingOnly=true&expectedLeagueId=' + leagueId + '&leagueDivisionId=' + divisionId, { id: playerId }).pipe(
+                timeout(20000), finalize(() => this.existingMembershipRequests.delete(key)), shareReplay(1));
+        this.existingMembershipRequests.set(key, request);
+        return request;
+    }
 
     constructor(@Inject('BASE_URL') public baseUrl: string, public httpClient: HttpClient) {
     }
@@ -104,8 +137,8 @@ export class PlayerService {
         return this.httpClient.post(this.baseUrl + `api/ScrambleData/claimPlayer`, data);
     }
 
-    public addPlayerWithoutLeague(player: any): Observable<any> {
-        return this.httpClient.post(this.baseUrl + 'api/ScrambleData/AddPlayerWithoutLeague', player);
+    public addPlayerWithoutLeague(player: any, importLeagueId?:number): Observable<any> {
+        return this.httpClient.post(this.baseUrl + 'api/ScrambleData/AddPlayerWithoutLeague'+(importLeagueId?'?importLeagueId='+importLeagueId:''), player);
     }
 
     public AddPlayer(player: any, leagueName: string, leagueDivisionId?: number): Observable<any> {

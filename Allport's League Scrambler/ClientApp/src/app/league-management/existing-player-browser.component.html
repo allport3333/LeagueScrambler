@@ -1,0 +1,17 @@
+<header class="browser-header"><div><h2 mat-dialog-title>Add Existing Players</h2><p>{{ data.leagueName }}</p></div><button mat-stroked-button type="button" mat-dialog-close aria-label="Close player browser">Close</button></header>
+<div class="browser-controls">
+ <mat-form-field appearance="outline" class="browser-search"><mat-label>Search players</mat-label><input matInput [(ngModel)]="search" (ngModelChange)="filter()" placeholder="Search players..." autocomplete="off"><button mat-button matSuffix type="button" *ngIf="search" (click)="search='';filter()" aria-label="Clear search">Clear</button></mat-form-field>
+ <div class="gender-filters" role="group" aria-label="Filter players by gender"><button mat-stroked-button type="button" *ngFor="let option of ['all','men','women']" [attr.aria-pressed]="gender === option" [class.gender-selected]="gender === option" (click)="setGender(option)">{{ option === 'all' ? 'All' : option === 'men' ? 'Men' : 'Women' }}</button></div>
+ <mat-form-field appearance="outline" class="browser-division"><mat-label>Division</mat-label><mat-select [(ngModel)]="divisionId" [disabled]="loading || blocked"><mat-option [value]="0">No Division</mat-option><mat-option *ngFor="let division of divisions" [value]="division.id">{{ division.name || division.code }}</mat-option></mat-select></mat-form-field>
+ <p class="browser-count" aria-live="polite" *ngIf="!loading">{{ players.length }} available<span *ngIf="filteredPlayers.length !== players.length"> · {{ filteredPlayers.length }} shown</span></p>
+</div>
+<p class="browser-notice" role="status" aria-live="polite">{{ notice }}</p>
+<div *ngIf="error" class="browser-error" role="alert">{{ error }} <button mat-button type="button" (click)="load()" *ngIf="!players.length && !blocked">Retry</button></div>
+<div class="browser-scroll" [attr.aria-busy]="loading">
+ <div *ngIf="loading" class="browser-empty" role="status"><mat-spinner diameter="28"></mat-spinner>Loading available players...</div>
+ <p class="browser-empty" *ngIf="!loading && !error && !players.length">All available players are already in this league.</p>
+ <p class="browser-empty" *ngIf="!loading && players.length && !filteredPlayers.length">No players match your search.</p>
+ <div class="available-player-grid" *ngIf="!loading">
+  <button mat-button type="button" class="available-player" *ngFor="let player of filteredPlayers; trackBy: trackPlayer" [attr.data-player-id]="player.id" [class.male]="player.isMale === true" [class.female]="player.isMale === false" [disabled]="pending.has(player.id) || blocked" [attr.aria-label]="'Add '+player.firstName+' '+player.lastName+' to '+data.leagueName" (click)="add(player)"><span>{{ player.firstName }} {{ player.lastName }}</span><small *ngIf="pending.has(player.id)">Adding...</small></button>
+ </div>
+</div>

@@ -40,6 +40,8 @@ if(require.main===module)(async()=>{
   const result=await component(c=>({status:c.generationResult.status,ids:c.listOfTeams.flatMap(t=>t.players.map(p=>p.id)),retained:c.generationResult.retainedTopIds,demoted:c.generationResult.demotedTopIds,print:c.canPrintMatchups}));
   assert.equal(result.status,'success');assert.deepEqual(result.retained,[12,11,10,9,8,7,6,5,4,3]);assert.deepEqual(result.demoted,[2,1]);assert.equal(new Set(result.ids).size,40);assert.equal(result.print,false);
   assert.equal(calls.filter(c=>c.path.includes('/teammatehistory/')).length,0);
+  await expect(page.locator('.generation-report')).toHaveCount(0);await expect(page.locator('.generation-feedback')).toHaveCount(0);
+  await page.screenshot({path:path.join(out,'normal-success-no-report-desktop.png')});
   checks.push('Ranked Top list overrides standings; 12 top/10 teams includes all40 and demotes correct2; new scramble remains unsaved; checkbox-off sends no league-history query.');
   await component(c=>c.saveKingQueenTeams());assert.equal(await component(c=>c.canPrintMatchups),true);
   await component(c=>{c.prioritizePreviousTeammates=true;c.listOfScrambleNumbers=[7];});await component(c=>c.scramblePlayers());
@@ -50,6 +52,8 @@ if(require.main===module)(async()=>{
   await component(c=>c.listOfScrambleNumbers=[]);await component(c=>c.scramblePlayers());
   const before=await component(c=>JSON.stringify(c.listOfTeams));failHistory=true;const creates=calls.filter(c=>c.path.includes('/generatescramble/')).length;
   await component(c=>c.scramblePlayers());assert.equal(await component(c=>JSON.stringify(c.listOfTeams)),before);assert.equal(calls.filter(c=>c.path.includes('/generatescramble/')).length,creates);assert.match(await component(c=>c.generationFeedback),/unavailable|retained/);failHistory=false;
+  await expect(page.locator('.generation-report')).toContainText('No new scramble was generated');
+  assert.equal(await component(c=>c.generationAttempt.issues[0].code),'service-error');
   failGenerate=true;await component(c=>c.scramblePlayers());assert.equal(await component(c=>JSON.stringify(c.listOfTeams)),before);failGenerate=false;
   checks.push('Whole-league checkbox works without selected scrambles; unavailable history is not zero history; failed history/generation keeps prior teams and inputs without downstream save.');
   delayHistory=150;const n=calls.filter(c=>c.path.includes('/generatescramble/')).length;await component(c=>Promise.all([c.scramblePlayers(),c.scramblePlayers()]));delayHistory=0;assert.equal(calls.filter(c=>c.path.includes('/generatescramble/')).length,n+1);
@@ -59,6 +63,8 @@ if(require.main===module)(async()=>{
   await component(c=>{c.selectedList=c.selectedList.slice(0,4);c.numberOfTeams=2;c.prioritizePreviousTeammates=false;c.listOfScrambleNumbers=[7];c.allowMinimumRepeats=false;});
   const oldTeams=await component(c=>JSON.stringify(c.listOfTeams)),oldCreates=calls.filter(c=>c.path.includes('/generatescramble/')).length;
   await component(c=>c.scramblePlayers());assert.equal(await component(c=>JSON.stringify(c.listOfTeams)),oldTeams);assert.equal(calls.filter(c=>c.path.includes('/generatescramble/')).length,oldCreates);
+  await expect(page.locator('.generation-report')).toContainText('No new scramble was generated');assert.equal(await component(c=>c.generationAttempt.status),'impossible');
+  assert.equal(await component(c=>c.generationResult.status),'success','Failed attempt must not replace the result belonging to the retained teams');
   await component(c=>c.allowMinimumRepeats=true);await component(c=>c.scramblePlayers());assert.deepEqual(await component(c=>[c.generationResult.strictImpossible,c.generationResult.minimumRepeatsProven,c.generationResult.repeatedPairs.length]),[true,true,2]);
   await expect(page.locator('.generation-report')).toContainText('minimum 2 repeated teammate pairings');
   await page.locator('.generation-report').screenshot({path:path.join(out,'minimum-repeat-report.png')});
@@ -69,6 +75,10 @@ if(require.main===module)(async()=>{
   assert.equal(calls.filter(c=>c.path.includes('/generatescramble/')).length,beforeSwitch);assert.equal(await component(c=>c.generationResult),null);
   await component(c=>{c.selectedLeague='Synthetic League';c.onLeagueChanged();});await page.waitForTimeout(250);await setup();await component(c=>c.scramblePlayers());
   checks.push('League switch cancels the pending history/solver attempt; no stale generation POST or old result is committed to the new league.');
+  await component(c=>{c.selectedList.forEach(p=>{p.isTopPlayer=p.id<=3;p.isLowPlayer=false;});c.displayTopPlayers=c.selectedList.filter(p=>p.isTopPlayer);c.displayLowPlayers=[];c.prioritizePreviousTeammates=false;c.listOfScrambleNumbers=[];});await component(c=>c.scramblePlayers());
+  const oddTop=await component(c=>{const ids=c.generationResult.retainedTopIds;let count=0;for(let i=0;i<c.listOfTeams.length;i+=2)if(c.listOfTeams[i].players.some(p=>ids.includes(p.id))&&c.listOfTeams[i+1].players.some(p=>ids.includes(p.id)))count++;return {ids,count,issues:c.generationResult.issues};});
+  assert.equal(oddTop.ids.length,3);assert.equal(oddTop.count,1);assert.deepEqual(oddTop.issues,[]);await expect(page.locator('.generation-report')).toHaveCount(0);await expect(page.locator('.generation-feedback')).toHaveCount(0);
+  checks.push('Normal success/top overflow and an odd retained Top count show no report or success explanation; three Top Players produce one Top-vs-Top match. Service/strict failures and minimum-repeat fallback remain visible, with old team validation state preserved.');
   const layout=[]; await component(c=>c.snackBar.dismiss()); await page.waitForTimeout(350);
   for(const width of [1366,1920,375,390,430]){
    await page.setViewportSize({width,height:950});await page.waitForTimeout(350);await page.locator('.scramble-rules').scrollIntoViewIfNeeded();
@@ -77,6 +87,18 @@ if(require.main===module)(async()=>{
   }
   await component(c=>{c.openMatchups();});await expect(page.getByRole('dialog')).toBeVisible();await page.screenshot({path:path.join(out,'matchups-mobile.png')});await page.getByRole('button',{name:'Close matchups',exact:true}).click();
   checks.push('Desktop1366/1920 and mobile375/390/430 rendered rules and results: no additional page overflow (baseline widths recorded); existing Matchups modal opens/closes.');
+  // Two valid previous sessions jointly prohibit all mixed-gender pairs in this
+  // tiny fixture, so a genuine individual-team compromise must remain visible.
+  const subset=[players[0],players[1],players[24],players[25]];
+  returnedHistory=[[subset[0],subset[2]],[subset[1],subset[3]],[subset[0],subset[3]],[subset[1],subset[2]]].map((team,i)=>({kingQueenTeam:{id:1200+i,leagueID:101,scrambleNumber:i<2?7:8,scrambleWithScoresToBeSaved:true},players:team}));
+  await component((c,ids)=>{c.selectedList=c.queriedPlayers.filter(p=>ids.includes(p.id)).map(p=>({...p,isTopPlayer:false,isLowPlayer:false}));c.displayTopPlayers=[];c.displayLowPlayers=[];c.numberOfTeams=2;c.listOfScrambleNumbers=[7,8];c.prioritizePreviousTeammates=false;c.allowMinimumRepeats=false;},subset.map(p=>p.id));await component(c=>c.scramblePlayers());
+  assert.equal(await component(c=>c.generationResult.status),'success');assert.equal(await component(c=>c.generationResult.repeatedPairs.length),0);assert(await component(c=>c.generationResult.issues.some(i=>i.code==='gender-balance-compromise')));
+  await expect(page.locator('.generation-report')).toContainText('A scramble was generated');await expect(page.locator('.generation-report')).toContainText('Ideal gender balance is impossible');await page.locator('.generation-report').screenshot({path:path.join(out,'gender-compromise-report-mobile.png')});
+  // UI fixture for the already engine-tested exhausted outcome: even a first
+  // failed attempt without any results must show diagnostics outside the results shell.
+  await component(c=>{c.listOfTeams=[];c.generationAttempt={status:'budget-exhausted',reason:'Search budget exhausted; strict impossibility was not proved. No fallback was used.',repeatedPairs:[],demotedTopIds:[],historyCost:0,issues:[{code:'budget-exhausted',message:'Search budget exhausted'}]};c.generationFeedback='';});
+  await expect(page.locator('.generation-report')).toBeVisible();await expect(page.locator('.generation-report')).toContainText('strict impossibility was not proved');await page.locator('.generation-report').screenshot({path:path.join(out,'search-budget-report-mobile.png')});
+  checks.push('Proven individual gender compromise displays the report after successful strict generation; exhausted-search diagnostics also display without existing results and do not claim impossibility.');
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'browser-results.json'),JSON.stringify({checks,calls,errors,layout,mode:'synthetic intercepted APIs; no SQL/no real authentication'},null,2));console.log(checks.join('\n'));
  }finally{await browser.close();}
 })().catch(error=>{console.error(error.stack);process.exitCode=1;});

@@ -1,0 +1,2573 @@
+{
+  "source": {
+    "league": "WW Test League",
+    "leagueId": 133,
+    "captured": "2026-11-20T18:42:30.403Z",
+    "note": "Read-only development snapshot. Player/team IDs remapped; names and account details omitted."
+  },
+  "players": [
+    {
+      "id": 16,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 28,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 53,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 46,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 6,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 20,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 38,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 41,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 34,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 11,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 1,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 58,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 15,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 4,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 32,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 9,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 18,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 56,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 62,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 55,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 47,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 29,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 7,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 17,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 59,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 42,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 19,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 44,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 39,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 13,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 51,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 24,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 60,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 31,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 27,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 40,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 33,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 50,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 57,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 14,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 48,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 26,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 35,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 25,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 43,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 49,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 8,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 10,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 21,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 30,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 36,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 37,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 3,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 61,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 2,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 45,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 54,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 22,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 23,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 63,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 52,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 5,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 12,
+      "isMale": false,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    },
+    {
+      "id": 64,
+      "isMale": true,
+      "isTopPlayer": false,
+      "isLowPlayer": false,
+      "isByePlayer": false
+    }
+  ],
+  "history": [
+    {
+      "leagueId": 133,
+      "teamId": 1,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        1,
+        53,
+        45,
+        32
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 2,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        64,
+        42,
+        52,
+        34
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 3,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        60,
+        27,
+        40,
+        31
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 4,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        4,
+        22,
+        49,
+        38
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 5,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        46,
+        20,
+        6,
+        19
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 6,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        24,
+        58,
+        35,
+        36
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 7,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        29,
+        16,
+        48,
+        26
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 8,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        28,
+        8,
+        59,
+        54
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 9,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        12,
+        57,
+        14,
+        5
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 10,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        25,
+        39,
+        47,
+        56
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 11,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        62,
+        9,
+        21,
+        51
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 12,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        61,
+        15,
+        17,
+        30
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 13,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        50,
+        33,
+        23,
+        13
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 14,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        55,
+        41,
+        18,
+        44
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 15,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        43,
+        3,
+        10,
+        7
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 16,
+      "scrambleNumber": 1,
+      "saved": true,
+      "playerIds": [
+        2,
+        11,
+        63,
+        37
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 17,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        1,
+        25,
+        14,
+        3
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 18,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        64,
+        50,
+        19,
+        13
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 19,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        55,
+        29,
+        57,
+        16
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 20,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        43,
+        37,
+        47,
+        11
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 21,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        60,
+        51,
+        8,
+        9
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 22,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        12,
+        56,
+        44,
+        10
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 23,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        53,
+        5,
+        31,
+        7
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 24,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        28,
+        20,
+        49,
+        39
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 25,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        2,
+        32,
+        45,
+        48
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 26,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        61,
+        18,
+        63,
+        15
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 27,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        24,
+        34,
+        54,
+        59
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 28,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        27,
+        36,
+        35,
+        26
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 29,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        62,
+        22,
+        52,
+        23
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 30,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        46,
+        30,
+        38,
+        41
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 31,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        42,
+        58,
+        33,
+        6
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 32,
+      "scrambleNumber": 2,
+      "saved": true,
+      "playerIds": [
+        4,
+        17,
+        40,
+        21
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 33,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        1,
+        2,
+        9,
+        41
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 34,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        64,
+        12,
+        22,
+        18
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 35,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        28,
+        50,
+        58,
+        39
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 36,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        46,
+        26,
+        31,
+        49
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 37,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        27,
+        19,
+        47,
+        35
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 38,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        25,
+        37,
+        63,
+        45
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 39,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        55,
+        44,
+        21,
+        52
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 40,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        60,
+        20,
+        38,
+        57
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 41,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        61,
+        51,
+        15,
+        7
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 42,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        43,
+        11,
+        6,
+        40
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 43,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        42,
+        23,
+        30,
+        17
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 44,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        4,
+        56,
+        32,
+        33
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 45,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        62,
+        48,
+        16,
+        14
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 46,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        29,
+        5,
+        36,
+        10
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 47,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        24,
+        59,
+        13,
+        8
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 48,
+      "scrambleNumber": 3,
+      "saved": true,
+      "playerIds": [
+        53,
+        54,
+        34,
+        3
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 49,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        1,
+        27,
+        51,
+        14
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 50,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        64,
+        24,
+        3,
+        19
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 51,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        61,
+        28,
+        13,
+        44
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 52,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        50,
+        40,
+        23,
+        30
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 53,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        4,
+        10,
+        8,
+        21
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 54,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        53,
+        37,
+        56,
+        45
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 55,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        42,
+        41,
+        22,
+        52
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 56,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        29,
+        26,
+        58,
+        9
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 57,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        60,
+        20,
+        5,
+        32
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 58,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        2,
+        31,
+        17,
+        36
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 59,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        55,
+        16,
+        11,
+        6
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 60,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        25,
+        33,
+        49,
+        34
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 61,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        62,
+        63,
+        48,
+        15
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 62,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        43,
+        38,
+        7,
+        18
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 63,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        46,
+        39,
+        35,
+        57
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 64,
+      "scrambleNumber": 4,
+      "saved": true,
+      "playerIds": [
+        12,
+        47,
+        59,
+        54
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 65,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        1,
+        2,
+        44,
+        56
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 66,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        64,
+        43,
+        19,
+        35
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 67,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        24,
+        42,
+        57,
+        23
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 68,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        50,
+        63,
+        9,
+        41
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 69,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        46,
+        38,
+        14,
+        5
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 70,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        12,
+        13,
+        34,
+        54
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 71,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        27,
+        47,
+        6,
+        8
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 72,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        60,
+        17,
+        18,
+        16
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 73,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        62,
+        37,
+        51,
+        45
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 74,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        55,
+        21,
+        33,
+        11
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 75,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        53,
+        20,
+        7,
+        39
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 76,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        29,
+        40,
+        15,
+        52
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 77,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        4,
+        32,
+        22,
+        48
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 78,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        28,
+        36,
+        58,
+        31
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 79,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        61,
+        10,
+        3,
+        59
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 80,
+      "scrambleNumber": 5,
+      "saved": true,
+      "playerIds": [
+        25,
+        26,
+        49,
+        30
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 81,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        1,
+        46,
+        54,
+        6
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 82,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        64,
+        42,
+        21,
+        18
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 83,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        53,
+        55,
+        57,
+        9
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 84,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        27,
+        52,
+        51,
+        44
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 85,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        12,
+        37,
+        36,
+        56
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 86,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        24,
+        20,
+        32,
+        63
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 87,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        43,
+        41,
+        16,
+        13
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 88,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        25,
+        48,
+        39,
+        3
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 89,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        50,
+        11,
+        49,
+        19
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 90,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        2,
+        30,
+        35,
+        38
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 91,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        29,
+        26,
+        58,
+        5
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 92,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        4,
+        59,
+        22,
+        23
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 93,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        60,
+        8,
+        33,
+        15
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 94,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        62,
+        10,
+        34,
+        45
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 95,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        61,
+        7,
+        17,
+        47
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 96,
+      "scrambleNumber": 6,
+      "saved": true,
+      "playerIds": [
+        28,
+        40,
+        31,
+        14
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 97,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        5,
+        59,
+        62,
+        11
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 98,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        16,
+        10,
+        15,
+        24
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 99,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        6,
+        64,
+        9,
+        25
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 100,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        19,
+        22,
+        26,
+        53
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 101,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        32,
+        38,
+        3,
+        42
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 102,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        41,
+        21,
+        54,
+        27
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 103,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        33,
+        7,
+        48,
+        46
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 104,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        14,
+        17,
+        63,
+        55
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 105,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        1,
+        43,
+        30,
+        20
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 106,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        18,
+        40,
+        39,
+        2
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 107,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        13,
+        51,
+        36,
+        4
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 108,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        44,
+        23,
+        31,
+        29
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 109,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        57,
+        56,
+        8,
+        50
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 110,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        34,
+        35,
+        37,
+        61
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 111,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        58,
+        49,
+        45,
+        12
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 112,
+      "scrambleNumber": 11,
+      "saved": true,
+      "playerIds": [
+        47,
+        52,
+        60,
+        28
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 113,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        40,
+        33,
+        27,
+        16
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 114,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        44,
+        36,
+        59,
+        62
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 115,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        20,
+        37,
+        13,
+        50
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 116,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        11,
+        26,
+        56,
+        42
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 117,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        57,
+        52,
+        45,
+        60
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 118,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        51,
+        8,
+        22,
+        24
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 119,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        17,
+        10,
+        39,
+        4
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 120,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        49,
+        6,
+        48,
+        53
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 121,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        14,
+        12,
+        3,
+        19
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 122,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        47,
+        30,
+        5,
+        28
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 123,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        34,
+        63,
+        21,
+        46
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 124,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        32,
+        23,
+        54,
+        25
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 125,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        58,
+        15,
+        38,
+        2
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 126,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        7,
+        35,
+        1,
+        29
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 127,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        18,
+        9,
+        31,
+        55
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 128,
+      "scrambleNumber": 12,
+      "saved": true,
+      "playerIds": [
+        41,
+        64,
+        43,
+        61
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 129,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        48,
+        1,
+        27,
+        16
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 130,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        11,
+        30,
+        22,
+        42
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 131,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        18,
+        33,
+        64,
+        2
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 132,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        51,
+        37,
+        35,
+        50
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 133,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        32,
+        45,
+        13,
+        46
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 134,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        6,
+        59,
+        63,
+        12
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 135,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        20,
+        40,
+        5,
+        24
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 136,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        23,
+        19,
+        52,
+        4
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 137,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        49,
+        25,
+        56,
+        7
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 138,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        17,
+        3,
+        8,
+        60
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 139,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        47,
+        9,
+        36,
+        61
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 140,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        44,
+        39,
+        38,
+        53
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 141,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        57,
+        10,
+        15,
+        55
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 142,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        34,
+        21,
+        31,
+        28
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 143,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        41,
+        14,
+        54,
+        62
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 144,
+      "scrambleNumber": 13,
+      "saved": true,
+      "playerIds": [
+        58,
+        26,
+        29,
+        43
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 145,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        38,
+        52,
+        43,
+        32
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 146,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        6,
+        1,
+        39,
+        50
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 147,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        34,
+        64,
+        21,
+        61
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 148,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        20,
+        30,
+        63,
+        28
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 149,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        47,
+        15,
+        40,
+        46
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 150,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        19,
+        9,
+        35,
+        25
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 151,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        41,
+        14,
+        22,
+        2
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 152,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        45,
+        11,
+        48,
+        42
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 153,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        8,
+        53,
+        23,
+        57
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 154,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        18,
+        37,
+        36,
+        55
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 155,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        51,
+        3,
+        33,
+        4
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 156,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        58,
+        5,
+        31,
+        12
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 157,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        44,
+        49,
+        26,
+        29
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 158,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        7,
+        54,
+        59,
+        62
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 159,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        17,
+        10,
+        56,
+        27
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 160,
+      "scrambleNumber": 14,
+      "saved": true,
+      "playerIds": [
+        16,
+        13,
+        60,
+        24
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 161,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        40,
+        3,
+        45,
+        44
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 162,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        51,
+        54,
+        26,
+        2
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 163,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        7,
+        14,
+        64,
+        4
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 164,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        16,
+        59,
+        52,
+        53
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 165,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        49,
+        57,
+        63,
+        43
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 166,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        23,
+        11,
+        36,
+        46
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 167,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        39,
+        41,
+        33,
+        24
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 168,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        56,
+        6,
+        38,
+        29
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 169,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        35,
+        12,
+        21,
+        32
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 170,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        8,
+        58,
+        48,
+        61
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 171,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        37,
+        17,
+        9,
+        28
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 172,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        47,
+        10,
+        31,
+        50
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 173,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        34,
+        5,
+        22,
+        27
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 174,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        1,
+        18,
+        13,
+        62
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 175,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        20,
+        15,
+        25,
+        42
+      ]
+    },
+    {
+      "leagueId": 133,
+      "teamId": 176,
+      "scrambleNumber": 16,
+      "saved": true,
+      "playerIds": [
+        30,
+        19,
+        60,
+        55
+      ]
+    }
+  ],
+  "byes": []
+}

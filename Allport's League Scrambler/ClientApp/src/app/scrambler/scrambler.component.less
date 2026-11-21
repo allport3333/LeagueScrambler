@@ -253,7 +253,7 @@ button[disabled].apply-top-button {
 .reset-actions button { min-height: 44px; }
 .scramble-empty-state { margin: 12px 20px; padding: 8px 12px; background: #f5f6f8; font-size: 14px; }
 .league-management-page { margin: 12px; }
-.league-management-page.consolidated-management .management-workspace { max-width: 1160px; margin: 16px auto; padding: 8px; background: transparent !important; border: 0; box-shadow: none; }
+.league-management-page.consolidated-management .management-workspace { width: 98%; max-width: none; margin: 10px auto; padding: 8px; background: transparent !important; border: 0; box-shadow: none; }
 .league-management-page.consolidated-management h1 { text-align: center; color: #293d69; font-size: 24px; margin: 8px 0 18px; }
 .league-management-page.consolidated-management h2, .league-management-page.consolidated-management h5 { text-align: center; color: #293d69; font-size: 20px; margin: 0 0 12px; }
 .league-management-page.consolidated-management .management-form-card { width: 100%; max-width: 960px; margin: 16px auto !important; padding: 20px; background: #fff !important; border: 1px solid #d8dfe9; border-radius: 6px; box-shadow: 0 2px 5px rgba(35,55,85,.07); }
@@ -277,6 +277,40 @@ button[disabled].apply-top-button {
 .roster-player-name { min-width: 0; overflow-wrap: break-word; }
 .roster-player-name span { display: block; color: #596575; font-size: 13px; }
 .management-roster button { flex-shrink: 0; }
+.management-players-section { display:block; padding:12px 0; width:100%;max-width:1600px;margin:0 auto; }
+.league-management-page.consolidated-management .management-players-section > .management-form-card { margin:0 auto !important;max-width:none;padding:16px;min-width:0; }
+.management-roster-tools { display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap; }
+.league-management-page.consolidated-management .management-roster-tools .roster-search { flex:1 1 240px;margin:0; }
+.management-roster-tools > button { margin-bottom:18px; }
+.roster-division-filter{flex:0 1 200px;min-width:120px}.management-roster-table{width:100%;max-width:1200px;margin:0 auto;border-collapse:collapse;table-layout:fixed;font-size:14px}.management-roster-table th,.management-roster-table td{border:1px solid #cbd7e4;padding:8px;text-align:center;overflow-wrap:anywhere}.management-roster-table th{background:#edf2f8}.league-management-page.consolidated-management .management-roster-table td button{margin:0;max-width:100%;min-height:36px;padding:5px 14px}.management-roster-table th:first-child{width:50%}.management-roster-table th:nth-child(2){width:30%}
+@media(max-width:767px){.management-roster-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.management-roster-table,.management-roster-table tbody,.management-roster-table tr{display:block;width:100%}.management-roster-table tr{border:1px solid #cbd7e4;margin:8px 0}.management-roster-table td{display:grid;grid-template-columns:85px minmax(0,1fr);gap:6px;border:0;border-bottom:1px solid #e2e8f0}.management-roster-table td:before{content:attr(data-label);font-weight:600;text-align:left}.management-roster-table td:last-child{display:block}.management-roster-table td:last-child:before{display:none}}
+.management-add-card { text-align:center; }
+.management-add-actions { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:1200px;margin:0 auto 14px; }
+.management-add-actions section { min-width:0;padding:10px 8px;background:#f5f8fc;border:1px solid #dce4ee;border-radius:4px; }
+.management-add-actions h3,.management-quick-add h3 { font-size:18px;text-align:center;margin:4px 0 8px;color:#293d69; }
+.management-add-actions p { margin:4px 0 10px;color:#5c6b7d;font-size:14px; }
+.management-add-actions mat-icon { color:#526f9f; }
+.management-quick-add { border-top:1px solid #e1e7ef;padding-top:12px;max-width:1100px;margin:auto; }
+.quick-add-row { display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center; }
+.league-management-page.consolidated-management .quick-add-row > mat-form-field { flex:1 1 240px;width:auto !important;max-width:460px !important; }
+.league-management-page.consolidated-management .quick-add-row .existing-player-division { flex:0 1 210px;width:auto;min-width:140px; }
+.quick-add-row > button { margin-bottom:18px; }
+.create-player-section { border-top:1px solid #e1e7ef;padding-top:12px;max-width:900px;margin:2px auto 0; }
+.create-player-section .new-player-form { margin-top:12px; }
+.create-player-section br { display:none; }
+.create-player-section .management-context { margin:8px 0; }
+
+@media(max-width:600px) {
+ .league-management-page.consolidated-management .management-workspace { width:100%; }
+ .league-management-page.consolidated-management .management-players-section > .management-form-card { padding:12px; }
+ .management-add-actions { grid-template-columns:minmax(0,1fr);gap:8px; }
+ .management-add-actions section { padding:8px; }
+ .management-add-actions p { margin:3px 0 8px; }
+ .quick-add-row { gap:0 8px; }
+ .league-management-page.consolidated-management .quick-add-row .existing-player-division { flex-basis:100%; }
+ .quick-add-row > button { margin-bottom:8px; }
+ .management-roster-tools > button { margin-bottom:8px; }
+}
 .management-setup-grid { max-width: 1000px; margin: 16px auto; display: grid; grid-template-columns: minmax(0,1fr); gap: 16px; align-items: start; }
 .management-setup-grid > .container-fluid { padding: 0; }
 .league-management-page.consolidated-management .management-setup-grid .management-form-card { margin: 0 !important; height: auto; }
