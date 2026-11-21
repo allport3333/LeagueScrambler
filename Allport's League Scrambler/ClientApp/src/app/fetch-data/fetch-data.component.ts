@@ -4,7 +4,7 @@ import { Subscription } from 'rxjs';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 import { Router } from '@angular/router';
-import { FormGroup, FormControl } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
 import { LeagueService } from '../services/league.service';
 
 @Component({
@@ -29,12 +29,12 @@ export class FetchDataComponent implements OnInit, OnDestroy {
     searchValue: string = '';
     selectedLeagueId: number;
 
-    PlayerForm = new FormGroup({
-        firstName: new FormControl(),
-        lastName: new FormControl(),
-        isMale: new FormControl(),
-        leagueName: new FormControl(),
-        isSub: new FormControl()
+    PlayerForm = new UntypedFormGroup({
+        firstName: new UntypedFormControl(),
+        lastName: new UntypedFormControl(),
+        isMale: new UntypedFormControl(),
+        leagueName: new UntypedFormControl(),
+        isSub: new UntypedFormControl()
     });
 
     constructor(

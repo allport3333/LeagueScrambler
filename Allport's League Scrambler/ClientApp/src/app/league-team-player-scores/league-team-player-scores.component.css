@@ -89,6 +89,7 @@ h2 {
 }
 
 /* ===== Card Styling ===== */
+/* TODO(mdc-migration): The following rule targets internal classes of card that may no longer apply for the MDC version. */
 mat-card {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     border-radius: 8px;
@@ -96,6 +97,7 @@ mat-card {
     background-color: #ffffff;
 }
 
+/* TODO(mdc-migration): The following rule targets internal classes of card that may no longer apply for the MDC version. */
 mat-card-title {
     text-align: center;
     font-weight: bold;
@@ -115,13 +117,13 @@ table {
     border-collapse: collapse;
 }
 
-.mat-header-cell, .mat-cell {
+.mat-mdc-header-cell, .mat-mdc-cell {
     text-align: center;
     padding: 10px;
     font-size: 14px;
 }
 
-.mat-header-cell {
+.mat-mdc-header-cell {
     background-color: #eeeeee;
     font-weight: bold;
 }

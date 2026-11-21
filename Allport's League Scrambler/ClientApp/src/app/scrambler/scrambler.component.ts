@@ -1,13 +1,16 @@
 import { LeaguePlayerEditComponent } from '../league-management/player-management-dialogs.component';
 import { Component, Inject, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, TemplateRef, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA, MatAutocompleteSelectedEvent, MatSelectionListChange, MatTabGroup, MatTabChangeEvent } from '@angular/material';
+import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatSelectionListChange } from '@angular/material/list';
+import { MatTabGroup, MatTabChangeEvent } from '@angular/material/tabs';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatChipsModule } from '@angular/material';
+import { MatChipsModule } from '@angular/material/chips';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
-import { FormGroup, FormControl, Validators } from '@angular/forms';
-import { forEach } from '@angular/router/src/utils/collection';
+import { UntypedFormGroup, UntypedFormControl, Validators } from '@angular/forms';
+
 import { Team } from '../data-models/teams.model';
 import { Leagues } from '../data-models/leagues.model';
 import { Gender } from '../data-models/gender.model';
@@ -198,7 +201,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     private playerImportRef: MatDialogRef<PlayerImportComponent>;
     private playerEditRef: MatDialogRef<any>;
     playerImportDraft: any = null;
-    @ViewChild('removeMembershipDialog') removeMembershipDialog:TemplateRef<any>;
+    @ViewChild('removeMembershipDialog', { static: true }) removeMembershipDialog:TemplateRef<any>;
     editLeaguePlayer(player:any):void {
         if(!this.isActionAllowed||this.playerEditRef||this.managementRemovalPending)return;
         const leagueId=this.leagueId;
@@ -331,8 +334,8 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             entry.team.players.map(p => p.id).join(',') !== entry.players.map(p => p.id).join(',') || this.getMatchCourt(entry.team) !== entry.court);
     }
     @ViewChild('matchupDiv') matchupDiv!: ElementRef;
-    @ViewChild('saveTeamsDiv') saveTeamsDiv!: ElementRef;
-    @ViewChild('tabGroup') tabGroup: MatTabGroup; // ViewChild reference
+    @ViewChild('saveTeamsDiv', { static: true }) saveTeamsDiv!: ElementRef;
+    @ViewChild('tabGroup', { static: true }) tabGroup: MatTabGroup; // ViewChild reference
     selectedRounds: number = 5; // Default to 5 rounds
     processedStandings: { playerName: string; scores: { roundId: number; score: number | string }[] }[] = [];
     rounds: number[] = [];
@@ -340,7 +343,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     divisionsLoadedOnce: boolean = false;
     searchTerm: string = '';
     searchedPlayers: any[] = [];
-    LeagueDivisionForm: FormGroup;
+    LeagueDivisionForm: UntypedFormGroup;
     selectedPlayer: any = null;
     searchTermDelete: string = '';
     leagueDay: string = 'Monday';
@@ -478,23 +481,23 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     get applyButtonsEnabled(): boolean {
         return !!(this.selectedList && this.selectedList.length > 0);
     }
-    PlayerForm = new FormGroup({
-        firstName: new FormControl(),
-        lastName: new FormControl(),
-        isMale: new FormControl(),
-        leagueName: new FormControl(),
-        password: new FormControl(),
-        isSub: new FormControl(),
-        selectedGender: new FormControl()
+    PlayerForm = new UntypedFormGroup({
+        firstName: new UntypedFormControl(),
+        lastName: new UntypedFormControl(),
+        isMale: new UntypedFormControl(),
+        leagueName: new UntypedFormControl(),
+        password: new UntypedFormControl(),
+        isSub: new UntypedFormControl(),
+        selectedGender: new UntypedFormControl()
     });
-    deletePlayerForm = new FormGroup({
-        firstName: new FormControl(),
-        lastName: new FormControl(),
-        passwordDelete: new FormControl(),
+    deletePlayerForm = new UntypedFormGroup({
+        firstName: new UntypedFormControl(),
+        lastName: new UntypedFormControl(),
+        passwordDelete: new UntypedFormControl(),
     });
-    LeagueForm = new FormGroup({
-        newLeagueName: new FormControl(),
-        passwordLeague: new FormControl()
+    LeagueForm = new UntypedFormGroup({
+        newLeagueName: new UntypedFormControl(),
+        passwordLeague: new UntypedFormControl()
     });
 
     constructor(
@@ -514,11 +517,11 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         });
 
         // Add Division form (no FormBuilder)
-        this.LeagueDivisionForm = new FormGroup({
-            code: new FormControl('', [Validators.required]),
-            name: new FormControl('', [Validators.required]),
-            sortOrder: new FormControl(1, [Validators.required]),
-            passwordDivision: new FormControl('')
+        this.LeagueDivisionForm = new UntypedFormGroup({
+            code: new UntypedFormControl('', [Validators.required]),
+            name: new UntypedFormControl('', [Validators.required]),
+            sortOrder: new UntypedFormControl(1, [Validators.required]),
+            passwordDivision: new UntypedFormControl('')
         });
     }
 
@@ -553,7 +556,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         });
     }
 
-    @ViewChild('matchupsDialog') matchupsDialog: TemplateRef<any>;
+    @ViewChild('matchupsDialog', { static: true }) matchupsDialog: TemplateRef<any>;
     private matchupsDialogRef: MatDialogRef<any>;
     matchupCompactNames = true;
     private matchupResizeObserver: any;
@@ -604,11 +607,13 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     openMatchups(edit: boolean = false): void {
         if (!this.listOfTeams.length) return;
         if (!this.matchupsDialogRef) {
+            const opener = document.activeElement as HTMLElement;
+            const scrollPosition = { left: window.scrollX, top: window.scrollY };
             this.teamSaveFeedback = '';
             this.matchupCompactNames = (window.innerWidth <= 767 ? window.innerWidth - 16 : Math.min(window.innerWidth * .95, 1600) - 32) < 600;
             this.matchupsDialogRef = this.managementDialog.open(this.matchupsDialog, {
                 width: '95vw', maxWidth: '1600px', maxHeight: '96vh',
-                panelClass: 'matchups-dialog-panel', disableClose: true, closeOnNavigation: false, autoFocus: true, restoreFocus: true
+                panelClass: 'matchups-dialog-panel', disableClose: true, closeOnNavigation: false, autoFocus: true, restoreFocus: false
             });
             this.matchupsDialogRef.backdropClick().subscribe(() => this.closeMatchups());
             this.matchupsDialogRef.keydownEvents().subscribe(event => { if (event.key === 'Escape') { event.preventDefault(); this.closeMatchups(); } });
@@ -619,7 +624,13 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
                 const content = document.querySelector('.matchups-dialog-panel mat-dialog-content');
                 if (Observer && content) { this.matchupResizeObserver = new Observer(() => this.queueMatchupLayout()); this.matchupResizeObserver.observe(content); const cards = content.querySelector('.generated-matchups'); if(cards)this.matchupResizeObserver.observe(cards); }
             });
-            this.matchupsDialogRef.afterClosed().subscribe(() => { if(this.matchupResizeObserver)this.matchupResizeObserver.disconnect(); this.matchupResizeObserver=null; this.matchupsDialogRef = null; });
+            this.matchupsDialogRef.afterClosed().subscribe(() => {
+                if(this.matchupResizeObserver)this.matchupResizeObserver.disconnect();
+                this.matchupResizeObserver=null; this.matchupsDialogRef = null;
+                // Restore the opener without MDC's focus-induced page scrolling.
+                if (opener && opener.isConnected) opener.focus({ preventScroll: true });
+                window.scrollTo(scrollPosition.left, scrollPosition.top);
+            });
         }
         if (edit && !this.showTeamSorting && this.isActionAllowed) { this.teamSaveFeedback = ''; this.toggleTeamSorting(); }
         this.queueMatchupLayout();

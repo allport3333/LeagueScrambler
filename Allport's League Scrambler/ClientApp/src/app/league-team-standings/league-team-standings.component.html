@@ -5,7 +5,7 @@
     <div class="division-standings-grid">
         <!-- Iterate over divisions -->
         <div *ngFor="let division of divisions | keyvalue" class="division-standings">
-            <mat-card style="padding: 10px;">
+            <mat-card appearance="outlined" style="padding: 10px;">
                 <!-- Dynamic Header Color Based on Division Name -->
                 <h3 [ngClass]="getDivisionHeaderClass(division.key)" style="text-align: center; padding: 10px; border-radius: 5px;">
                     {{ division.key }}

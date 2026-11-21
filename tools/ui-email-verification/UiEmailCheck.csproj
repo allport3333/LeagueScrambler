@@ -7,6 +7,8 @@
     <BackendAssemblyPath Condition="'$(BackendAssemblyPath)' == ''">../../tests/functional/artifacts/ui-email-improvements/backend/ASP.NET Core 2.2 with Angular 7.dll</BackendAssemblyPath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../modernization/ApiContractSnapshot.cs" Link="ApiContractSnapshot.cs" />
+    <Compile Include="../modernization/CookieCompatibilityCheck.cs" Link="CookieCompatibilityCheck.cs" />
     <Reference Include="ASP.NET Core 2.2 with Angular 7"><HintPath>$(BackendAssemblyPath)</HintPath></Reference>
     <!-- These fixtures load the application's legacy MVC types; do not substitute
          an incompatible modern shared framework. The old runtime remains EOL. -->

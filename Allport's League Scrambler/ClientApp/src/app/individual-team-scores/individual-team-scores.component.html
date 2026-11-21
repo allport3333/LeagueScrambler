@@ -12,7 +12,7 @@
     <!-- Grouped Team Scores -->
     <div class="d-flex flex-wrap justify-content-center mt-4">
         <!-- Loop through grouped team scores -->
-        <mat-card *ngFor="let teamGroup of groupScoresByTeam()" class="score-card mx-3 my-3">
+        <mat-card appearance="outlined" *ngFor="let teamGroup of groupScoresByTeam()" class="score-card mx-3 my-3">
             <mat-card-header>
                 <mat-card-title>
                     {{ teamGroup[0].teamName }}

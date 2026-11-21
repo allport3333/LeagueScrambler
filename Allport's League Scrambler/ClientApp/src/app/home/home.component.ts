@@ -4,11 +4,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 
-import { MatSnackBarConfig, MatSnackBar, MatDialog, MatDialogRef } from '@angular/material';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatSnackBarConfig, MatSnackBar } from '@angular/material/snack-bar';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { ForgotPasswordDialogComponent } from '../forgot-password-dialog/forgot-password-dialog.component';
-import { AbstractControl, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { LeagueService } from '../services/league.service';
 import { PlayerService } from '../services/player.service';
 @Component({
@@ -17,8 +18,8 @@ import { PlayerService } from '../services/player.service';
     styleUrls: ['./home.component.less']
 })
 export class HomeComponent implements OnInit {
-    @ViewChild('confirmClaimDialog') confirmClaimDialog!: TemplateRef<any>;
-    @ViewChild('confirmationDialog') confirmationDialog!: TemplateRef<any>;
+    @ViewChild('confirmClaimDialog', { static: true }) confirmClaimDialog!: TemplateRef<any>;
+    @ViewChild('confirmationDialog', { static: true }) confirmationDialog!: TemplateRef<any>;
     loginEmail: string = '';
     loginPassword: string = '';
     registerEmail: string = '';
@@ -31,7 +32,7 @@ export class HomeComponent implements OnInit {
     userId: number;
     authenticationChecked = false;
     isLoggedIn: boolean = false;
-    registerForm: FormGroup; 
+    registerForm: UntypedFormGroup; 
     dialogRef: MatDialogRef<ForgotPasswordDialogComponent>; 
     claimDialogRef!: MatDialogRef<any>;
     showPlayerClaimModal = false;
@@ -44,7 +45,7 @@ export class HomeComponent implements OnInit {
     showAddPlayerForm = false;
     isEmailValid: boolean = true;
 
-    constructor(private loginService: LoginService, private leagueService: LeagueService, public playerService: PlayerService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: FormBuilder) {
+    constructor(private loginService: LoginService, private leagueService: LeagueService, public playerService: PlayerService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: UntypedFormBuilder) {
         this.route.queryParams.subscribe((queryParams) => {
             if (queryParams.toggleLoginForm === 'true') {
                 this.toggleLoginForm();
@@ -218,10 +219,10 @@ export class HomeComponent implements OnInit {
         );
     }
 
-    markFormGroupTouched(formGroup: FormGroup) {
+    markFormGroupTouched(formGroup: UntypedFormGroup) {
         Object.values(formGroup.controls).forEach(control => {
             control.markAsTouched();
-            if (control instanceof FormGroup) {
+            if (control instanceof UntypedFormGroup) {
                 this.markFormGroupTouched(control);
             }
         });

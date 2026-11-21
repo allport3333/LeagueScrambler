@@ -37,8 +37,8 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     primaryLinks: any[] = [];
     secondaryLinks: any[] = [];
     layoutReady = false;
-    @ViewChild('desktopLinks') desktopLinks: ElementRef;
-    @ViewChild('widthProbe') widthProbe: ElementRef;
+    @ViewChild('desktopLinks', { static: true }) desktopLinks: ElementRef;
+    @ViewChild('widthProbe', { static: true }) widthProbe: ElementRef;
     private layoutFingerprint = '';
     private layoutFrame: number = null;
     private widthObserver: any;

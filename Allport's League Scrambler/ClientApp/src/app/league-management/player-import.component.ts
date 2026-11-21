@@ -1,5 +1,5 @@
 import { AfterViewChecked, Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { timeout } from 'rxjs/operators';
 import { PlayerService } from '../services/player.service';
@@ -15,7 +15,7 @@ export class PlayerImportComponent implements OnInit, OnDestroy, AfterViewChecke
     summary:any={}; columns:number[]=[]; mappingOpen=false;
     readonly filters=['all','exact','ready','review','already','not-found','duplicate','invalid','added'];
     readonly filterLabels={all:'Parsed Rows',exact:'Exact Matches',ready:'Ready to Add',review:'Requiring Review',already:'Already in League','not-found':'Not Found',duplicate:'Duplicates',invalid:'Invalid',added:'Added'};
-    @ViewChild('importBody') importBody:ElementRef;
+    @ViewChild('importBody', { static: true }) importBody:ElementRef;
     @ViewChild('matchSearch') matchSearch:ElementRef;
     @ViewChild('reviewNotice') reviewNotice:ElementRef;
     lastReviewedLine=0; private navigation:string=null; private previewScroll=0; private createRef:MatDialogRef<ImportPlayerCreateComponent>;

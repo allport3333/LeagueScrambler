@@ -8,7 +8,7 @@
     <div style="display: flex; flex-wrap: wrap; justify-content: space-evenly; gap: 20px;">
 
         <!-- Repeat a card for each team -->
-        <mat-card *ngFor="let team of teams"
+        <mat-card appearance="outlined" *ngFor="let team of teams"
                   style="
                       flex: 1 1 calc(25% - 20px);
                       min-width: 250px;
@@ -60,7 +60,7 @@
 
             <!-- Division Badge -->
             <div class="division-chip-container">
-                <mat-chip *ngIf="team.division"
+                <mat-chip-option *ngIf="team.division"
                           [ngStyle]="{
                   'background-color': team.division === 'Gold' ? '#FFF8DC' :
                                      team.division === 'Silver' ? '#E0E0E0' :
@@ -70,7 +70,7 @@
                   'margin-top': '10px'
               }">
                     {{ team.division }} Division
-                </mat-chip>
+                </mat-chip-option>
             </div>
 
         </mat-card>

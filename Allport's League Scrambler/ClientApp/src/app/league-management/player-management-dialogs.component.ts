@@ -1,5 +1,5 @@
 import {Component, Inject, OnDestroy, OnInit} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import {forkJoin, Subscription} from 'rxjs';
 import {timeout} from 'rxjs/operators';
 import {PlayerService} from '../services/player.service';

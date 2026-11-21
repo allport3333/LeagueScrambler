@@ -20,25 +20,25 @@
         background-color: #f8f9fa;
     }
 
-table.mat-table {
+table.mat-mdc-table {
     border-spacing: 0;
     border-collapse: collapse;
 }
 
-    table.mat-table th,
+    table.mat-mdc-table th,
     table.mat-table td {
         padding: 2px !important; /* Force smaller padding */
         line-height: 0.8 !important; /* Reduce line height */
         font-size: 13px !important; /* Smaller font size */
     }
 
-    table.mat-table th {
+    table.mat-mdc-table th {
         font-weight: bold;
         text-align: left;
         vertical-align: middle;
     }
 
-    table.mat-table tr {
+    table.mat-mdc-table tr {
         height: auto !important; /* Allow rows to shrink */
     }
 

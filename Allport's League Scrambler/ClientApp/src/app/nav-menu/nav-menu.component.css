@@ -1,7 +1,8 @@
 :host { display: block; }
 .league-navigation { display: flex; align-items: center; gap: 10px; padding: 8px 12px; min-height: 60px; background: #343a40; color: #f1f4f8; }
 .league-selector { display: flex; flex: 0 1 220px; min-width: 140px; max-width: 220px; padding: 0 10px; min-height: 44px; background: #f0f8ff; color: #172534; text-align: left; }
-.league-selector ::ng-deep .mat-button-wrapper { display: flex; align-items: center; }
+/* TODO(mdc-migration): The following rule targets internal classes of button that may no longer apply for the MDC version. */
+.league-selector ::ng-deep .mdc-button__label { display: flex; align-items: center; flex: 1; min-width: 0; }
 .league-name { display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
 .desktop-navigation { display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0; gap: 2px; }
 .navigation-link { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 8px; color: #e1e6ec; font-size: 14px; white-space: nowrap; border-radius: 4px; text-decoration: none; }

@@ -65,7 +65,7 @@ const leagues=[{id:101,leagueName:'Fixture League'},{id:102,leagueName:'Second L
   return route.fulfill({json:body});
  });
  page.on('pageerror',error=>errors.push(error.message));
- const component=(fn,arg)=>page.evaluate(({fn,arg})=>{const d=window.ng.probe(document.querySelector('app-scrambler-component'));return d.injector.get(window.ng.coreTokens.NgZone).run(()=>eval('('+fn+')')(d.componentInstance,arg));},{fn:String(fn),arg});
+ const component=(fn,arg)=>require('./angular-component.cjs')(page,'app-scrambler-component',fn,arg);
  const playerButton=id=>page.locator('.available-player[data-player-id="'+id+'"]');
  const dialog=()=>page.getByRole('dialog'),search=()=>dialog().getByRole('textbox',{name:'Search players',exact:true});
  async function division(name){await dialog().locator('.browser-division mat-select').click();await page.getByRole('option',{name,exact:true}).click();}

@@ -12,7 +12,7 @@
    <div class="controls basic-settings">
     <div class="basic-field">
      <label for="schedule-first-game-date">First Game Date</label>
-     <mat-form-field appearance="outline" floatLabel="never" (click)="firstDatePicker.open()">
+     <mat-form-field appearance="outline" (click)="firstDatePicker.open()">
       <input id="schedule-first-game-date" matInput [matDatepicker]="firstDatePicker" [(ngModel)]="firstGameDate" autocomplete="off">
       <mat-datepicker-toggle matSuffix [for]="firstDatePicker"></mat-datepicker-toggle>
       <mat-datepicker #firstDatePicker></mat-datepicker>
@@ -20,7 +20,7 @@
     </div>
     <div class="basic-field">
      <label for="schedule-number-of-weeks">Number of Weeks</label>
-     <mat-form-field appearance="outline" floatLabel="never">
+     <mat-form-field appearance="outline">
       <input id="schedule-number-of-weeks" matInput type="number" min="1" max="104" [(ngModel)]="weeks">
      </mat-form-field>
     </div>

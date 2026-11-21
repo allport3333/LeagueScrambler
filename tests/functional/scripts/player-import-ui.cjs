@@ -39,7 +39,7 @@ module.exports=async function({page,component,players,members,calls,checks,layou
  await dialog().getByRole('button',{name:'Close player import'}).click();await component(c=>c.snackBar.dismiss());const createToggle=page.getByRole('button',{name:'Create New Player',exact:true});if(await createToggle.getAttribute('aria-expanded')==='true')await createToggle.click();await page.waitForTimeout(250);
  for(const width of [375,430,768,1280,1920,2560,3440]){
   await page.setViewportSize({width,height:width<=430?844:1080});
-  const m=await page.locator('.mat-tab-body-active .management-players-section').evaluate(e=>({width:innerWidth,columns:1,overflow:document.documentElement.scrollWidth>innerWidth+1}));assert(!m.overflow,JSON.stringify(m));assert.equal(m.columns,1);layouts.push({kind:'management',...m});
+  const m=await page.locator(':is(.mat-tab-body-active,.mat-mdc-tab-body-active) .management-players-section').evaluate(e=>({width:innerWidth,columns:1,overflow:document.documentElement.scrollWidth>innerWidth+1}));assert(!m.overflow,JSON.stringify(m));assert.equal(m.columns,1);layouts.push({kind:'management',...m});
   if([375,1920,3440].includes(width))await page.screenshot({path:path.join(out,'management-'+width+'.png'),fullPage:true});
  }
  checks.push('Nested profile dialog preserves unsplit names and preview; failed creation is retryable, successful creation alone creates no membership, and explicit import adds the new ID to its preserved division. Lost response reconciles membership without automatic retry. Workbook sheets switch in UI; unsupported file rejected. Manage Players stays responsive at all seven widths.');

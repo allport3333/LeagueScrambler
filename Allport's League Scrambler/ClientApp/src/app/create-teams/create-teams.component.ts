@@ -1,10 +1,10 @@
 import { Component, OnInit, ViewChild, Input, SimpleChanges } from '@angular/core';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
-import { KingQueenRoundScore } from '../data-models/kingQueenRoundScore';
+import { KingQueenRoundScore } from '../data-models/KingQueenRoundScore';
 import { Team } from '../data-models/teams.model';
 import { Leagues } from '../data-models/leagues.model';
-import { MatTabGroup } from '@angular/material';
+import { MatTabGroup } from '@angular/material/tabs';
 
 @Component({
     selector: 'app-create-teams',

@@ -1,7 +1,7 @@
 <nav class="league-navigation" aria-label="Main navigation">
     <span *ngIf="!authenticationChecked" class="session-status" role="status">Checking session...</span>
     <button *ngIf="authenticationChecked && loggedIn" type="button" mat-button class="league-selector" id="leagueDropdown" [matMenuTriggerFor]="leagueMenu" [title]="selectedLeagueName || 'Select League'">
-        <span class="league-name">{{ selectedLeagueName || 'Select League' }}</span><mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
+        <span class="league-name">{{ selectedLeagueName || 'Select League' }}</span><mat-icon iconPositionEnd aria-hidden="true">arrow_drop_down</mat-icon>
     </button>
     <mat-menu #leagueMenu="matMenu">
         <button mat-menu-item *ngFor="let league of leagues" [class.selected-league]="league.id === selectedLeagueId" (click)="onLeagueChange(league.id)">

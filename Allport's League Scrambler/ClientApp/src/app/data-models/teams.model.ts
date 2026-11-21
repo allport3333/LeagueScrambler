@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Player } from '../data-models/player.model';
-import { KingQueenRoundScore } from './kingQueenRoundScore';
+import { KingQueenRoundScore } from './KingQueenRoundScore';
 
 
 export interface Team {

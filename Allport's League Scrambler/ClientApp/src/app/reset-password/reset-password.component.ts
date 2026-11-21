@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { LoginService } from '../services/login.service';
-import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
+import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
@@ -10,9 +10,9 @@ import { ActivatedRoute, Router } from '@angular/router';
     styleUrls: ['./reset-password.component.less']
 })
 export class ResetPasswordComponent {
-    resetPasswordForm: FormGroup;
+    resetPasswordForm: UntypedFormGroup;
     token: string; // Add a token property
-    constructor(private formBuilder: FormBuilder, private loginService: LoginService, private snackBar: MatSnackBar, private route: ActivatedRoute, private router: Router ) { }
+    constructor(private formBuilder: UntypedFormBuilder, private loginService: LoginService, private snackBar: MatSnackBar, private route: ActivatedRoute, private router: Router ) { }
 
     ngOnInit(): void {
         this.resetPasswordForm = this.formBuilder.group({
@@ -23,7 +23,7 @@ export class ResetPasswordComponent {
     }
 
     // Validate both password fields together so a mismatch cannot submit.
-    private passwordsMatch(group: FormGroup): { [key: string]: boolean } | null {
+    private passwordsMatch(group: UntypedFormGroup): { [key: string]: boolean } | null {
         const password = group.get('password');
         const confirmation = group.get('confirmPassword');
         return password && confirmation && password.value !== confirmation.value

@@ -1,4 +1,4 @@
-    <mat-card *ngIf="!isActionAllowed" class="m-2 text-center" style="background-color: #f3f3f3;">
+    <mat-card appearance="outlined" *ngIf="!isActionAllowed" class="m-2 text-center" style="background-color: #f3f3f3;">
         <p>Viewing and previewing leagues is available without administration access.
            To edit players, save scores, or update league settings, unlock administration.</p>
         <mat-form-field appearance="outline">
@@ -14,7 +14,7 @@
 
     <div class="row">
         <div class="col-12">
-            <mat-card class="scramble-setup ml-1 mt-2"><h2>Team Configuration</h2><p class="workspace-help">Choose Max Team Size or Number of Teams. Choosing one clears the other; your player selection is retained.</p>
+            <mat-card appearance="outlined" class="scramble-setup ml-1 mt-2"><h2>Team Configuration</h2><p class="workspace-help">Choose Max Team Size or Number of Teams. Choosing one clears the other; your player selection is retained.</p>
                 <div class="row">
                     <!--<div class="col">
                         <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
@@ -32,7 +32,7 @@
                         </mat-card>
                     </div>-->
                     <div class="col text-center mt-2">
-                        <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
+                        <mat-card appearance="outlined" style="background-color:lightgray;" class="d-flex flex-column align-items-center">
                             <h4>Max Team Size</h4>
                             <div class="mt-1">
                                 <mat-form-field>
@@ -48,7 +48,7 @@
                         </mat-card>
                     </div>
                     <div class="col text-center mt-2">
-                        <mat-card style="background-color: lightgray;" class="d-flex flex-column align-items-center">
+                        <mat-card appearance="outlined" style="background-color: lightgray;" class="d-flex flex-column align-items-center">
                             <h4>Number of Teams</h4>
                             <div class="mt-1">
                                 <mat-form-field>
@@ -111,7 +111,7 @@
 
                     </div>
                     <div class="col text-center mt-2" *ngIf="teamCount">
-                        <mat-card style="background-color: lightgray;" class="d-flex flex-column align-items-center">
+                        <mat-card appearance="outlined" style="background-color: lightgray;" class="d-flex flex-column align-items-center">
                             <h4>Team Breakdown</h4>
                             <div class="d-flex justify-content-center align-items-center mt-3" style="gap: 20px;">
                                 <!-- 10 Player Teams -->
@@ -301,7 +301,7 @@
 
     <div class="row">
         <div class="col-12">
-            <mat-card class=" ml-3 mt-2 " style="background-color:lightgray; ">
+            <mat-card appearance="outlined" class=" ml-3 mt-2 " style="background-color:lightgray; ">
                 <mat-tab-group mat-align-tabs="center" #tabGroup (selectedTabChange)="onTabChange($event)">
 
                     <mat-tab label="Select Players" *ngIf="selectedLeague">
@@ -310,7 +310,7 @@
 
                                 <div class="col-12" id="hideInputOptions">
                                     <div [hidden]="playerLoading">
-                                        <div class="workspace-section-header"><h3>Player List</h3><button mat-button (click)="hidePlayerList()" [attr.aria-expanded]="!hidePlayers">{{ hidePlayers ? 'Show Player List' : 'Hide Player List' }}</button></div><mat-card id="playerListHidden" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                                        <div class="workspace-section-header"><h3>Player List</h3><button mat-button (click)="hidePlayerList()" [attr.aria-expanded]="!hidePlayers">{{ hidePlayers ? 'Show Player List' : 'Hide Player List' }}</button></div><mat-card appearance="outlined" id="playerListHidden" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                             <mat-card-title style="color: gray; margin: -10px -10px -5px -10px; display: flex; justify-content: center; align-items: center; flex-direction: column;">
                                                 <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap;">
                                                     <button mat-raised-button color="primary" (click)="selectAllPlayers()" style="font-size: 14px; padding: 5px; min-width: 80px;">
@@ -586,7 +586,7 @@
                         </div>
                     </mat-tab>
                     <mat-tab label="Retrieve Scramble" *ngIf="selectedLeague">
-                        <mat-card style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                        <mat-card appearance="outlined" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <div class="tab-content d-flex flex-column align-items-center">
                                 <h5 class="mb-2">Retrieve Previous Scramble</h5>
                                 <mat-selection-list dense [(ngModel)]="selectedRetrieveScrambleList" (ngModelChange)="updateScrambleNumbers($event)">
@@ -646,7 +646,7 @@
                     </mat-tab>
                     <!-- New Dropdown Retrieve Scramble Tab -->
                     <mat-tab label="Manage Scores" *ngIf="selectedLeague">
-                        <mat-card class="score-editor-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                        <mat-card appearance="outlined" class="score-editor-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                             <div class="tab-content d-flex flex-column align-items-center">
                                 <h5 class="mb-2">Select Scramble to Retrieve</h5>
                                 <mat-form-field appearance="outline" style="width: 250px;">
@@ -761,8 +761,8 @@
         </div>
     </div>
 </div>
-<p class="scramble-empty-state" *ngIf="workspaceSection === 'scrambler' && !listOfTeams.length">No scramble has been generated yet. Select players and configure teams above.  <button mat-button *ngIf="hidePlayers" (click)="hidePlayerList()">Show Player List</button></p><section class="league-management-page consolidated-management" [hidden]="workspaceSection !== 'league-management'"><mat-card class="management-workspace"><h1>Player and League Management</h1><mat-tab-group class="management-tabs" mat-align-tabs="center"><mat-tab label="Edit / Remove Players"><div class="management-players-section">
- <mat-card class="management-form-card management-roster-card">
+<p class="scramble-empty-state" *ngIf="workspaceSection === 'scrambler' && !listOfTeams.length">No scramble has been generated yet. Select players and configure teams above.  <button mat-button *ngIf="hidePlayers" (click)="hidePlayerList()">Show Player List</button></p><section class="league-management-page consolidated-management" [hidden]="workspaceSection !== 'league-management'"><mat-card appearance="outlined" class="management-workspace"><h1>Player and League Management</h1><mat-tab-group class="management-tabs" mat-align-tabs="center"><mat-tab label="Edit / Remove Players"><div class="management-players-section">
+ <mat-card appearance="outlined" class="management-form-card management-roster-card">
   <h2>Current League Players</h2><p class="management-context">{{ selectedLeague || 'Select a league to manage its players.' }}</p>
   <div class="management-roster-tools"><div class="roster-search-row"><mat-form-field appearance="outline" class="roster-search"><mat-label>Search current league players</mat-label><input matInput [(ngModel)]="managementRosterSearch" (ngModelChange)="showAllManagementPlayers=false" placeholder="Player name"></mat-form-field></div><div class="roster-filter-row"><mat-form-field appearance="outline" class="roster-division-filter"><mat-label>Filter division</mat-label><mat-select [(ngModel)]="managementRosterDivision" (selectionChange)="showAllManagementPlayers=true"><mat-option value="all">All divisions</mat-option><mat-option value="0">No Division</mat-option><mat-option *ngFor="let d of leagueDivisionsForSelectedLeague" [value]="''+d.id">{{d.name || d.code}}</mat-option></mat-select></mat-form-field><button mat-stroked-button type="button" (click)="toggleManagementRoster()" [disabled]="managementRosterLoading || !!managementRosterError || !managementRoster.length" [attr.aria-expanded]="showAllManagementPlayers">{{ showAllManagementPlayers ? 'Hide All Players' : 'Show All Players' }}</button></div></div>
   <p *ngIf="managementRosterLoading" role="status">Loading league players...</p><div *ngIf="managementRosterError" role="alert"><p>{{ managementRosterError }}</p><button mat-stroked-button (click)="refreshManagementRoster()">Retry roster</button></div>
@@ -772,7 +772,7 @@
   <table class="management-roster-table" *ngIf="!managementRosterLoading && !managementRosterError && (showAllManagementPlayers || managementRosterSearch.trim())"><thead><tr><th scope="col">Player Name</th><th scope="col">Division</th><th scope="col">Actions</th></tr></thead><tbody><tr *ngFor="let player of filteredManagementRoster; trackBy: trackManagementPlayer" [attr.data-roster-player]="player.id"><td data-label="Player Name">{{player.firstName}} {{player.lastName}}</td><td data-label="Division">{{player.managementDivision || 'No Division'}}</td><td data-label="Actions"><button mat-stroked-button color="primary" type="button" (click)="editLeaguePlayer(player)" [disabled]="!isActionAllowed || managementRemovalPending">Edit</button></td></tr></tbody></table>
  </mat-card>
 </div></mat-tab><mat-tab label="Add Players"><div class="management-players-section">
- <mat-card class="management-form-card management-add-card"><h2>Add Players</h2>
+ <mat-card appearance="outlined" class="management-form-card management-add-card"><h2>Add Players</h2>
   <div class="management-add-actions"><section><mat-icon aria-hidden="true">people</mat-icon><h3>Browse existing players</h3><p>Find players and add them with one click.</p><button mat-raised-button color="primary" type="button" (click)="openExistingPlayerBrowser()" [disabled]="!isActionAllowed || !leagueId || managementRosterLoading || !!managementRosterError">Browse Existing Players</button></section><section><mat-icon aria-hidden="true">file_upload</mat-icon><h3>Import a roster</h3><p>Review names and divisions before adding players.</p><button mat-raised-button color="primary" type="button" (click)="openPlayerImport()" [disabled]="!isActionAllowed || !leagueId || managementRosterLoading || !!managementRosterError">Import Players From File</button></section></div>
   <section class="management-quick-add"><h3>Quick Add Existing Player</h3><div class="quick-add-row">
    <mat-form-field appearance="outline"><mat-label>Search Player</mat-label><input matInput [matAutocomplete]="auto" [(ngModel)]="searchTerm" (input)="onSearchPlayer($event)" (blur)="onBlurPlayerInput()"><mat-autocomplete #auto="matAutocomplete" (optionSelected)="onPlayerSelected($event.option.value)" [displayWith]="displayPlayer"><mat-option *ngFor="let player of searchedPlayers" [value]="player">{{ player.firstName }} {{ player.lastName }}</mat-option></mat-autocomplete></mat-form-field>
@@ -826,7 +826,7 @@
 <mat-tab label="Manage Schedule"><app-manage-schedule [leagueId]="leagueId" [leagueName]="selectedLeague" [canManage]="isActionAllowed" [draftStore]="scheduleDrafts"></app-manage-schedule></mat-tab>
 <mat-tab label="League Settings">
                                     <div class="container-fluid">
-                                        <mat-card class="management-form-card management-settings-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                                        <mat-card appearance="outlined" class="management-form-card management-settings-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                             <div style="margin: 20px;" class="tab-content d-flex flex-column align-items-center management-settings-grid">
                                                 <h2>Modify League Settings</h2>
 
@@ -889,7 +889,7 @@
                                     </div>
                                 </mat-tab><mat-tab label="League Setup"><div class="management-setup-grid">
                                     <div class="container-fluid">
-                                        <mat-card class="management-form-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                                        <mat-card appearance="outlined" class="management-form-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                             <h5 class="text-center">Create New League</h5>
                                             <br />
                                             <form [formGroup]="LeagueForm" (ngSubmit)="addLeague()">
@@ -912,7 +912,7 @@
                                     </div>
 
                                     <div class="container-fluid">
-                                        <mat-card class="management-form-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                                        <mat-card appearance="outlined" class="management-form-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
                                             <h5 class="text-center">Add Division</h5>
                                             <br />
 
@@ -1312,7 +1312,7 @@
 
             <!-- CARD #1: Team i & i+1 (col-6) -->
             <div class="col-6">
-                <mat-card style="padding: 1rem; border: 2px solid black; box-shadow: none;"><h3 class="viewer-match-number">Match {{ i / 2 + 1 }}</h3>
+                <mat-card appearance="outlined" style="padding: 1rem; border: 2px solid black; box-shadow: none;"><h3 class="viewer-match-number">Match {{ i / 2 + 1 }}</h3>
                     <div class="row justify-content-center align-items-center">
 
                         <!-- LEFT TEAM (Team i) -->
@@ -1500,7 +1500,7 @@
 
             <!-- CARD #2: Team i+2 & i+3 (col-6) -->
             <div class="col-6" *ngIf="listOfTeams[i+2]">
-                <mat-card style="padding: 1rem; border: 2px solid black; box-shadow: none;"><h3 class="viewer-match-number">Match {{ i / 2 + 2 }}</h3>
+                <mat-card appearance="outlined" style="padding: 1rem; border: 2px solid black; box-shadow: none;"><h3 class="viewer-match-number">Match {{ i / 2 + 2 }}</h3>
                     <div class="row justify-content-center align-items-center">
 
                         <!-- LEFT TEAM (Team i+2) -->

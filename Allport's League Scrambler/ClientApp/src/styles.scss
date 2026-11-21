@@ -1,16 +1,26 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+/* Preserve the existing compact typography and field density after MDC. */
+.mat-mdc-button-base, .mat-mdc-tab { letter-spacing: normal; }
+.mat-mdc-form-field { font-size: 14px; letter-spacing: normal; }
+.existing-player-browser-panel .browser-controls,
+.player-import-panel .import-filters,
+app-manage-schedule .basic-settings,
+.scramble-setup mat-form-field { @include mat.form-field-density(-2); }
 
 .existing-player-browser-panel { height: 94vh !important; height: 94dvh !important; max-height: 96vh !important; max-height: 96dvh !important; }
 .player-import-panel { height: 94vh !important; height: 94dvh !important; max-height: 96vh !important; max-height: 96dvh !important; }
-.player-import-panel .mat-dialog-container { padding: 16px; height: 100%; overflow: visible; box-sizing: border-box; }
+.player-import-panel .mat-mdc-dialog-container { padding: 0; }
+.player-import-panel .mat-mdc-dialog-surface { padding: 16px; height: 100%; overflow: visible; box-sizing: border-box; }
 @media (max-width: 600px) {
   .player-import-panel { width: 100vw !important; max-width: 100vw !important; height: 100vh !important; height: 100dvh !important; max-height: 100vh !important; max-height: 100dvh !important; }
-  .player-import-panel .mat-dialog-container { padding: 10px 8px; border-radius: 0; }
+  .player-import-panel .mat-mdc-dialog-surface { padding: 10px 8px; border-radius: 0; }
 }
-.existing-player-browser-panel .mat-dialog-container { padding: 16px; height: 100%; overflow: visible; box-sizing: border-box; }
+.existing-player-browser-panel .mat-mdc-dialog-container { padding: 0; }
+.existing-player-browser-panel .mat-mdc-dialog-surface { padding: 16px; height: 100%; overflow: visible; box-sizing: border-box; }
 @media (max-width: 600px) {
   .existing-player-browser-panel { width: 100vw !important; max-width: 100vw !important; height: 100vh !important; height: 100dvh !important; max-height: 100vh !important; max-height: 100dvh !important; }
-  .existing-player-browser-panel .mat-dialog-container { padding: 10px 8px; border-radius: 0; }
+  .existing-player-browser-panel .mat-mdc-dialog-surface { padding: 10px 8px; border-radius: 0; }
 }
 
 html, body {
@@ -23,6 +33,7 @@ body {
 }
 
 /* Default style for 4 columns */
+/* TODO(mdc-migration): The following rule targets internal classes of list that may no longer apply for the MDC version. */
 .mat-list-option-four-columns {
     background-color: #DBFDFF;
     width: calc(25% - 10px);
@@ -37,6 +48,7 @@ body {
 }
 /* Style for 2 columns on smaller screens */
 @media screen and (max-width: 768px) {
+    /* TODO(mdc-migration): The following rule targets internal classes of list that may no longer apply for the MDC version. */
     .mat-list-option-two-columns {
         width: calc(50% - 10px);
     }
@@ -54,6 +66,7 @@ body {
 }
 
 /* Default style for mat-selection-list in horizontal layout */
+/* TODO(mdc-migration): The following rule targets internal classes of select that may no longer apply for the MDC version. */
 mat-selection-list.list-horizontal {
     display: inline-block;
     height: auto;
@@ -230,7 +243,7 @@ input {
 }
 
 /* Action Button Style for Red Snackbar */
-.red-snackbar .mat-simple-snackbar-action {
+.red-snackbar .mat-mdc-snack-bar-action {
     color: #FFFFFF !important; /* White button text for contrast */
     background-color: #B71C1C !important; /* Darker red for the button */
     font-weight: bold !important;
@@ -243,7 +256,7 @@ input {
 }
 
 /* Button Hover Effect */
-.red-snackbar .mat-simple-snackbar-action:hover {
+.red-snackbar .mat-mdc-snack-bar-action:hover {
     background-color: #D32F2F !important; /* Slightly lighter red on hover */
     transform: scale(1.05) !important;
 }
@@ -310,7 +323,7 @@ input {
     }
 }
 
-.mat-select-panel {
+.mat-mdc-select-panel {
     z-index: 1000 !important; /* Ensure dropdown appears above everything else */
 }
 /* Enhanced Custom Snackbar */
@@ -344,7 +357,7 @@ input {
 }
 
 /* Action Button Style */
-.custom-snackbar .mat-simple-snackbar-action {
+.custom-snackbar .mat-mdc-snack-bar-action {
     color: #FFC107 !important; /* Bright yellow button */
     font-weight: bold !important;
     font-size: 24px !important; /* Larger button text */
@@ -352,7 +365,7 @@ input {
 }
 
 /* Dialog Container Styling */
-.custom-dialog .mat-dialog-container {
+.custom-dialog .mat-mdc-dialog-container {
     background-color: #212121 !important; /* Dark background */
     color: #FFFFFF !important; /* White text */
     font-size: 24px !important; /* Larger font */
@@ -378,13 +391,13 @@ input {
 }
 
 /* Dialog Content */
-.custom-dialog .mat-dialog-content {
+.custom-dialog .mat-mdc-dialog-content {
     font-size: 24px !important;
     margin-bottom: 20px !important;
 }
 
 /* Ensure buttons are side by side */
-.custom-dialog .mat-dialog-actions {
+.custom-dialog .mat-mdc-dialog-actions {
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
@@ -394,7 +407,7 @@ input {
 }
 
 /* Cancel Button Styling */
-.custom-dialog .mat-dialog-actions button[color="warn"] {
+.custom-dialog .mat-mdc-dialog-actions button[color="warn"] {
     background-color: #4E342E !important; /* Dark brown */
     color: #FFC107 !important; /* Yellow text */
     font-weight: bold !important;
@@ -405,7 +418,7 @@ input {
 }
 
 /* Confirm Button Styling */
-.custom-dialog .mat-dialog-actions button[color="primary"] {
+.custom-dialog .mat-mdc-dialog-actions button[color="primary"] {
     background-color: #1E88E5 !important; /* Blue */
     color: #FFC107 !important; /* Yellow text */
     font-weight: bold !important;
@@ -464,3 +477,6 @@ input {
   }
   .page-loading h2 { margin: 0 0 12px !important; }
 }
+
+/* Legacy underline fields had no gray filled background. */
+.mat-mdc-text-field-wrapper.mdc-text-field--filled { background-color:transparent; }

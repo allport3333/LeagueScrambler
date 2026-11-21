@@ -1,9 +1,12 @@
+
+/* TODO(mdc-migration): The following rule targets internal classes of card that may no longer apply for the MDC version. */
 mat-card {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
+    /* TODO(mdc-migration): The following rule targets internal classes of card that may no longer apply for the MDC version. */
     mat-card:hover {
         transform: scale(1.05);
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
@@ -19,7 +22,7 @@ p {
     font-family: 'Verdana', sans-serif;
 }
 
-.mat-spinner {
+.mat-mdc-progress-spinner {
     margin: auto;
 }
 
@@ -35,6 +38,6 @@ p {
 
 
 .schedule-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 auto 12px}.schedule-controls .week-navigation{margin:0}.schedule-actions{display:flex;gap:8px;align-items:center;margin-bottom:16px}.schedule-actions button{min-height:40px}
-.season-dialog-layout{display:flex;flex-direction:column;max-height:88vh;max-height:88dvh;min-width:0}.season-dialog-layout header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d7e1ed;padding-bottom:8px}.season-dialog-layout h2{margin:0}.season-dialog-layout header p{font-size:13px;color:#5a6d84;margin:4px 0}.season-dialog-layout .mat-dialog-content{min-height:0;max-height:none;overflow:auto;padding-top:10px}.season-dialog-layout .mat-dialog-actions{flex-shrink:0;margin-bottom:0}
+.season-dialog-layout{display:flex;flex-direction:column;max-height:88vh;max-height:88dvh;min-width:0}.season-dialog-layout header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d7e1ed;padding-bottom:8px}.season-dialog-layout h2{margin:0}.season-dialog-layout header p{font-size:13px;color:#5a6d84;margin:4px 0}.season-dialog-layout .mat-mdc-dialog-content{min-height:0;max-height:none;overflow:auto;padding-top:10px}.season-dialog-layout .mat-mdc-dialog-actions{flex-shrink:0;margin-bottom:0}
 .season-week-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}.season-week{border:1px solid #c8d4e4;border-radius:4px;padding:6px;min-width:0}.season-week h3{font-size:15px;text-align:center;margin:0 0 5px}.season-week table{width:100%;table-layout:fixed;border-collapse:collapse}.season-week td,.season-week th{border:1px solid #d7e1ed;padding:3px 5px;text-align:center;overflow-wrap:break-word;line-height:1.25}.season-versus-column{width:24px}.season-versus{color:#657285;font-size:12px}.season-division th{font-size:11px;letter-spacing:.2px;font-weight:600;background:#eef2f7;padding:2px 4px}.season-event{font-size:12px;color:#526579;text-align:center;margin:4px 0 0}.current-season-week{border-color:#739a83;background:#f2f8f4}.season-week p{text-align:center}
 @media(max-width:650px){.season-week-grid{grid-template-columns:minmax(0,1fr)}.season-week{padding:5px}.season-week td{font-size:13px}.schedule-controls{gap:0}.schedule-controls .week-navigation{width:100%}.schedule-actions{margin-bottom:0}}

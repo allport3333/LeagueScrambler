@@ -1,9 +1,9 @@
 import {Component,Input,OnChanges,OnDestroy,SimpleChanges,AfterViewChecked,ViewChild,ElementRef} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import {timeout} from 'rxjs/operators';
 import {ScheduleTeam,ScheduleEntry,DivisionPlan,CrossRule,blankEntry,entrySignature,changed,generateSchedule,validateSchedule,scheduleSummary,detectScheduleMapping,importScheduleGrid,importScheduleText,isoDay,normalize,pair,calendarWeekStart,replacementGameIds} from './schedule-engine';
 import {printSeasonSchedule} from '../league-schedule/schedule-print';
-import {DateAdapter} from '@angular/material';
+import { DateAdapter } from '@angular/material/core';
 import {ScheduleDateAdapter} from './schedule-date-adapter';
 
 @Component({selector:'app-manage-schedule',templateUrl:'./manage-schedule.component.html',styleUrls:['./manage-schedule.component.css'],providers:[{provide:DateAdapter,useClass:ScheduleDateAdapter}]})

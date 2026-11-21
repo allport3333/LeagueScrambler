@@ -1,7 +1,7 @@
 import { printSeasonSchedule } from './schedule-print';
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, TemplateRef } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { MatDialog, MatDialogRef } from '@angular/material';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { StatisticsService } from '../services/statistics.service';
 import { scheduleDateKey } from '../player-next-game/next-game-selection';
 import { scheduleEventDescription } from './schedule-presentation';
@@ -10,7 +10,7 @@ import { WeekSchedule } from '../data-models/DTOs';
 @Component({selector:'app-league-schedule',templateUrl:'./league-schedule.component.html',styleUrls:['./league-schedule.component.css']})
 export class LeagueScheduleComponent implements OnChanges, OnDestroy {
     @Input() leagueName = '';
-    @ViewChild('fullScheduleDialog') fullScheduleDialog: TemplateRef<any>;
+    @ViewChild('fullScheduleDialog', { static: true }) fullScheduleDialog: TemplateRef<any>;
     private dialogRef: MatDialogRef<any>;
     @Input() leagueId: number | null = null;
     @Input() requestedWeekNumber:number=null;

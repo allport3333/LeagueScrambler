@@ -3,9 +3,9 @@ import { StatisticsService } from '../services/statistics.service';
 import { LeagueTeams } from '../data-models/leagueTeams.model';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
-import { FormControl } from '@angular/forms';
+import { UntypedFormControl } from '@angular/forms';
 import { startWith, map } from 'rxjs/operators';
-import { MatSnackBar } from '@angular/material';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { TeamUpdateService } from '../services/team-update.service';
 
 @Component({
@@ -29,7 +29,7 @@ export class TeamManagementComponent implements OnInit {
     filteredPlayers: Player[] = [];
     searchTerm: string = '';
     selectedPlayerId: number | null = null;
-    playerCtrl = new FormControl();  
+    playerCtrl = new UntypedFormControl();  
     selectedPlayer: Player | null = null;
     loadingData = false;
 

@@ -6,7 +6,7 @@ module.exports=async({page,component,out,checks,players,members,calls})=>{
  let delayed=false,failed=false,playerReads=0;
  await page.route('**/api/ScrambleData/GetPlayers/*',async route=>{playerReads++;const id=Number(new URL(route.request().url()).pathname.split('/').pop());if(delayed)await new Promise(r=>setTimeout(r,500));if(failed)return route.fulfill({status:503,body:'Fixture unavailable'});return route.fulfill({json:players.filter(p=>members[id]&&members[id].has(p.id))});});
  await page.goto(origin+'/fetch-data');const dir=page.locator('app-fetch-data');await expect(dir.getByRole('heading',{name:'Player List',exact:true})).toBeVisible();
- const act=(fn,arg)=>page.evaluate(({fn,arg})=>{const d=window.ng.probe(document.querySelector('app-fetch-data'));return d.injector.get(window.ng.coreTokens.NgZone).run(()=>eval('('+fn+')')(d.componentInstance,arg));},{fn:String(fn),arg});
+ const act=(fn,arg)=>require('./angular-component.cjs')(page,'app-fetch-data',fn,arg);
  const metrics=[];
  if(baseline){for(const width of [375,1280,1920,3440]){await page.setViewportSize({width,height:950});metrics.push(await dir.evaluate(el=>({width:innerWidth,height:el.getBoundingClientRect().height,contentWidth:el.querySelector('.tables-container').getBoundingClientRect().width})));await page.screenshot({animations:'disabled',path:path.join(out,'directory-before-'+width+'.png')});}fs.writeFileSync(path.join(out,'baseline.json'),JSON.stringify(metrics,null,2));return;}
  await expect(dir.locator('.player-link')).toHaveCount(601);

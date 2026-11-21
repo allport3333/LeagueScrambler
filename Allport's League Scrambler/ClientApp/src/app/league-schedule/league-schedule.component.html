@@ -12,7 +12,7 @@
   <p class="schedule-state" *ngFor="let event of selectedWeek.events">{{event.title}}</p>
   <div class="schedule-matchups" aria-live="polite">
    <ng-container *ngFor="let week of [selectedWeek]">
-                    <mat-card *ngFor="let match of week.matches"
+                    <mat-card appearance="outlined" *ngFor="let match of week.matches"
                               [ngStyle]="{
               'background-color': match.division === 'Gold' ? '#FFF8DC' :
                                  match.division === 'Silver' ? '#E0E0E0' :
@@ -47,7 +47,7 @@
                         </mat-card-header>
 
                         <!-- Division Tag -->
-                        <mat-chip *ngIf="match.division"
+                        <mat-chip-option *ngIf="match.division"
                                   [ngStyle]="{
                   'background-color': match.division === 'Gold' ? '#FFF8DC' :
                                      match.division === 'Silver' ? '#E0E0E0' :
@@ -58,7 +58,7 @@
               }"
                                   style="align-self: center;">
                             {{ match.division }} Division
-                        </mat-chip>
+                        </mat-chip-option>
                     </mat-card>
    </ng-container>
   </div>

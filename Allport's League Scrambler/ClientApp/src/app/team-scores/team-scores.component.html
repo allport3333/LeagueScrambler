@@ -5,7 +5,7 @@
 
 <div class="row justify-content-center" *ngIf="!loading">
     <div class="col-10">
-        <mat-card class="mt-2" style="box-shadow: none; padding: 0;">
+        <mat-card appearance="outlined" class="mt-2" style="box-shadow: none; padding: 0;">
             <div *ngIf="!isActionAllowed" class="text-center mb-3">
                 <mat-form-field appearance="outline">
                     <mat-label>Administration Password</mat-label>
@@ -42,7 +42,7 @@
                         <ng-container *ngIf="leagueID && !loadingMatchups && !loadError">
                             <p *ngIf="!scheduledCount" class="empty-schedule" role="status">No games are scheduled for this date. Select two league teams below to enter a manual matchup.</p>
                             <p *ngIf="scheduledCount">{{ scheduledCount }} scheduled matchup(s). Save each matchup separately.</p>
-                            <mat-card *ngFor="let matchup of matchups; let index = index" class="matchup-card" [attr.data-matchup-index]="index">
+                            <mat-card appearance="outlined" *ngFor="let matchup of matchups; let index = index" class="matchup-card" [attr.data-matchup-index]="index">
                                 <h3>{{ matchup.manual ? 'Manual matchup' : 'Scheduled matchup' }} {{ index + 1 }}</h3>
                                 <p *ngIf="matchup.division || matchup.description" class="matchup-detail">{{ matchup.division }}<span *ngIf="matchup.division && matchup.description"> · </span>{{ matchup.description }}</p>
                                 <div class="team-pair" *ngIf="matchup.manual && !hasSaved(matchup)">

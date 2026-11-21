@@ -10,7 +10,7 @@ import { NewCreatedTeam } from '../data-models/newCreatedTeam.model';
 import { LeagueTeams } from '../data-models/leagueTeams.model';
 import { TeamScores } from '../data-models/teamScores.model';
 import { Schedule } from '../data-models/schedule.model';
-import { forEach } from '@angular/router/src/utils/collection';
+
 
 @Component({
     selector: 'app-schedule',

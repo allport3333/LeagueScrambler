@@ -12,7 +12,7 @@ import { PlayerNextGameComponent } from './player-next-game/player-next-game.com
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 
 import { AppComponent } from './app.component';
@@ -22,11 +22,35 @@ import { ScramblerComponent } from './scrambler/scrambler.component';
 import { LeagueManagementGuard, ScramblerWorkspaceComponent, WorkspaceRouteComponent } from './scrambler/scrambler-workspace.component';
 import { FetchDataComponent } from './fetch-data/fetch-data.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import {
-    MatCardModule, MatButtonModule, MatMenuModule, MatToolbarModule, MatInputModule, MatIconModule, MatTableModule, MatPaginatorModule, MatSortModule, MatSidenavModule,
-    MatTabsModule, MatTooltipModule, MatCheckboxModule, MatGridListModule, MatSelectModule, MatListModule, MatFormFieldModule, MatOptionModule, MatAutocompleteModule, MatExpansionModule, MatDialogModule,
-    MatStepperModule, MatDatepickerModule, MatNativeDateModule, MatTreeModule, MatProgressSpinnerModule, MatSnackBar, MatSnackBarContainer, MatSnackBarModule, MatSlideToggleModule, MatChipsModule
-} from '@angular/material';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatOptionModule } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatGridListModule } from '@angular/material/grid-list';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatListModule } from '@angular/material/list';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSnackBar, MatSnackBarContainer, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSortModule } from '@angular/material/sort';
+import { MatStepperModule } from '@angular/material/stepper';
+import { MatTableModule } from '@angular/material/table';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTreeModule } from '@angular/material/tree';
 import { TeamScoresComponent } from './team-scores/team-scores.component';
 import { PlayerScoresComponent } from './player-scores/player-scores.component';
 import { ScheduleComponent } from './schedule/schedule.component';
@@ -49,8 +73,7 @@ import { IndividualTeamScoresComponent } from './individual-team-scores/individu
 import { FaqComponent } from './faq/faq.component';
 import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
 
-@NgModule({
-    declarations: [
+@NgModule({ declarations: [
         AppComponent,
         NavMenuComponent,
         HomeComponent,
@@ -89,11 +112,8 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         KqmatchupsComponent,
         ScramblerWorkspaceComponent,
         WorkspaceRouteComponent
-
     ],
-    imports: [
-        BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
-        HttpClientModule,
+    bootstrap: [AppComponent], imports: [BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
         FormsModule,
         MatInputModule,
         MatChipsModule,
@@ -128,9 +148,9 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         RouterModule.forRoot([
             { path: '', component: HomeComponent, pathMatch: 'full' },
             { path: '', component: ScramblerWorkspaceComponent, children: [
-                { path: 'scrambler', component: WorkspaceRouteComponent },
-                { path: 'league-management', component: WorkspaceRouteComponent, canActivate: [LeagueManagementGuard] }
-            ] },
+                    { path: 'scrambler', component: WorkspaceRouteComponent },
+                    { path: 'league-management', component: WorkspaceRouteComponent, canActivate: [LeagueManagementGuard] }
+                ] },
             { path: 'fetch-data', component: FetchDataComponent },
             { path: 'team-scores', component: TeamScoresComponent },
             { path: 'player-scores', component: PlayerScoresComponent },
@@ -144,12 +164,7 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
             { path: 'faq', component: FaqComponent },
             { path: 'install-locally', component: InstallLocallyComponent },
             { path: 'kqmatchups', component: KqmatchupsComponent }
-        ]),
+        ], {}),
         ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production }),
-        BrowserAnimationsModule
-    ],
-    providers: [MatSnackBar, AuthService], 
-    bootstrap: [AppComponent],
-    entryComponents: [LeaguePlayerEditComponent, ImportPlayerCreateComponent, PlayerImportComponent, ExistingPlayerBrowserComponent, TeamRosterDialogComponent, MatSnackBarContainer, ForgotPasswordDialogComponent]
-})
+        BrowserAnimationsModule], providers: [MatSnackBar, AuthService, provideHttpClient(withInterceptorsFromDi())] })
 export class AppModule { }

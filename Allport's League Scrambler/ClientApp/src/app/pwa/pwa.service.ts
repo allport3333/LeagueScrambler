@@ -40,7 +40,9 @@ export class PwaService implements OnDestroy {
   window.addEventListener('offline', this.onlineListener);
   this.display.addListener(this.displayListener);
   if (this.updates.isEnabled) {
-   this.subscriptions.add(this.updates.available.subscribe(() => this.updateAvailable = true));
+   this.subscriptions.add(this.updates.versionUpdates.subscribe(event => {
+    if (event.type === 'VERSION_READY') this.updateAvailable = true;
+   }));
    // Never reload automatically, including while a league-night form is being edited.
    this.zone.runOutsideAngular(() => this.timer = window.setInterval(() => this.checkForUpdate(), 6 * 60 * 60 * 1000));
   }

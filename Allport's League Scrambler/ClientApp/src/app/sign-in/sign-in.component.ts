@@ -1,6 +1,9 @@
 import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
-import { MatTableDataSource, MatSort, MatSnackBar, MatDialogRef, MatDialog } from '@angular/material';
-import { FormGroup, FormControl } from '@angular/forms';
+import { MatDialogRef, MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSort } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
+import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { PlayerService } from '../services/player.service';
 import { PlayerSignIn } from '../data-models/playerSignIn.model';
@@ -18,7 +21,7 @@ import { AuthService } from '../auth.service';
     styleUrls: ['./sign-in.component.css']
 })
 export class SignInComponent implements OnInit {
-    @ViewChild('confirmationDialog') confirmationDialog!: TemplateRef<any>;
+    @ViewChild('confirmationDialog', { static: true }) confirmationDialog!: TemplateRef<any>;
     dialogRef!: MatDialogRef<any>;
     playerId: number | null = null;
     leaguesAvailable: Leagues[] = []; // Available leagues
@@ -40,11 +43,11 @@ export class SignInComponent implements OnInit {
     isPlayerSignedIn: boolean = false;  // Track if the player is signed in
     currentPlayerId: number;  
     dayOfWeekSetting: string = 'Sunday';
-    PlayerForm = new FormGroup({
-        firstName: new FormControl(),
-        lastName: new FormControl(),
-        isMale: new FormControl('Male'),
-        leagueName: new FormControl()
+    PlayerForm = new UntypedFormGroup({
+        firstName: new UntypedFormControl(),
+        lastName: new UntypedFormControl(),
+        isMale: new UntypedFormControl('Male'),
+        leagueName: new UntypedFormControl()
     });
 
     @ViewChild(MatSort) sort: MatSort;

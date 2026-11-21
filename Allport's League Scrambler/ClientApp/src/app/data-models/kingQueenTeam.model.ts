@@ -1,5 +1,5 @@
 
-import { KingQueenRoundScore } from './kingQueenRoundScore';
+import { KingQueenRoundScore } from './KingQueenRoundScore';
 import { KingQueenPlayer } from './kingQueenPlayer.model';
 export class KingQueenTeam {
     id: number;

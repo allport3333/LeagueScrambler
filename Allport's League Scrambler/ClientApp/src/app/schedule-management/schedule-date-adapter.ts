@@ -1,14 +1,13 @@
 import {Inject, Injectable, Optional} from '@angular/core';
-import {Platform} from '@angular/cdk/platform';
-import {MAT_DATE_LOCALE, NativeDateAdapter} from '@angular/material';
+import { MAT_DATE_LOCALE, NativeDateAdapter } from '@angular/material/core';
 import {isoDay} from './schedule-engine';
 
 // Keep typed ISO dates as local calendar dates, not UTC timestamps. Other input
 // formats retain the application's existing Material native-adapter behavior.
 @Injectable()
 export class ScheduleDateAdapter extends NativeDateAdapter {
- constructor(@Optional() @Inject(MAT_DATE_LOCALE) locale:string, platform:Platform) {
-  super(locale,platform);
+ constructor(@Optional() @Inject(MAT_DATE_LOCALE) locale:string) {
+  super(locale);
  }
 
  parse(value:any):Date|null {

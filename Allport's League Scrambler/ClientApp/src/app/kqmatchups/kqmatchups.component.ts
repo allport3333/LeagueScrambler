@@ -6,7 +6,7 @@ import { LeagueService } from '../services/league.service';
 import { PlayerService } from '../services/player.service';
 import { Team } from '../data-models/teams.model';
 import { Player } from '../data-models/player.model';
-import { KingQueenRoundScore } from '../data-models/kingQueenRoundScore';
+import { KingQueenRoundScore } from '../data-models/KingQueenRoundScore';
 import {latestSavedMatchupWeek, savedMatchupWeeks, compareSavedMatchupWeeks} from './latest-saved-week';
 
 @Component({

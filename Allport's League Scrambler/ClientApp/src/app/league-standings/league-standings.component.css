@@ -40,11 +40,13 @@
     .standings-settings .dropdown-container:not(.mobile-settings-open) { display: none; }
     .standings-settings .dropdown-container { margin: 4px 0 0; }
     .standings-card { width: 100%; min-width: 0; margin: 4px 0 !important; padding: 0 !important; overflow-x: hidden !important; }
-    :host ::ng-deep .standings-card .mat-tab-label { height: 44px; min-width: 76px; padding: 0 12px; }
+    /* TODO(mdc-migration): The following rule targets internal classes of tabs that may no longer apply for the MDC version. */
+    :host ::ng-deep .standings-card .mat-mdc-tab { height: 44px; min-width: 76px; padding: 0 12px; }
     .mobile-standings { display: block; width: 100%; padding: 4px 0; }
     .mobile-standings-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 8px; align-items: center; margin-bottom: 6px; }
     .mobile-standings-controls mat-form-field { grid-column: 1 / span 2; width: 100%; min-width: 0; font-size: 14px; }
-    :host ::ng-deep .mobile-standings-controls .mat-form-field-wrapper { padding-bottom: 0; margin: 0; }
+    /* TODO(mdc-migration): The following rule targets internal classes of form-field that may no longer apply for the MDC version. */
+    :host ::ng-deep .mobile-standings-controls .mat-mdc-form-field-subscript-wrapper { display: none; }
     .mobile-sort-direction, .mobile-table-toggle { min-height: 44px; margin: 0; padding: 0 6px; font-size: 13px; white-space: nowrap; }
     .mobile-standings-hint { font-size: 12px; line-height: 1.4; margin: 4px 0 6px; }
     .mobile-rankings { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; color: #212529; }

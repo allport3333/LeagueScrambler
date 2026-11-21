@@ -1,12 +1,12 @@
 import { Component, Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { of } from 'rxjs';
 import { catchError, filter, map, switchMap, take } from 'rxjs/operators';
 import { AuthService } from '../auth.service';
 import { LoginService } from '../services/login.service';
 
 @Injectable({ providedIn: 'root' })
-export class LeagueManagementGuard implements CanActivate {
+export class LeagueManagementGuard  {
     constructor(private auth: AuthService, private login: LoginService, private router: Router) { }
     canActivate() {
         return this.auth.authenticationState$.pipe(
