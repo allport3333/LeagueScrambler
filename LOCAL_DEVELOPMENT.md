@@ -10,7 +10,7 @@ This document explains how the original LeagueScrambler functionality is preserv
 4. Supply the SMTP settings if you need password recovery email functionality.
 5. Select an HTTPS launch profile in Visual Studio, trust the local development certificate if prompted, and start the application. The launch settings have been updated to use HTTPS. The authentication cookies deliberately cannot be used over HTTP.
 6. To create leagues using the administration password without an account login, make sure the database has exactly one Admin account, or set `LEAGUESCRAMBLER_LEGACY_ADMIN_EMAIL` to the email of the account that should own those leagues.
-7. To test password reset emails, set `LEAGUESCRAMBLER_PUBLIC_BASE_URL` to your actual HTTPS website origin; a placeholder or retired hostname will not deliver a working reset link.
+7. Password reset links default to `https://www.allportsleaguehub.com`. Set `LEAGUESCRAMBLER_PUBLIC_BASE_URL=https://localhost:5001` only for local Development testing. Production accepts the public HTTPS origin only; request host headers never determine reset links. Keep credentials in the existing secret configuration, and do not send real reset messages without authorization.
 8. New registrations automatically obtain a Player session so they can create or claim a player profile securely, without allowing anonymous database writes.
 9. Registered Players may remove their own sign-in records; anonymous visitors may not delete other players' sign-ins.
 10. Restore the original SQL database schema and data. The existing `Passwords` table must contain the administration password used for old management screens. It remains server-side, never returned by the API. Do not use the former published password on a public system.

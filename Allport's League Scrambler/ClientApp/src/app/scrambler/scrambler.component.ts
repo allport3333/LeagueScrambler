@@ -184,6 +184,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             this.snackBar.open('Standings have been saved.','OK',{duration:5000,verticalPosition:'top',horizontalPosition:'center'});this.initializeStandings();
         },()=>{if(version===this.scoreVersion){this.scoreSaveBusy=false;this.scoreRefreshRequired=true;this.scoreEditorFeedback='Scores were saved, but saved records could not be refreshed. Refresh saved records before saving again.';}});
     }
+    scheduleDrafts:any={};
     managementRoster: any[] = [];
     managementRosterSearch = '';
     managementRosterDivision = 'all';
@@ -356,7 +357,6 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     scrambleSelected: boolean = false;
     showPlayerTeams = false; // Controls the visibility of the player teams section
     showTeamFormation = false; // Controls the visibility of the team formation section
-    hideEverything: boolean;
     userRole: string;
     numberOfSubsAllowed: number = 100; // Default value
     dropLowest: number = 0; // Default value
@@ -1285,7 +1285,6 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.displayLowPlayers = [];
         this.hideInputOptions = false;
         this.hideListOptions = false;
-        this.hideEverything = false;
         this.checkScreenSize();
 
         // Subscribe to window resize events to update isSmallScreen
@@ -2392,18 +2391,11 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     }
 
 
-    hideShowEverything() {
-        this.hideEverything = !this.hideEverything;
+    scrambleRulesExpanded = false;
 
-        var z = document.getElementById("hideEverything");
-
-        // Check if the element with ID "hideEverything" exists
-        if (z) {
-            // Toggle the display property
-            z.style.display = this.hideEverything ? "none" : "block";
-        }
+    get enabledScrambleRuleCount(): number {
+        return [this.completeRandom, this.lockedResults, this.prioritizePreviousTeammates, this.allowMinimumRepeats].filter(Boolean).length;
     }
-
 
     deselectAllPlayers() {
         this.selectedList = [];

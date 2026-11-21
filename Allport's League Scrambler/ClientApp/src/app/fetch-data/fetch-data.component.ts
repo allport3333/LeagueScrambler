@@ -1,6 +1,6 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { MatTableDataSource, MatSort } from '@angular/material';
+import { Subscription } from 'rxjs';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 import { Router } from '@angular/router';
@@ -12,10 +12,15 @@ import { LeagueService } from '../services/league.service';
     templateUrl: './fetch-data.component.html',
     styleUrls: ['./fetch-data.component.less']
 })
-export class FetchDataComponent implements OnInit {
+export class FetchDataComponent implements OnInit, OnDestroy {
     players: Player[] = [];
-    malePlayersDataSource = new MatTableDataSource<Player>();
-    femalePlayersDataSource = new MatTableDataSource<Player>();
+    malePlayers: Player[] = [];
+    femalePlayers: Player[] = [];
+    otherPlayers: Player[] = [];
+    genderFilter = 'all';
+    error = '';
+    private leagueReader: Subscription;
+    private playerReader: Subscription;
     loading: boolean = false;
     player: Player;
     addedPlayer: Player;
@@ -23,7 +28,6 @@ export class FetchDataComponent implements OnInit {
     leagueName: string;
     searchValue: string = '';
     selectedLeagueId: number;
-    displayedColumns: string[] = ['firstName', 'lastName'];
 
     PlayerForm = new FormGroup({
         firstName: new FormControl(),
@@ -33,8 +37,6 @@ export class FetchDataComponent implements OnInit {
         isSub: new FormControl()
     });
 
-    @ViewChild(MatSort) sort: MatSort;
-
     constructor(
         private http: HttpClient,
         private router: Router,
@@ -43,46 +45,63 @@ export class FetchDataComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
-        this.loading = true;
-
         // Listen for league changes
-        this.leagueService.selectedLeague$.subscribe(selectedLeague => {
-            if (selectedLeague) {
-                this.selectedLeagueId = selectedLeague.leagueId;
-                this.loadPlayersByLeague(selectedLeague.leagueId);
-            }
+        this.leagueReader = this.leagueService.selectedLeague$.subscribe(selectedLeague => {
+            const leagueId = selectedLeague && selectedLeague.leagueId;
+            this.leagueName = selectedLeague && selectedLeague.leagueName;
+            if (leagueId === this.selectedLeagueId) return;
+            this.selectedLeagueId = leagueId;
+            if (this.playerReader) this.playerReader.unsubscribe();
+            if (leagueId > 0) this.loadPlayersByLeague(leagueId);
+            else { this.loading = false; this.error = ''; this.players = []; this.applyFilter(this.searchValue); }
         });
     }
 
-    // Load players and separate into male and female tables
+    // Retain the existing league-scoped endpoint; cancel stale league reads.
     private loadPlayersByLeague(leagueId: number): void {
-        this.playerService.GetPlayersByLeague(leagueId).subscribe(
+        if (this.playerReader) this.playerReader.unsubscribe();
+        this.loading = true; this.error = ''; this.players = []; this.applyFilter(this.searchValue);
+        this.playerReader = this.playerService.GetPlayersByLeague(leagueId).subscribe(
             (result: Player[]) => {
-                this.players = result;
-
-                // Split players by gender
-                this.malePlayersDataSource = new MatTableDataSource(result.filter(player => player.gender === 'Male'));
-                this.femalePlayersDataSource = new MatTableDataSource(result.filter(player => player.gender === 'Female'));
-
-                this.malePlayersDataSource.sort = this.sort;
-                this.femalePlayersDataSource.sort = this.sort;
-
+                this.players = (result || []).slice().sort((a, b) =>
+                    Number(a.firstName === 'Open') - Number(b.firstName === 'Open') ||
+                    (a.firstName || '').localeCompare(b.firstName || '', undefined, {sensitivity: 'base'}) ||
+                    (a.lastName || '').localeCompare(b.lastName || '', undefined, {sensitivity: 'base'}) || a.id - b.id);
+                this.applyFilter(this.searchValue);
                 this.loading = false;
             },
-            (error) => {
-                console.error('Error loading players:', error);
+            () => {
+                this.error = 'Unable to load players. Please try again.';
                 this.loading = false;
             }
         );
     }
 
-    // Filter both tables
     applyFilter(filterValue: string): void {
-        this.searchValue = filterValue.trim().toLowerCase();
-        this.malePlayersDataSource.filter = this.searchValue;
-        this.femalePlayersDataSource.filter = this.searchValue;
+        this.searchValue = filterValue || '';
+        const words = this.searchValue.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+        const matches = this.players.filter(p => words.every(word =>
+            ((p.firstName || '') + ' ' + (p.lastName || '')).toLocaleLowerCase().indexOf(word) >= 0));
+        this.malePlayers = matches.filter(p => this.playerGender(p) === 'Male');
+        this.femalePlayers = matches.filter(p => this.playerGender(p) === 'Female');
+        this.otherPlayers = matches.filter(p => this.playerGender(p) === 'Other');
     }
 
+    private playerGender(player: Player): string {
+        if (player.gender) return player.gender === 'Male' || player.gender === 'Female' ? player.gender : 'Other';
+        return player.isMale === true ? 'Male' : player.isMale === false ? 'Female' : 'Other';
+    }
+    setGender(gender: string): void { this.genderFilter = gender; }
+    trackPlayer(index: number, player: Player): number { return player.id; }
+    get visibleCount(): number {
+        return this.genderFilter === 'men' ? this.malePlayers.length : this.genderFilter === 'women' ? this.femalePlayers.length :
+            this.malePlayers.length + this.femalePlayers.length + this.otherPlayers.length;
+    }
+    retryLoad(): void { if (this.selectedLeagueId > 0) this.loadPlayersByLeague(this.selectedLeagueId); }
+    ngOnDestroy(): void {
+        if (this.leagueReader) this.leagueReader.unsubscribe();
+        if (this.playerReader) this.playerReader.unsubscribe();
+    }
     // Clear search filter
     clearSearch(): void {
         this.searchValue = '';
@@ -111,13 +130,7 @@ export class FetchDataComponent implements OnInit {
                 this.player = result;
                 this.players.push(result);
 
-                // Add new player to the correct data source
-                if (result.gender === 'Male') {
-                    this.malePlayersDataSource.data = [...this.malePlayersDataSource.data, result];
-                } else if (result.gender === 'Female') {
-                    this.femalePlayersDataSource.data = [...this.femalePlayersDataSource.data, result];
-                }
-
+                this.applyFilter(this.searchValue);
                 this.PlayerForm.reset();
             },
             (error) => console.error('Error adding player:', error)

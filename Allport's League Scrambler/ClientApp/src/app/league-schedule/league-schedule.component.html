@@ -9,6 +9,7 @@
    <button mat-icon-button type="button" aria-label="Next Week" [disabled]="activeTabIndex === schedule.length - 1" (click)="selectWeek(activeTabIndex + 1)"><mat-icon>chevron_right</mat-icon></button>
   </nav>
   <div class="schedule-actions"><button mat-stroked-button (click)="currentWeek()">Current Week</button><button mat-raised-button color="primary" (click)="openFullSchedule()">Full Schedule</button></div></div>
+  <p class="schedule-state" *ngFor="let event of selectedWeek.events">{{event.title}}</p>
   <div class="schedule-matchups" aria-live="polite">
    <ng-container *ngFor="let week of [selectedWeek]">
                     <mat-card *ngFor="let match of week.matches"
@@ -69,10 +70,11 @@
 <ng-template #fullScheduleDialog>
  <div class="season-dialog-layout">
   <header><div><h2 mat-dialog-title>Full Schedule</h2><p>{{ leagueName }}</p></div><button mat-icon-button aria-label="Close full schedule" (click)="closeFullSchedule()"><mat-icon>close</mat-icon></button></header>
+  <mat-form-field><mat-label>Print / view division</mat-label><mat-select [(ngModel)]="fullDivision" (selectionChange)="filterFullSchedule()"><mat-option value="">Entire League</mat-option><mat-option *ngFor="let d of fullDivisions" [value]="d">{{d}}</mat-option></mat-select></mat-form-field>
   <mat-dialog-content>
    <p *ngIf="loading" role="status">Loading schedule...</p><p *ngIf="error" role="alert">{{ error }}</p>
    <div id="full-season-tables"><p *ngIf="!schedule.length && !loading">No schedule available for this league.</p>
-    <div class="season-week-grid"><section class="season-week" *ngFor="let week of fullScheduleWeeks;let i=index" [class.current-season-week]="i===closestWeekIndex()">
+    <div class="season-week-grid"><section class="season-week" *ngFor="let week of fullScheduleWeeks;let i=index" [class.current-season-week]="isCurrentWeek(week)">
      <h3>Week {{ week.weekNumber }} &middot; {{ calendarDate(week.date) | date:'mediumDate' }}</h3>
      <table [attr.aria-label]="'Week '+week.weekNumber+' matchups'"><colgroup><col><col class="season-versus-column"><col></colgroup>
       <tbody *ngFor="let group of week.groups">

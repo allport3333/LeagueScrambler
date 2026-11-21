@@ -7,6 +7,7 @@ import { PlayerService } from '../services/player.service';
 import { Team } from '../data-models/teams.model';
 import { Player } from '../data-models/player.model';
 import { KingQueenRoundScore } from '../data-models/kingQueenRoundScore';
+import {latestSavedMatchupWeek, savedMatchupWeeks, compareSavedMatchupWeeks} from './latest-saved-week';
 
 @Component({
     selector: 'app-kqmatchups',
@@ -31,6 +32,8 @@ export class KqmatchupsComponent implements OnInit, OnDestroy {
     private focused = false;
     private resolved = false;
     private subscriptions = new Subscription();
+    private manuallySelectedWeek:number=null;
+    private navigationKey='';
 
     constructor(public leagueService: LeagueService, public playerService: PlayerService,
         private route: ActivatedRoute, private router: Router) { }
@@ -39,13 +42,20 @@ export class KqmatchupsComponent implements OnInit, OnDestroy {
         this.subscriptions.add(combineLatest(this.route.queryParams, this.leagueService.selectedLeague$).subscribe(([params, selected]) => {
             // A deliberate league change after opening a week starts normal browsing;
             // the old score URL must not force the navigation dropdown back again.
-            if (params === this.params && this.selectedScramble && selected.leagueId
-                && selected.leagueId !== this.selectedLeagueId) {
+            if (params === this.params && this.selectedLeagueId && selected.leagueId
+                && selected.leagueId !== this.selectedLeagueId
+                && (params.leagueId===undefined || Number(params.leagueId)!==selected.leagueId)) {
                 this.version++;
+                this.manuallySelectedWeek=null;
                 this.retrievedListOfTeams = [];
                 this.router.navigate(['/kqmatchups'], { queryParams: { leagueId: selected.leagueId } });
                 return;
             }
+            const key=JSON.stringify({league:selected.leagueId,name:selected.leagueName,params});
+            if(key===this.navigationKey)return;
+            this.navigationKey=key;
+            const cachedWeeks=this.selectedLeagueId===selected.leagueId?this.queriedScrambles.slice():[];
+            if(this.selectedLeagueId!==selected.leagueId)this.manuallySelectedWeek=null;
             const version = ++this.version;
             this.params = params;
             this.fromStandings = params.fromStandings === '1';
@@ -67,18 +77,28 @@ export class KqmatchupsComponent implements OnInit, OnDestroy {
             if (!selected.leagueId || !selected.leagueName) { return; }
             this.selectedLeagueId = selected.leagueId; this.leagueName = selected.leagueName;
             this.loading = true;
+            if(params.scrambleNumber!==undefined && cachedWeeks.some(s=>s.scrambleNumber===Number(params.scrambleNumber))){
+                this.applySavedWeeks(cachedWeeks,params);return;
+            }
             this.subscriptions.add(this.playerService.SelectedLeagueScrambles(this.leagueName).subscribe(result => {
                 if (version !== this.version) { return; }
-                this.queriedScrambles = (result || []).slice().sort((a, b) => a.scrambleNumber - b.scrambleNumber);
-                this.loading = false;
-                if (params.scrambleNumber !== undefined) {
-                    const number = Number(params.scrambleNumber);
-                    const scramble = this.queriedScrambles.find(s => s.scrambleNumber === number);
-                    if (!this.positiveId(number) || !scramble) { this.message = 'The saved week for this score is unavailable.'; return; }
-                    this.retrieveScramble(scramble);
-                } else if (this.fromStandings) { this.message = 'This score link does not identify a saved week.'; }
+                this.applySavedWeeks(result,params);
             }, () => { if (version === this.version) { this.loading = false; this.message = 'Could not load saved weeks. Please try again.'; } }));
         }));
+    }
+
+    private applySavedWeeks(result:KingQueenTeam[], params:Params):void {
+        this.queriedScrambles=savedMatchupWeeks(result).sort(compareSavedMatchupWeeks);
+        this.loading=false;
+        if(params.scrambleNumber!==undefined){
+            const number=Number(params.scrambleNumber),week=this.queriedScrambles.find(s=>s.scrambleNumber===number);
+            if(!this.positiveId(number)||!week){this.message='The saved week for this score is unavailable.';return;}
+            this.retrieveScramble(week);
+        }else if(this.fromStandings){this.message='This score link does not identify a saved week.';}
+        else {
+            const selected=this.queriedScrambles.find(s=>s.scrambleNumber===this.manuallySelectedWeek)||latestSavedMatchupWeek(this.queriedScrambles);
+            if(selected)this.retrieveScramble(selected);
+        }
     }
 
     ngOnDestroy() { this.version++; this.subscriptions.unsubscribe(); }
@@ -117,6 +137,7 @@ export class KqmatchupsComponent implements OnInit, OnDestroy {
         this.router.navigate([], { relativeTo: this.route, queryParams: { view: 'all', playerId: null, kingQueenTeamId: null, roundId: null }, queryParamsHandling: 'merge', replaceUrl: true });
     }
     chooseWeek(scramble: KingQueenTeam) {
+        this.manuallySelectedWeek=scramble.scrambleNumber;
         if (this.fromStandings || this.params.scrambleNumber !== undefined) {
             this.router.navigate([], { relativeTo: this.route, queryParams: { view: 'all', scrambleNumber: scramble.scrambleNumber, playerId: null, kingQueenTeamId: null, roundId: null }, queryParamsHandling: 'merge', replaceUrl: true });
         } else { this.retrieveScramble(scramble); }

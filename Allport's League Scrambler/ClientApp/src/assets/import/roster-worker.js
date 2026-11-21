@@ -119,6 +119,13 @@ function bounded(result) {
 self.onmessage = async function (event) {
     var request = event.data;
     try {
+        if (request.operation === 'exportSchedule') {
+            if (!Array.isArray(request.rows) || request.rows.length > 1001 || request.rows.some(row => !Array.isArray(row) || row.length > 20 || row.some(value => typeof value === 'string' && value.length > 1000))) fail('The export exceeds safe limits.');
+            var outputSheet = XLSX.utils.aoa_to_sheet(request.rows), outputBook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(outputBook, outputSheet, 'Schedule');
+            var outputBuffer = XLSX.write(outputBook, { type: 'array', bookType: 'xlsx' });
+            self.postMessage({ id:request.id, exported:outputBuffer }, [outputBuffer]); return;
+        }
         if (request.buffer) {
             var bytes = new Uint8Array(request.buffer); kind = String(request.extension).toLowerCase();
             if (!bytes.length) fail('The selected file is empty.');

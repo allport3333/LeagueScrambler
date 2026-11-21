@@ -83,7 +83,7 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
         if (this.closed) return;
         this.pending.delete(result.player.id);
         this.players = this.players.filter(p => p.id !== result.player.id); this.filter();
-        this.notice = result.player.firstName + ' ' + result.player.lastName + (result.alreadyMember ? ' is already in this league.' : ' added.');
+        this.notice = result.player.firstName + ' ' + result.player.lastName + (result.alreadyMember ? ' is already in ' : ' added to ') + this.data.leagueName + '.';
         clearTimeout(this.noticeTimer); this.noticeTimer = setTimeout(() => this.notice = '', 4000);
         const index = this.focusAfterAdd.get(result.player.id); this.focusAfterAdd.delete(result.player.id);
         if (index !== undefined) setTimeout(() => {

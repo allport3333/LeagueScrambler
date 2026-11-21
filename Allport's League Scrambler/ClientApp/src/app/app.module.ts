@@ -1,3 +1,4 @@
+import { ManageScheduleComponent } from './schedule-management/manage-schedule.component';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { environment } from '../environments/environment';
 import { InstallLocallyComponent } from './pwa/install-locally.component';
@@ -77,6 +78,7 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         TeamRosterDialogComponent,
         ExistingPlayerBrowserComponent,
         PlayerImportComponent,
+        ManageScheduleComponent,
         LeaguePlayerEditComponent,
         ImportPlayerCreateComponent,
         PlayerAttendanceComponent,

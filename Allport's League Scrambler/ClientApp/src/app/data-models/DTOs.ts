@@ -25,6 +25,7 @@ export interface Match {
 }
 
 export interface WeekSchedule {
+    events?: any[];
     weekNumber: number;
     date: string;
     matches: Match[];

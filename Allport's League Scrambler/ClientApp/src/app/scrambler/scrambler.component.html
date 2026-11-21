@@ -9,10 +9,10 @@
         <button mat-raised-button type="button" color="primary" class="ml-2"
                 (click)="unlockAdminPassword()">Unlock Administration</button>
     </mat-card>
-<div class="workspace-section-header" *ngIf="workspaceSection === 'scrambler'"><h2>Scrambler Setup</h2><button mat-button (click)="hideShowEverything()" [attr.aria-expanded]="!hideEverything">{{ hideEverything ? 'Show Setup' : 'Hide Setup' }}</button></div>
+<h2 class="workspace-section-header scrambler-setup-heading" *ngIf="workspaceSection === 'scrambler'">Scrambler Setup</h2>
 <div class="container-fluid scrambler-workspace" [hidden]="workspaceSection !== 'scrambler'">
 
-    <div class="row" [hidden]="hideEverything">
+    <div class="row">
         <div class="col-12">
             <mat-card class="scramble-setup ml-1 mt-2"><h2>Team Configuration</h2><p class="workspace-help">Choose Max Team Size or Number of Teams. Choosing one clears the other; your player selection is retained.</p>
                 <div class="row">
@@ -202,20 +202,14 @@
                     </div>
                 </div>
 
-                <div class="row justify-content-center mt-3 scramble-rules"><h3 class="col-12">Scramble Rules</h3>
-                    <div class="col-12 col-md-6 text-center">
-                        <mat-checkbox [(ngModel)]="completeRandom" aria-label="check box 1" style="margin-right: 10px"> Completely Random</mat-checkbox>
-                        <mat-checkbox [(ngModel)]="lockedResults" aria-label="check box 2" style="margin-right: 10px"> Lock Results</mat-checkbox>
-                    </div>
-                    <div class="col-12 history-rules">
-                        <mat-checkbox [(ngModel)]="prioritizePreviousTeammates" [disabled]="generationBusy">Prioritize fewer previous teammates</mat-checkbox>
-                        <p class="workspace-help">Prefer players who have been teammates less often across this league's history.</p>
-                        <mat-checkbox [(ngModel)]="allowMinimumRepeats" [disabled]="generationBusy">Allow minimum repeats if strict scrambling is impossible</mat-checkbox>
-                        <p class="workspace-help">Selected previous scrambles prohibit all repeated teammates. Optional fallback applies only after strict impossibility is proven.</p>
-                    </div>
-                </div>
-
             </mat-card>
+                <details #rulesDisclosure class="scramble-rules" (toggle)="scrambleRulesExpanded=rulesDisclosure.open"><summary role="button" [attr.aria-expanded]="scrambleRulesExpanded" class="scramble-rules-toggle" aria-controls="scramble-rules-options"><span class="rules-heading-group"><mat-icon class="scramble-rules-chevron" aria-hidden="true">expand_more</mat-icon><span id="scramble-rules-title">Scramble Rules</span></span><small *ngIf="enabledScrambleRuleCount">{{enabledScrambleRuleCount}} {{enabledScrambleRuleCount===1?'option':'options'}} enabled</small></summary><div id="scramble-rules-options" class="scramble-rules-grid">
+<div class="scramble-rule"><mat-checkbox [(ngModel)]="completeRandom" aria-describedby="random-rule-help">Completely Random</mat-checkbox><p id="random-rule-help">Use fully random team assignments.</p></div>
+<div class="scramble-rule"><mat-checkbox [(ngModel)]="lockedResults" aria-describedby="locked-rule-help">Lock Results</mat-checkbox><p id="locked-rule-help">Prevent rescrambling while results are locked.</p></div>
+<div class="scramble-rule"><mat-checkbox [(ngModel)]="prioritizePreviousTeammates" [disabled]="generationBusy" aria-describedby="history-rule-help">Prioritize fewer previous teammates</mat-checkbox><p id="history-rule-help">Prefer players who have been teammates less often across this league's history.</p></div>
+<div class="scramble-rule"><mat-checkbox [(ngModel)]="allowMinimumRepeats" [disabled]="generationBusy" aria-describedby="minimum-rule-help">Allow minimum repeats if strict scrambling is impossible</mat-checkbox><p id="minimum-rule-help">Selected previous scrambles prohibit all repeated teammates. Optional fallback applies only after strict impossibility is proven.</p></div>
+</div></details>
+
 <section class="scramble-workflow-actions">
   <div class="selection-actions"><h2>Player Selection</h2><span class="fetch-availability-help" matTooltip="No players are currently signed in." [matTooltipDisabled]="hasSignedInPlayersAvailable || fetchClicked" [attr.tabindex]="!hasSignedInPlayersAvailable && !fetchClicked ? 0 : null" [attr.aria-label]="!hasSignedInPlayersAvailable && !fetchClicked ? 'Fetch Signed In Players unavailable: no players are currently signed in.' : null"><button mat-raised-button
                             (click)="fetchSelectedList()"
@@ -258,7 +252,7 @@
             </div>
         </div>
     </div>
-<div class="scramble-generate-area"><div class="progression-actions" *ngIf="!hideInputOptions" [hidden]="hideEverything"><button (click)="scramblePlayers(false)"
+<div class="scramble-generate-area"><div class="progression-actions" *ngIf="!hideInputOptions"><button (click)="scramblePlayers(false)"
                             mat-raised-button
                             class="scramble-button primary-action"
                             matTooltip="Button is disabled because no players are selected."
@@ -287,7 +281,7 @@
 </section>
 
 </div>
-<div class="reset-actions" [hidden]="hideEverything"><button mat-raised-button color="warn" [matMenuTriggerFor]="resetMenu" class="w-100">
+<div class="reset-actions"><button mat-raised-button color="warn" [matMenuTriggerFor]="resetMenu" class="w-100">
                             Reset Players
                         </button>
                         <mat-menu #resetMenu="matMenu">
@@ -305,7 +299,7 @@
                             </button>
                         </mat-menu></div></div>
 
-    <div class="row" [hidden]="hideEverything">
+    <div class="row">
         <div class="col-12">
             <mat-card class=" ml-3 mt-2 " style="background-color:lightgray; ">
                 <mat-tab-group mat-align-tabs="center" #tabGroup (selectedTabChange)="onTabChange($event)">
@@ -767,10 +761,10 @@
         </div>
     </div>
 </div>
-<p class="scramble-empty-state" *ngIf="workspaceSection === 'scrambler' && !listOfTeams.length">No scramble has been generated yet. Select players and configure teams above. <button mat-button *ngIf="hideEverything" (click)="hideShowEverything()">Show Setup</button> <button mat-button *ngIf="hidePlayers" (click)="hidePlayerList()">Show Player List</button></p><section class="league-management-page consolidated-management" [hidden]="workspaceSection !== 'league-management'"><mat-card class="management-workspace"><h1>Player and League Management</h1><mat-tab-group class="management-tabs" mat-align-tabs="center"><mat-tab label="Edit / Remove Players"><div class="management-players-section">
+<p class="scramble-empty-state" *ngIf="workspaceSection === 'scrambler' && !listOfTeams.length">No scramble has been generated yet. Select players and configure teams above.  <button mat-button *ngIf="hidePlayers" (click)="hidePlayerList()">Show Player List</button></p><section class="league-management-page consolidated-management" [hidden]="workspaceSection !== 'league-management'"><mat-card class="management-workspace"><h1>Player and League Management</h1><mat-tab-group class="management-tabs" mat-align-tabs="center"><mat-tab label="Edit / Remove Players"><div class="management-players-section">
  <mat-card class="management-form-card management-roster-card">
   <h2>Current League Players</h2><p class="management-context">{{ selectedLeague || 'Select a league to manage its players.' }}</p>
-  <div class="management-roster-tools"><mat-form-field appearance="outline" class="roster-search"><mat-label>Search current league players</mat-label><input matInput [(ngModel)]="managementRosterSearch" (ngModelChange)="showAllManagementPlayers=false" placeholder="Player name"></mat-form-field><button mat-stroked-button type="button" (click)="toggleManagementRoster()" [disabled]="managementRosterLoading || !!managementRosterError || !managementRoster.length" [attr.aria-expanded]="showAllManagementPlayers">{{ showAllManagementPlayers ? 'Hide All Players' : 'Show All Players' }}</button><mat-form-field appearance="outline" class="roster-division-filter"><mat-label>Filter division</mat-label><mat-select [(ngModel)]="managementRosterDivision" (selectionChange)="showAllManagementPlayers=true"><mat-option value="all">All divisions</mat-option><mat-option value="0">No Division</mat-option><mat-option *ngFor="let d of leagueDivisionsForSelectedLeague" [value]="''+d.id">{{d.name || d.code}}</mat-option></mat-select></mat-form-field></div>
+  <div class="management-roster-tools"><div class="roster-search-row"><mat-form-field appearance="outline" class="roster-search"><mat-label>Search current league players</mat-label><input matInput [(ngModel)]="managementRosterSearch" (ngModelChange)="showAllManagementPlayers=false" placeholder="Player name"></mat-form-field></div><div class="roster-filter-row"><mat-form-field appearance="outline" class="roster-division-filter"><mat-label>Filter division</mat-label><mat-select [(ngModel)]="managementRosterDivision" (selectionChange)="showAllManagementPlayers=true"><mat-option value="all">All divisions</mat-option><mat-option value="0">No Division</mat-option><mat-option *ngFor="let d of leagueDivisionsForSelectedLeague" [value]="''+d.id">{{d.name || d.code}}</mat-option></mat-select></mat-form-field><button mat-stroked-button type="button" (click)="toggleManagementRoster()" [disabled]="managementRosterLoading || !!managementRosterError || !managementRoster.length" [attr.aria-expanded]="showAllManagementPlayers">{{ showAllManagementPlayers ? 'Hide All Players' : 'Show All Players' }}</button></div></div>
   <p *ngIf="managementRosterLoading" role="status">Loading league players...</p><div *ngIf="managementRosterError" role="alert"><p>{{ managementRosterError }}</p><button mat-stroked-button (click)="refreshManagementRoster()">Retry roster</button></div>
   <p *ngIf="!managementRosterLoading && !managementRosterError && !managementRoster.length">No players belong to this league yet.</p>
   <p class="management-context" *ngIf="!managementRosterLoading && !managementRosterError && managementRoster.length && !managementRosterSearch.trim() && !showAllManagementPlayers">Search for a player, or select Show All Players.</p>
@@ -829,6 +823,7 @@
                                                 </form></div></section>
  </mat-card>
 </div></mat-tab>
+<mat-tab label="Manage Schedule"><app-manage-schedule [leagueId]="leagueId" [leagueName]="selectedLeague" [canManage]="isActionAllowed" [draftStore]="scheduleDrafts"></app-manage-schedule></mat-tab>
 <mat-tab label="League Settings">
                                     <div class="container-fluid">
                                         <mat-card class="management-form-card management-settings-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">

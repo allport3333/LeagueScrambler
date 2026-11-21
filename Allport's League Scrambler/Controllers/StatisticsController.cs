@@ -263,25 +263,7 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             using (var _context = new DataContext())
             {
-                var schedule = _context.LeagueSchedule
-                    .Where(s => s.LeagueId == leagueId)
-                    .GroupBy(s => new { s.WeekNumber, s.Date })
-                    .Select(g => new
-                    {
-                        WeekNumber = g.Key.WeekNumber,
-                        Date = g.Key.Date,
-                        Matches = g.Select(m => new
-                        {
-                            ScheduleId = m.Id,
-                            Team1Id = m.Team1Id,
-                            Team2Id = m.Team2Id,
-                            Team1Name = _context.LeagueTeam.FirstOrDefault(t => t.Id == m.Team1Id).TeamName,
-                            Team2Name = _context.LeagueTeam.FirstOrDefault(t => t.Id == m.Team2Id).TeamName,
-                            MatchDescription = m.MatchDescription,
-                            Division = _context.LeagueTeam.FirstOrDefault(t => t.Id == m.Team1Id).Division,
-                        }).ToList()
-                    })
-                    .ToList();
+                var schedule = ScheduleManagementController.PublicSchedule(_context, leagueId);
 
                 return Ok(schedule);
             }

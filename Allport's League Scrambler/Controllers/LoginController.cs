@@ -12,6 +12,7 @@ using System.Text;
 using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Security;
 using Allport_s_League_Scrambler.Models;
+using Allport_s_League_Scrambler.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -977,7 +978,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     {
                         // Avoid leaking account existence through delivery
                         // errors, and restore an earlier link if delivery failed.
-                        Console.Error.WriteLine("Password reset delivery failed: " + sendError.Message);
+                        LogRecoveryFailure("delivery", sendError);
                         try
                         {
                             using (var rollbackContext = new DataContext())
@@ -991,7 +992,7 @@ namespace Allport_s_League_Scrambler.Controllers
                         }
                         catch (Exception rollbackError)
                         {
-                            Console.Error.WriteLine("Password reset rollback failed: " + rollbackError.Message);
+                            LogRecoveryFailure("rollback", rollbackError);
                         }
 
                         lock (cooldown)
@@ -1011,7 +1012,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 // A database-write or delivery failure for an existing account
                 // must not return a distinguishable status from an unknown
                 // email address. Log the failure for diagnostics instead.
-                Console.Error.WriteLine("Password recovery request failed: " + ex.Message);
+                LogRecoveryFailure("request", ex);
                 lock (cooldown)
                 {
                     if (cooldown.LastRequest == requestedAt)
@@ -1054,46 +1055,22 @@ namespace Allport_s_League_Scrambler.Controllers
             return await Task.FromResult(token);
         }
 
-        private async Task SendPasswordResetEmailAsync(string email, string resetToken)
+        private static void LogRecoveryFailure(string stage, Exception error)
         {
-            var publicBaseUrl = Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_PUBLIC_BASE_URL");
-            if (string.IsNullOrWhiteSpace(publicBaseUrl))
-            {
-                publicBaseUrl = "https://leaguescrambler.hopto.org";
-            }
-
-            if (!Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var publicUri) ||
-                publicUri.Scheme != Uri.UriSchemeHttps)
-            {
-                throw new InvalidOperationException(
-                    "LEAGUESCRAMBLER_PUBLIC_BASE_URL must be a valid HTTPS URL.");
-            }
-
-            var resetUrl = publicBaseUrl.TrimEnd('/') + "/resetpassword?token=" +
-                Uri.EscapeDataString(resetToken);
-            var mail = new MailMessage
-            {
-                From = new MailAddress("LeagueScrambler@gmail.com"),
-                Subject = "Password Reset For League Scrambler",
-                Body = $"Click the following link to reset your LeagueScrambler password: {resetUrl}\nThis link expires in one hour and can only be used once.",
-                IsBodyHtml = false
-            };
-
-            mail.To.Add(email);
-
-            try
-            {
-                // Send the email asynchronously using the injected SmtpClient
-                await _smtpClient.SendMailAsync(mail);
-                Console.WriteLine("Password reset email sent successfully.");
-            }
-            catch (Exception ex)
-            {
-                // Handle exceptions (e.g., logging)
-                Console.WriteLine("Error sending email: " + ex.Message);
-                throw; // Rethrow the exception for proper error handling
-            }
+            var smtp = error as SmtpException;
+            Console.Error.WriteLine("Password recovery " + stage + " failed [" + error.GetType().Name +
+                (smtp == null ? "" : "; SMTP status " + smtp.StatusCode) + "].");
         }
 
+        private async Task SendPasswordResetEmailAsync(string email, string resetToken)
+        {
+            using (var mail = PasswordResetEmail.Create(email, resetToken,
+                Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_PUBLIC_BASE_URL"),
+                Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production", ResetTokenLifetime))
+            {
+                await _smtpClient.SendMailAsync(mail);
+                Console.WriteLine("Password reset email accepted by the configured mail transport.");
+            }
+        }
     }
 }

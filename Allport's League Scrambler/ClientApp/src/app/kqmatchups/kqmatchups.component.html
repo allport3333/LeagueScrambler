@@ -5,6 +5,7 @@
     </div>
     <p *ngIf="loading" role="status">Loading saved matchups...</p>
     <p *ngIf="message" role="alert" class="score-navigation-message">{{ message }}</p>
+    <p *ngIf="selectedLeagueId && !loading && !message && !queriedScrambles.length" role="status">No saved King/Queen matchups are available for this league.</p>
     <h5 class="mb-2">Select Week to Retrieve</h5>
     <mat-form-field appearance="outline" style="width: 250px;">
         <mat-label>Select Week</mat-label>
