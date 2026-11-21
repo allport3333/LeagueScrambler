@@ -1,4 +1,4 @@
-﻿const fs=require('fs'),path=require('path'),assert=require('assert/strict'),{expect}=require('@playwright/test');
+const fs=require('fs'),path=require('path'),assert=require('assert/strict'),{expect}=require('@playwright/test');
 module.exports=async options=>{
  await require('./schedule-redesign-ui.cjs')(options);
  const {page,browserContext,out,checks}=options,manager=()=>page.locator('app-manage-schedule');

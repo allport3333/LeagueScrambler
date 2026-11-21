@@ -54,7 +54,32 @@ class PlayerImportCheck {
   }
   using(var c=new DataContext())Require(!c.Leagues.Any(l=>leagueIds.Contains(l.ID))&&!c.Players.Any(p=>playerIds.Contains(p.Id))&&!c.PlayersLeagues.Any(m=>leagueIds.Contains(m.LeagueID)),"Cleanup verification failed.");cleaned=true;
  }
+ // Dependency/serialization smoke checks do not require or authorize SQL access.
+ // The existing three-argument integration mode retains all fresh-approval gates.
+ static int Fixtures(string output){
+  try{
+   var local=new List<string>();
+   var input=JObject.Parse("{\"userAuthorized\":false,\"scope\":\"fixture-only\",\"identity\":{\"pid\":97},\"expiresAt\":\"2026-11-21T00:00:00Z\"}");
+   Require(!input.Value<bool>("userAuthorized")&&input["identity"].Value<int>("pid")==97&&input.Value<DateTime>("expiresAt").Kind==DateTimeKind.Utc,"Approval JSON contract changed.");
+   local.Add("Approval JSON typed/date parsing retained; fixture data does not authorize database access.");
+   var request=Request(101,501,102,0);var copy=JsonConvert.DeserializeObject<LeaguePlayerImportRequest>(JsonConvert.SerializeObject(request));
+   Require(copy.Players.Count==2&&copy.Players[0].PlayerId==101&&copy.Players[0].DivisionId==501&&copy.Players[1].DivisionId==0,"Membership request JSON changed.");
+   var result=Ok(new OkObjectResult(new{LeagueId=37,Atomic=true,Results=new[]{new{Player=new Player{Id=101,FirstName="Fixture",LastName="O'Neill-Smith",IsMale=true},LeagueDivisionId=501,AlreadyMember=false}}}));
+   Require(result.Value<int>("leagueId")==37&&result.Value<bool>("atomic")&&(int)result["results"][0]["player"]["id"]==101&&(string)result["results"][0]["player"]["lastName"]=="O'Neill-Smith","MVC result/camel case JSON contract changed.");
+   local.Add("Actual MVC result and membership DTO round trips retain IDs, division, punctuation and camel-case contracts.");
+   var method=typeof(ScrambleDataController).GetMethod("ImportLeaguePlayers");
+   Require(method.GetCustomAttributes(typeof(AuthorizeAttribute),true).Cast<AuthorizeAttribute>().Any(a=>a.Policy=="LeagueManagement"),"Bulk authorization policy missing.");
+   Require(Controller("Player").User.IsInRole("Player")&&!Controller("Player").User.IsInRole("Admin"),"Synthetic role setup changed.");
+   local.Add("Current controller loads, its LeagueManagement authorization metadata and HTTP/role fixture types remain compatible.");
+   bool rejected=false;try{JsonConvert.DeserializeObject(new string('[',128)+"0"+new string(']',128));}catch(JsonReaderException){rejected=true;}
+   Require(rejected,"Deep JSON input was not rejected by the patched default depth limit.");
+   local.Add("Patched JSON default rejects excessive nesting; ordinary report serialization remains available.");
+   Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output)));File.WriteAllText(output,JsonConvert.SerializeObject(new{pass=true,checks=local,databaseWrites=false,mode="dependency/JSON/controller fixtures only; SQL integration not executed"},Formatting.Indented));
+   Console.WriteLine("PASS: four dependency/JSON/controller fixture groups; no SQL or external messages.");return 0;
+  }catch(Exception e){Console.Error.WriteLine("Fixture verification failed ("+e.GetType().Name+").");return 1;}
+ }
  static int Main(string[] args){
+  if(args.Length==2&&args[0]=="--fixtures")return Fixtures(args[1]);
   string before=null;Exception failure=null;
   try{
    Require(args.Length==3,"Pass a fresh test authorization, project .env and report path.");reportPath=Path.GetFullPath(args[2]);var approval=JObject.Parse(File.ReadAllText(args[0]));
