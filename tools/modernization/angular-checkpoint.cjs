@@ -30,6 +30,14 @@ const summary = { angular: pkg.version, node: process.version, elapsedMs: Date.n
   error: result.error ? result.error.message : undefined, completedUtc: new Date().toISOString() };
 summary.sourceStableDuringBuild = before === sourceDigest();
 if (!summary.sourceStableDuringBuild) { summary.passed = false; summary.error = 'Frontend source changed during build; rerun after migrations finish.'; }
+const distBase = path.join(out, `angular${major}-dist`);
+const assets = fs.existsSync(path.join(distBase, 'browser/index.html')) ? path.join(distBase, 'browser') : distBase;
+summary.assetRoot = path.relative(root, assets).split(path.sep).join('/');
+summary.productionShellPresent = fs.existsSync(path.join(assets, 'index.html'));
+summary.serviceWorkerGenerated = fs.existsSync(path.join(assets, 'ngsw.json'));
+if (summary.passed && (!summary.productionShellPresent || !summary.serviceWorkerGenerated)) {
+ summary.passed = false; summary.error = 'Production browser shell or service-worker manifest is missing.';
+}
 const updateResult = path.join(out, `angular${major}-update-result.json`);
 if (fs.existsSync(updateResult)) {
  const update = JSON.parse(fs.readFileSync(updateResult, 'utf8'));

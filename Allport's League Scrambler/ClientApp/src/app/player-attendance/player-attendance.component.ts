@@ -1,8 +1,12 @@
-import {Component,Input,OnInit,OnChanges,OnDestroy} from '@angular/core';
+import {Component, Input, OnInit, OnChanges, OnDestroy, ChangeDetectionStrategy} from '@angular/core';
 import {Subscription} from 'rxjs';
 import {AuthService} from '../auth.service';
 import {PlayerService} from '../services/player.service';
-@Component({selector:'app-player-attendance',templateUrl:'./player-attendance.component.html',styleUrls:['./player-attendance.component.css']})
+@Component({
+    selector: 'app-player-attendance', templateUrl: './player-attendance.component.html', styleUrls: ['./player-attendance.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
+})
 export class PlayerAttendanceComponent implements OnInit,OnChanges,OnDestroy {
  @Input() playerId:number;@Input() leagueId:number;
  authenticated:boolean=null;state:any=null;loading=false;busy=false;error='';

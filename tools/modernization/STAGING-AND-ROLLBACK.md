@@ -1,6 +1,55 @@
 # Staging and rollback procedure (preparation; not a deployment authorization)
 
-Status: draft acceptance procedure. The application is still being migrated. Do not use these steps to deploy an incomplete checkpoint. No staging or production service has been changed.
+Status: **local framework/authenticated integration acceptance passed; package prepared for controlled staging verification**. Actual staging deployment requires separate authorization and completion of the server prerequisites below. No staging/production service or IIS configuration has been accessed or changed. Production deployment is not recommended until staging acceptance passes.
+
+## Accepted package and deployment sequence
+
+Use **`tests/functional/artifacts/modernization/staging-package-accepted/`**. This supersedes older package folders retained below. `authorized-accepted-package-verification.json` confirms 92 files, no forbidden source/tool/secret-file paths, net10.0 target and matching tested backend/final browser hashes. `authorized-accepted-package-manifest.json` lists every relative file, size and SHA256. Both Release and Debug builds, actual account-backed SQL/HTTP/browser tests, data cleanup and final production-worker regressions passed. Development permission is already granted; no database testing approval is pending.
+
+A transport/review archive is also prepared: **leaguehub-angular22-net10-staging-review.zip** in the same modernization artifact root. `staging-review-archive.json` records its size/SHA256; `staging-review-archive-verification.json` confirms 92 files with web.config at the archive root and the browser shell at its configured path. Creating this local archive did not deploy it.
+
+After a separate staging deployment authorization:
+
+1. Inventory supported Windows/IIS and .NET shared runtimes; arrange an authorized .NET 10 Hosting Bundle/ANCM installation at **10.0.15 or newer supported .NET 10 servicing**. Verify Microsoft.NETCore.App and Microsoft.AspNetCore.App 10.x are present. Coordinate any restart because ANCM installation can affect other applications. None has been installed on a server during this task.
+2. Create a dedicated staging HTTPS **hostname/site at its root**, separate physical directory and 64-bit No Managed Code app pool/identity. A same-host virtual subapplication needs separately verified Angular base href/PathBase/service-worker scope and cookie isolation; do not assume the root-built package supports it unchanged.
+3. Provision external staging configuration and an approved Development clone/test database connection. Validate the actual target. The modern driver encrypts SQL by default: use a trusted SQL certificate; test-only loopback TrustServerCertificate settings are not a production default. Keep SQL compatibility at 130 unless separately reviewed. **No schema migration, Migrate/EnsureCreated or identity/account conversion is required.**
+4. Persist Data Protection keys outside static content with narrow app-pool ACLs, record the application discriminator and plan for renewed login if old sessions do not transfer. Keep backups of the previous package/configuration references and keys for rollback. Never deploy synthetic fixture keys or SMTP pickup contents.
+5. Copy the entire reviewed package, including backend/deps/runtimeconfig/web.config and ClientApp/dist/browser. Verify manifest hashes after copying. Do not deploy only Angular assets against an older backend. The retained historical DLL filename still targets net10.0; generated web.config is already consistent with it.
+6. Verify startup/deep links, known API routes, actual role/league boundaries, login/logout/reset, player/import flows, schedule saves/conflicts/score protections, Scrambler/scoring/KQ/dashboard, printing and PWA update/logout boundaries using approved synthetic identities. Repeat the test target guard before writes. Capture staging evidence; no production identities or data should be used.
+7. Test native-device install/printing and any designated SMTP inbox only under the relevant authorization. Password-reset origin is intentionally trusted public www.allportsleaguehub.com; do not widen it from request headers or send staging links to real accounts. Local tests used pickup, never external delivery.
+8. Review acceptance and rollback results before seeking any production release authorization. Production environment compatibility and existing IIS session survival are not established by local tests.
+
+The preceding read-only/initial package details below are preserved as historical preparation evidence; deploy neither an older package nor an incomplete checkpoint merely because its folder exists.
+
+## Local package checkpoint — 2026-11-22
+
+**Latest reviewed local output:** `tests/functional/artifacts/modernization/staging-package-net10-final/`, rebuilt after the source-path compatibility fix. `staging-package-final-verification.json` confirms 92 files, zero forbidden source/config/tool content, and exact parity with the tested backend assembly and production Angular shell. Earlier package folders below are preserved historical artifacts. Development-only Node lifetime helpers are not shipped. This final package remains undeployed and its existence does not waive the pending mutation/IIS acceptance gates.
+
+An isolated framework-dependent Release package has been built at `tests/functional/artifacts/modernization/staging-package-net10/`. It contains 92 files, generated IIS web.config (ANCM V2 / in-process), net10.0 runtimeconfig and the verified Angular 22 browser assets under `ClientApp/dist/browser`. Final inventory contains **zero .env/node_modules/test/tool/.git paths**. The tested backend assembly and browser index hashes match the published files. Evidence: `staging-package-inventory-final.json`, `package-tested-assembly-parity.json`, `net10-publish.log`. Earlier inventory incorrectly matched the artifact parent path's `tests` segment; only the corrected relative-path inventory is valid.
+
+The retained backend filename is `ASP.NET Core 2.2 with Angular 7.dll`; this is historical naming, not the actual target framework. Its runtimeconfig is net10.0. Do not rename it ad hoc or copy only frontend assets: frontend and backend must be deployed as one compatible reviewed package. The generated web.config references this filename.
+
+To reproduce locally from the modernization worktree in PowerShell, after reading STATUS.md:
+
+```powershell
+$env:PATH = (Join-Path (Get-Location) 'tests/functional/.tools/node-v22.23.5-win-x64') + ';' + $env:PATH
+& .\tests\functional\.tools\dotnet10\dotnet.exe build "Allport's League Scrambler/Allport's League Scrambler.csproj" -c Release
+# Build Angular production normally, or use the already verified asset checkpoint without rerunning migrations.
+# The SkipFrontendBuild option is safe only when dist/browser is the verified current production bundle.
+& .\tests\functional\.tools\dotnet10\dotnet.exe publish "Allport's League Scrambler/Allport's League Scrambler.csproj" -c Release -p:SkipFrontendBuild=true -o tests/functional/artifacts/modernization/staging-package-net10-next
+```
+
+Do not invoke existing production publish profiles. The Angular build requires the documented Node version, not the machine's legacy Node 10. global.json pins the portable SDK version; command-line builds are verified, compatibility with an older Visual Studio installation is not established.
+
+Staging requires a supported .NET **10 Hosting Bundle, at least tested servicing level 10.0.15**, including ANCM and the matching shared runtime; newer supported .NET 10 servicing should be assessed at deployment time. The package's net10.0 runtimeconfig uses framework roll-forward, not automatic adoption of .NET 11. Inventory the actual Windows/IIS host against Microsoft's current supported OS matrix before installation. Hosting reference: https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/iis/?view=aspnetcore-10.0.
+
+The modern SQL driver encrypts connections by default. Provision a valid SQL certificate and approved trusted connection configuration. Loopback TrustServerCertificate settings in verification utilities are not application defaults and must not be copied into Production. EF is explicitly configured for database compatibility level 130; do not change the server's level or apply migrations. No database schema migration is required by the current source checkpoint.
+
+Inventory and preserve the old IIS Data Protection key location, ACLs and application discriminator before any release. Offline fixed-application-name fixtures prove cookie format compatibility, not that old production cookies will survive changed content roots/discriminators. Plan for a renewed login unless staging demonstrates preserved session compatibility. Preserve user IDs/password hashes/roles regardless; do not require account recreation. The two cookie schemes remain secure/HTTP-only and retain their existing lifetimes and authorization policies.
+
+SMTP secrets and LEAGUESCRAMBLER_DB_CONNECTION remain external configuration; no .env is shipped. Production password reset uses trusted `https://www.allportsleaguehub.com`; staging verification uses local pickup rather than sending to people. Configure a separate HTTPS hostname/app pool, logs and key persistence; verify proxy/forwarded headers against known proxy addresses, never arbitrary headers. Keep static browser files at the configured dist/browser path and revalidate worker metadata during both deployment and rollback.
+
+**Not ready for deployment:** authenticated account-backed browser/persistence/reset-consumption tests still require the fresh scoped fixture approval in INTEGRATION-APPROVAL.md. No IIS server, real SMTP delivery or native-device PWA installation has been verified. The package is for review, not a deployment recommendation.
 
 ## Required server verification
 
@@ -45,4 +94,4 @@ For an eventual authorized production rollback, use the reviewed previous packag
 
 ## Current limitations
 
-No server hosting inventory, modern staging package, actual IIS deployment, production cookie compatibility or production smoke test has been verified. Production deployment is not recommended at this intermediate migration checkpoint.
+A modern reviewed local package and authenticated Development acceptance are complete. Server hosting inventory, actual IIS deployment, production cookie/key compatibility, native device/inbox acceptance and production smoke testing remain unverified. Those are staging/release gates, not permission to deploy. Production deployment is not recommended before staging acceptance.

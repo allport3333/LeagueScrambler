@@ -1,4 +1,4 @@
-import { Component, OnInit, HostListener, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, HostListener, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
 import { LoginService } from '../services/login.service';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -15,7 +15,9 @@ import { PlayerService } from '../services/player.service';
 @Component({
     selector: 'app-home',
     templateUrl: './home.component.html',
-    styleUrls: ['./home.component.less']
+    styleUrls: ['./home.component.less'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class HomeComponent implements OnInit {
     @ViewChild('confirmClaimDialog', { static: true }) confirmClaimDialog!: TemplateRef<any>;

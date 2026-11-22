@@ -1,7 +1,11 @@
-import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
-@Component({selector:'app-combined-stats-tab',templateUrl:'./combined-stats-tab.component.html',styleUrls:['../player-stats-tabs/profile-statistics.shared.css']})
+@Component({
+    selector: 'app-combined-stats-tab', templateUrl: './combined-stats-tab.component.html', styleUrls: ['../player-stats-tabs/profile-statistics.shared.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
+})
 export class CombinedStatsTabComponent implements OnChanges, OnDestroy {
  @Input() playerId:number; @Input() leagueId:number;
  combinedStats:any=null; loading=false; error=''; opponents:any[]=[]; teammates:any[]=[];

@@ -1,10 +1,26 @@
-<section class="attendance-card" [class.attendance-compact]="loading || error || !state || !state.canSignIn" *ngIf="authenticated && (loading || error || state && state.visible && state.isOwnProfile)" aria-label="League night attendance">
- <h2 *ngIf="state && state.isOwnProfile && state.canSignIn && !loading && !error">League Night Sign In</h2>
- <p *ngIf="loading" role="status">Checking attendance...</p>
- <div *ngIf="error" role="alert"><p>{{ error }}</p><button mat-stroked-button (click)="load(true)">Refresh Attendance</button></div>
- <ng-container *ngIf="state && state.visible && state.isOwnProfile && !loading && !error">
-  <div *ngIf="state.signedIn" class="signed-in-row"><p class="attendance-success" role="status"><mat-icon aria-hidden="true">check_circle</mat-icon> Signed In for Tonight</p><button *ngIf="state.canRemove" mat-button class="attendance-remove" [disabled]="busy" (click)="change(true)">{{ busy ? 'Updating...' : 'Remove Sign In' }}</button></div>
-  <p *ngIf="state.reason || !state.signedIn && !state.canSignIn" class="attendance-reason"><mat-icon aria-hidden="true">{{ unavailableIcon }}</mat-icon><span>{{ unavailableText }}</span></p>
-  <button *ngIf="state.canSignIn" mat-raised-button class="attendance-sign-in" [disabled]="busy" (click)="change()">{{ busy ? 'Signing In...' : 'Sign In for Tonight' }}</button>
- </ng-container>
+@if (authenticated && (loading || error || state && state.visible && state.isOwnProfile)) {
+  <section class="attendance-card" [class.attendance-compact]="loading || error || !state || !state.canSignIn" aria-label="League night attendance">
+    @if (state && state.isOwnProfile && state.canSignIn && !loading && !error) {
+      <h2>League Night Sign In</h2>
+    }
+    @if (loading) {
+      <p role="status">Checking attendance...</p>
+    }
+    @if (error) {
+      <div role="alert"><p>{{ error }}</p><button mat-stroked-button (click)="load(true)">Refresh Attendance</button></div>
+    }
+    @if (state && state.visible && state.isOwnProfile && !loading && !error) {
+      @if (state.signedIn) {
+        <div class="signed-in-row"><p class="attendance-success" role="status"><mat-icon aria-hidden="true">check_circle</mat-icon> Signed In for Tonight</p>@if (state.canRemove) {
+        <button mat-button class="attendance-remove" [disabled]="busy" (click)="change(true)">{{ busy ? 'Updating...' : 'Remove Sign In' }}</button>
+      }</div>
+    }
+    @if (state.reason || !state.signedIn && !state.canSignIn) {
+      <p class="attendance-reason"><mat-icon aria-hidden="true">{{ unavailableIcon }}</mat-icon><span>{{ unavailableText }}</span></p>
+    }
+    @if (state.canSignIn) {
+      <button mat-raised-button class="attendance-sign-in" [disabled]="busy" (click)="change()">{{ busy ? 'Signing In...' : 'Sign In for Tonight' }}</button>
+    }
+  }
 </section>
+}

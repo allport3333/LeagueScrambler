@@ -1,205 +1,231 @@
-<app-player-home-dashboard *ngIf="authenticationChecked && isLoggedIn" (claimPlayer)="openClaimModal()"></app-player-home-dashboard>
-<div *ngIf="!isLoggedIn" style="display: flex; justify-content: center; align-items: center; margin-top: 20px;">
+@if (authenticationChecked && isLoggedIn) {
+  <app-player-home-dashboard (claimPlayer)="openClaimModal()"></app-player-home-dashboard>
+}
+@if (!isLoggedIn) {
+  <div style="display: flex; justify-content: center; align-items: center; margin-top: 20px;">
     <img src="assets/img/sitelogo1.png"
-         style="width: 100%; max-width: 600px; height: auto; object-fit: contain;">
-</div>
+      style="width: 100%; max-width: 600px; height: auto; object-fit: contain;">
+    </div>
+  }
 
-<div [hidden]="!authenticationChecked || isLoggedIn" style="display: flex; justify-content: top; align-items: center; min-height: 100vh; flex-direction: column; text-align: center;">
+  <div [hidden]="!authenticationChecked || isLoggedIn" style="display: flex; justify-content: top; align-items: center; min-height: 100vh; flex-direction: column; text-align: center;">
 
     <div style="margin-top: 1rem;">
-        <button *ngIf="!showLoginForm && !isLoggedIn && !showRegistrationForm" (click)="toggleLoginForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem;">
-            Login
+      @if (!showLoginForm && !isLoggedIn && !showRegistrationForm) {
+        <button (click)="toggleLoginForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem;">
+          Login
         </button>
-        <button *ngIf="!showRegistrationForm && !showLoginForm && !isLoggedIn" (click)="toggleRegistrationForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-left: 1rem;">
-            Register
+      }
+      @if (!showRegistrationForm && !showLoginForm && !isLoggedIn) {
+        <button (click)="toggleRegistrationForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-left: 1rem;">
+          Register
         </button>
+      }
 
     </div>
 
-    <div *ngIf="showLoginForm && !isLoggedIn" style="background: #f4f4f4; padding: 20px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px; text-align: center; margin: 10px;">
+    @if (showLoginForm && !isLoggedIn) {
+      <div style="background: #f4f4f4; padding: 20px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px; text-align: center; margin: 10px;">
         <h2>Login</h2>
         <div>
-            <label for="loginEmail">Email:</label>
-            <input type="text" id="loginEmail" [(ngModel)]="loginEmail" placeholder="Enter your Email Address"
-                   (input)="validateEmail()" [ngClass]="{'error': !isEmailValid && loginEmail?.length > 0}">
-            <div *ngIf="!isEmailValid && loginEmail?.length > 0" class="error-message">Please enter a valid email address.</div>
-        </div>
-        <div>
+          <label for="loginEmail">Email:</label>
+          <input type="text" id="loginEmail" [(ngModel)]="loginEmail" placeholder="Enter your Email Address"
+            (input)="validateEmail()" [ngClass]="{'error': !isEmailValid && loginEmail?.length > 0}">
+            @if (!isEmailValid && loginEmail?.length > 0) {
+              <div class="error-message">Please enter a valid email address.</div>
+            }
+          </div>
+          <div>
             <label for="loginPassword">Password:</label>
             <input type="password" id="loginPassword" [(ngModel)]="loginPassword" placeholder="Enter your password">
+          </div>
+          <br />
+          <button (click)="login()" [disabled]="!isEmailValid">Submit</button>
+          <button (click)="cancel()">Cancel</button>
         </div>
-        <br />
-        <button (click)="login()" [disabled]="!isEmailValid">Submit</button>
-        <button (click)="cancel()">Cancel</button>
-    </div>
+      }
 
-    <!--<button *ngIf="showLoginForm && !isLoggedIn" (click)="toggleRegistrationForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-left: 1rem;">
-        Register
+      <!--<button *ngIf="showLoginForm && !isLoggedIn" (click)="toggleRegistrationForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-left: 1rem;">
+      Register
     </button>-->
 
-    <button *ngIf="!isLoggedIn && !showRegistrationForm && !showLoginForm" (click)="openForgotPasswordDialog()"
-            style="font-size: 1rem; padding: 0.25rem 1rem; background-color: white; color: blue; border-radius: 4px; cursor: pointer; margin-top: 1rem;">
+    @if (!isLoggedIn && !showRegistrationForm && !showLoginForm) {
+      <button (click)="openForgotPasswordDialog()"
+        style="font-size: 1rem; padding: 0.25rem 1rem; background-color: white; color: blue; border-radius: 4px; cursor: pointer; margin-top: 1rem;">
         Forgot Password
-    </button>
-    <div *ngIf="showRegistrationForm" style="background: #f4f4f4; padding: 20px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px; text-align: center; margin: 10px;">
+      </button>
+    }
+    @if (showRegistrationForm) {
+      <div style="background: #f4f4f4; padding: 20px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px; text-align: center; margin: 10px;">
         <h2>Register</h2>
         <form [formGroup]="registerForm" (ngSubmit)="register()" novalidate>
-            <div>
-                <label for="registerEmail">Email:</label>
-                <input type="email" id="registerEmail" formControlName="registerEmail" placeholder="Enter your email">
-                <div style="color: red" *ngIf="registerForm.get('registerEmail').hasError('email') && registerForm.get('registerEmail').touched">
-                    Invalid email format
-                </div>
-            </div>
-            <div>
-                <label for="registerPassword">Password:</label>
-                <input type="password" id="registerPassword" formControlName="registerPassword" placeholder="Create a password">
-            </div>
-            <div>
-                <label for="confirmPassword">Confirm Password:</label>
-                <input type="password" id="confirmPassword" formControlName="confirmPassword" placeholder="Confirm your password">
-                <div style="color: red" *ngIf="registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword').touched">
-                    Passwords do not match
-                </div>
-            </div>
-            <div>
-                <label for="registerFirstName">First Name:</label>
-                <input type="text" id="registerFirstName" formControlName="registerFirstName" placeholder="Enter your first name">
-            </div>
-            <div>
-                <label for="registerLastName">Last Name:</label>
-                <input type="text" id="registerLastName" formControlName="registerLastName" placeholder="Enter your last name">
-            </div>
-            <br />
-            <button [disabled]="!registerForm.valid || registerForm.hasError('passwordMismatch')" style="margin-right: 10px;">Submit</button>
-            <button (click)="cancel()">Cancel</button>
+          <div>
+            <label for="registerEmail">Email:</label>
+            <input type="email" id="registerEmail" formControlName="registerEmail" placeholder="Enter your email">
+            @if (registerForm.get('registerEmail').hasError('email') && registerForm.get('registerEmail').touched) {
+              <div style="color: red">
+                Invalid email format
+              </div>
+            }
+          </div>
+          <div>
+            <label for="registerPassword">Password:</label>
+            <input type="password" id="registerPassword" formControlName="registerPassword" placeholder="Create a password">
+          </div>
+          <div>
+            <label for="confirmPassword">Confirm Password:</label>
+            <input type="password" id="confirmPassword" formControlName="confirmPassword" placeholder="Confirm your password">
+            @if (registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword').touched) {
+              <div style="color: red">
+                Passwords do not match
+              </div>
+            }
+          </div>
+          <div>
+            <label for="registerFirstName">First Name:</label>
+            <input type="text" id="registerFirstName" formControlName="registerFirstName" placeholder="Enter your first name">
+          </div>
+          <div>
+            <label for="registerLastName">Last Name:</label>
+            <input type="text" id="registerLastName" formControlName="registerLastName" placeholder="Enter your last name">
+          </div>
+          <br />
+          <button [disabled]="!registerForm.valid || registerForm.hasError('passwordMismatch')" style="margin-right: 10px;">Submit</button>
+          <button (click)="cancel()">Cancel</button>
         </form>
+      </div>
+    }
 
-    </div>
+  </div>
 
-</div>
-
-<div *ngIf="showPlayerClaimModal" class="modal">
-    <div class="modal-content">
+  @if (showPlayerClaimModal) {
+    <div class="modal">
+      <div class="modal-content">
         <h2>Claim a Player</h2>
-
         <!-- Search Player Section -->
-        <div *ngIf="!showAddPlayerForm">
+        @if (!showAddPlayerForm) {
+          <div>
             <mat-form-field appearance="fill" style="width: 100%;">
-                <mat-label>Search for a Player</mat-label>
-                <input matInput
-                       placeholder="Start typing to search"
-                       [(ngModel)]="searchTerm"
-                       (input)="filterPlayers()" />
-                <div *ngIf="filteredPlayers.length > 0" class="typeahead-options">
-                    <mat-option *ngFor="let player of filteredPlayers"
-                                (click)="selectPlayer(player)">
+              <mat-label>Search for a Player</mat-label>
+              <input matInput
+                placeholder="Start typing to search"
+                [(ngModel)]="searchTerm"
+                (input)="filterPlayers()" />
+                @if (filteredPlayers.length > 0) {
+                  <div class="typeahead-options">
+                    @for (player of filteredPlayers; track player) {
+                      <mat-option
+                        (click)="selectPlayer(player)">
                         {{ player.firstName }} {{ player.lastName }}
-                    </mat-option>
-                </div>
-            </mat-form-field>
-
-            <!-- Action Buttons -->
-            <div class="action-buttons" style="display: flex; justify-content: space-between; margin-top: 16px;">
+                      </mat-option>
+                    }
+                  </div>
+                }
+              </mat-form-field>
+              <!-- Action Buttons -->
+              <div class="action-buttons" style="display: flex; justify-content: space-between; margin-top: 16px;">
                 <button mat-button color="primary" (click)="showAddPlayerForm = true">Create New Player</button>
                 <button mat-button color="warn" (click)="closeModal()">Close</button>
+              </div>
             </div>
-        </div>
-
-        <!-- Add New Player Section -->
-        <div *ngIf="showAddPlayerForm">
-            <h3>Create a New Player</h3>
-            <form [formGroup]="addPlayerForm" (ngSubmit)="addPlayer()">
+          }
+          <!-- Add New Player Section -->
+          @if (showAddPlayerForm) {
+            <div>
+              <h3>Create a New Player</h3>
+              <form [formGroup]="addPlayerForm" (ngSubmit)="addPlayer()">
                 <!-- First Name -->
                 <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>First Name</mat-label>
-                    <input matInput formControlName="firstName" required />
+                  <mat-label>First Name</mat-label>
+                  <input matInput formControlName="firstName" required />
                 </mat-form-field>
-
                 <!-- Last Name -->
                 <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Last Name</mat-label>
-                    <input matInput formControlName="lastName" required />
+                  <mat-label>Last Name</mat-label>
+                  <input matInput formControlName="lastName" required />
                 </mat-form-field>
-
                 <!-- Gender -->
                 <mat-form-field appearance="fill" style="width: 100%;">
-                    <mat-label>Gender</mat-label>
-                    <mat-select formControlName="gender" required>
-                        <mat-option value="Male">Male</mat-option>
-                        <mat-option value="Female">Female</mat-option>
-                    </mat-select>
+                  <mat-label>Gender</mat-label>
+                  <mat-select formControlName="gender" required>
+                    <mat-option value="Male">Male</mat-option>
+                    <mat-option value="Female">Female</mat-option>
+                  </mat-select>
                 </mat-form-field>
-
                 <!-- Is Sub -->
                 <div style="margin-top: 16px;">
-                    <mat-checkbox formControlName="isSub">Is Sub</mat-checkbox>
+                  <mat-checkbox formControlName="isSub">Is Sub</mat-checkbox>
                 </div>
-
                 <!-- Action Buttons -->
                 <div style="margin-top: 16px; display: flex; justify-content: space-between;">
-                    <button mat-button type="submit" color="primary">Save Player</button>
-                    <button mat-button
-                            type="button"
-                            color="warn"
-                            (click)="showAddPlayerForm = false">
-                        Cancel
-                    </button>
+                  <button mat-button type="submit" color="primary">Save Player</button>
+                  <button mat-button
+                    type="button"
+                    color="warn"
+                    (click)="showAddPlayerForm = false">
+                    Cancel
+                  </button>
                 </div>
-            </form>
+              </form>
+            </div>
+          }
         </div>
-    </div>
-</div>
+      </div>
+    }
 
 
-<div *ngIf="showSpecificPlayerClaimModal" class="modal">
-    <div class="modal-content">
-        <h2>We Found Matching Players</h2>
-
-        <div *ngIf="filteredReturnedPlayers.length > 0">
-            <p>Select a player to claim or choose to proceed without claiming:</p>
-            <ul>
-                <li *ngFor="let player of filteredReturnedPlayers">
+    @if (showSpecificPlayerClaimModal) {
+      <div class="modal">
+        <div class="modal-content">
+          <h2>We Found Matching Players</h2>
+          @if (filteredReturnedPlayers.length > 0) {
+            <div>
+              <p>Select a player to claim or choose to proceed without claiming:</p>
+              <ul>
+                @for (player of filteredReturnedPlayers; track player) {
+                  <li>
                     {{ player.firstName }} {{ player.lastName }}
                     <button style="background-color: lightblue;" mat-button (click)="confirmClaimPlayer(player)">Claim</button>
-                </li>
-            </ul>
-        </div>
-
-        <div *ngIf="filteredReturnedPlayers.length === 0">
-            <p>No matching players were found.</p>
-        </div>
-
-        <button mat-button
-                color="warn"
-                (click)="openClaimModal()"
-                style="white-space: normal; text-align: center; word-wrap: break-word; max-width: 100%; padding: 8px; background-color: lightgrey;"
-                >
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+          @if (filteredReturnedPlayers.length === 0) {
+            <div>
+              <p>No matching players were found.</p>
+            </div>
+          }
+          <button mat-button
+            color="warn"
+            (click)="openClaimModal()"
+            style="white-space: normal; text-align: center; word-wrap: break-word; max-width: 100%; padding: 8px; background-color: lightgrey;"
+            >
             Search or Add New Player To Claim
-        </button>
+          </button>
+        </div>
+      </div>
+    }
 
-    </div>
-</div>
-
-<!-- Inline Confirm Claim Dialog -->
-<ng-template #confirmClaimDialog let-data>
-    <h2 mat-dialog-title>Confirm Player Claim</h2>
-    <mat-dialog-content>
+    <!-- Inline Confirm Claim Dialog -->
+    <ng-template #confirmClaimDialog let-data>
+      <h2 mat-dialog-title>Confirm Player Claim</h2>
+      <mat-dialog-content>
         <p>Do you want to claim {{ data.player.firstName }} {{ data.player.lastName }}?</p>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
         <button mat-button color="warn" (click)="onCancelClaim()">Cancel</button>
         <button mat-raised-button color="primary" (click)="onConfirmClaim()">Confirm</button>
-    </mat-dialog-actions>
-</ng-template>
+      </mat-dialog-actions>
+    </ng-template>
 
-<ng-template #confirmationDialog let-data>
-    <h2 mat-dialog-title>Confirm Player Claim</h2>
-    <mat-dialog-content>
+    <ng-template #confirmationDialog let-data>
+      <h2 mat-dialog-title>Confirm Player Claim</h2>
+      <mat-dialog-content>
         <p>{{ data.message }}</p>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
         <button mat-button color="warn" (click)="onCancel()">Cancel</button>
         <button mat-raised-button color="primary" (click)="onConfirm()">Confirm</button>
-    </mat-dialog-actions>
-</ng-template>
+      </mat-dialog-actions>
+    </ng-template>

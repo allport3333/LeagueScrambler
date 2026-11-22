@@ -1,13 +1,15 @@
-import { Component, Inject, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, Inject, Input, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { forkJoin, Subscription } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
 import { PlayerService } from '../services/player.service';
 
 @Component({
- selector: 'app-team-roster-button',
- template: `<button type="button" class="team-roster-link" [disabled]="!(teamId > 0 && leagueId > 0)" [attr.aria-label]="'View roster for '+teamName" aria-haspopup="dialog" (click)="open($event)">{{ teamName }}</button>`,
- styles: [':host{display:inline;min-width:0}.team-roster-link{font:inherit;font-weight:inherit;color:#285d91;background:none;border:0;border-radius:3px;padding:4px 2px;min-height:32px;max-width:100%;white-space:normal;overflow-wrap:break-word;text-decoration:underline;text-decoration-color:#91acc5;text-underline-offset:3px;cursor:pointer}.team-roster-link:hover{color:#17426c;background:#e9f1fa}.team-roster-link:focus-visible{outline:2px solid #285d91;outline-offset:2px}.team-roster-link:disabled{color:inherit;text-decoration:none;cursor:default}@media print{.team-roster-link{color:inherit;text-decoration:none;padding:0;min-height:0;background:none}}']
+    selector: 'app-team-roster-button',
+    template: `<button type="button" class="team-roster-link" [disabled]="!(teamId > 0 && leagueId > 0)" [attr.aria-label]="'View roster for '+teamName" aria-haspopup="dialog" (click)="open($event)">{{ teamName }}</button>`,
+    styles: [':host{display:inline;min-width:0}.team-roster-link{font:inherit;font-weight:inherit;color:#285d91;background:none;border:0;border-radius:3px;padding:4px 2px;min-height:32px;max-width:100%;white-space:normal;overflow-wrap:break-word;text-decoration:underline;text-decoration-color:#91acc5;text-underline-offset:3px;cursor:pointer}.team-roster-link:hover{color:#17426c;background:#e9f1fa}.team-roster-link:focus-visible{outline:2px solid #285d91;outline-offset:2px}.team-roster-link:disabled{color:inherit;text-decoration:none;cursor:default}@media print{.team-roster-link{color:inherit;text-decoration:none;padding:0;min-height:0;background:none}}'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class TeamRosterButtonComponent implements OnDestroy {
  @Input() teamId: number;
@@ -29,9 +31,11 @@ export class TeamRosterButtonComponent implements OnDestroy {
 }
 
 @Component({
- selector: 'app-team-roster-dialog',
- templateUrl: './team-roster.component.html',
- styleUrls: ['./team-roster.component.css']
+    selector: 'app-team-roster-dialog',
+    templateUrl: './team-roster.component.html',
+    styleUrls: ['./team-roster.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class TeamRosterDialogComponent implements OnInit, OnDestroy {
  loading = true;

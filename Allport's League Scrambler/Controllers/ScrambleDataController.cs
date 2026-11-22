@@ -12,7 +12,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
 namespace Allport_s_League_Scrambler.Controllers
 {
@@ -253,6 +252,9 @@ namespace Allport_s_League_Scrambler.Controllers
                 var selectedLeagueId = leagueId.Value;
                 return context.KingQueenTeam.AsNoTracking()
                     .Where(x => x.LeagueID == selectedLeagueId && x.ScrambleWithScoresToBeSaved == true)
+                    // EF 2 grouped these league-filtered rows on the client.
+                    // Retain its representative-row behavior with current EF.
+                    .ToList()
                     .GroupBy(x => x.ScrambleNumber)
                     .Select(g => g.First())
                     .OrderBy(t => t.ScrambleNumber)
@@ -266,10 +268,15 @@ namespace Allport_s_League_Scrambler.Controllers
             if (string.IsNullOrWhiteSpace(searchTerm))
                 return BadRequest("Search term cannot be empty.");
 
-            var context = new DataContext();
+            using var context = new DataContext();
             var searchTerms = searchTerm.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-            var players = context.Players
+            // EF 2 evaluated these ordinal comparisons locally. Keep their exact
+            // semantics instead of substituting the database's collation rules.
+            // Fetch only the public autocomplete fields, without tracked entities.
+            var players = context.Players.AsNoTracking()
+                .Select(p => new { p.Id, p.FirstName, p.LastName })
+                .AsEnumerable()
                 .Where(p =>
                     // If there's only one search term, match against either FirstName or LastName
                     (searchTerms.Length == 1 &&
@@ -790,11 +797,10 @@ namespace Allport_s_League_Scrambler.Controllers
                 var leagueId = existingLeague.ID;
 
                 // 2) Determine next ScrambleNumber (if that's how you want to group these new teams)
-                var scrambleNumber = context.KingQueenTeam
+                var scrambleNumber = (context.KingQueenTeam
                     .Where(kt => kt.LeagueID == leagueId)
-                    .Select(kt => kt.ScrambleNumber)
-                    .DefaultIfEmpty(0)
-                    .Max() + 1;
+                    .Select(kt => (int?)kt.ScrambleNumber)
+                    .Max() ?? 0) + 1;
 
                 // 3) Prepare a list to hold the newly created teams
                 var createdTeams = new List<KingQueenTeam>();
@@ -915,9 +921,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 // 1) Find the highest ScrambleNumber for unscrambled teams:
                 var latestScrambleNumber = context.KingQueenTeam
                     .Where(kt => kt.LeagueID == leagueId && kt.ScrambleWithScoresToBeSaved == false)
-                    .Select(kt => kt.ScrambleNumber)
-                    .DefaultIfEmpty(0)
-                    .Max();
+                    .Select(kt => (int?)kt.ScrambleNumber)
+                    .Max() ?? 0;
 
                 // If 0, it means none exist, or everything is already true
                 if (latestScrambleNumber == 0)
@@ -1212,11 +1217,10 @@ namespace Allport_s_League_Scrambler.Controllers
                     {
                         if (!newScrambleNumbers.TryGetValue(teamScore.LeagueId, out var nextScrambleNumber))
                         {
-                            nextScrambleNumber = context.KingQueenTeam
+                            nextScrambleNumber = (context.KingQueenTeam
                                 .Where(t => t.LeagueID == teamScore.LeagueId && t.ScrambleWithScoresToBeSaved)
-                                .Select(t => t.ScrambleNumber)
-                                .DefaultIfEmpty(0)
-                                .Max() + 1;
+                                .Select(t => (int?)t.ScrambleNumber)
+                                .Max() ?? 0) + 1;
                             newScrambleNumbers.Add(teamScore.LeagueId, nextScrambleNumber);
                         }
                         teamScore.ScrambleNumber = nextScrambleNumber;

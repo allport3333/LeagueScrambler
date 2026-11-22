@@ -1,5 +1,31 @@
 # Legacy baseline at 0d30bc9
 
+## Final authenticated acceptance and restored Development baseline — 2026-11-22
+
+The user authorized Development mutations; final local acceptance now includes actual synthetic account login/roles/permissions, membership/profile/import writes, schedule saves/conflicts/protection, Scrambler/scoring persistence and password reset rollback/consumption/replay/concurrency. `authorized-atomic-reset-acceptance/` records 59 checks / 64 HTTP requests and the real 11-group / 113-request browser run. Five token races each permit exactly one request. No intercepted APIs in that suite.
+
+Before and final-after snapshots are authorized-development-before and authorized-final-database-after. All 24 mapped table counts/checked data hashes/column metadata and FK metadata match. Identity sequences were not reseeded. No schema migration or real account change occurred. DATABASE-CHANGES.md and the consolidated journal include failed/recovered runs; a shell interruption was explicitly recovered from saved owned IDs. Credentials were never exported; actual synthetic-token messages were removed after use/cleanup.
+
+Final original-query checks still match 29 core queries, two retrieval lists and four autocomplete cases. The old EF 2 user model has no role shadow property, proving the explicit UserRoleId mapping fixes a real EF 10 convention regression. API inventory remains 7 controllers / 86 actions with the original hash. Final Angular unit, business/printing/worker checks and actual responsive screens are recorded in STATUS.md. Earlier baseline checkpoints below remain historical evidence; pending-permission statements are superseded by the explicit grant and completed acceptance.
+
+## Legacy-to-.NET 10 comparison — 2026-11-22
+
+Legacy assemblies remain in ignored modernization artifacts and were not replaced. Before backend source changes, captured **29 read-only ordered/unordered query fingerprints** with EF 2.2.6 across league IDs 37 and 133. Final EF 10 comparison passed all 29 with zero differences. Four additional legacy autocomplete fingerprints exposed four modern translation failures; after the explicit local-comparison boundary, all four match. No row payloads/credentials are stored. The independent history verifier matches **1,966 aggregate teammate pairs** against saved team memberships on the actual Development database.
+
+Both the initial and final modern email/security checks passed. Seven controllers / 86 declared API actions retain the exact legacy SHA256 **9A64274A3AB42F36C9D14D4DE77F92B743AA3A34829B910ED9F1AEFE8605AB81**. Legacy Unicode PBKDF2, token expiry/trusted origins, both cookie schemes/tampering and actual local SMTP pickup HTML/plain MIME pass. No external messages or account writes occurred.
+
+Real Kestrel/Startup/SQL integration passed **43 HTTP checks**: Admin and LegacyAdmin success, ordinary/unassigned Manager rejection, anonymous/expired-cookie rejection, eight legacy wire-JSON comparisons across both leagues, logout clears both schemes, SPA deep links and production-worker metadata caching. Synthetic claims use no real identity. Actual public browser routes passed with the production Angular 22 bundle and modern backend, without API interception or runtime/server errors; desktop/mobile screenshots exist. Protected browser flows are explicitly deferred because the UI needs database-backed synthetic account records. An initial protected-browser fixture without such an account was rejected by the existing guard; do not weaken that guard or label it a framework failure.
+
+After all read tests, **24 mapped tables have identical counts and selected-row hashes; all FK metadata is identical** to the before snapshot. Artifact: `database-after-net10-comparison-final.json`. The first snapshot invocation was blocked by PowerShell execution policy; its incomplete comparison is not valid evidence. The explicit per-process read-script invocation succeeded and produced the final comparison. No schema/migrations/writes were performed. Identity sequences were not reseeded.
+
+Evidence lives in `tests/functional/artifacts/modernization/`: `legacy-query-results.json`, `net10-query-final.json`, `legacy-search-results.json`, `net10-search-{before,fixed}.json`, `net10-history-read.log`, `net10-email-final/`, `net10-http-second/http-results.json`, `net10-http-second/browser/`, and final database comparison. These are selected query/read/auth-fixture results, not complete persistence/IIS/real-user proof.
+
+## Continuation through Angular 21
+
+Angular 18 development and production PWA verification passed before advancing (6 UI, 12 player/import, 7 matchup/print, 8 PWA groups). Angular 19 and 20 production checkpoints passed; Angular 20's actual service-worker suite passed 8 groups. Angular 21 production/development builds passed, followed by the same 6 UI, 12 player/import and 7 matchup/print groups. The rendered K/Q regression introduced by automatic control-flow tracking was corrected and regression assertions were added; see DECISIONS.md. Additional actual Angular 21 fixture-browser score navigation passed 12 groups, and Team Scores desktop/mobile preview passed. No database writes or real account/email operations were used.
+
+The supported lint transition performed a clean unforced dependency install and `npm ls --all` passed. Before tailoring the two architecture style preferences, recommended rules reported 451 errors, 6 warnings, 0 fatal parser errors over 143 files. These counts are **not directly comparable** to the old formatting-heavy 4,427 findings: the supported ruleset differs. The two rules preferring standalone components and `inject()` conflict with the explicit preservation scope and are disabled with comments. Remaining findings are still reported; lint is not claimed to pass. Detailed reports and dependency recovery are in the modernization artifacts.
+
 Master/origin/master were clean and identical. A separate worktree was created; original master remains unchanged.
 
 | Check | Result |

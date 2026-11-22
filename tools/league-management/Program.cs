@@ -2,7 +2,7 @@
 // authentication credentials, real player profiles or real leagues are changed.
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -82,17 +82,23 @@ class PlayerImportCheck {
   if(args.Length==2&&args[0]=="--fixtures")return Fixtures(args[1]);
   string before=null;Exception failure=null;
   try{
-   Require(args.Length==3,"Pass a fresh test authorization, project .env and report path.");reportPath=Path.GetFullPath(args[2]);var approval=JObject.Parse(File.ReadAllText(args[0]));
+   Require(args.Length==3,"Pass authorization (or --modernization-authorized), Development .env and report path.");reportPath=Path.GetFullPath(args[2]);
+   var modernization=args[0]=="--modernization-authorized";
+   if(modernization)DevelopmentAuthorization.Configure(args[1],reportPath);
+   else {
+   var approval=JObject.Parse(File.ReadAllText(args[0]));
    Require(approval.Value<bool>("userAuthorized")&&approval.Value<string>("scope")=="player-import-synthetic-development"&&approval.Value<string>("database")=="LeagueScramblerDev"&&approval.Value<string>("server")=="localhost"&&approval.Value<string>("environment")=="Development"&&approval.Value<DateTime>("expiresAt").ToUniversalTime()>DateTime.UtcNow,"Fresh scoped user authorization is required.");
    // CIM records microseconds; Process.StartTime includes 100ns ticks. Compare at
    // CIM precision while retaining the exact PID and configuration hashes.
    var identity=approval["identity"];var process=Process.GetProcessById(identity.Value<int>("pid"));Require(process.StartTime.ToUniversalTime().Ticks/10==identity.Value<DateTime>("processStartUtc").ToUniversalTime().Ticks/10,"Verified development process changed.");
    Require(HashFile(identity.Value<string>("projectDll"))==identity.Value<string>("dllSha256")&&HashFile(args[1])==identity.Value<string>("envSha256"),"Verified development configuration changed.");
+   }
    var line=File.ReadLines(args[1]).Single(x=>x.TrimStart().StartsWith("LEAGUESCRAMBLER_DB_CONNECTION="));var db=new SqlConnectionStringBuilder(line.Substring(line.IndexOf('=')+1).Trim().Trim('"','\''));
    Require(db.DataSource=="localhost"&&db.InitialCatalog=="LeagueScramblerDev"&&db.IntegratedSecurity&&string.IsNullOrEmpty(db.UserID)&&string.IsNullOrEmpty(db.Password)&&string.IsNullOrEmpty(db.AttachDBFilename),"Only the approved local Windows-authenticated development database is allowed.");
+   if(modernization)db.TrustServerCertificate=true;
    Environment.SetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION",db.ConnectionString);Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT","Development");
    using(var c=new DataContext()){c.Database.OpenConnection();using(var cmd=c.Database.GetDbConnection().CreateCommand()){cmd.CommandText="SELECT DB_NAME(),CONVERT(nvarchar(128),SERVERPROPERTY('MachineName'))";using(var reader=cmd.ExecuteReader())Require(reader.Read()&&reader.GetString(0)=="LeagueScramblerDev"&&string.Equals(reader.GetString(1),Environment.MachineName,StringComparison.OrdinalIgnoreCase),"SQL identity mismatch.");}}
-   checks.Add("Fresh user authorization, effective Development runtime, process binding, localhost SQL identity and Windows authentication verified.");
+   checks.Add(modernization?"Explicit modernization Development grant, localhost SQL machine/database identity and Windows authentication verified.":"Fresh user authorization, effective Development runtime, process binding, localhost SQL identity and Windows authentication verified.");
    before=Snapshot();prefix="LSImport_"+Guid.NewGuid().ToString("N");phase="create owned fixtures";
    var main=new LeagueType{LeagueName=prefix+"_Main"};var other=new LeagueType{LeagueName=prefix+"_Other"};var players=Enumerable.Range(1,6).Select(i=>new Player{FirstName=prefix,LastName="Participant"+i,IsMale=i%2==0,Gender=i%2==0?"Male":"Female"}).ToList();
    using(var c=new DataContext())using(var tx=c.Database.BeginTransaction()){

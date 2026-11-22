@@ -1,662 +1,660 @@
-<div class="page-loading" *ngIf="loading" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; margin-top: -200px;">
+@if (loading) {
+  <div class="page-loading" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; margin-top: -200px;">
     <h2 class="ml-4">Loading...</h2>
     <mat-spinner diameter="200"></mat-spinner>
-</div>
-<div *ngIf="!loading">
+  </div>
+}
+@if (!loading) {
+  <div>
     <div style="align-self:center;">
-        <div *ngIf="!hideInputOptions">
-            <h4>Select League</h4>
-            <mat-form-field>
-                <mat-label>League</mat-label>
-                <mat-select style="min-width:210px;" [(ngModel)]="selectedLeague" [(value)]="league" (selectionChange)="getTeams(selectedLeague)">
-                    <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
-                        {{league.leagueName}}
-                    </mat-option>
-                </mat-select>
-            </mat-form-field>
+      @if (!hideInputOptions) {
+        <div>
+          <h4>Select League</h4>
+          <mat-form-field>
+            <mat-label>League</mat-label>
+            <mat-select style="min-width:210px;" [(ngModel)]="selectedLeague" [(value)]="league" (selectionChange)="getTeams(selectedLeague)">
+              @for (league of leaguesAvailable; track league) {
+                <mat-option [value]="league.leagueName">
+                  {{league.leagueName}}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         </div>
-        <div class="col-10">
-
-        </div>
-        <div *ngIf="teams != null">
-            <div class="row" *ngIf="leagueID == 1">
-                <mat-card appearance="outlined" style="background-color:lightgray;">
-                    <table class='table col-6' style="max-width:650px;">
+      }
+      <div class="col-10">
+      </div>
+      @if (teams != null) {
+        <div>
+          @if (leagueID == 1) {
+            <div class="row">
+              <mat-card appearance="outlined" style="background-color:lightgray;">
+                <table class='table col-6' style="max-width:650px;">
+                  <thead>
+                    <tr>
+                      <th>Week</th>
+                      <th>Date</th>
+                      <th>Court 3</th>
+                      <th>Court 4</th>
+                      <th>Court 5</th>
+                      <th>Court 6</th>
+                      <th>Court 7</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>0</td>
+                      <td>01/08/2020</td>
+                      <td>Free Play</td>
+                      <td>Free Play</td>
+                      <td>Free Play</td>
+                      <td>Free Play</td>
+                      <td>Free Play</td>
+                    </tr>
+                    <tr>
+                      <td>1</td>
+                      <td>01/15/2020</td>
+                      <td>1 vs 10</td>
+                      <td>2 vs 9</td>
+                      <td>3 vs 8</td>
+                      <td>4 vs 7</td>
+                      <td>5 vs 6</td>
+                    </tr>
+                    <tr>
+                      <td>2</td>
+                      <td>01/22/2020</td>
+                      <td>7 vs 2</td>
+                      <td>6 vs 3</td>
+                      <td>5 vs 4</td>
+                      <td>10 vs 9</td>
+                      <td>8 vs 1</td>
+                    </tr>
+                    <tr>
+                      <td>3</td>
+                      <td>01/29/2020</td>
+                      <td>9 vs 8</td>
+                      <td>1 vs 7</td>
+                      <td>6 vs 2</td>
+                      <td>5 vs 3</td>
+                      <td>4 vs 10</td>
+                    </tr>
+                    <tr>
+                      <td>4</td>
+                      <td>02/05/2020</td>
+                      <td>4 vs 3</td>
+                      <td>10 vs 8</td>
+                      <td>9 vs 7</td>
+                      <td>6 vs 1</td>
+                      <td>2 vs 5</td>
+                    </tr>
+                    <tr>
+                      <td>5</td>
+                      <td>02/12/2020</td>
+                      <td>10 vs 6</td>
+                      <td>7 vs 5</td>
+                      <td>2 vs 1</td>
+                      <td>8 vs 4</td>
+                      <td>9 vs 3</td>
+                    </tr>
+                    <tr>
+                      <td>6</td>
+                      <td>02/19/2020</td>
+                      <td>5 vs 9</td>
+                      <td>8 vs 6</td>
+                      <td>7 vs 10</td>
+                      <td>3 vs 2</td>
+                      <td>1 vs 4</td>
+                    </tr>
+                    <tr>
+                      <td>7</td>
+                      <td>02/26/2020</td>
+                      <td>3 vs 1</td>
+                      <td>9 vs 4</td>
+                      <td>8 vs 5</td>
+                      <td>7 vs 6</td>
+                      <td>10 vs 2</td>
+                    </tr>
+                    <tr>
+                      <td>8</td>
+                      <td>03/04/2020</td>
+                      <td>6 vs 4</td>
+                      <td>5 vs 10</td>
+                      <td>1 vs 9</td>
+                      <td>2 vs 8</td>
+                      <td>3 vs 7</td>
+                    </tr>
+                    <tr>
+                      <td>9</td>
+                      <td>03/11/2020</td>
+                      <td>8 vs 7</td>
+                      <td>4 vs 2</td>
+                      <td>10 vs 3</td>
+                      <td>1 vs 5</td>
+                      <td>6 vs 9</td>
+                    </tr>
+                    <tr>
+                      <td>10</td>
+                      <td>03/18/2020</td>
+                      <td>Playoff Round 1</td>
+                      <td>Playoff Round 1</td>
+                      <td>Playoff Round 1</td>
+                      <td>Playoff Round 1</td>
+                      <td>Playoff Round 1</td>
+                    </tr>
+                    <tr>
+                      <td>11</td>
+                      <td>03/25/2020</td>
+                      <td>Playoff Round 2</td>
+                      <td>Playoff Round 2</td>
+                      <td>Playoff Round 2</td>
+                      <td>Playoff Round 2</td>
+                      <td>Playoff Round 2</td>
+                    </tr>
+                    <tr>
+                      <td>12</td>
+                      <td>04/01/2020</td>
+                      <td>Playoff Round 3</td>
+                      <td>Playoff Round 3</td>
+                      <td>Playoff Round 3</td>
+                      <td>Playoff Round 3</td>
+                      <td>Playoff Round 3</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </mat-card>
+              @if (teams != null) {
+                <div>
+                  @if (leagueID == 1) {
+                    <mat-card appearance="outlined" class="ml-3" style="background-color:lightgray;">
+                      <table class='table col-4 ml-2' style="max-width:600px;">
                         <thead>
-                            <tr>
-                                <th>Week</th>
-                                <th>Date</th>
-                                <th>Court 3</th>
-                                <th>Court 4</th>
-                                <th>Court 5</th>
-                                <th>Court 6</th>
-                                <th>Court 7</th>
-
-                            </tr>
+                          <tr>
+                            <th>Captain Name</th>
+                            <th>Team Name</th>
+                            <th>Team Number</th>
+                          </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>0</td>
-                                <td>01/08/2020</td>
-                                <td>Free Play</td>
-                                <td>Free Play</td>
-                                <td>Free Play</td>
-                                <td>Free Play</td>
-                                <td>Free Play</td>
-                            </tr>
-                            <tr>
-                                <td>1</td>
-                                <td>01/15/2020</td>
-                                <td>1 vs 10</td>
-                                <td>2 vs 9</td>
-                                <td>3 vs 8</td>
-                                <td>4 vs 7</td>
-                                <td>5 vs 6</td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>01/22/2020</td>
-                                <td>7 vs 2</td>
-                                <td>6 vs 3</td>
-                                <td>5 vs 4</td>
-                                <td>10 vs 9</td>
-                                <td>8 vs 1</td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>01/29/2020</td>
-                                <td>9 vs 8</td>
-                                <td>1 vs 7</td>
-                                <td>6 vs 2</td>
-                                <td>5 vs 3</td>
-                                <td>4 vs 10</td>
-                            </tr>
-                            <tr>
-                                <td>4</td>
-                                <td>02/05/2020</td>
-                                <td>4 vs 3</td>
-                                <td>10 vs 8</td>
-                                <td>9 vs 7</td>
-                                <td>6 vs 1</td>
-                                <td>2 vs 5</td>
-                            </tr>
-                            <tr>
-                                <td>5</td>
-                                <td>02/12/2020</td>
-                                <td>10 vs 6</td>
-                                <td>7 vs 5</td>
-                                <td>2 vs 1</td>
-                                <td>8 vs 4</td>
-                                <td>9 vs 3</td>
-                            </tr>
-                            <tr>
-                                <td>6</td>
-                                <td>02/19/2020</td>
-                                <td>5 vs 9</td>
-                                <td>8 vs 6</td>
-                                <td>7 vs 10</td>
-                                <td>3 vs 2</td>
-                                <td>1 vs 4</td>
-                            </tr>
-                            <tr>
-                                <td>7</td>
-                                <td>02/26/2020</td>
-                                <td>3 vs 1</td>
-                                <td>9 vs 4</td>
-                                <td>8 vs 5</td>
-                                <td>7 vs 6</td>
-                                <td>10 vs 2</td>
-                            </tr>
-                            <tr>
-                                <td>8</td>
-                                <td>03/04/2020</td>
-                                <td>6 vs 4</td>
-                                <td>5 vs 10</td>
-                                <td>1 vs 9</td>
-                                <td>2 vs 8</td>
-                                <td>3 vs 7</td>
-                            </tr>
-                            <tr>
-                                <td>9</td>
-                                <td>03/11/2020</td>
-                                <td>8 vs 7</td>
-                                <td>4 vs 2</td>
-                                <td>10 vs 3</td>
-                                <td>1 vs 5</td>
-                                <td>6 vs 9</td>
-                            </tr>
-                            <tr>
-                                <td>10</td>
-                                <td>03/18/2020</td>
-                                <td>Playoff Round 1</td>
-                                <td>Playoff Round 1</td>
-                                <td>Playoff Round 1</td>
-                                <td>Playoff Round 1</td>
-                                <td>Playoff Round 1</td>
-                            </tr>
-                            <tr>
-                                <td>11</td>
-                                <td>03/25/2020</td>
-                                <td>Playoff Round 2</td>
-                                <td>Playoff Round 2</td>
-                                <td>Playoff Round 2</td>
-                                <td>Playoff Round 2</td>
-                                <td>Playoff Round 2</td>
-                            </tr>
-                            <tr>
-                                <td>12</td>
-                                <td>04/01/2020</td>
-                                <td>Playoff Round 3</td>
-                                <td>Playoff Round 3</td>
-                                <td>Playoff Round 3</td>
-                                <td>Playoff Round 3</td>
-                                <td>Playoff Round 3</td>
-                            </tr>
-
-                        </tbody>
-                    </table>
-                </mat-card>
-                <div *ngIf="teams != null">
-                    <mat-card appearance="outlined" *ngIf="leagueID == 1" class="ml-3" style="background-color:lightgray;">
-                        <table class='table col-4 ml-2' style="max-width:600px;">
-
-                            <thead>
-                                <tr>
-                                    <th>Captain Name</th>
-                                    <th>Team Name</th>
-                                    <th>Team Number</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!--<tr *ngFor="let singleTeam of teams; let i = index ">
-                            <td>{{ singleTeam.teamName }}</td>
-                            <td>{{ i + 1 }}</td>
-
+                          <!--<tr *ngFor="let singleTeam of teams; let i = index ">
+                          <td>{{ singleTeam.teamName }}</td>
+                          <td>{{ i + 1 }}</td>
                         </tr>-->
-                                <tr>
-                                    <td>Megan McGlynn</td>
-                                    <td>Silver Snakes</td>
-                                    <td>1</td>
-                                </tr>
-                                <tr>
-                                    <td>Theresa Freund</td>
-                                    <td>Unknown</td>
-                                    <td>2</td>
-                                </tr>
-                                <tr>
-                                    <td>Patti Yaden</td>
-                                    <td>No Name</td>
-                                    <td>3</td>
-                                </tr>
-                                <tr>
-                                    <td>Jesse Long</td>
-                                    <td>Oops I Set It Again</td>
-                                    <td>4</td>
-                                </tr>
-                                <tr>
-                                    <td>Brian Unger</td>
-                                    <td>Chewbacca</td>
-                                    <td>5</td>
-                                </tr>
-                                <tr>
-                                    <td>Danielle Nagle</td>
-                                    <td>Wallbangers</td>
-                                    <td>6</td>
-                                </tr>
-                                <tr>
-                                    <td>Debbie Carter</td>
-                                    <td>Team That Beat Me</td>
-                                    <td>7</td>
-                                </tr>
-                                <tr>
-                                    <td>Stephany Trujillo</td>
-                                    <td>Four Play</td>
-                                    <td>8</td>
-                                </tr>
-                                <tr>
-                                    <td>Devin Badaczewski</td>
-                                    <td>Bump Set Psych</td>
-                                    <td>9</td>
-                                </tr>
-                                <tr>
-                                    <td>Devin June</td>
-                                    <td>Nice Aces</td>
-                                    <td>10</td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </mat-card>
-                </div>
-            </div>
-            <div class="row" *ngIf="leagueID == 9">
-                <mat-card appearance="outlined" style="background-color:lightgray;">
-                    <table class='table col-6' style="max-width:650px;">
-                        <thead>
-                            <tr>
-                                <th>Week</th>
-                                <th>Date</th>
-                                <th>Court 3</th>
-                                <th>Court 5</th>
-                                <th>Court 6</th>
-                                <th>Court 7</th>
-
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>0</td>
-                                <td>01/08/2020</td>
-                                <td>Free Play</td>
-                                <td>Free Play</td>
-                                <td>Free Play</td>
-                                <td>Free Play</td>
-                            </tr>
-                            <tr>
-                                <td>1</td>
-                                <td>01/15/2020</td>
-                                <td>1 vs 10</td>
-                                <td>2 vs 9</td>
-                                <td>3 vs 8</td>
-                                <td>4 vs 7</td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>01/22/2020</td>
-                                <td>7 vs 2</td>
-                                <td>6 vs 3</td>
-                                <td>5 vs 4</td>
-                                <td>10 vs 9</td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>01/29/2020</td>
-                                <td>9 vs 8</td>
-                                <td>1 vs 7</td>
-                                <td>6 vs 2</td>
-                                <td>5 vs 3</td>
-                            </tr>
-                            <tr>
-                                <td>4</td>
-                                <td>02/05/2020</td>
-                                <td>4 vs 3</td>
-                                <td>10 vs 8</td>
-                                <td>9 vs 7</td>
-                                <td>6 vs 1</td>
-                            </tr>
-                            <tr>
-                                <td>5</td>
-                                <td>02/12/2020</td>
-                                <td>10 vs 6</td>
-                                <td>7 vs 5</td>
-                                <td>2 vs 1</td>
-                                <td>8 vs 4</td>
-                            </tr>
-                            <tr>
-                                <td>6</td>
-                                <td>02/19/2020</td>
-                                <td>5 vs 9</td>
-                                <td>8 vs 6</td>
-                                <td>7 vs 10</td>
-                                <td>3 vs 2</td>
-                            </tr>
-                            <tr>
-                                <td>7</td>
-                                <td>02/26/2020</td>
-                                <td>3 vs 1</td>
-                                <td>9 vs 4</td>
-                                <td>8 vs 5</td>
-                                <td>7 vs 6</td>
-                            </tr>
-                            <tr>
-                                <td>8</td>
-                                <td>03/04/2020</td>
-                                <td>6 vs 4</td>
-                                <td>5 vs 10</td>
-                                <td>1 vs 9</td>
-                                <td>2 vs 8</td>
-                            </tr>
-                            <tr>
-                                <td>9</td>
-                                <td>03/11/2020</td>
-                                <td>8 vs 7</td>
-                                <td>4 vs 2</td>
-                                <td>10 vs 3</td>
-                                <td>1 vs 5</td>
-                            </tr>
-                            <tr>
-                                <td>10</td>
-                                <td>03/18/2020</td>
-                                <td>Playoff Round 1</td>
-                                <td>Playoff Round 1</td>
-                                <td>Playoff Round 1</td>
-                                <td>Playoff Round 1</td>
-                            </tr>
-                            <tr>
-                                <td>11</td>
-                                <td>03/25/2020</td>
-                                <td>Playoff Round 2</td>
-                                <td>Playoff Round 2</td>
-                                <td>Playoff Round 2</td>
-                                <td>Playoff Round 2</td>
-                            </tr>
-                            <tr>
-                                <td>12</td>
-                                <td>04/01/2020</td>
-                                <td>Playoff Round 3</td>
-                                <td>Playoff Round 3</td>
-                                <td>Playoff Round 3</td>
-                                <td>Playoff Round 3</td>
-                            </tr>
-
-                        </tbody>
-                    </table>
-                </mat-card>
-                <div *ngIf="teams != null">
-                    <mat-card appearance="outlined" *ngIf="leagueID == 9" class="ml-3" style="background-color:lightgray;">
-                        <table class='table col-4 ml-2' style="max-width:600px;">
-
-                            <thead>
-                                <tr>
-                                    <th>Captain Name</th>
-                                    <th>Team Name</th>
-                                    <th>Team Number</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!--<tr *ngFor="let singleTeam of teams; let i = index ">
-                            <td>{{ singleTeam.teamName }}</td>
-                            <td>{{ i + 1 }}</td>
-
-                        </tr>-->
-                                <tr>
-                                    <td>Chris Allport</td>
-                                    <td>Four Play</td>
-                                    <td>1</td>
-                                </tr>
-                                <tr>
-                                    <td>Theresa Freund</td>
-                                    <td>Unknown</td>
-                                    <td>2</td>
-                                </tr>
-                                <tr>
-                                    <td>Patti Yaden</td>
-                                    <td>No Name</td>
-                                    <td>3</td>
-                                </tr>
-                                <tr>
-                                    <td>Jesse Long</td>
-                                    <td>Oops I Set It Again</td>
-                                    <td>4</td>
-                                </tr>
-                                <tr>
-                                    <td>Brian Unger</td>
-                                    <td>Chewbacca</td>
-                                    <td>5</td>
-                                </tr>
-                                <tr>
-                                    <td>Danielle Nagle</td>
-                                    <td>Wallbangers</td>
-                                    <td>6</td>
-                                </tr>
-                                <tr>
-                                    <td>Debbie Carter</td>
-                                    <td>Team That Beat Me</td>
-                                    <td>7</td>
-                                </tr>
-                                <tr>
-                                    <td>Stephany Trujillo</td>
-                                    <td>Four Play</td>
-                                    <td>8</td>
-                                </tr>
-                                <tr>
-                                    <td>Devin Badaczewski</td>
-                                    <td>Bump Set Psych</td>
-                                    <td>9</td>
-                                </tr>
-                                <tr>
-                                    <td>Devin June</td>
-                                    <td>Nice Aces</td>
-                                    <td>10</td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </mat-card>
-                </div>
-            </div>
-            <div class="row" *ngIf="leagueID == 6">
-                <mat-card appearance="outlined" style="background-color:lightgray;">
-                    <table class='table col-6' style="max-width:650px;">
-
-                        <tr><th class="text-center" colspan="5">Group A</th></tr>
-
-
                         <tr>
-                            <th>Week</th>
-                            <th>Date</th>
-                            <th>Court 3</th>
-                            <th>Court 5</th>
-                            <th>Court 7</th>
-
+                          <td>Megan McGlynn</td>
+                          <td>Silver Snakes</td>
+                          <td>1</td>
                         </tr>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>2/27/2020</td>
-                                <td>1 vs 2</td>
-                                <td>3 vs 4</td>
-                                <td>5 vs 6</td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>3/2/2020</td>
-                                <td>5 vs 4</td>
-                                <td>1 vs 6</td>
-                                <td>2 vs 3</td>
-
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>3/9/2020</td>
-                                <td>3 vs 1</td>
-                                <td>2 vs 5</td>
-                                <td>6 vs 4</td>
-                            </tr>
-                            <tr>
-                                <td>4</td>
-                                <td>3/16/2020</td>
-                                <td>2 vs 6</td>
-                                <td>4 vs 1</td>
-                                <td>3 vs 5</td>
-                            </tr>
-                            <tr>
-                                <td>5</td>
-                                <td>3/23/2020</td>
-                                <td>1 vs 5</td>
-                                <td>6 vs 3</td>
-                                <td>4 vs 2</td>
-                            </tr>
-                            <tr>
-                                <td>6</td>
-                                <td>3/30/2020</td>
-                                <td>Playoff </td>
-                                <td>Playoff </td>
-                                <td>Playoff </td>
-
-                            </tr>
-
-                        </tbody>
-                    </table>
-                </mat-card>
-                <div *ngIf="teams != null">
-                    <mat-card appearance="outlined" *ngIf="leagueID == 6" class="ml-3" style="background-color:lightgray;">
-                        <table class='table col-4 ml-2' style="max-width:600px;">
-                            <tr><th class="text-center" colspan="5">Group A</th></tr>
-
-                            <tr>
-                                <th>Captain Name</th>
-                                <th>Team Name</th>
-                                <th>Team Number</th>
-                            </tr>
-
-                            <tbody>
-                            <tr>
-                                <td>Amber Bernard</td>
-                                <td>Digz</td>
-                                <td>1</td>
-                            </tr>
-                            <tr>
-                                <td>Jamie</td>
-                                <td>Namo</td>
-                                <td>2</td>
-                            </tr>
-                            <tr>
-                                <td>Crissy</td>
-                                <td>Sugar and Spikes</td>
-                                <td>3</td>
-                            </tr>
-                            <tr>
-                                <td>Tracey</td>
-                                <td>We Showed Up</td>
-                                <td>4</td>
-                            </tr>
-                            <tr>
-                                <td>Danielle</td>
-                                <td>Banger Sisters</td>
-                                <td>5</td>
-                            </tr>
-                            <tr>
-                                <td>Debbie Carter</td>
-                                <td>JRC</td>
-                                <td>6</td>
-                            </tr>
-
-                            </tbody>
-                        </table>
-                    </mat-card>
-                </div>
-            </div>
-            <br />
-
-            <div class="row" *ngIf="leagueID == 7">
-                <mat-card appearance="outlined" style="background-color:lightgray;">
-                    <table class='table col-6' style="max-width:650px;">
-
-                        <tr><th class="text-center" colspan="5">Group B</th></tr>
-
-
                         <tr>
-                            <th>Week</th>
-                            <th>Date</th>
-                            <th>Court 3</th>
-                            <th>Court 5</th>
-                            <th>Court 7</th>
-
+                          <td>Theresa Freund</td>
+                          <td>Unknown</td>
+                          <td>2</td>
                         </tr>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>2/27/2020</td>
-                                <td>3 vs 2</td>
-                                <td>4 vs 5</td>
-                                <td>1 vs 6</td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>3/2/2020</td>
-                                <td>5 vs 6</td>
-                                <td>1 vs 2</td>
-                                <td>3 vs 4</td>
-
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>3/9/2020</td>
-                                <td>1 vs 4</td>
-                                <td>5 vs 3</td>
-                                <td>6 vs 2</td>
-                            </tr>
-                            <tr>
-                                <td>4</td>
-                                <td>3/16/2020</td>
-                                <td>6 vs 3</td>
-                                <td>2 vs 4</td>
-                                <td>5 vs 1</td>
-                            </tr>
-                            <tr>
-                                <td>5</td>
-                                <td>3/23/2020</td>
-                                <td>2 vs 5</td>
-                                <td>3 vs 1</td>
-                                <td>4 vs 6</td>
-                            </tr>
-                            <tr>
-                                <td>6</td>
-                                <td>3/30/2020</td>
-                                <td>Playoff </td>
-                                <td>Playoff </td>
-                                <td>Playoff </td>
-
-                            </tr>
-
-                        </tbody>
+                        <tr>
+                          <td>Patti Yaden</td>
+                          <td>No Name</td>
+                          <td>3</td>
+                        </tr>
+                        <tr>
+                          <td>Jesse Long</td>
+                          <td>Oops I Set It Again</td>
+                          <td>4</td>
+                        </tr>
+                        <tr>
+                          <td>Brian Unger</td>
+                          <td>Chewbacca</td>
+                          <td>5</td>
+                        </tr>
+                        <tr>
+                          <td>Danielle Nagle</td>
+                          <td>Wallbangers</td>
+                          <td>6</td>
+                        </tr>
+                        <tr>
+                          <td>Debbie Carter</td>
+                          <td>Team That Beat Me</td>
+                          <td>7</td>
+                        </tr>
+                        <tr>
+                          <td>Stephany Trujillo</td>
+                          <td>Four Play</td>
+                          <td>8</td>
+                        </tr>
+                        <tr>
+                          <td>Devin Badaczewski</td>
+                          <td>Bump Set Psych</td>
+                          <td>9</td>
+                        </tr>
+                        <tr>
+                          <td>Devin June</td>
+                          <td>Nice Aces</td>
+                          <td>10</td>
+                        </tr>
+                      </tbody>
                     </table>
+                  </mat-card>
+                }
+              </div>
+            }
+          </div>
+        }
+        @if (leagueID == 9) {
+          <div class="row">
+            <mat-card appearance="outlined" style="background-color:lightgray;">
+              <table class='table col-6' style="max-width:650px;">
+                <thead>
+                  <tr>
+                    <th>Week</th>
+                    <th>Date</th>
+                    <th>Court 3</th>
+                    <th>Court 5</th>
+                    <th>Court 6</th>
+                    <th>Court 7</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>0</td>
+                    <td>01/08/2020</td>
+                    <td>Free Play</td>
+                    <td>Free Play</td>
+                    <td>Free Play</td>
+                    <td>Free Play</td>
+                  </tr>
+                  <tr>
+                    <td>1</td>
+                    <td>01/15/2020</td>
+                    <td>1 vs 10</td>
+                    <td>2 vs 9</td>
+                    <td>3 vs 8</td>
+                    <td>4 vs 7</td>
+                  </tr>
+                  <tr>
+                    <td>2</td>
+                    <td>01/22/2020</td>
+                    <td>7 vs 2</td>
+                    <td>6 vs 3</td>
+                    <td>5 vs 4</td>
+                    <td>10 vs 9</td>
+                  </tr>
+                  <tr>
+                    <td>3</td>
+                    <td>01/29/2020</td>
+                    <td>9 vs 8</td>
+                    <td>1 vs 7</td>
+                    <td>6 vs 2</td>
+                    <td>5 vs 3</td>
+                  </tr>
+                  <tr>
+                    <td>4</td>
+                    <td>02/05/2020</td>
+                    <td>4 vs 3</td>
+                    <td>10 vs 8</td>
+                    <td>9 vs 7</td>
+                    <td>6 vs 1</td>
+                  </tr>
+                  <tr>
+                    <td>5</td>
+                    <td>02/12/2020</td>
+                    <td>10 vs 6</td>
+                    <td>7 vs 5</td>
+                    <td>2 vs 1</td>
+                    <td>8 vs 4</td>
+                  </tr>
+                  <tr>
+                    <td>6</td>
+                    <td>02/19/2020</td>
+                    <td>5 vs 9</td>
+                    <td>8 vs 6</td>
+                    <td>7 vs 10</td>
+                    <td>3 vs 2</td>
+                  </tr>
+                  <tr>
+                    <td>7</td>
+                    <td>02/26/2020</td>
+                    <td>3 vs 1</td>
+                    <td>9 vs 4</td>
+                    <td>8 vs 5</td>
+                    <td>7 vs 6</td>
+                  </tr>
+                  <tr>
+                    <td>8</td>
+                    <td>03/04/2020</td>
+                    <td>6 vs 4</td>
+                    <td>5 vs 10</td>
+                    <td>1 vs 9</td>
+                    <td>2 vs 8</td>
+                  </tr>
+                  <tr>
+                    <td>9</td>
+                    <td>03/11/2020</td>
+                    <td>8 vs 7</td>
+                    <td>4 vs 2</td>
+                    <td>10 vs 3</td>
+                    <td>1 vs 5</td>
+                  </tr>
+                  <tr>
+                    <td>10</td>
+                    <td>03/18/2020</td>
+                    <td>Playoff Round 1</td>
+                    <td>Playoff Round 1</td>
+                    <td>Playoff Round 1</td>
+                    <td>Playoff Round 1</td>
+                  </tr>
+                  <tr>
+                    <td>11</td>
+                    <td>03/25/2020</td>
+                    <td>Playoff Round 2</td>
+                    <td>Playoff Round 2</td>
+                    <td>Playoff Round 2</td>
+                    <td>Playoff Round 2</td>
+                  </tr>
+                  <tr>
+                    <td>12</td>
+                    <td>04/01/2020</td>
+                    <td>Playoff Round 3</td>
+                    <td>Playoff Round 3</td>
+                    <td>Playoff Round 3</td>
+                    <td>Playoff Round 3</td>
+                  </tr>
+                </tbody>
+              </table>
+            </mat-card>
+            @if (teams != null) {
+              <div>
+                @if (leagueID == 9) {
+                  <mat-card appearance="outlined" class="ml-3" style="background-color:lightgray;">
+                    <table class='table col-4 ml-2' style="max-width:600px;">
+                      <thead>
+                        <tr>
+                          <th>Captain Name</th>
+                          <th>Team Name</th>
+                          <th>Team Number</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <!--<tr *ngFor="let singleTeam of teams; let i = index ">
+                        <td>{{ singleTeam.teamName }}</td>
+                        <td>{{ i + 1 }}</td>
+                      </tr>-->
+                      <tr>
+                        <td>Chris Allport</td>
+                        <td>Four Play</td>
+                        <td>1</td>
+                      </tr>
+                      <tr>
+                        <td>Theresa Freund</td>
+                        <td>Unknown</td>
+                        <td>2</td>
+                      </tr>
+                      <tr>
+                        <td>Patti Yaden</td>
+                        <td>No Name</td>
+                        <td>3</td>
+                      </tr>
+                      <tr>
+                        <td>Jesse Long</td>
+                        <td>Oops I Set It Again</td>
+                        <td>4</td>
+                      </tr>
+                      <tr>
+                        <td>Brian Unger</td>
+                        <td>Chewbacca</td>
+                        <td>5</td>
+                      </tr>
+                      <tr>
+                        <td>Danielle Nagle</td>
+                        <td>Wallbangers</td>
+                        <td>6</td>
+                      </tr>
+                      <tr>
+                        <td>Debbie Carter</td>
+                        <td>Team That Beat Me</td>
+                        <td>7</td>
+                      </tr>
+                      <tr>
+                        <td>Stephany Trujillo</td>
+                        <td>Four Play</td>
+                        <td>8</td>
+                      </tr>
+                      <tr>
+                        <td>Devin Badaczewski</td>
+                        <td>Bump Set Psych</td>
+                        <td>9</td>
+                      </tr>
+                      <tr>
+                        <td>Devin June</td>
+                        <td>Nice Aces</td>
+                        <td>10</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </mat-card>
-                <div *ngIf="teams != null">
-                    <mat-card appearance="outlined" *ngIf="leagueID == 7" class="ml-3" style="background-color:lightgray;">
-                        <table class='table col-4 ml-2' style="max-width:600px;">
-
-                            <tr><th class="text-center" colspan="5">Group B</th></tr>
-
-                            <tr>
-                                <th>Captain Name</th>
-                                <th>Team Name</th>
-                                <th>Team Number</th>
-                            </tr>
-
-                            <tbody>
-
-                                <tr>
-                                    <td>Darlene</td>
-                                    <td>Kiss Our Aces</td>
-                                    <td>1</td>
-
-                                </tr>
-
-                                <tr>
-                                    <td>Rhonda Nagle</td>
-                                    <td>Screwballs</td>
-                                    <td>2</td>
-                                </tr>
-                                <tr>
-                                    <td>Megan Mitter</td>
-                                    <td>Don't Suck</td>
-                                    <td>3</td>
-                                </tr>
-                                <tr>
-                                    <td>Foster</td>
-                                    <td>Fosters</td>
-                                    <td>4</td>
-                                </tr>
-                                <tr>
-                                    <td>Shelly</td>
-                                    <td>Ann's bitches</td>
-                                    <td>5</td>
-                                </tr>
-                                <tr>
-                                    <td>Kimmie</td>
-                                    <td>Buttercups</td>
-                                    <td>6</td>
-                                </tr>
-
-                            </tbody>
-                        </table>
-                    </mat-card>
-                </div>
+              }
             </div>
+          }
         </div>
+      }
+      @if (leagueID == 6) {
+        <div class="row">
+          <mat-card appearance="outlined" style="background-color:lightgray;">
+            <table class='table col-6' style="max-width:650px;">
+              <tr><th class="text-center" colspan="5">Group A</th></tr>
+              <tr>
+                <th>Week</th>
+                <th>Date</th>
+                <th>Court 3</th>
+                <th>Court 5</th>
+                <th>Court 7</th>
+              </tr>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td>2/27/2020</td>
+                  <td>1 vs 2</td>
+                  <td>3 vs 4</td>
+                  <td>5 vs 6</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>3/2/2020</td>
+                  <td>5 vs 4</td>
+                  <td>1 vs 6</td>
+                  <td>2 vs 3</td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td>3/9/2020</td>
+                  <td>3 vs 1</td>
+                  <td>2 vs 5</td>
+                  <td>6 vs 4</td>
+                </tr>
+                <tr>
+                  <td>4</td>
+                  <td>3/16/2020</td>
+                  <td>2 vs 6</td>
+                  <td>4 vs 1</td>
+                  <td>3 vs 5</td>
+                </tr>
+                <tr>
+                  <td>5</td>
+                  <td>3/23/2020</td>
+                  <td>1 vs 5</td>
+                  <td>6 vs 3</td>
+                  <td>4 vs 2</td>
+                </tr>
+                <tr>
+                  <td>6</td>
+                  <td>3/30/2020</td>
+                  <td>Playoff </td>
+                  <td>Playoff </td>
+                  <td>Playoff </td>
+                </tr>
+              </tbody>
+            </table>
+          </mat-card>
+          @if (teams != null) {
+            <div>
+              @if (leagueID == 6) {
+                <mat-card appearance="outlined" class="ml-3" style="background-color:lightgray;">
+                  <table class='table col-4 ml-2' style="max-width:600px;">
+                    <tr><th class="text-center" colspan="5">Group A</th></tr>
+                    <tr>
+                      <th>Captain Name</th>
+                      <th>Team Name</th>
+                      <th>Team Number</th>
+                    </tr>
+                    <tbody>
+                      <tr>
+                        <td>Amber Bernard</td>
+                        <td>Digz</td>
+                        <td>1</td>
+                      </tr>
+                      <tr>
+                        <td>Jamie</td>
+                        <td>Namo</td>
+                        <td>2</td>
+                      </tr>
+                      <tr>
+                        <td>Crissy</td>
+                        <td>Sugar and Spikes</td>
+                        <td>3</td>
+                      </tr>
+                      <tr>
+                        <td>Tracey</td>
+                        <td>We Showed Up</td>
+                        <td>4</td>
+                      </tr>
+                      <tr>
+                        <td>Danielle</td>
+                        <td>Banger Sisters</td>
+                        <td>5</td>
+                      </tr>
+                      <tr>
+                        <td>Debbie Carter</td>
+                        <td>JRC</td>
+                        <td>6</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </mat-card>
+              }
+            </div>
+          }
+        </div>
+      }
+      <br />
+      @if (leagueID == 7) {
+        <div class="row">
+          <mat-card appearance="outlined" style="background-color:lightgray;">
+            <table class='table col-6' style="max-width:650px;">
+              <tr><th class="text-center" colspan="5">Group B</th></tr>
+              <tr>
+                <th>Week</th>
+                <th>Date</th>
+                <th>Court 3</th>
+                <th>Court 5</th>
+                <th>Court 7</th>
+              </tr>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td>2/27/2020</td>
+                  <td>3 vs 2</td>
+                  <td>4 vs 5</td>
+                  <td>1 vs 6</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>3/2/2020</td>
+                  <td>5 vs 6</td>
+                  <td>1 vs 2</td>
+                  <td>3 vs 4</td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td>3/9/2020</td>
+                  <td>1 vs 4</td>
+                  <td>5 vs 3</td>
+                  <td>6 vs 2</td>
+                </tr>
+                <tr>
+                  <td>4</td>
+                  <td>3/16/2020</td>
+                  <td>6 vs 3</td>
+                  <td>2 vs 4</td>
+                  <td>5 vs 1</td>
+                </tr>
+                <tr>
+                  <td>5</td>
+                  <td>3/23/2020</td>
+                  <td>2 vs 5</td>
+                  <td>3 vs 1</td>
+                  <td>4 vs 6</td>
+                </tr>
+                <tr>
+                  <td>6</td>
+                  <td>3/30/2020</td>
+                  <td>Playoff </td>
+                  <td>Playoff </td>
+                  <td>Playoff </td>
+                </tr>
+              </tbody>
+            </table>
+          </mat-card>
+          @if (teams != null) {
+            <div>
+              @if (leagueID == 7) {
+                <mat-card appearance="outlined" class="ml-3" style="background-color:lightgray;">
+                  <table class='table col-4 ml-2' style="max-width:600px;">
+                    <tr><th class="text-center" colspan="5">Group B</th></tr>
+                    <tr>
+                      <th>Captain Name</th>
+                      <th>Team Name</th>
+                      <th>Team Number</th>
+                    </tr>
+                    <tbody>
+                      <tr>
+                        <td>Darlene</td>
+                        <td>Kiss Our Aces</td>
+                        <td>1</td>
+                      </tr>
+                      <tr>
+                        <td>Rhonda Nagle</td>
+                        <td>Screwballs</td>
+                        <td>2</td>
+                      </tr>
+                      <tr>
+                        <td>Megan Mitter</td>
+                        <td>Don't Suck</td>
+                        <td>3</td>
+                      </tr>
+                      <tr>
+                        <td>Foster</td>
+                        <td>Fosters</td>
+                        <td>4</td>
+                      </tr>
+                      <tr>
+                        <td>Shelly</td>
+                        <td>Ann's bitches</td>
+                        <td>5</td>
+                      </tr>
+                      <tr>
+                        <td>Kimmie</td>
+                        <td>Buttercups</td>
+                        <td>6</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </mat-card>
+              }
+            </div>
+          }
+        </div>
+      }
     </div>
+  }
 </div>
+</div>
+}
 
 

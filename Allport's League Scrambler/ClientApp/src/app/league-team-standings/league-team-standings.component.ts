@@ -1,11 +1,13 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { LeagueService } from '../services/league.service';
 import { StatisticsService } from '../services/statistics.service';
 
 @Component({
     selector: 'app-league-team-standings',
     templateUrl: './league-team-standings.component.html',
-    styleUrls: ['./league-team-standings.component.css']
+    styleUrls: ['./league-team-standings.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class LeagueTeamStandingsComponent implements OnInit {
     @Input() leagueId!: number; // Input from the dashboard

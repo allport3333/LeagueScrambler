@@ -55,7 +55,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     // Serialize this screen's saves within a league, including standings recalculation.
                     // Transaction-owned SQL application lock requires no schema or persistent objects.
                     var resource = "LeagueScrambler:MatchupScores:" + dto.LeagueId;
-                    context.Database.ExecuteSqlCommand(
+                    context.Database.ExecuteSqlRaw(
                         "DECLARE @r int; EXEC @r=sys.sp_getapplock @Resource={0}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000; IF @r<0 THROW 51000, 'Another score save is in progress. Retry after refreshing.', 1;", resource);
                     var teams = context.LeagueTeam.Where(t => t.LeagueID == dto.LeagueId
                         && (t.Id == dto.Team1Id || t.Id == dto.Team2Id)).ToList();

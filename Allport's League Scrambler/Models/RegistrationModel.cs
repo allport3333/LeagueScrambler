@@ -36,20 +36,15 @@ namespace Allport_s_League_Scrambler.Models
         private byte[] GenerateSalt()
         {
             byte[] salt = new byte[16]; // Adjust the size as needed
-            using (var rng = new System.Security.Cryptography.RNGCryptoServiceProvider())
-            {
-                rng.GetBytes(salt);
-            }
+            System.Security.Cryptography.RandomNumberGenerator.Fill(salt);
             return salt;
         }
 
         // Function to hash a password using PBKDF2
         private byte[] HashPassword(string password, byte[] salt)
         {
-            using (var deriveBytes = new System.Security.Cryptography.Rfc2898DeriveBytes(password, salt, 10000))
-            {
-                return deriveBytes.GetBytes(32); // 32 bytes hash size
-            }
+            return System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
+                password, salt, 10000, System.Security.Cryptography.HashAlgorithmName.SHA1, 32);
         }
     }
 

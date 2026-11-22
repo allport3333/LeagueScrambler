@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { LoginService } from '../services/login.service';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
@@ -7,7 +7,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 @Component({
     selector: 'app-reset-password',
     templateUrl: './reset-password.component.html',
-    styleUrls: ['./reset-password.component.less']
+    styleUrls: ['./reset-password.component.less'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class ResetPasswordComponent {
     resetPasswordForm: UntypedFormGroup;

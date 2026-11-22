@@ -48,7 +48,7 @@ namespace Allport_s_League_Scrambler.Data
                         "Set LEAGUESCRAMBLER_DB_CONNECTION before starting LeagueScrambler.");
                 }
 
-                optionsBuilder.UseSqlServer(connectionString);
+                optionsBuilder.UseSqlServer(connectionString, sql => sql.UseCompatibilityLevel(130));
             }
         }
 
@@ -93,6 +93,12 @@ namespace Allport_s_League_Scrambler.Data
             modelBuilder.Entity<KingQueenPlayer>().ToTable("KingQueenPlayer", "dbo");
             modelBuilder.Entity<KingQueenTeam>().ToTable("KingQueenTeam", "dbo");
             modelBuilder.Entity<User>().ToTable("User", "dbo");
+            // Match the existing dbo.User -> dbo.UserRoles FK. The plural
+            // navigation name must not introduce a nonexistent shadow column.
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.UserRoles)
+                .WithMany()
+                .HasForeignKey(u => u.UserRoleId);
             modelBuilder.Entity<UserLeague>().ToTable("UserLeague", "dbo");
             modelBuilder.Entity<KingQueenRoundScores>().ToTable("KingQueenRoundScores", "dbo");
             modelBuilder.Entity<ByeRounds>().ToTable("ByeRounds", "dbo");

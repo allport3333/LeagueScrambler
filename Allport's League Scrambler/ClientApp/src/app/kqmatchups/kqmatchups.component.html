@@ -1,63 +1,120 @@
 <div class="tab-content matchup-selector d-flex flex-column align-items-center">
-    <div *ngIf="fromStandings" class="score-navigation">
-        <button mat-stroked-button type="button" (click)="backToStandings()">{{ fromProfile ? 'Back to Player Profile' : 'Back to Standings' }}</button>
-        <button mat-stroked-button type="button" *ngIf="singleMatchupView" (click)="showAllMatchups()">View All Matchups</button>
+  @if (fromStandings) {
+    <div class="score-navigation">
+      <button mat-stroked-button type="button" (click)="backToStandings()">{{ fromProfile ? 'Back to Player Profile' : 'Back to Standings' }}</button>
+      @if (singleMatchupView) {
+        <button mat-stroked-button type="button" (click)="showAllMatchups()">View All Matchups</button>
+      }
     </div>
-    <p *ngIf="loading" role="status">Loading saved matchups...</p>
-    <p *ngIf="message" role="alert" class="score-navigation-message">{{ message }}</p>
-    <p *ngIf="selectedLeagueId && !loading && !message && !queriedScrambles.length" role="status">No saved King/Queen matchups are available for this league.</p>
-    <h5 class="mb-2">Select Week to Retrieve</h5>
-    <mat-form-field appearance="outline" style="width: 250px;">
-        <mat-label>Select Week</mat-label>
-        <mat-select [value]="selectedScramble" (selectionChange)="chooseWeek($event.value)">
-            <mat-option *ngFor="let scramble of queriedScrambles; let i = index" [value]="scramble">
-                Week {{ i + 1 }} - {{ scramble.dateOfTeam | date: 'shortDate' }}
-            </mat-option>
-        </mat-select>
-    </mat-form-field>
+  }
+  @if (loading) {
+    <p role="status">Loading saved matchups...</p>
+  }
+  @if (message) {
+    <p role="alert" class="score-navigation-message">{{ message }}</p>
+  }
+  @if (selectedLeagueId && !loading && !message && !queriedScrambles.length) {
+    <p role="status">No saved King/Queen matchups are available for this league.</p>
+  }
+  <h5 class="mb-2">Select Week to Retrieve</h5>
+  <mat-form-field appearance="outline" style="width: 250px;">
+    <mat-label>Select Week</mat-label>
+    <mat-select [value]="selectedScramble" (selectionChange)="chooseWeek($event.value)">
+      @for (scramble of queriedScrambles; track scramble; let i = $index) {
+        <mat-option [value]="scramble">
+          Week {{ i + 1 }} - {{ scramble.dateOfTeam | date: 'shortDate' }}
+        </mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
 </div>
 
 <!-- Matchups Display -->
-<div class="matchups-container" *ngIf="retrievedListOfTeams && retrievedListOfTeams.length > 0">
+@if (retrievedListOfTeams && retrievedListOfTeams.length > 0) {
+  <div class="matchups-container">
     <!-- Loop over each pair of teams -->
-    <div *ngFor="let pair of getTeamPairs(); let matchIndex = index" class="match-row">
-
+    @for (pair of getTeamPairs(); track pair[0].kingQueenTeamId; let matchIndex = $index) {
+      <div class="match-row">
         <!-- Centered Heading for the Match # -->
         <h3 class="match-header">Match #{{ matchNumber(pair) }}</h3>
-
         <!-- Teams container: both teams side by side, centered within row -->
         <div class="teams-container">
-            <div *ngFor="let team of pair; let idx = index" class="team-card">
-                <h4>Team {{ team.sortingId }}</h4>
-                <p class="desktop-round-wins" *ngIf="hasRoundResults(team)">Rounds won: {{ roundWins(team) }}</p>
-
-                <!-- Players -->
-                <ul class="players-list"><li *ngFor="let player of team.players"
-                    [ngClass]="player.isMale ? 'extended-background-blue-lastName' : 'extended-background-pink-lastName'">
-                    {{ player.firstName }} {{ player.lastName }}
-                    <span *ngIf="player.isSubScore" class="sub-score-badge">Sub</span>
-                </li></ul>
-
-
+          @for (team of pair; track team; let idx = $index) {
+            <div class="team-card">
+              <h4>Team {{ team.sortingId }}</h4>
+              @if (hasRoundResults(team)) {
+                <p class="desktop-round-wins">Rounds won: {{ roundWins(team) }}</p>
+              }
+              <!-- Players -->
+              <ul class="players-list">@for (player of team.players; track player) {
+                <li
+                  [ngClass]="player.isMale ? 'extended-background-blue-lastName' : 'extended-background-pink-lastName'">
+                  {{ player.firstName }} {{ player.lastName }}
+                  @if (player.isSubScore) {
+                    <span class="sub-score-badge">Sub</span>
+                  }
+                </li>
+              }</ul>
             </div>
+          }
         </div>
-            <table class="comparison-table desktop-results" [attr.aria-label]="'Round scores for Match '+matchNumber(pair)"><thead><tr><th scope="col">Round</th><th scope="col">Team {{ pair[0].sortingId }}</th><th scope="col">{{ pair[1] ? 'Team '+pair[1].sortingId : 'Unavailable' }}</th></tr></thead><tbody><tr *ngFor="let row of comparisonRows(pair)"><th scope="row">Round {{ row.roundId }}</th><td *ngFor="let score of row.scores; let side=index" [class.round-winner]="score && score.roundWon === true" [class.selected-score]="score && pair[side] && isFocusedScore(pair[side],score)"><strong>{{ score && score.roundScore != null ? score.roundScore : '—' }}</strong><span *ngIf="score && score.roundWon === true" class="won-badge">WON</span><span *ngIf="score && score.roundWon !== true && score.roundWon !== false" class="unknown-result">Result not recorded</span></td></tr></tbody></table>
-        <p *ngIf="!comparisonRows(pair).length" class="desktop-no-scores">No recorded round scores.</p>
-        <div class="mobile-matchup">
-            <div class="comparison-team-headings"><div *ngFor="let team of pair"><h4>Team {{ team.sortingId }}</h4><span *ngIf="hasRoundResults(team)">{{ roundWins(team) }} rounds won</span></div><div *ngIf="pair.length < 2"><h4>Team unavailable</h4></div></div>
-            <table class="comparison-table" [attr.aria-label]="'Round scores for Match '+matchNumber(pair)"><thead><tr><th scope="col">Round</th><th scope="col">Team {{ pair[0].sortingId }}</th><th scope="col">{{ pair[1] ? 'Team '+pair[1].sortingId : 'Unavailable' }}</th></tr></thead><tbody><tr *ngFor="let row of comparisonRows(pair)"><th scope="row">Round {{ row.roundId }}</th><td *ngFor="let score of row.scores; let side=index" [class.round-winner]="score && score.roundWon === true" [class.selected-score]="score && pair[side] && isFocusedScore(pair[side],score)"><strong>{{ score && score.roundScore != null ? score.roundScore : '—' }}</strong><span *ngIf="score && score.roundWon === true" class="won-badge">WON</span><span *ngIf="score && score.roundWon !== true && score.roundWon !== false" class="unknown-result">Result not recorded</span></td></tr></tbody></table>
-            <p *ngIf="!comparisonRows(pair).length" class="no-round-scores">No recorded round scores.</p>
-            <div class="comparison-rosters"><section *ngFor="let team of pair"><h4>Team {{ team.sortingId }} players</h4><ul class="players-list"><li *ngFor="let player of team.players" [ngClass]="player.isMale ? 'extended-background-blue-lastName' : 'extended-background-pink-lastName'">{{ player.firstName }} {{ player.lastName }} <span *ngIf="player.isSubScore" class="sub-score-badge">Sub</span></li></ul><p *ngIf="!team.players.length">Roster unavailable.</p></section></div>
-        </div>
-    </div>
+        <table class="comparison-table desktop-results" [attr.aria-label]="'Round scores for Match '+matchNumber(pair)"><thead><tr><th scope="col">Round</th><th scope="col">Team {{ pair[0].sortingId }}</th><th scope="col">{{ pair[1] ? 'Team '+pair[1].sortingId : 'Unavailable' }}</th></tr></thead><tbody>@for (row of comparisonRows(pair); track $index) {
+        <tr><th scope="row">Round {{ row.roundId }}</th>@for (score of row.scores; track $index; let side = $index) {
+        <td [class.round-winner]="score && score.roundWon === true" [class.selected-score]="score && pair[side] && isFocusedScore(pair[side],score)"><strong>{{ score && score.roundScore != null ? score.roundScore : '—' }}</strong>@if (score && score.roundWon === true) {
+        <span class="won-badge">WON</span>
+        }@if (score && score.roundWon !== true && score.roundWon !== false) {
+        <span class="unknown-result">Result not recorded</span>
+      }</td>
+    }</tr>
+  }</tbody></table>
+  @if (!comparisonRows(pair).length) {
+    <p class="desktop-no-scores">No recorded round scores.</p>
+  }
+  <div class="mobile-matchup">
+    <div class="comparison-team-headings">@for (team of pair; track team) {
+      <div><h4>Team {{ team.sortingId }}</h4>@if (hasRoundResults(team)) {
+      <span>{{ roundWins(team) }} rounds won</span>
+    }</div>
+    }@if (pair.length < 2) {
+    <div><h4>Team unavailable</h4></div>
+  }</div>
+  <table class="comparison-table" [attr.aria-label]="'Round scores for Match '+matchNumber(pair)"><thead><tr><th scope="col">Round</th><th scope="col">Team {{ pair[0].sortingId }}</th><th scope="col">{{ pair[1] ? 'Team '+pair[1].sortingId : 'Unavailable' }}</th></tr></thead><tbody>@for (row of comparisonRows(pair); track $index) {
+  <tr><th scope="row">Round {{ row.roundId }}</th>@for (score of row.scores; track $index; let side = $index) {
+  <td [class.round-winner]="score && score.roundWon === true" [class.selected-score]="score && pair[side] && isFocusedScore(pair[side],score)"><strong>{{ score && score.roundScore != null ? score.roundScore : '—' }}</strong>@if (score && score.roundWon === true) {
+  <span class="won-badge">WON</span>
+  }@if (score && score.roundWon !== true && score.roundWon !== false) {
+  <span class="unknown-result">Result not recorded</span>
+}</td>
+}</tr>
+}</tbody></table>
+@if (!comparisonRows(pair).length) {
+  <p class="no-round-scores">No recorded round scores.</p>
+}
+<div class="comparison-rosters">@for (team of pair; track team) {
+  <section><h4>Team {{ team.sortingId }} players</h4><ul class="players-list">@for (player of team.players; track player) {
+  <li [ngClass]="player.isMale ? 'extended-background-blue-lastName' : 'extended-background-pink-lastName'">{{ player.firstName }} {{ player.lastName }} @if (player.isSubScore) {
+    <span class="sub-score-badge">Sub</span>
+  }</li>
+}</ul>@if (!team.players.length) {
+<p>Roster unavailable.</p>
+}</section>
+}</div>
 </div>
+</div>
+}
+</div>
+}
 
 <!-- Bye Players -->
-<div class="bye-players" *ngIf="!singleMatchupView && byePlayers && byePlayers.length > 0">
+@if (!singleMatchupView && byePlayers && byePlayers.length > 0) {
+  <div class="bye-players">
     <h4>Bye Players</h4>
     <ul>
-        <li *ngFor="let bye of byePlayers">
-            {{ bye.firstName }} {{ bye.lastName }}
+      @for (bye of byePlayers; track bye) {
+        <li>
+          {{ bye.firstName }} {{ bye.lastName }}
         </li>
+      }
     </ul>
-</div>
+  </div>
+}

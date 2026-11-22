@@ -64,7 +64,7 @@ namespace Allport_s_League_Scrambler.Controllers {
     if(!c.Leagues.Any(l=>l.ID==leagueId))return NotFound();
     if(request.DeleteGameIds.Count>1000||request.DeleteEventIds.Count>1000)return BadRequest("Remove at most 1000 records per operation.");
     using(var tx=c.Database.BeginTransaction(System.Data.IsolationLevel.Serializable)){
-     c.Database.ExecuteSqlCommand("DECLARE @r int; EXEC @r=sys.sp_getapplock @Resource={0}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000; IF @r<0 THROW 51000, 'Another schedule or score save is in progress. Reload before retrying.', 1;","LeagueScrambler:MatchupScores:"+leagueId);
+     c.Database.ExecuteSqlRaw("DECLARE @r int; EXEC @r=sys.sp_getapplock @Resource={0}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000; IF @r<0 THROW 51000, 'Another schedule or score save is in progress. Reload before retrying.', 1;","LeagueScrambler:MatchupScores:"+leagueId);
      var s=Read(c,leagueId);if(s.Revision!=request.Revision)return Conflict(new{message="The schedule, teams or saved results changed. Reload before saving; nothing was overwritten."});
      var teams=s.Teams.ToDictionary(t=>t.Id);var divisions=new HashSet<string>(s.Teams.Select(t=>t.DivisionKey).Concat(s.Divisions.Select(d=>"d:"+d.Id)));
      if(request.CrossRules.Any(r=>r==null||r.Division1==r.Division2||!divisions.Contains(r.Division1)||!divisions.Contains(r.Division2)||r.EveryWeeks<1||r.EveryWeeks>104))return BadRequest("Choose valid division pairs and crossing frequency.");

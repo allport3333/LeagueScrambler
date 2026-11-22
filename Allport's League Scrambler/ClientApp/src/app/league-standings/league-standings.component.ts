@@ -1,6 +1,6 @@
 /* league-standings.component.ts */
 
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PlayerScoresResponse, PlayerScoreGroup } from '../data-models/playerScoresResponse';
 import { PlayerService } from '../services/player.service';
@@ -13,7 +13,9 @@ import { transformKingQueenStandings } from './king-queen-standings';
 @Component({
     selector: 'app-league-standings',
     templateUrl: './league-standings.component.html',
-    styleUrls: ['./league-standings.component.css']
+    styleUrls: ['./league-standings.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class LeagueStandingsComponent implements OnInit {
     @Input() leagueName: string | null = null;

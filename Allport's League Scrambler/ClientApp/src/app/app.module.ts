@@ -10,9 +10,9 @@ import { PlayerHomeDashboardComponent } from './player-home-dashboard/player-hom
 import { PlayerAttendanceComponent } from './player-attendance/player-attendance.component';
 import { PlayerNextGameComponent } from './player-next-game/player-next-game.component';
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { APP_ID, NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 
 import { AppComponent } from './app.component';
@@ -113,7 +113,7 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         ScramblerWorkspaceComponent,
         WorkspaceRouteComponent
     ],
-    bootstrap: [AppComponent], imports: [BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
+    bootstrap: [AppComponent], imports: [BrowserModule,
         FormsModule,
         MatInputModule,
         MatChipsModule,
@@ -166,5 +166,5 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
             { path: 'kqmatchups', component: KqmatchupsComponent }
         ], {}),
         ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production }),
-        BrowserAnimationsModule], providers: [MatSnackBar, AuthService, provideHttpClient(withInterceptorsFromDi())] })
+        BrowserAnimationsModule], providers: [{ provide: APP_ID, useValue: 'ng-cli-universal' }, MatSnackBar, AuthService, provideHttpClient(withXhr(), withInterceptorsFromDi())] })
 export class AppModule { }

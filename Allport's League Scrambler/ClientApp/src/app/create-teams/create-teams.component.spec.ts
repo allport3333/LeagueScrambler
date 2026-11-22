@@ -1,25 +1,24 @@
-import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { configureComponentTests } from '../../test-support';
+import { beforeEach, describe, expect, it } from "vitest";
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CreateTeamsComponent } from './create-teams.component';
 
 describe('CreateTeamsComponent', () => {
-  let component: CreateTeamsComponent;
-  let fixture: ComponentFixture<CreateTeamsComponent>;
+    let component: CreateTeamsComponent;
+    let fixture: ComponentFixture<CreateTeamsComponent>;
 
-  beforeEach(waitForAsync(() => {
-    TestBed.configureTestingModule({
-      declarations: [ CreateTeamsComponent ]
-    })
-    .compileComponents();
-  }));
+    beforeEach(async () => {
+        await configureComponentTests();
+    });
 
-  beforeEach(() => {
-    fixture = TestBed.createComponent(CreateTeamsComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+    beforeEach(() => {
+        fixture = TestBed.createComponent(CreateTeamsComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
 });

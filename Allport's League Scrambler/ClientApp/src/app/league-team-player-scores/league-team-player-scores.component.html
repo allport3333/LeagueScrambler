@@ -1,8 +1,18 @@
 <section class="profile-section league-team-history">
- <p *ngIf="loading" role="status" class="state-message">Loading league team history...</p><div *ngIf="error" role="alert" class="state-message"><p>{{ error }}</p><button mat-stroked-button (click)="loadLeagueScores(playerId,leagueId)">Retry league team stats</button></div>
- <ng-container *ngIf="performanceStats && !loading && !error">
-  <div class="summary-grid"><div><span>Total wins</span><strong class="win-text">{{ performanceStats.totalWins == null ? '—' : performanceStats.totalWins }}</strong></div><div><span>Total losses</span><strong class="loss-text">{{ performanceStats.totalLosses == null ? '—' : performanceStats.totalLosses }}</strong></div><div><span>Total points</span><strong>{{ performanceStats.totalScores == null ? '—' : performanceStats.totalScores }}</strong></div></div>
-  <h2>Game history</h2><p *ngIf="!groups.length" class="state-message">No recorded league team games in this league.</p>
-  <details class="history-entry" *ngFor="let group of groups"><summary><span class="history-label">{{ group.date }}</span><span>{{ group.scores.length }} {{ group.scores.length === 1 ? 'game' : 'games' }}</span><span class="win-text">{{ group.wins }} {{ group.wins === 1 ? 'win' : 'wins' }}</span><span class="loss-text">{{ group.losses }} {{ group.losses === 1 ? 'loss' : 'losses' }}</span></summary><div class="history-detail"><table class="stats-table"><thead><tr><th>Opponent team</th><th>Team score</th><th>Result</th></tr></thead><tbody><tr *ngFor="let score of group.scores"><td>{{ score.opponentTeam || 'Unavailable team' }}</td><td>{{ score.teamScore == null ? '—' : score.teamScore }}</td><td><span [class.win-badge]="score.wonGame === true" [class.loss-badge]="score.wonGame === false">{{ score.wonGame === true ? 'Won' : score.wonGame === false ? 'Lost' : 'Not recorded' }}</span></td></tr></tbody></table></div></details>
- </ng-container>
+  @if (loading) {
+    <p role="status" class="state-message">Loading league team history...</p>
+    }@if (error) {
+    <div role="alert" class="state-message"><p>{{ error }}</p><button mat-stroked-button (click)="loadLeagueScores(playerId,leagueId)">Retry league team stats</button></div>
+  }
+  @if (performanceStats && !loading && !error) {
+    <div class="summary-grid"><div><span>Total wins</span><strong class="win-text">{{ performanceStats.totalWins == null ? '—' : performanceStats.totalWins }}</strong></div><div><span>Total losses</span><strong class="loss-text">{{ performanceStats.totalLosses == null ? '—' : performanceStats.totalLosses }}</strong></div><div><span>Total points</span><strong>{{ performanceStats.totalScores == null ? '—' : performanceStats.totalScores }}</strong></div></div>
+    <h2>Game history</h2>@if (!groups.length) {
+    <p class="state-message">No recorded league team games in this league.</p>
+  }
+  @for (group of groups; track group) {
+    <details class="history-entry"><summary><span class="history-label">{{ group.date }}</span><span>{{ group.scores.length }} {{ group.scores.length === 1 ? 'game' : 'games' }}</span><span class="win-text">{{ group.wins }} {{ group.wins === 1 ? 'win' : 'wins' }}</span><span class="loss-text">{{ group.losses }} {{ group.losses === 1 ? 'loss' : 'losses' }}</span></summary><div class="history-detail"><table class="stats-table"><thead><tr><th>Opponent team</th><th>Team score</th><th>Result</th></tr></thead><tbody>@for (score of group.scores; track score) {
+    <tr><td>{{ score.opponentTeam || 'Unavailable team' }}</td><td>{{ score.teamScore == null ? '—' : score.teamScore }}</td><td><span [class.win-badge]="score.wonGame === true" [class.loss-badge]="score.wonGame === false">{{ score.wonGame === true ? 'Won' : score.wonGame === false ? 'Lost' : 'Not recorded' }}</span></td></tr>
+  }</tbody></table></div></details>
+}
+}
 </section>

@@ -1,17 +1,35 @@
 <section class="player-profile"><div class="profile-return"><a mat-button color="primary" routerLink="/">Home</a></div>
- <div class="profile-return" *ngIf="fromStandings"><button mat-stroked-button color="primary" type="button" (click)="backToStandings()">Back to Standings</button></div>
- <p *ngIf="loading" role="status" class="state-message">Loading player profile...</p>
- <div *ngIf="error" role="alert" class="state-message"><p>{{ error }}</p><button mat-stroked-button (click)="loadHeader(true)">Retry profile</button></div>
- <header class="profile-header" *ngIf="player && !loading && !error">
-  <h1>{{ player.firstName }} {{ player.lastName }}</h1>
-  <p>{{ selectedLeagueName || 'Select a league to explore statistics.' }}</p>
-  <p class="profile-context"><span *ngIf="player.gender || player.isMale !== undefined">{{ player.gender || (player.isMale ? 'Male' : 'Female') }}</span><span *ngIf="player.divisionName">{{ player.divisionName }}</span></p>
- </header>
- <p *ngIf="selectingLeague" role="status" class="state-message">Selecting league...</p>
- <p *ngIf="leagueError" role="alert" class="state-message">{{ leagueError }}</p>
- <mat-tab-group class="profile-tabs" mat-align-tabs="center" [selectedIndex]="activeTab" (selectedIndexChange)="selectTab($event)" *ngIf="player && !loading && !error && !leagueError && !selectingLeague && selectedLeagueId">
-  <mat-tab label="King/Queen Stats"><app-detailed-player-stats [playerId]="playerId" [leagueId]="selectedLeagueId"></app-detailed-player-stats></mat-tab>
-  <mat-tab label="League Team Stats"><app-league-team-player-scores [playerId]="playerId" [leagueId]="selectedLeagueId"></app-league-team-player-scores></mat-tab>
-  <mat-tab label="League Player Stats"><app-combined-stats-tab [playerId]="playerId" [leagueId]="selectedLeagueId"></app-combined-stats-tab></mat-tab>
- </mat-tab-group>
+@if (fromStandings) {
+  <div class="profile-return"><button mat-stroked-button color="primary" type="button" (click)="backToStandings()">Back to Standings</button></div>
+}
+@if (loading) {
+  <p role="status" class="state-message">Loading player profile...</p>
+}
+@if (error) {
+  <div role="alert" class="state-message"><p>{{ error }}</p><button mat-stroked-button (click)="loadHeader(true)">Retry profile</button></div>
+}
+@if (player && !loading && !error) {
+  <header class="profile-header">
+    <h1>{{ player.firstName }} {{ player.lastName }}</h1>
+    <p>{{ selectedLeagueName || 'Select a league to explore statistics.' }}</p>
+    <p class="profile-context">@if (player.gender || player.isMale !== undefined) {
+      <span>{{ player.gender || (player.isMale ? 'Male' : 'Female') }}</span>
+      }@if (player.divisionName) {
+      <span>{{ player.divisionName }}</span>
+    }</p>
+  </header>
+}
+@if (selectingLeague) {
+  <p role="status" class="state-message">Selecting league...</p>
+}
+@if (leagueError) {
+  <p role="alert" class="state-message">{{ leagueError }}</p>
+}
+@if (player && !loading && !error && !leagueError && !selectingLeague && selectedLeagueId) {
+  <mat-tab-group class="profile-tabs" mat-align-tabs="center" [selectedIndex]="activeTab" (selectedIndexChange)="selectTab($event)">
+    <mat-tab label="King/Queen Stats"><app-detailed-player-stats [playerId]="playerId" [leagueId]="selectedLeagueId"></app-detailed-player-stats></mat-tab>
+    <mat-tab label="League Team Stats"><app-league-team-player-scores [playerId]="playerId" [leagueId]="selectedLeagueId"></app-league-team-player-scores></mat-tab>
+    <mat-tab label="League Player Stats"><app-combined-stats-tab [playerId]="playerId" [leagueId]="selectedLeagueId"></app-combined-stats-tab></mat-tab>
+  </mat-tab-group>
+}
 </section>

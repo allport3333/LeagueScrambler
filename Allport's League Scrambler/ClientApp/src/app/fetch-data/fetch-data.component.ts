@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { Player } from '../data-models/player.model';
@@ -10,7 +10,9 @@ import { LeagueService } from '../services/league.service';
 @Component({
     selector: 'app-fetch-data',
     templateUrl: './fetch-data.component.html',
-    styleUrls: ['./fetch-data.component.less']
+    styleUrls: ['./fetch-data.component.less'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class FetchDataComponent implements OnInit, OnDestroy {
     players: Player[] = [];

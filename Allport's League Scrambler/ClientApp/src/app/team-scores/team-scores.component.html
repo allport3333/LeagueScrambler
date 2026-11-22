@@ -1,115 +1,164 @@
-<div class="page-loading" *ngIf="loading" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+@if (loading) {
+  <div class="page-loading" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
     <h2 class="ml-4">Loading...</h2>
     <mat-spinner diameter="200"></mat-spinner>
-</div>
+  </div>
+}
 
-<div class="row justify-content-center" *ngIf="!loading">
+@if (!loading) {
+  <div class="row justify-content-center">
     <div class="col-10">
-        <mat-card appearance="outlined" class="mt-2" style="box-shadow: none; padding: 0;">
-            <div *ngIf="!isActionAllowed" class="text-center mb-3">
-                <mat-form-field appearance="outline">
-                    <mat-label>Administration Password</mat-label>
-                    <input matInput type="password" [(ngModel)]="legacyPassword" [ngModelOptions]="{standalone: true}" />
-                </mat-form-field>
-                <button mat-raised-button type="button" color="primary"
-                        (click)="unlockAdministration()">Unlock Administration</button>
-            </div>
-            <mat-tab-group mat-stretch-tabs>
-
-                <!-- TAB 1: Enter Team Scores -->
-                <mat-tab *ngIf="isActionAllowed" label="Enter Team Scores">
-                    <section class="matchup-entry" aria-label="Team score entry">
-                        <h2>Enter Team Scores</h2>
-                        <p class="league-context">{{ selectedLeague || 'Select a league from the navigation menu' }}</p>
-                        <div class="score-toolbar">
+      <mat-card appearance="outlined" class="mt-2" style="box-shadow: none; padding: 0;">
+        @if (!isActionAllowed) {
+          <div class="text-center mb-3">
+            <mat-form-field appearance="outline">
+              <mat-label>Administration Password</mat-label>
+              <input matInput type="password" [(ngModel)]="legacyPassword" [ngModelOptions]="{standalone: true}" />
+            </mat-form-field>
+            <button mat-raised-button type="button" color="primary"
+            (click)="unlockAdministration()">Unlock Administration</button>
+          </div>
+        }
+        <mat-tab-group mat-stretch-tabs>
+          <!-- TAB 1: Enter Team Scores -->
+          @if (isActionAllowed) {
+            <mat-tab label="Enter Team Scores">
+              <section class="matchup-entry" aria-label="Team score entry">
+                <h2>Enter Team Scores</h2>
+                <p class="league-context">{{ selectedLeague || 'Select a league from the navigation menu' }}</p>
+                <div class="score-toolbar">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Game date</mat-label>
+                    <input matInput [matDatepicker]="scorePicker" [(ngModel)]="gameDate"
+                      (dateChange)="changeDate()" [disabled]="anySaving()" required>
+                      <mat-datepicker-toggle matSuffix [for]="scorePicker"></mat-datepicker-toggle>
+                      <mat-datepicker #scorePicker></mat-datepicker>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                      <mat-label>Games per new matchup</mat-label>
+                      <mat-select [(ngModel)]="numberOfGames">
+                        @for (count of [1,2,3,4,5,6,7,8,9,10]; track count) {
+                          <mat-option [value]="count">{{ count }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    <button mat-button type="button" (click)="reloadDate()" [disabled]="anySaving() || loadingMatchups">Reload date</button>
+                  </div>
+                  @if (loadingMatchups) {
+                    <p role="status">Loading scheduled matchups and saved scores…</p>
+                  }
+                  @if (loadError) {
+                    <p class="score-error" role="alert">{{ loadError }}</p>
+                  }
+                  @if (leagueID && !loadingMatchups && !loadError) {
+                    @if (!scheduledCount) {
+                      <p class="empty-schedule" role="status">No games are scheduled for this date. Select two league teams below to enter a manual matchup.</p>
+                    }
+                    @if (scheduledCount) {
+                      <p>{{ scheduledCount }} scheduled matchup(s). Save each matchup separately.</p>
+                    }
+                    @for (matchup of matchups; track matchup; let index = $index) {
+                      <mat-card appearance="outlined" class="matchup-card" [attr.data-matchup-index]="index">
+                        <h3>{{ matchup.manual ? 'Manual matchup' : 'Scheduled matchup' }} {{ index + 1 }}</h3>
+                        @if (matchup.division || matchup.description) {
+                          <p class="matchup-detail">{{ matchup.division }}@if (matchup.division && matchup.description) {
+                            <span> · </span>
+                          }{{ matchup.description }}</p>
+                        }
+                        @if (matchup.manual && !hasSaved(matchup)) {
+                          <div class="team-pair">
                             <mat-form-field appearance="outline">
-                                <mat-label>Game date</mat-label>
-                                <input matInput [matDatepicker]="scorePicker" [(ngModel)]="gameDate"
-                                       (dateChange)="changeDate()" [disabled]="anySaving()" required>
-                                <mat-datepicker-toggle matSuffix [for]="scorePicker"></mat-datepicker-toggle>
-                                <mat-datepicker #scorePicker></mat-datepicker>
+                              <mat-label>Team 1</mat-label>
+                              <mat-select [(ngModel)]="matchup.team1Id" [disabled]="matchup.saving">
+                                @for (team of teams; track team) {
+                                  <mat-option [value]="team.id">{{ team.teamName }}</mat-option>
+                                }
+                              </mat-select>
                             </mat-form-field>
                             <mat-form-field appearance="outline">
-                                <mat-label>Games per new matchup</mat-label>
-                                <mat-select [(ngModel)]="numberOfGames">
-                                    <mat-option *ngFor="let count of [1,2,3,4,5,6,7,8,9,10]" [value]="count">{{ count }}</mat-option>
-                                </mat-select>
+                              <mat-label>Team 2</mat-label>
+                              <mat-select [(ngModel)]="matchup.team2Id" [disabled]="matchup.saving">
+                                @for (team of teams; track team) {
+                                  <mat-option [value]="team.id" [disabled]="team.id === matchup.team1Id">{{ team.teamName }}</mat-option>
+                                }
+                              </mat-select>
                             </mat-form-field>
-                            <button mat-button type="button" (click)="reloadDate()" [disabled]="anySaving() || loadingMatchups">Reload date</button>
-                        </div>
-                        <p *ngIf="loadingMatchups" role="status">Loading scheduled matchups and saved scores…</p>
-                        <p *ngIf="loadError" class="score-error" role="alert">{{ loadError }}</p>
-                        <ng-container *ngIf="leagueID && !loadingMatchups && !loadError">
-                            <p *ngIf="!scheduledCount" class="empty-schedule" role="status">No games are scheduled for this date. Select two league teams below to enter a manual matchup.</p>
-                            <p *ngIf="scheduledCount">{{ scheduledCount }} scheduled matchup(s). Save each matchup separately.</p>
-                            <mat-card appearance="outlined" *ngFor="let matchup of matchups; let index = index" class="matchup-card" [attr.data-matchup-index]="index">
-                                <h3>{{ matchup.manual ? 'Manual matchup' : 'Scheduled matchup' }} {{ index + 1 }}</h3>
-                                <p *ngIf="matchup.division || matchup.description" class="matchup-detail">{{ matchup.division }}<span *ngIf="matchup.division && matchup.description"> · </span>{{ matchup.description }}</p>
-                                <div class="team-pair" *ngIf="matchup.manual && !hasSaved(matchup)">
-                                    <mat-form-field appearance="outline">
-                                        <mat-label>Team 1</mat-label>
-                                        <mat-select [(ngModel)]="matchup.team1Id" [disabled]="matchup.saving">
-                                            <mat-option *ngFor="let team of teams" [value]="team.id">{{ team.teamName }}</mat-option>
-                                        </mat-select>
-                                    </mat-form-field>
-                                    <mat-form-field appearance="outline">
-                                        <mat-label>Team 2</mat-label>
-                                        <mat-select [(ngModel)]="matchup.team2Id" [disabled]="matchup.saving">
-                                            <mat-option *ngFor="let team of teams" [value]="team.id" [disabled]="team.id === matchup.team1Id">{{ team.teamName }}</mat-option>
-                                        </mat-select>
-                                    </mat-form-field>
+                          </div>
+                        }
+                        @if (!matchup.manual || hasSaved(matchup)) {
+                          <div class="team-pair team-names">
+                            <strong>{{ teamName(matchup.team1Id) }}</strong><strong>{{ teamName(matchup.team2Id) }}</strong>
+                          </div>
+                        }
+                        @if (!hasSaved(matchup)) {
+                          <mat-form-field appearance="outline" class="game-count">
+                            <mat-label>Number of games</mat-label>
+                            <mat-select [value]="matchup.games.length" (selectionChange)="resizeGames(matchup, $event.value)" [disabled]="matchup.saving">
+                              @for (count of [1,2,3,4,5,6,7,8,9,10]; track count) {
+                                <mat-option [value]="count">{{ count }}</mat-option>
+                              }
+                            </mat-select>
+                          </mat-form-field>
+                          @for (game of matchup.games; track game; let gameIndex = $index) {
+                            <div class="game-row">
+                              <span class="game-label">Game {{ gameIndex + 1 }}</span>
+                              <mat-form-field appearance="outline">
+                                <mat-label>Team 1 score</mat-label>
+                                <input matInput type="number" min="0" max="2147483647" step="1" [(ngModel)]="game.team1Score" [disabled]="matchup.saving"
+                                  [attr.aria-label]="teamName(matchup.team1Id) + ' game ' + (gameIndex + 1) + ' score'" required>
+                                </mat-form-field>
+                                <mat-form-field appearance="outline">
+                                  <mat-label>Team 2 score</mat-label>
+                                  <input matInput type="number" min="0" max="2147483647" step="1" [(ngModel)]="game.team2Score" [disabled]="matchup.saving"
+                                    [attr.aria-label]="teamName(matchup.team2Id) + ' game ' + (gameIndex + 1) + ' score'" required>
+                                  </mat-form-field>
                                 </div>
-                                <div class="team-pair team-names" *ngIf="!matchup.manual || hasSaved(matchup)">
-                                    <strong>{{ teamName(matchup.team1Id) }}</strong><strong>{{ teamName(matchup.team2Id) }}</strong>
-                                </div>
-                                <ng-container *ngIf="!hasSaved(matchup)">
-                                    <mat-form-field appearance="outline" class="game-count">
-                                        <mat-label>Number of games</mat-label>
-                                        <mat-select [value]="matchup.games.length" (selectionChange)="resizeGames(matchup, $event.value)" [disabled]="matchup.saving">
-                                            <mat-option *ngFor="let count of [1,2,3,4,5,6,7,8,9,10]" [value]="count">{{ count }}</mat-option>
-                                        </mat-select>
-                                    </mat-form-field>
-                                    <div *ngFor="let game of matchup.games; let gameIndex = index" class="game-row">
-                                        <span class="game-label">Game {{ gameIndex + 1 }}</span>
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Team 1 score</mat-label>
-                                            <input matInput type="number" min="0" max="2147483647" step="1" [(ngModel)]="game.team1Score" [disabled]="matchup.saving"
-                                                   [attr.aria-label]="teamName(matchup.team1Id) + ' game ' + (gameIndex + 1) + ' score'" required>
-                                        </mat-form-field>
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Team 2 score</mat-label>
-                                            <input matInput type="number" min="0" max="2147483647" step="1" [(ngModel)]="game.team2Score" [disabled]="matchup.saving"
-                                                   [attr.aria-label]="teamName(matchup.team2Id) + ' game ' + (gameIndex + 1) + ' score'" required>
-                                        </mat-form-field>
-                                    </div>
-                                    <p class="score-error" *ngIf="matchup.team1Id && matchup.team1Id === matchup.team2Id">Select two different teams.</p>
-                                    <button mat-raised-button color="primary" type="button" (click)="saveMatchup(matchup)"
-                                            [disabled]="matchup.saving || !valid(matchup)">{{ matchup.saving ? 'Saving…' : 'Save matchup scores' }}</button>
-                                </ng-container>
-                                <section *ngIf="hasSaved(matchup)" class="saved-results" aria-label="Saved Matchup Results">
-                                    <h4>Saved Matchup Results</h4><p class="score-success" role="status">Saved</p>
-                                    <p class="historical-score-note">Individual historical scores are shown because game pairings are unavailable.</p>
-                                    <div class="saved-team-results" *ngFor="let result of savedTeamResults(matchup)"><h5>{{ result.name }}</h5><ul><li *ngFor="let score of result.scores" [class.saved-win]="score.wonGame" [class.saved-loss]="!score.wonGame"><strong>{{ score.teamScore }}</strong><span>{{ score.wonGame ? 'Won' : 'Lost' }}</span></li></ul><p *ngIf="!result.scores.length">No individual results recorded for this team.</p></div>
-                                </section>
-                                <p *ngIf="matchup.message" role="status" class="score-success">{{ matchup.message }}</p>
-                                <p *ngIf="matchup.error" role="alert" class="score-error">{{ matchup.error }}</p>
-                            </mat-card>
-                            <button mat-stroked-button color="primary" type="button" (click)="addManualMatchup()">Add Manual Matchup</button>
-                            <p class="matchup-help">One score series per team pair per date. All game scores are required. To enter the same teams again, use a different date; this data model cannot distinguish multiple series on one day.</p>
-                        </ng-container>
-                    </section>
-                </mat-tab>
-                <!-- TAB 2: League Teams -->
-                <mat-tab label="League Teams">
-                    <app-league-teams [leagueId]="leagueID" style="width: 100%;"></app-league-teams>
-                </mat-tab>
-
-                <!-- TAB 3: Team Management -->
-                <mat-tab *ngIf="isActionAllowed" label="Team Management">
-                    <app-team-management [leagueId]="leagueID" style="width: 150%;"></app-team-management>
-                </mat-tab>
-
-            </mat-tab-group>
+                              }
+                              @if (matchup.team1Id && matchup.team1Id === matchup.team2Id) {
+                                <p class="score-error">Select two different teams.</p>
+                              }
+                              <button mat-raised-button color="primary" type="button" (click)="saveMatchup(matchup)"
+                              [disabled]="matchup.saving || !valid(matchup)">{{ matchup.saving ? 'Saving…' : 'Save matchup scores' }}</button>
+                            }
+                            @if (hasSaved(matchup)) {
+                              <section class="saved-results" aria-label="Saved Matchup Results">
+                                <h4>Saved Matchup Results</h4><p class="score-success" role="status">Saved</p>
+                                <p class="historical-score-note">Individual historical scores are shown because game pairings are unavailable.</p>
+                                @for (result of savedTeamResults(matchup); track result.teamId) {
+                                  <div class="saved-team-results"><h5>{{ result.name }}</h5><ul>@for (score of result.scores; track score) {
+                                  <li [class.saved-win]="score.wonGame" [class.saved-loss]="!score.wonGame"><strong>{{ score.teamScore }}</strong><span>{{ score.wonGame ? 'Won' : 'Lost' }}</span></li>
+                                }</ul>@if (!result.scores.length) {
+                                <p>No individual results recorded for this team.</p>
+                              }</div>
+                            }
+                          </section>
+                        }
+                        @if (matchup.message) {
+                          <p role="status" class="score-success">{{ matchup.message }}</p>
+                        }
+                        @if (matchup.error) {
+                          <p role="alert" class="score-error">{{ matchup.error }}</p>
+                        }
+                      </mat-card>
+                    }
+                    <button mat-stroked-button color="primary" type="button" (click)="addManualMatchup()">Add Manual Matchup</button>
+                    <p class="matchup-help">One score series per team pair per date. All game scores are required. To enter the same teams again, use a different date; this data model cannot distinguish multiple series on one day.</p>
+                  }
+                </section>
+              </mat-tab>
+            }
+            <!-- TAB 2: League Teams -->
+            <mat-tab label="League Teams">
+              <app-league-teams [leagueId]="leagueID" style="width: 100%;"></app-league-teams>
+            </mat-tab>
+            <!-- TAB 3: Team Management -->
+            @if (isActionAllowed) {
+              <mat-tab label="Team Management">
+                <app-team-management [leagueId]="leagueID" style="width: 150%;"></app-team-management>
+              </mat-tab>
+            }
+          </mat-tab-group>
         </mat-card>
+      </div>
     </div>
-</div>
+  }

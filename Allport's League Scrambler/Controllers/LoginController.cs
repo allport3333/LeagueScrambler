@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Mail;
 using System.Net;
@@ -15,15 +14,12 @@ using Allport_s_League_Scrambler.Models;
 using Allport_s_League_Scrambler.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
 namespace Allport_s_League_Scrambler.Controllers
 {
@@ -619,21 +615,12 @@ namespace Allport_s_League_Scrambler.Controllers
         // Function to validate password
         private bool ValidatePassword(string enteredPassword, byte[] storedPasswordHash, byte[] storedPasswordSalt)
         {
-            using (var deriveBytes = new Rfc2898DeriveBytes(enteredPassword, storedPasswordSalt, 10000))
-            {
-                byte[] enteredPasswordHash = deriveBytes.GetBytes(32); // 32 bytes hash size (adjust as needed)
-
-                // Compare the entered password hash with the stored password hash
-                for (int i = 0; i < enteredPasswordHash.Length; i++)
-                {
-                    if (enteredPasswordHash[i] != storedPasswordHash[i])
-                    {
-                        return false; // Passwords don't match
-                    }
-                }
-
-                return true; // Passwords match
-            }
+            if (enteredPassword == null || storedPasswordHash == null || storedPasswordHash.Length != 32 ||
+                storedPasswordSalt == null || storedPasswordSalt.Length < 8) return false;
+            // Preserve the existing UTF-8/PBKDF2-SHA1 account format exactly.
+            byte[] enteredPasswordHash = Rfc2898DeriveBytes.Pbkdf2(
+                enteredPassword, storedPasswordSalt, 10000, HashAlgorithmName.SHA1, 32);
+            return CryptographicOperations.FixedTimeEquals(enteredPasswordHash, storedPasswordHash);
         }
 
         [HttpGet("getuserinfo")]
@@ -822,11 +809,17 @@ namespace Allport_s_League_Scrambler.Controllers
                     UserRoleId = 3
                 };
                 var user = userModel.ToUser();
-                userData.PasswordHash = user.PasswordHash;
-                userData.PasswordSalt = user.PasswordSalt;
-                userData.ResetToken = null;
-                _context.Users.Update(userData);
-                await _context.SaveChangesAsync();
+                // Consume only the token that was read. Concurrent submissions or
+                // a newly issued recovery link must not overwrite one another.
+                var consumed = await _context.Database.ExecuteSqlRawAsync(
+                    "UPDATE [dbo].[User] SET [PasswordHash] = @hash, [PasswordSalt] = @salt, [ResetToken] = NULL " +
+                    "WHERE [UserId] = @userId AND [ResetToken] = @token",
+                    new Microsoft.Data.SqlClient.SqlParameter("@hash", System.Data.SqlDbType.VarBinary, -1) { Value = user.PasswordHash },
+                    new Microsoft.Data.SqlClient.SqlParameter("@salt", System.Data.SqlDbType.VarBinary, -1) { Value = user.PasswordSalt },
+                    new Microsoft.Data.SqlClient.SqlParameter("@userId", System.Data.SqlDbType.Int) { Value = userData.UserId },
+                    new Microsoft.Data.SqlClient.SqlParameter("@token", System.Data.SqlDbType.NVarChar, -1) { Value = request.Token });
+                if (consumed != 1)
+                    return BadRequest("Password reset failed, token already used or invalid");
                 return Ok(new { message = "Password reset successful" });
             }
             catch (Exception ex)
@@ -983,11 +976,12 @@ namespace Allport_s_League_Scrambler.Controllers
                         {
                             using (var rollbackContext = new DataContext())
                             {
-                                await rollbackContext.Database.ExecuteSqlCommandAsync(
-                                    "UPDATE [dbo].[User] SET [ResetToken] = {0} " +
-                                    "WHERE [UserId] = {1} AND [ResetToken] = {2}",
-                                    (object)previousResetToken ?? DBNull.Value,
-                                    userExists.UserId, resetToken);
+                                await rollbackContext.Database.ExecuteSqlRawAsync(
+                                    "UPDATE [dbo].[User] SET [ResetToken] = @previous " +
+                                    "WHERE [UserId] = @userId AND [ResetToken] = @issued",
+                                    new Microsoft.Data.SqlClient.SqlParameter("@previous", System.Data.SqlDbType.NVarChar, -1) { Value = (object)previousResetToken ?? DBNull.Value },
+                                    new Microsoft.Data.SqlClient.SqlParameter("@userId", System.Data.SqlDbType.Int) { Value = userExists.UserId },
+                                    new Microsoft.Data.SqlClient.SqlParameter("@issued", System.Data.SqlDbType.NVarChar, -1) { Value = resetToken });
                             }
                         }
                         catch (Exception rollbackError)
@@ -1042,10 +1036,7 @@ namespace Allport_s_League_Scrambler.Controllers
             byte[] tokenBytes = new byte[32]; // 32 bytes for a 256-bit token
 
             // Use a secure random number generator to fill the array with random bytes
-            using (var rng = new System.Security.Cryptography.RNGCryptoServiceProvider())
-            {
-                rng.GetBytes(tokenBytes);
-            }
+            System.Security.Cryptography.RandomNumberGenerator.Fill(tokenBytes);
 
             // Embed the issue time in the same token stored in User.ResetToken.
             // The random value is still required to match the database exactly.

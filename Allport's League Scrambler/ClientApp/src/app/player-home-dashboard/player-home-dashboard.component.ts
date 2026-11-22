@@ -1,4 +1,4 @@
-import {Component,OnInit,OnDestroy,Output,EventEmitter} from '@angular/core';
+import {Component, OnInit, OnDestroy, Output, EventEmitter, ChangeDetectionStrategy} from '@angular/core';
 import {Subscription,forkJoin,of,throwError} from 'rxjs';
 import {catchError,switchMap,map} from 'rxjs/operators';
 import {LeagueService} from '../services/league.service';
@@ -6,7 +6,11 @@ import {LoginService} from '../services/login.service';
 import {StatisticsService} from '../services/statistics.service';
 import {PlayerService} from '../services/player.service';
 import {transformKingQueenStandings} from '../league-standings/king-queen-standings';
-@Component({selector:'app-player-home-dashboard',templateUrl:'./player-home-dashboard.component.html',styleUrls:['./player-home-dashboard.component.css']})
+@Component({
+    selector: 'app-player-home-dashboard', templateUrl: './player-home-dashboard.component.html', styleUrls: ['./player-home-dashboard.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
+})
 export class PlayerHomeDashboardComponent implements OnInit,OnDestroy {
  @Output() claimPlayer=new EventEmitter<void>();
  playerId:number=null;leagueId:number=null;leagueName='';role='';accountReady=false;accountError='';overviewLoading=false;

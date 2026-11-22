@@ -1,5 +1,5 @@
 import { LeaguePlayerEditComponent } from '../league-management/player-management-dialogs.component';
-import { Component, Inject, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, TemplateRef, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, Inject, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, TemplateRef, ElementRef, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -35,7 +35,9 @@ import { generateScramble as runScrambleV2, rankTopPlayers, capacitiesFor, histo
 @Component({
     selector: 'app-scrambler-component',
     templateUrl: './scrambler.component.html',
-    styleUrls: ['./scrambler.component.less']
+    styleUrls: ['./scrambler.component.less'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     prioritizePreviousTeammates = false;

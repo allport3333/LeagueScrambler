@@ -1,10 +1,12 @@
-﻿import { Component, Inject } from '@angular/core';
+﻿import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { LoginService } from '../services/login.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 @Component({
     selector: 'app-forgot-password-dialog',
     templateUrl: './forgot-password-dialog.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class ForgotPasswordDialogComponent {
     email: string = '';

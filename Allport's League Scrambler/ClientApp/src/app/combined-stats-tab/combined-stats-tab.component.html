@@ -1,14 +1,44 @@
 <section class="profile-section combined-profile">
- <p *ngIf="loading" role="status" class="state-message">Loading league player statistics...</p><div *ngIf="error" role="alert" class="state-message"><p>{{ error }}</p><button mat-stroked-button (click)="loadCombinedStats()">Retry league player stats</button></div>
- <ng-container *ngIf="combinedStats && !loading && !error">
-  <h2>Overview</h2><p *ngIf="combinedStats.totalGames === 0" class="state-message">No recorded league team games in this league.</p>
+  @if (loading) {
+    <p role="status" class="state-message">Loading league player statistics...</p>
+    }@if (error) {
+    <div role="alert" class="state-message"><p>{{ error }}</p><button mat-stroked-button (click)="loadCombinedStats()">Retry league player stats</button></div>
+  }
+  @if (combinedStats && !loading && !error) {
+    <h2>Overview</h2>@if (combinedStats.totalGames === 0) {
+    <p class="state-message">No recorded league team games in this league.</p>
+  }
   <div class="summary-grid overview-summary"><div><span>Games</span><strong>{{ combinedStats.totalGames == null ? '—' : combinedStats.totalGames }}</strong></div><div><span>Total scores</span><strong>{{ combinedStats.totalScores == null ? '—' : combinedStats.totalScores }}</strong></div><div><span>Wins</span><strong class="win-text">{{ combinedStats.totalWins == null ? '—' : combinedStats.totalWins }}</strong></div><div><span>Win percentage</span><strong>{{ combinedStats.winPercentage == null ? '—' : (combinedStats.winPercentage | number:'1.0-2') + '%' }}</strong></div></div>
   <dl class="stats-facts"><div><dt>Average score</dt><dd>{{ combinedStats.averageScore == null ? '—' : (combinedStats.averageScore | number:'1.0-2') }}</dd></div><div><dt>Highest score</dt><dd>{{ combinedStats.highestScore == null ? '—' : combinedStats.highestScore }}</dd></div><div><dt>Lowest score</dt><dd>{{ combinedStats.lowestScore == null ? '—' : combinedStats.lowestScore }}</dd></div><div><dt>Unique opponents</dt><dd>{{ combinedStats.totalOpponents == null ? '—' : combinedStats.totalOpponents }}</dd></div><div><dt>Losses</dt><dd>{{ combinedStats.totalLosses == null ? '—' : combinedStats.totalLosses }}</dd></div></dl>
   <section class="stats-card"><h2>Streaks</h2><div class="streak-grid"><p>Longest winning streak <strong class="win-text">{{ combinedStats.longestWinStreak == null ? '—' : combinedStats.longestWinStreak }}</strong></p><p>Longest losing streak <strong class="loss-text">{{ combinedStats.longestLossStreak == null ? '—' : combinedStats.longestLossStreak }}</strong></p></div></section>
-  <section class="stats-card"><h2>League Stats</h2><p class="detail-context">Your teams within the selected league.</p><p *ngIf="!combinedStats.leagueStats || !combinedStats.leagueStats.length">No recorded league team comparisons.</p><table class="stats-table" *ngIf="combinedStats.leagueStats && combinedStats.leagueStats.length"><thead><tr><th>Team</th><th>Games</th><th>Wins</th><th>Win %</th></tr></thead><tbody><tr *ngFor="let stat of combinedStats.leagueStats"><td>{{ stat.leagueName }}</td><td>{{ stat.gamesPlayed }}</td><td>{{ stat.wins == null ? '—' : stat.wins }}</td><td>{{ stat.winPercentage | number:'1.0-2' }}%</td></tr></tbody></table></section>
-  <section class="stats-card"><h2>Opponent Stats</h2><p *ngIf="!opponents.length">No recorded opponents.</p><table *ngIf="opponents.length" class="stats-table opponent-table" matSort (matSortChange)="sortTable('opponents',$event)"><thead><tr><th mat-sort-header="opponentTeamName">Opponent</th><th mat-sort-header="gamesPlayed">Games</th><th mat-sort-header="wins">Wins</th><th mat-sort-header="winPercentage">Win %</th></tr></thead><tbody><tr *ngFor="let opponent of opponents"><td>{{ opponent.opponentTeamName }}</td><td>{{ opponent.gamesPlayed }}</td><td>{{ opponent.wins }}</td><td>{{ opponent.winPercentage | number:'1.0-2' }}%</td></tr></tbody></table>
-  <details *ngIf="opponents.length" class="additional-details"><summary>Opponent point details</summary><table class="stats-table"><thead><tr><th>Opponent</th><th>Points scored</th><th>Average points</th></tr></thead><tbody><tr *ngFor="let opponent of opponents"><td>{{ opponent.opponentTeamName }}</td><td>{{ opponent.totalPointsScored == null ? '—' : opponent.totalPointsScored }}</td><td>{{ opponent.averagePointsPerGame == null ? '—' : (opponent.averagePointsPerGame | number:'1.0-2') }}</td></tr></tbody></table></details>
-  </section>
-  <section class="stats-card regular-teammates"><h2>Teammates</h2><p class="detail-context">Games together and wins together use recorded League Team games only, not King/Queen rounds.</p><p *ngIf="!teammates.length">No league team teammates recorded.</p><table *ngIf="teammates.length" class="stats-table" matSort (matSortChange)="sortTable('teammates',$event)"><thead><tr><th mat-sort-header="playerName">Teammate</th><th mat-sort-header="timesPlayedTogether">Games together</th><th mat-sort-header="winsTogether">Wins together</th></tr></thead><tbody><tr *ngFor="let teammate of teammates" [attr.data-player-id]="teammate.playerId"><td><a [routerLink]="['/player-stats-tabs',teammate.playerId]" [queryParams]="{leagueId:leagueId,tab:'player'}">{{ teammate.playerName }}</a><small *ngIf="duplicateName(teammate)">Player #{{ teammate.playerId }}</small></td><td>{{ teammate.timesPlayedTogether == null ? '—' : teammate.timesPlayedTogether }}</td><td>{{ teammate.winsTogether == null ? '—' : teammate.winsTogether }}</td></tr></tbody></table></section>
- </ng-container>
+  <section class="stats-card"><h2>League Stats</h2><p class="detail-context">Your teams within the selected league.</p>@if (!combinedStats.leagueStats || !combinedStats.leagueStats.length) {
+  <p>No recorded league team comparisons.</p>
+  }@if (combinedStats.leagueStats && combinedStats.leagueStats.length) {
+  <table class="stats-table"><thead><tr><th>Team</th><th>Games</th><th>Wins</th><th>Win %</th></tr></thead><tbody>@for (stat of combinedStats.leagueStats; track stat) {
+  <tr><td>{{ stat.leagueName }}</td><td>{{ stat.gamesPlayed }}</td><td>{{ stat.wins == null ? '—' : stat.wins }}</td><td>{{ stat.winPercentage | number:'1.0-2' }}%</td></tr>
+}</tbody></table>
+}</section>
+<section class="stats-card"><h2>Opponent Stats</h2>@if (!opponents.length) {
+<p>No recorded opponents.</p>
+}@if (opponents.length) {
+<table class="stats-table opponent-table" matSort (matSortChange)="sortTable('opponents',$event)"><thead><tr><th mat-sort-header="opponentTeamName">Opponent</th><th mat-sort-header="gamesPlayed">Games</th><th mat-sort-header="wins">Wins</th><th mat-sort-header="winPercentage">Win %</th></tr></thead><tbody>@for (opponent of opponents; track opponent) {
+<tr><td>{{ opponent.opponentTeamName }}</td><td>{{ opponent.gamesPlayed }}</td><td>{{ opponent.wins }}</td><td>{{ opponent.winPercentage | number:'1.0-2' }}%</td></tr>
+}</tbody></table>
+}
+@if (opponents.length) {
+  <details class="additional-details"><summary>Opponent point details</summary><table class="stats-table"><thead><tr><th>Opponent</th><th>Points scored</th><th>Average points</th></tr></thead><tbody>@for (opponent of opponents; track opponent) {
+  <tr><td>{{ opponent.opponentTeamName }}</td><td>{{ opponent.totalPointsScored == null ? '—' : opponent.totalPointsScored }}</td><td>{{ opponent.averagePointsPerGame == null ? '—' : (opponent.averagePointsPerGame | number:'1.0-2') }}</td></tr>
+}</tbody></table></details>
+}
+</section>
+<section class="stats-card regular-teammates"><h2>Teammates</h2><p class="detail-context">Games together and wins together use recorded League Team games only, not King/Queen rounds.</p>@if (!teammates.length) {
+<p>No league team teammates recorded.</p>
+}@if (teammates.length) {
+<table class="stats-table" matSort (matSortChange)="sortTable('teammates',$event)"><thead><tr><th mat-sort-header="playerName">Teammate</th><th mat-sort-header="timesPlayedTogether">Games together</th><th mat-sort-header="winsTogether">Wins together</th></tr></thead><tbody>@for (teammate of teammates; track teammate) {
+<tr [attr.data-player-id]="teammate.playerId"><td><a [routerLink]="['/player-stats-tabs',teammate.playerId]" [queryParams]="{leagueId:leagueId,tab:'player'}">{{ teammate.playerName }}</a>@if (duplicateName(teammate)) {
+<small>Player #{{ teammate.playerId }}</small>
+}</td><td>{{ teammate.timesPlayedTogether == null ? '—' : teammate.timesPlayedTogether }}</td><td>{{ teammate.winsTogether == null ? '—' : teammate.winsTogether }}</td></tr>
+}</tbody></table>
+}</section>
+}
 </section>

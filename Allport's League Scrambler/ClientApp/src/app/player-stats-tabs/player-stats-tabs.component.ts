@@ -1,9 +1,13 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { LeagueService } from '../services/league.service';
 import { StatisticsService } from '../services/statistics.service';
-@Component({ selector: 'app-player-stats-tabs', templateUrl: './player-stats-tabs.component.html', styleUrls: ['./player-stats-tabs.component.css', './profile-statistics.shared.css'] })
+@Component({
+    selector: 'app-player-stats-tabs', templateUrl: './player-stats-tabs.component.html', styleUrls: ['./player-stats-tabs.component.css', './profile-statistics.shared.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
+})
 export class PlayerStatsTabsComponent implements OnInit, OnDestroy {
     playerId: number; selectedLeagueId: number; selectedLeagueName: string;
     player: any = null; loading = false; error = ''; leagueError = ''; activeTab = 0;

@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, OnDestroy, AfterViewInit, DoCheck, ViewChild, ElementRef, NgZone } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy, AfterViewInit, DoCheck, ViewChild, ElementRef, NgZone, ChangeDetectionStrategy } from '@angular/core';
 import { LoginService } from '../services/login.service';
 import { NavigationStart, Router } from '@angular/router';
 import { AuthService } from '../auth.service';
@@ -10,7 +10,9 @@ import { catchError } from 'rxjs/operators';
 @Component({
     selector: 'app-nav-menu',
     templateUrl: './nav-menu.component.html',
-    styleUrls: ['./nav-menu.component.css']
+    styleUrls: ['./nav-menu.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoCheck {
     // Presentation metadata only: these are the existing routes and visibility rules.

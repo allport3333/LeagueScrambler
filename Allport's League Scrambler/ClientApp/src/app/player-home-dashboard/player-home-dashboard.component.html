@@ -1,15 +1,68 @@
 <section class="home-dashboard"><header><h1>Home</h1><p>{{ leagueName || 'Select a league to get started.' }}</p></header>
-<p *ngIf="!accountReady" role="status">Loading your league overview...</p><p *ngIf="accountError" role="alert">{{ accountError }}</p>
-<div *ngIf="accountReady && !playerId && !accountError" class="home-panel"><p>Link your player record to see your next game and personal attendance.</p><button mat-raised-button color="primary" (click)="claimPlayer.emit()">Find or claim my player</button></div>
-<ng-container *ngIf="playerId && leagueId"><app-player-next-game [playerId]="playerId" [leagueId]="leagueId" (gamesLoaded)="acceptGames($event)"></app-player-next-game><app-player-attendance [playerId]="playerId" [leagueId]="leagueId"></app-player-attendance>
-<section class="home-panel recent-kq" aria-label="King/Queen results"><h2>Latest King/Queen Score</h2><p *ngIf="overviewLoading" role="status">Loading King/Queen results...</p><p *ngIf="kqError" role="alert">{{ kqError }}</p><p *ngIf="!overviewLoading && !kqError && !latestKq">No recorded King/Queen results in this league.</p><ng-container *ngIf="latestKq && !overviewLoading"><p>{{ latestKq.dateOfTeam | date:'mediumDate' }}</p><p><strong>{{ latestKq.totalScore == null ? 'Unavailable' : latestKq.totalScore }}</strong> points &middot; {{ latestKq.wins == null ? 'Unavailable' : latestKq.wins }} round wins</p><small>Original recorded score</small></ng-container><div class="current-kq-standing"><p *ngIf="standingLoading" role="status">Loading current standing...</p><p *ngIf="standingError" role="alert">{{ standingError }}</p><p *ngIf="!standingLoading && !standingError && !currentStanding">Current Standing: Not yet ranked</p><ng-container *ngIf="currentStanding && !standingLoading"><p>Current Standing: <a routerLink="/standings" [queryParams]="{leagueId:leagueId,standingsMode:currentStanding.mode,gender:currentStanding.genderKey,divisionId:0}"><strong>{{ ordinal(currentStanding.rank) }} of {{ currentStanding.total }}</strong></a></p><small>Overall {{ currentStanding.gender }} &middot; By {{ currentStanding.mode === 'matchup' ? 'Matchup' : 'Round' }}</small><small *ngIf="currentStanding.divisionTotal">{{ currentStanding.divisionLabel }}: {{ ordinal(currentStanding.divisionRank) }} of {{ currentStanding.divisionTotal }}</small></ng-container></div><a [routerLink]="['/player-stats-tabs',playerId]" [queryParams]="{leagueId:leagueId,tab:'kq'}">View King/Queen History</a></section>
+@if (!accountReady) {
+  <p role="status">Loading your league overview...</p>
+  }@if (accountError) {
+  <p role="alert">{{ accountError }}</p>
+}
+@if (accountReady && !playerId && !accountError) {
+  <div class="home-panel"><p>Link your player record to see your next game and personal attendance.</p><button mat-raised-button color="primary" (click)="claimPlayer.emit()">Find or claim my player</button></div>
+}
+@if (playerId && leagueId) {
+  <app-player-next-game [playerId]="playerId" [leagueId]="leagueId" (gamesLoaded)="acceptGames($event)"></app-player-next-game><app-player-attendance [playerId]="playerId" [leagueId]="leagueId"></app-player-attendance>
+  <section class="home-panel recent-kq" aria-label="King/Queen results"><h2>Latest King/Queen Score</h2>@if (overviewLoading) {
+  <p role="status">Loading King/Queen results...</p>
+  }@if (kqError) {
+  <p role="alert">{{ kqError }}</p>
+  }@if (!overviewLoading && !kqError && !latestKq) {
+  <p>No recorded King/Queen results in this league.</p>
+  }@if (latestKq && !overviewLoading) {
+  <p>{{ latestKq.dateOfTeam | date:'mediumDate' }}</p><p><strong>{{ latestKq.totalScore == null ? 'Unavailable' : latestKq.totalScore }}</strong> points &middot; {{ latestKq.wins == null ? 'Unavailable' : latestKq.wins }} round wins</p><small>Original recorded score</small>
+  }<div class="current-kq-standing">@if (standingLoading) {
+  <p role="status">Loading current standing...</p>
+  }@if (standingError) {
+  <p role="alert">{{ standingError }}</p>
+  }@if (!standingLoading && !standingError && !currentStanding) {
+  <p>Current Standing: Not yet ranked</p>
+  }@if (currentStanding && !standingLoading) {
+  <p>Current Standing: <a routerLink="/standings" [queryParams]="{leagueId:leagueId,standingsMode:currentStanding.mode,gender:currentStanding.genderKey,divisionId:0}"><strong>{{ ordinal(currentStanding.rank) }} of {{ currentStanding.total }}</strong></a></p><small>Overall {{ currentStanding.gender }} &middot; By {{ currentStanding.mode === 'matchup' ? 'Matchup' : 'Round' }}</small>@if (currentStanding.divisionTotal) {
+  <small>{{ currentStanding.divisionLabel }}: {{ ordinal(currentStanding.divisionRank) }} of {{ currentStanding.divisionTotal }}</small>
+}
+}</div><a [routerLink]="['/player-stats-tabs',playerId]" [queryParams]="{leagueId:leagueId,tab:'kq'}">View King/Queen History</a></section>
 <section class="home-panel home-team" aria-labelledby="home-team-title">
- <h2 id="home-team-title">Team</h2>
- <div class="home-team-sections">
-  <section aria-labelledby="home-team-standings-title"><h3 id="home-team-standings-title">Your Team Standings</h3><p *ngIf="overviewLoading" role="status">Loading standings...</p><p *ngIf="standingsError" role="alert">{{ standingsError }}</p><p *ngIf="!overviewLoading && !standingsError && !teamsReady">Standings appear when your team information is available.</p><p *ngIf="teamsReady && !overviewLoading && !standingsError && !ownStandings.length">No fixed-team standings are available for your player in this league.</p><div class="home-table-scroll" *ngIf="ownStandings.length"><table><thead><tr><th>Team</th><th>Wins</th><th>Losses</th><th>Points</th></tr></thead><tbody><tr *ngFor="let team of ownStandings"><td>{{ team.teamName }}</td><td>{{ team.wins }}</td><td>{{ team.losses }}</td><td>{{ team.totalPoints }}</td></tr></tbody></table></div><a routerLink="/league-dashboard" [queryParams]="{leagueId:leagueId}">View League Standings</a></section>
-  <section aria-labelledby="home-team-results-title"><h3 id="home-team-results-title">Recent Game Scores</h3><p *ngIf="overviewLoading" role="status">Loading results...</p><p *ngIf="recentError" role="alert">{{ recentError }}</p><p *ngIf="!overviewLoading && !recentError && !recent.length">No recorded league team results.</p><table class="recent-scores-table" *ngIf="recent.length"><thead><tr><th scope="col">Date</th><th scope="col">Opponent</th><th scope="col">Score</th><th scope="col">Result</th></tr></thead><tbody><tr *ngFor="let game of recent"><td class="score-date">{{ game.date | date:'mediumDate' }}</td><td class="score-opponent">{{ game.opponentTeam || 'Opponent unavailable' }}</td><td class="score-value"><span class="mobile-score-label">Score</span><strong>{{ game.teamScore }}</strong></td><td class="score-result"><span class="result-label" [class.home-win]="game.wonGame===true" [class.home-loss]="game.wonGame===false">{{ game.wonGame===true ? 'Won' : game.wonGame===false ? 'Lost' : 'Result unavailable' }}</span></td></tr></tbody></table><a [routerLink]="['/player-stats-tabs',playerId]" [queryParams]="{leagueId:leagueId,tab:'team'}">View Game History</a></section>
- </div>
+  <h2 id="home-team-title">Team</h2>
+  <div class="home-team-sections">
+    <section aria-labelledby="home-team-standings-title"><h3 id="home-team-standings-title">Your Team Standings</h3>@if (overviewLoading) {
+    <p role="status">Loading standings...</p>
+    }@if (standingsError) {
+    <p role="alert">{{ standingsError }}</p>
+    }@if (!overviewLoading && !standingsError && !teamsReady) {
+    <p>Standings appear when your team information is available.</p>
+    }@if (teamsReady && !overviewLoading && !standingsError && !ownStandings.length) {
+    <p>No fixed-team standings are available for your player in this league.</p>
+    }@if (ownStandings.length) {
+    <div class="home-table-scroll"><table><thead><tr><th>Team</th><th>Wins</th><th>Losses</th><th>Points</th></tr></thead><tbody>@for (team of ownStandings; track team) {
+    <tr><td>{{ team.teamName }}</td><td>{{ team.wins }}</td><td>{{ team.losses }}</td><td>{{ team.totalPoints }}</td></tr>
+  }</tbody></table></div>
+  }<a routerLink="/league-dashboard" [queryParams]="{leagueId:leagueId}">View League Standings</a></section>
+  <section aria-labelledby="home-team-results-title"><h3 id="home-team-results-title">Recent Game Scores</h3>@if (overviewLoading) {
+  <p role="status">Loading results...</p>
+  }@if (recentError) {
+  <p role="alert">{{ recentError }}</p>
+  }@if (!overviewLoading && !recentError && !recent.length) {
+  <p>No recorded league team results.</p>
+  }@if (recent.length) {
+  <table class="recent-scores-table"><thead><tr><th scope="col">Date</th><th scope="col">Opponent</th><th scope="col">Score</th><th scope="col">Result</th></tr></thead><tbody>@for (game of recent; track game) {
+  <tr><td class="score-date">{{ game.date | date:'mediumDate' }}</td><td class="score-opponent">{{ game.opponentTeam || 'Opponent unavailable' }}</td><td class="score-value"><span class="mobile-score-label">Score</span><strong>{{ game.teamScore }}</strong></td><td class="score-result"><span class="result-label" [class.home-win]="game.wonGame===true" [class.home-loss]="game.wonGame===false">{{ game.wonGame===true ? 'Won' : game.wonGame===false ? 'Lost' : 'Result unavailable' }}</span></td></tr>
+}</tbody></table>
+}<a [routerLink]="['/player-stats-tabs',playerId]" [queryParams]="{leagueId:leagueId,tab:'team'}">View Game History</a></section>
+</div>
 </section>
-<section class="home-panel home-upcoming" *ngIf="upcoming.length"><h2>Upcoming Schedule</h2><ul><li *ngFor="let game of upcoming"><a class="upcoming-link" routerLink="/league-dashboard" [queryParams]="{leagueId:leagueId,tab:'schedule',weekNumber:game.weekNumber,scheduleDate:game.date}"><span class="upcoming-date">{{ gameDate(game.date) | date:'mediumDate' }}<small>Week {{ game.weekNumber }}</small></span><strong class="upcoming-opponent">{{ game.opponentName }}</strong><small class="upcoming-details" *ngIf="game.division">{{ game.division }}</small></a></li></ul></section>
-</ng-container>
+@if (upcoming.length) {
+  <section class="home-panel home-upcoming"><h2>Upcoming Schedule</h2><ul>@for (game of upcoming; track game) {
+  <li><a class="upcoming-link" routerLink="/league-dashboard" [queryParams]="{leagueId:leagueId,tab:'schedule',weekNumber:game.weekNumber,scheduleDate:game.date}"><span class="upcoming-date">{{ gameDate(game.date) | date:'mediumDate' }}<small>Week {{ game.weekNumber }}</small></span><strong class="upcoming-opponent">{{ game.opponentName }}</strong>@if (game.division) {
+  <small class="upcoming-details">{{ game.division }}</small>
+}</a></li>
+}</ul></section>
+}
+}
 </section>

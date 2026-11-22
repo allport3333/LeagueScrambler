@@ -1,6 +1,6 @@
-﻿// Read-only endpoint integration check. Never loads SMTP settings or changes records.
+// Read-only endpoint integration check. Never loads SMTP settings or changes records.
 using System;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using Allport_s_League_Scrambler.Controllers;
@@ -15,6 +15,8 @@ class HistoryCheck {
   var line=File.ReadLines(Path.GetFullPath(args[0])).Single(x=>x.TrimStart().StartsWith("LEAGUESCRAMBLER_DB_CONNECTION="));
   var connection=new SqlConnectionStringBuilder(line.Substring(line.IndexOf('=')+1).Trim().Trim('"','\''));
   Require(connection.DataSource=="localhost"&&connection.InitialCatalog=="LeagueScramblerDev"&&connection.IntegratedSecurity&&String.IsNullOrEmpty(connection.UserID)&&String.IsNullOrEmpty(connection.Password)&&String.IsNullOrEmpty(connection.AttachDBFilename),"Refusing a nonlocal or nondevelopment database.");
+  // Loopback-only verified Development certificate; never alters application TLS settings.
+  connection.TrustServerCertificate=true;
   Environment.SetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION",connection.ConnectionString);
   using(var c=new DataContext()){
    c.Database.OpenConnection();using(var command=c.Database.GetDbConnection().CreateCommand()){command.CommandText="SELECT DB_NAME(), CONVERT(nvarchar(128), SERVERPROPERTY('MachineName'))";using(var reader=command.ExecuteReader()){Require(reader.Read()&&reader.GetString(0)=="LeagueScramblerDev"&&String.Equals(reader.GetString(1),Environment.MachineName,StringComparison.OrdinalIgnoreCase),"Runtime SQL identity mismatch.");}}

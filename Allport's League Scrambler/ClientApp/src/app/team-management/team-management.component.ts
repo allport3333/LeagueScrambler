@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { StatisticsService } from '../services/statistics.service';
 import { LeagueTeams } from '../data-models/leagueTeams.model';
 import { Player } from '../data-models/player.model';
@@ -11,7 +11,9 @@ import { TeamUpdateService } from '../services/team-update.service';
 @Component({
     selector: 'app-team-management',
     templateUrl: './team-management.component.html',
-    styleUrls: ['./team-management.component.css']
+    styleUrls: ['./team-management.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class TeamManagementComponent implements OnInit {
     @Input() leagueId: number | null = null;

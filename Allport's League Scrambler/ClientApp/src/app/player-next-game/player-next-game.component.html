@@ -1,14 +1,45 @@
-<section class="next-game" *ngIf="playerId > 0 && leagueId > 0" aria-label="Upcoming scheduled game">
- <h2>Your Next Game</h2>
- <p *ngIf="loading" role="status">Loading upcoming games...</p>
- <div *ngIf="error" role="alert"><p>{{ error }}</p><button mat-stroked-button (click)="load(true)">Retry Upcoming Games</button></div>
- <ng-container *ngIf="result && !loading && !error">
-  <ng-container *ngIf="result.games.length;else noGame">
-   <p class="game-date">{{ dateLabel(result.games[0].date) | date:'fullDate' }}<span *ngIf="result.games.length > 1"> &middot; {{ result.games.length }} scheduled matchups</span></p>
-   <div class="upcoming-match" *ngFor="let game of result.games"><p class="game-week">Week {{ game.weekNumber }}<span *ngIf="game.division"> &middot; {{ game.division }}</span></p><p><strong><app-team-roster-button [teamId]="game.teamId" [leagueId]="leagueId" [teamName]="game.teamName"></app-team-roster-button></strong><span class="versus">vs</span><strong><app-team-roster-button [teamId]="game.teamId === game.match.team1Id ? game.match.team2Id : game.match.team1Id" [leagueId]="leagueId" [teamName]="game.teamId === game.match.team1Id ? game.match.team2Name : game.match.team1Name"></app-team-roster-button></strong></p><small *ngIf="eventDescription(game.match)">{{ eventDescription(game.match) }}</small><small *ngIf="game.match.courtNumber != null">Court {{ game.match.courtNumber }}</small><small *ngIf="game.bothTeams">You are on both scheduled team rosters.</small>
-   </div>
-   <a *ngFor="let game of result.weeks" mat-stroked-button color="primary" routerLink="/league-dashboard" [queryParams]="scheduleQuery(game)">View Full Schedule<span *ngIf="result.weeks.length > 1"> &middot; Week {{ game.weekNumber }}</span></a>
-  </ng-container>
-  <ng-template #noGame><p class="empty-title">No Upcoming Games</p><p *ngIf="!result.hasSchedule">No schedule is available for this league.</p><p *ngIf="result.hasSchedule && !result.hasTeam">This player has no assigned league team.</p><p *ngIf="result.hasSchedule && result.hasTeam">No upcoming matchup is scheduled for this player's team.</p><a *ngIf="result.hasSchedule" mat-stroked-button color="primary" routerLink="/league-dashboard" [queryParams]="scheduleQuery()">View Full Schedule</a></ng-template>
- </ng-container>
+@if (playerId > 0 && leagueId > 0) {
+  <section class="next-game" aria-label="Upcoming scheduled game">
+    <h2>Your Next Game</h2>
+    @if (loading) {
+      <p role="status">Loading upcoming games...</p>
+    }
+    @if (error) {
+      <div role="alert"><p>{{ error }}</p><button mat-stroked-button (click)="load(true)">Retry Upcoming Games</button></div>
+    }
+    @if (result && !loading && !error) {
+      @if (result.games.length) {
+        <p class="game-date">{{ dateLabel(result.games[0].date) | date:'fullDate' }}@if (result.games.length > 1) {
+          <span> &middot; {{ result.games.length }} scheduled matchups</span>
+        }</p>
+        @for (game of result.games; track game) {
+          <div class="upcoming-match"><p class="game-week">Week {{ game.weekNumber }}@if (game.division) {
+            <span> &middot; {{ game.division }}</span>
+            }</p><p><strong><app-team-roster-button [teamId]="game.teamId" [leagueId]="leagueId" [teamName]="game.teamName"></app-team-roster-button></strong><span class="versus">vs</span><strong><app-team-roster-button [teamId]="game.teamId === game.match.team1Id ? game.match.team2Id : game.match.team1Id" [leagueId]="leagueId" [teamName]="game.teamId === game.match.team1Id ? game.match.team2Name : game.match.team1Name"></app-team-roster-button></strong></p>@if (eventDescription(game.match)) {
+            <small>{{ eventDescription(game.match) }}</small>
+            }@if (game.match.courtNumber != null) {
+            <small>Court {{ game.match.courtNumber }}</small>
+            }@if (game.bothTeams) {
+            <small>You are on both scheduled team rosters.</small>
+          }
+        </div>
+      }
+      @for (game of result.weeks; track game) {
+        <a mat-stroked-button color="primary" routerLink="/league-dashboard" [queryParams]="scheduleQuery(game)">View Full Schedule@if (result.weeks.length > 1) {
+          <span> &middot; Week {{ game.weekNumber }}</span>
+        }</a>
+      }
+    } @else {
+      <p class="empty-title">No Upcoming Games</p>@if (!result.hasSchedule) {
+      <p>No schedule is available for this league.</p>
+      }@if (result.hasSchedule && !result.hasTeam) {
+      <p>This player has no assigned league team.</p>
+      }@if (result.hasSchedule && result.hasTeam) {
+      <p>No upcoming matchup is scheduled for this player's team.</p>
+      }@if (result.hasSchedule) {
+      <a mat-stroked-button color="primary" routerLink="/league-dashboard" [queryParams]="scheduleQuery()">View Full Schedule</a>
+    }
+  }
+}
 </section>
+}

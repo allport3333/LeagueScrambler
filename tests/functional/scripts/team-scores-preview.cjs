@@ -9,7 +9,7 @@ const assert=require('node:assert/strict');
   const browser=await chromium.launch();
   const context=await browser.newContext({viewport:{width:1366,height:900},serviceWorkers:'block'});
   const page=await context.newPage();
-  const output=path.resolve(__dirname,'../artifacts/team-scores/ui-preview');fs.mkdirSync(output,{recursive:true});
+  const output=process.env.LEAGUE_TEST_OUT?path.resolve(process.env.LEAGUE_TEST_OUT):path.resolve(__dirname,'../artifacts/team-scores/ui-preview');fs.mkdirSync(output,{recursive:true});
   const today=new Date();const day=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   let scheduled=true;let deniedWrites=0;
   const teams=[{id:-11,leagueID:-101,teamName:'Harbor Aces',division:'Gold',totalWins:0,totalLosses:0},
@@ -18,6 +18,7 @@ const assert=require('node:assert/strict');
     {id:-14,leagueID:-101,teamName:'Net Results',division:'Silver',totalWins:0,totalLosses:0}];
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await context.route('**/*',async route=>{
+    if(await require('./fixture-asset.cjs')(route))return;
     let url;try{url=assertLocalUrl(route.request().url());}catch{await route.abort();return;}
     if(route.request().method()!=='GET'){deniedWrites++;await route.abort('blockedbyclient');return;}
     if(!url.pathname.toLowerCase().startsWith('/api/')){await route.continue();return;}
@@ -35,12 +36,9 @@ const assert=require('node:assert/strict');
   });
   await page.goto(BASE_URL+'/team-scores');
   await page.waitForSelector('app-team-scores h2');
-  await page.evaluate(()=>{
-    const debug=window.ng.probe(document.querySelector('app-team-scores'));
-    debug.injector.get(window.ng.coreTokens.NgZone).run(()=>{
-      const service=debug.componentInstance.leagueService;
+  await require('./angular-component.cjs')(page,'app-team-scores',component=>{
+      const service=component.leagueService;
       service.leaguesAvailable=[{id:-101,leagueName:'Synthetic Preview League'}];service.setSelectedLeague(-101);
-    });
   });
   await page.waitForSelector('.matchup-card');
   assert.equal(await page.locator('.matchup-card').count(),2);

@@ -1,17 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
-    <RuntimeFrameworkVersion>2.2.7</RuntimeFrameworkVersion>
+    <TargetFramework>net10.0</TargetFramework>
+    
     <AssemblyName>PlayerImportCheck</AssemblyName>
-    <BackendAssemblyPath Condition="'$(BackendAssemblyPath)' == ''">../../tests/functional/artifacts/player-import/backend/ASP.NET Core 2.2 with Angular 7.dll</BackendAssemblyPath>
+    
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ASP.NET Core 2.2 with Angular 7"><HintPath>$(BackendAssemblyPath)</HintPath></Reference>
-    <!-- Match the existing legacy controller/EF fixtures; this is a targeted
-         patch, not a migration to a supported framework. -->
-    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.2.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.2.6" />
+    <Compile Include="../modernization/DevelopmentAuthorization.cs" Link="DevelopmentAuthorization.cs" />
+    <ProjectReference Include="../../Allport's League Scrambler/Allport's League Scrambler.csproj" Condition="'$(BackendAssemblyPath)' == ''" /><Reference Include="ASP.NET Core 2.2 with Angular 7" Condition="'$(BackendAssemblyPath)' != ''"><HintPath>$(BackendAssemblyPath)</HintPath></Reference>
+    <!-- Default to the current source project; BackendAssemblyPath is an explicit, isolated comparison override. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.15" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 </Project>

@@ -1,38 +1,74 @@
 <section class="player-directory-page">
- <h1>Player List</h1>
- <img class="league-logo" *ngIf="selectedLeagueId === 27 || selectedLeagueId === 33" src="assets/img/logoww.jpg" alt="Wall Warriors">
- <div class="directory-toolbar">
-  <mat-form-field appearance="outline" class="search-bar">
-   <mat-label>Search Players</mat-label>
-   <input matInput [(ngModel)]="searchValue" (ngModelChange)="applyFilter($event)" placeholder="Type to filter players..." autocomplete="off">
-   <button mat-icon-button matSuffix type="button" *ngIf="searchValue" (click)="clearSearch()" aria-label="Clear search"><mat-icon aria-hidden="true">close</mat-icon></button>
-  </mat-form-field>
-  <div class="directory-gender-filters" role="group" aria-label="Filter players by gender">
-   <button mat-stroked-button type="button" *ngFor="let option of ['all','men','women']" [class.gender-selected]="genderFilter === option" [attr.aria-pressed]="genderFilter === option" (click)="setGender(option)">{{ option === 'all' ? 'All' : option === 'men' ? 'Men' : 'Women' }}</button>
+  <h1>Player List</h1>
+  @if (selectedLeagueId === 27 || selectedLeagueId === 33) {
+    <img class="league-logo" src="assets/img/logoww.jpg" alt="Wall Warriors">
+  }
+  <div class="directory-toolbar">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-bar">
+      <mat-label>Search Players</mat-label>
+      <input matInput [(ngModel)]="searchValue" (ngModelChange)="applyFilter($event)" placeholder="Type to filter players..." autocomplete="off">
+      @if (searchValue) {
+        <button mat-icon-button matSuffix type="button" (click)="clearSearch()" aria-label="Clear search"><mat-icon aria-hidden="true">close</mat-icon></button>
+      }
+    </mat-form-field>
+    <div class="directory-gender-filters" role="group" aria-label="Filter players by gender">
+      @for (option of ['all','men','women']; track option) {
+        <button mat-stroked-button type="button" [class.gender-selected]="genderFilter === option" [attr.aria-pressed]="genderFilter === option" (click)="setGender(option)">{{ option === 'all' ? 'All' : option === 'men' ? 'Men' : 'Women' }}</button>
+      }
+    </div>
   </div>
- </div>
- <p class="directory-state" role="status" *ngIf="loading"><mat-spinner diameter="28"></mat-spinner>Loading Players...</p>
- <div class="directory-state" role="alert" *ngIf="error"><p>{{ error }}</p><button mat-stroked-button type="button" (click)="retryLoad()">Retry</button></div>
- <p class="directory-state" role="status" *ngIf="!loading && !error && !selectedLeagueId">Select a league to view players.</p>
- <ng-container *ngIf="!loading && !error && selectedLeagueId">
-  <p class="directory-state" role="status" *ngIf="!players.length">No players are available in this league.</p>
-  <p class="directory-state" role="status" *ngIf="players.length && !visibleCount">No players match your search.</p>
-  <p class="directory-count-note" *ngIf="searchValue.trim() && visibleCount">Counts show matching players.</p>
-  <div class="player-directory" [class.single-section]="genderFilter !== 'all'" *ngIf="players.length && visibleCount">
-   <section class="directory-section male-players" *ngIf="genderFilter !== 'women'" aria-labelledby="male-players-heading">
-    <h2 id="male-players-heading">Male Players <span>({{ malePlayers.length }})</span></h2>
-    <ul class="player-directory-grid"><li *ngFor="let player of malePlayers; trackBy: trackPlayer"><a class="player-link" [attr.data-player-id]="player.id" [routerLink]="['/player-stats-tabs', player.id]">{{ player.firstName }} {{ player.lastName }}</a></li></ul>
-    <p class="section-empty" *ngIf="!malePlayers.length">No matching male players.</p>
-   </section>
-   <section class="directory-section female-players" *ngIf="genderFilter !== 'men'" aria-labelledby="female-players-heading">
-    <h2 id="female-players-heading">Female Players <span>({{ femalePlayers.length }})</span></h2>
-    <ul class="player-directory-grid"><li *ngFor="let player of femalePlayers; trackBy: trackPlayer"><a class="player-link" [attr.data-player-id]="player.id" [routerLink]="['/player-stats-tabs', player.id]">{{ player.firstName }} {{ player.lastName }}</a></li></ul>
-    <p class="section-empty" *ngIf="!femalePlayers.length">No matching female players.</p>
-   </section>
-   <section class="directory-section other-players" *ngIf="genderFilter === 'all' && otherPlayers.length" aria-labelledby="other-players-heading">
-    <h2 id="other-players-heading">Other / Unspecified Players <span>({{ otherPlayers.length }})</span></h2>
-    <ul class="player-directory-grid"><li *ngFor="let player of otherPlayers; trackBy: trackPlayer"><a class="player-link" [attr.data-player-id]="player.id" [routerLink]="['/player-stats-tabs', player.id]">{{ player.firstName }} {{ player.lastName }}</a></li></ul>
-   </section>
-  </div>
- </ng-container>
+  @if (loading) {
+    <p class="directory-state" role="status"><mat-spinner diameter="28"></mat-spinner>Loading Players...</p>
+  }
+  @if (error) {
+    <div class="directory-state" role="alert"><p>{{ error }}</p><button mat-stroked-button type="button" (click)="retryLoad()">Retry</button></div>
+  }
+  @if (!loading && !error && !selectedLeagueId) {
+    <p class="directory-state" role="status">Select a league to view players.</p>
+  }
+  @if (!loading && !error && selectedLeagueId) {
+    @if (!players.length) {
+      <p class="directory-state" role="status">No players are available in this league.</p>
+    }
+    @if (players.length && !visibleCount) {
+      <p class="directory-state" role="status">No players match your search.</p>
+    }
+    @if (searchValue.trim() && visibleCount) {
+      <p class="directory-count-note">Counts show matching players.</p>
+    }
+    @if (players.length && visibleCount) {
+      <div class="player-directory" [class.single-section]="genderFilter !== 'all'">
+        @if (genderFilter !== 'women') {
+          <section class="directory-section male-players" aria-labelledby="male-players-heading">
+            <h2 id="male-players-heading">Male Players <span>({{ malePlayers.length }})</span></h2>
+            <ul class="player-directory-grid">@for (player of malePlayers; track trackPlayer($index, player)) {
+              <li><a class="player-link" [attr.data-player-id]="player.id" [routerLink]="['/player-stats-tabs', player.id]">{{ player.firstName }} {{ player.lastName }}</a></li>
+            }</ul>
+            @if (!malePlayers.length) {
+              <p class="section-empty">No matching male players.</p>
+            }
+          </section>
+        }
+        @if (genderFilter !== 'men') {
+          <section class="directory-section female-players" aria-labelledby="female-players-heading">
+            <h2 id="female-players-heading">Female Players <span>({{ femalePlayers.length }})</span></h2>
+            <ul class="player-directory-grid">@for (player of femalePlayers; track trackPlayer($index, player)) {
+              <li><a class="player-link" [attr.data-player-id]="player.id" [routerLink]="['/player-stats-tabs', player.id]">{{ player.firstName }} {{ player.lastName }}</a></li>
+            }</ul>
+            @if (!femalePlayers.length) {
+              <p class="section-empty">No matching female players.</p>
+            }
+          </section>
+        }
+        @if (genderFilter === 'all' && otherPlayers.length) {
+          <section class="directory-section other-players" aria-labelledby="other-players-heading">
+            <h2 id="other-players-heading">Other / Unspecified Players <span>({{ otherPlayers.length }})</span></h2>
+            <ul class="player-directory-grid">@for (player of otherPlayers; track trackPlayer($index, player)) {
+              <li><a class="player-link" [attr.data-player-id]="player.id" [routerLink]="['/player-stats-tabs', player.id]">{{ player.firstName }} {{ player.lastName }}</a></li>
+            }</ul>
+          </section>
+        }
+      </div>
+    }
+  }
 </section>

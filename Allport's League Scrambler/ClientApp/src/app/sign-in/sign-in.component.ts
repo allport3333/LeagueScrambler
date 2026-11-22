@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort } from '@angular/material/sort';
@@ -18,7 +18,9 @@ import { AuthService } from '../auth.service';
 @Component({
     selector: 'app-sign-in',
     templateUrl: './sign-in.component.html',
-    styleUrls: ['./sign-in.component.css']
+    styleUrls: ['./sign-in.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class SignInComponent implements OnInit {
     @ViewChild('confirmationDialog', { static: true }) confirmationDialog!: TemplateRef<any>;

@@ -1,4 +1,4 @@
-import { Component, Injectable } from '@angular/core';
+import { Component, Injectable, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
 import { catchError, filter, map, switchMap, take } from 'rxjs/operators';
@@ -23,7 +23,9 @@ export class LeagueManagementGuard  {
 // No algorithm/form/team state is copied into a second management controller.
 @Component({
     selector: 'app-scrambler-workspace',
-    template: '<app-scrambler-component [workspaceSection]="section"></app-scrambler-component><router-outlet></router-outlet>'
+    template: '<app-scrambler-component [workspaceSection]="section"></app-scrambler-component><router-outlet></router-outlet>',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class ScramblerWorkspaceComponent {
     constructor(private router: Router) { }
@@ -32,5 +34,9 @@ export class ScramblerWorkspaceComponent {
     }
 }
 
-@Component({ selector: 'app-workspace-route', template: '' })
+@Component({
+    selector: 'app-workspace-route', template: '',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
+})
 export class WorkspaceRouteComponent { }

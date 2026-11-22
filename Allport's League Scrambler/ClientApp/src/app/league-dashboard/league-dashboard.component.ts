@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { LeagueService } from '../services/league.service';
 import { Leagues } from '../data-models/leagues.model';
 import { Observable, Subscription } from 'rxjs';
@@ -8,7 +8,9 @@ import { LoginService } from '../services/login.service';
 @Component({
     selector: 'app-league-dashboard',
     templateUrl: './league-dashboard.component.html',
-    styleUrls: ['./league-dashboard.component.css']
+    styleUrls: ['./league-dashboard.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class LeagueDashboardComponent implements OnInit, OnDestroy {
     activeDashboardTab=0; requestedWeekNumber:number=null; requestedScheduleDate:string=null; navigationError='';

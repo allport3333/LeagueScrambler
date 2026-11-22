@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, Params } from '@angular/router';
 import { combineLatest, Subscription } from 'rxjs';
 import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
@@ -12,7 +12,9 @@ import {latestSavedMatchupWeek, savedMatchupWeeks, compareSavedMatchupWeeks} fro
 @Component({
     selector: 'app-kqmatchups',
     templateUrl: './kqmatchups.component.html',
-    styleUrls: ['./kqmatchups.component.css']
+    styleUrls: ['./kqmatchups.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class KqmatchupsComponent implements OnInit, OnDestroy {
     queriedScrambles: KingQueenTeam[] = [];

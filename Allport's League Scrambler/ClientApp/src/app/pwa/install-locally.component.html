@@ -1,29 +1,46 @@
 <section class="install-page" aria-labelledby="install-heading">
- <img src="assets/icons/icon-192.png" width="96" height="96" alt="Allport's League Hub logo">
- <h1 id="install-heading">Install Allport's League Hub</h1>
- <p class="intro">Add League Hub to your home screen for quick access to your schedule, standings, games, and player information.</p>
- <div *ngIf="pwa.installed;else installation" class="installed" role="status"><mat-icon aria-hidden="true">check_circle</mat-icon><strong>League Hub is installed</strong><p>You’re using the app window. Open it again from your home screen or application launcher.</p></div>
- <ng-template #installation>
-  <div *ngIf="pwa.canInstall || pwa.prompting" class="install-action"><button mat-raised-button color="primary" type="button" [disabled]="pwa.prompting || pwa.offline" (click)="pwa.install()"><mat-icon aria-hidden="true">get_app</mat-icon> {{ pwa.prompting ? 'Waiting for your browser...' : 'Install App' }}</button></div>
-  <p *ngIf="pwa.message" class="install-status" role="status">{{ pwa.message }}</p>
-  <section class="instructions" *ngIf="pwa.ios;else otherDevices">
-   <h2>On iPhone or iPad</h2>
-   <p *ngIf="!pwa.safari">For these steps, open this website in <strong>Safari</strong>.</p>
-   <ol><li>Open Safari’s <strong>Share</strong> menu <mat-icon inline aria-hidden="true">share</mat-icon>.</li><li>Select <strong>Add to Home Screen</strong>. You may need to scroll the share menu.</li><li>Turn on <strong>Open as Web App</strong> when that option is available.</li><li>Tap <strong>Add</strong>.</li></ol>
-  </section>
-  <ng-template #otherDevices>
-   <section class="instructions" *ngIf="pwa.android;else desktop">
-    <h2>On Android</h2><ol><li>Open this website in Chrome or another browser that supports installation.</li><li>Open the browser menu and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>, if offered.</li><li>Confirm the installation.</li></ol>
-   </section>
-   <ng-template #desktop><section class="instructions"><h2>On your computer</h2>
-    <p *ngIf="pwa.edge">In Edge, open the browser menu, then <strong>Apps</strong> &rarr; <strong>Install this site as an app</strong>, if offered.</p>
-    <p *ngIf="pwa.chrome">In Chrome, use the install icon in the address bar, or open the browser menu and look for <strong>Install Allport's League Hub</strong> under <strong>Cast, save, and share</strong>, if offered.</p>
-    <p *ngIf="!pwa.edge && !pwa.chrome">If your browser offers <strong>Add to Dock</strong> or an install option, you can use it. Otherwise, open this page in Chrome or Edge for supported installation options.</p>
-   </section></ng-template>
-  </ng-template>
+  <img src="assets/icons/icon-192.png" width="96" height="96" alt="Allport's League Hub logo">
+  <h1 id="install-heading">Install Allport's League Hub</h1>
+  <p class="intro">Add League Hub to your home screen for quick access to your schedule, standings, games, and player information.</p>
+  @if (pwa.installed) {
+    <div class="installed" role="status"><mat-icon aria-hidden="true">check_circle</mat-icon><strong>League Hub is installed</strong><p>You’re using the app window. Open it again from your home screen or application launcher.</p></div>
+  } @else {
+    @if (pwa.canInstall || pwa.prompting) {
+      <div class="install-action"><button mat-raised-button color="primary" type="button" [disabled]="pwa.prompting || pwa.offline" (click)="pwa.install()"><mat-icon aria-hidden="true">get_app</mat-icon> {{ pwa.prompting ? 'Waiting for your browser...' : 'Install App' }}</button></div>
+    }
+    @if (pwa.message) {
+      <p class="install-status" role="status">{{ pwa.message }}</p>
+    }
+    @if (pwa.ios) {
+      <section class="instructions">
+        <h2>On iPhone or iPad</h2>
+        @if (!pwa.safari) {
+          <p>For these steps, open this website in <strong>Safari</strong>.</p>
+        }
+        <ol><li>Open Safari’s <strong>Share</strong> menu <mat-icon inline aria-hidden="true">share</mat-icon>.</li><li>Select <strong>Add to Home Screen</strong>. You may need to scroll the share menu.</li><li>Turn on <strong>Open as Web App</strong> when that option is available.</li><li>Tap <strong>Add</strong>.</li></ol>
+      </section>
+    } @else {
+      @if (pwa.android) {
+        <section class="instructions">
+          <h2>On Android</h2><ol><li>Open this website in Chrome or another browser that supports installation.</li><li>Open the browser menu and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>, if offered.</li><li>Confirm the installation.</li></ol>
+        </section>
+      } @else {
+        <section class="instructions"><h2>On your computer</h2>
+        @if (pwa.edge) {
+          <p>In Edge, open the browser menu, then <strong>Apps</strong> &rarr; <strong>Install this site as an app</strong>, if offered.</p>
+        }
+        @if (pwa.chrome) {
+          <p>In Chrome, use the install icon in the address bar, or open the browser menu and look for <strong>Install Allport's League Hub</strong> under <strong>Cast, save, and share</strong>, if offered.</p>
+        }
+        @if (!pwa.edge && !pwa.chrome) {
+          <p>If your browser offers <strong>Add to Dock</strong> or an install option, you can use it. Otherwise, open this page in Chrome or Edge for supported installation options.</p>
+        }
+      </section>
+    }
+  }
   <p class="hint">Installation options vary by browser. If the app is already installed, open it from your home screen or application launcher.</p>
- </ng-template>
- <p class="account-note">Same account. Same league data. Installation is optional, and the website continues to work as usual. You may need to sign in again in the installed app.</p>
- <p class="hint">An internet connection is needed for current information and saving scores or attendance.</p>
- <details><summary>Printing from the app</summary><p class="hint">Use the existing Print actions on schedules and matchups. If the app window cannot open printing, open the website in Safari, Chrome, or Edge and print there instead.</p></details>
+}
+<p class="account-note">Same account. Same league data. Installation is optional, and the website continues to work as usual. You may need to sign in again in the installed app.</p>
+<p class="hint">An internet connection is needed for current information and saving scores or attendance.</p>
+<details><summary>Printing from the app</summary><p class="hint">Use the existing Print actions on schedules and matchups. If the app window cannot open printing, open the website in Safari, Chrome, or Edge and print there instead.</p></details>
 </section>

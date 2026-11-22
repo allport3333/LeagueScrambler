@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ViewChild } from '@angular/core';
+import { Component, Inject, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 import { FormGroup, FormControl } from '@angular/forms';
@@ -15,7 +15,9 @@ import { Schedule } from '../data-models/schedule.model';
 @Component({
     selector: 'app-schedule',
     templateUrl: './schedule.component.html',
-    styleUrls: ['./schedule.component.less']
+    styleUrls: ['./schedule.component.less'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class ScheduleComponent implements OnInit {
     loading: boolean;

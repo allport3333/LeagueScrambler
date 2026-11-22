@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 import { FormGroup, FormControl } from '@angular/forms';
@@ -10,7 +10,9 @@ import { PlayerInformation } from '../data-models/playerInformation';
 @Component({
     selector: 'app-player-scores',
     templateUrl: './player-scores.component.html',
-    styleUrls: ['./player-scores.component.less']
+    styleUrls: ['./player-scores.component.less'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class PlayerScoresComponent implements OnInit{
     players: PlayerInformation[];

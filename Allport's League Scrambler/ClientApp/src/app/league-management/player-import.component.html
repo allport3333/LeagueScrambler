@@ -1,40 +1,118 @@
-<header class="import-header"><div><h2 mat-dialog-title>Import Players From File</h2><p>{{ data.leagueName }}</p><p class="import-filename" *ngIf="filename">{{filename}}</p></div><button mat-stroked-button type="button" mat-dialog-close [disabled]="importing" aria-label="Close player import">Close</button></header>
-<div class="import-filters" *ngIf="context">
- <mat-form-field appearance="outline"><mat-label>Default division</mat-label><mat-select [(ngModel)]="defaultDivision" (selectionChange)="changeDefault()" [disabled]="importing"><mat-option [value]="0">No Division</mat-option><mat-option *ngFor="let d of context.divisions" [value]="d.id">{{ d.name || d.code }}</mat-option></mat-select></mat-form-field>
- <mat-form-field appearance="outline"><mat-label>Search preview</mat-label><input matInput [(ngModel)]="search" (ngModelChange)="filterRows()" [disabled]="importing"></mat-form-field>
- <mat-form-field appearance="outline"><mat-label>Show rows</mat-label><mat-select [(ngModel)]="filter" (selectionChange)="filterRows()"><mat-option value="all">All rows</mat-option><mat-option *ngFor="let status of filters.slice(1)" [value]="status">{{ filterLabels[status] }}</mat-option></mat-select></mat-form-field>
+<header class="import-header"><div><h2 mat-dialog-title>Import Players From File</h2><p>{{ data.leagueName }}</p>@if (filename) {
+<p class="import-filename">{{filename}}</p>
+}</div><button mat-stroked-button type="button" mat-dialog-close [disabled]="importing" aria-label="Close player import">Close</button></header>
+@if (context) {
+  <div class="import-filters">
+    <mat-form-field appearance="outline"><mat-label>Default division</mat-label><mat-select [(ngModel)]="defaultDivision" (selectionChange)="changeDefault()" [disabled]="importing"><mat-option [value]="0">No Division</mat-option>@for (d of context.divisions; track d) {
+    <mat-option [value]="d.id">{{ d.name || d.code }}</mat-option>
+  }</mat-select></mat-form-field>
+  <mat-form-field appearance="outline"><mat-label>Search preview</mat-label><input matInput [(ngModel)]="search" (ngModelChange)="filterRows()" [disabled]="importing"></mat-form-field>
+  <mat-form-field appearance="outline"><mat-label>Show rows</mat-label><mat-select [(ngModel)]="filter" (selectionChange)="filterRows()"><mat-option value="all">All rows</mat-option>@for (status of filters.slice(1); track status) {
+  <mat-option [value]="status">{{ filterLabels[status] }}</mat-option>
+}</mat-select></mat-form-field>
 </div>
-<p #reviewNotice tabindex="-1" class="import-notice" role="status" *ngIf="notice">{{notice}}</p>
+}
+@if (notice) {
+  <p #reviewNotice tabindex="-1" class="import-notice" role="status">{{notice}}</p>
+}
 <main #importBody class="import-body" [attr.aria-busy]="loading || parsing || analysing || importing">
- <section class="match-review" *ngIf="editing"><h3>Choose an existing player for “{{ editing.uploadedName }}”</h3><mat-form-field appearance="outline"><mat-label>Find an existing player by name or ID</mat-label><input #matchSearch matInput [(ngModel)]="candidateSearch" (ngModelChange)="filterCandidates()"></mat-form-field><p>Suggestions require confirmation. IDs and gender distinguish records; no contact details are shown.</p><div><button mat-stroked-button type="button" *ngFor="let p of candidatePlayers" (click)="confirmPlayer(p)">{{ identify(p) }}</button></div><p *ngIf="!candidatePlayers.length">No candidates. Refine the name or search by ID.</p><p *ngIf="candidatePlayers.length === 20">Showing the first 20 matches. Refine the search if needed.</p><button mat-button type="button" (click)="cancelReview()">Cancel match selection</button></section>
- <p role="status" *ngIf="loading">Loading existing players and league divisions...</p>
- <div class="import-error" role="alert" *ngIf="error">{{ error }} <button mat-button type="button" *ngIf="!context && !loading" (click)="loadContext()">Retry</button><button mat-button type="button" *ngIf="context && !importing && !loading" (click)="loadContext()">Reload league data</button></div>
+  @if (editing) {
+    <section class="match-review"><h3>Choose an existing player for “{{ editing.uploadedName }}”</h3><mat-form-field appearance="outline"><mat-label>Find an existing player by name or ID</mat-label><input #matchSearch matInput [(ngModel)]="candidateSearch" (ngModelChange)="filterCandidates()"></mat-form-field><p>Suggestions require confirmation. IDs and gender distinguish records; no contact details are shown.</p><div>@for (p of candidatePlayers; track p) {
+    <button mat-stroked-button type="button" (click)="confirmPlayer(p)">{{ identify(p) }}</button>
+  }</div>@if (!candidatePlayers.length) {
+  <p>No candidates. Refine the name or search by ID.</p>
+  }@if (candidatePlayers.length === 20) {
+  <p>Showing the first 20 matches. Refine the search if needed.</p>
+  }<button mat-button type="button" (click)="cancelReview()">Cancel match selection</button></section>
+}
+@if (loading) {
+  <p role="status">Loading existing players and league divisions...</p>
+}
+@if (error) {
+  <div class="import-error" role="alert">{{ error }} @if (!context && !loading) {
+    <button mat-button type="button" (click)="loadContext()">Retry</button>
+    }@if (context && !importing && !loading) {
+    <button mat-button type="button" (click)="loadContext()">Reload league data</button>
+  }</div>
+}
 
- <section class="file-drop" *ngIf="context" (dragover)="$event.preventDefault()" (drop)="drop($event)"><label for="player-import-file">Choose a roster file or drop it here</label><input id="player-import-file" type="file" accept=".txt,.csv,.xlsx,.xls" (change)="choose($event)" [disabled]="importing || parsing"><p>TXT, CSV, XLSX or binary XLS · 2 MB · up to 1000 players and 20 columns. Files stay in this browser.</p></section>
- <p *ngIf="parsing || analysing" role="status">{{ parsing ? 'Reading the selected file safely...' : 'Matching existing players...' }}</p>
- <mat-form-field appearance="outline" *ngIf="sheets.length > 1"><mat-label>Worksheet</mat-label><mat-select [(ngModel)]="sheet" (selectionChange)="changeSheet()" [disabled]="importing || parsing"><mat-option *ngFor="let name of sheets" [value]="name">{{ name }}</mat-option></mat-select></mat-form-field>
- <details class="column-mapping" *ngIf="grid" [open]="mappingOpen"><summary>Column mapping and header rows</summary><p>Verify the name columns. Unmapped columns are ignored; uploaded gender never changes a profile.</p>
- <div class="mapping-controls">
-  <mat-form-field><mat-label>Name format</mat-label><mat-select [(ngModel)]="nameFormat" (selectionChange)="analyse()" [disabled]="importing"><mat-option value="full">One full name column</mat-option><mat-option value="separate">Separate first and last names</mat-option></mat-select></mat-form-field>
-  <mat-form-field *ngIf="nameFormat === 'full'"><mat-label>Full name column</mat-label><mat-select [(ngModel)]="mapping.fullName" (selectionChange)="analyse()" [disabled]="importing"><mat-option [value]="-1">Choose a column</mat-option><mat-option *ngFor="let col of columns" [value]="col">{{ columnLabel(col) }}</mat-option></mat-select></mat-form-field>
-  <mat-form-field *ngIf="nameFormat === 'separate'"><mat-label>First name column</mat-label><mat-select [(ngModel)]="mapping.firstName" (selectionChange)="analyse()" [disabled]="importing"><mat-option [value]="-1">Choose a column</mat-option><mat-option *ngFor="let col of columns" [value]="col">{{ columnLabel(col) }}</mat-option></mat-select></mat-form-field>
-  <mat-form-field *ngIf="nameFormat === 'separate'"><mat-label>Last name column</mat-label><mat-select [(ngModel)]="mapping.lastName" (selectionChange)="analyse()" [disabled]="importing"><mat-option [value]="-1">Choose a column</mat-option><mat-option *ngFor="let col of columns" [value]="col">{{ columnLabel(col) }}</mat-option></mat-select></mat-form-field>
-  <mat-form-field><mat-label>Division column</mat-label><mat-select [(ngModel)]="mapping.division" (selectionChange)="analyse()" [disabled]="importing"><mat-option [value]="-1">Use default division</mat-option><mat-option *ngFor="let col of columns" [value]="col">{{ columnLabel(col) }}</mat-option></mat-select></mat-form-field>
-  <mat-form-field><mat-label>Gender column (informational)</mat-label><mat-select [(ngModel)]="mapping.gender" (selectionChange)="analyse()" [disabled]="importing"><mat-option [value]="-1">Ignore</mat-option><mat-option *ngFor="let col of columns" [value]="col">{{ columnLabel(col) }}</mat-option></mat-select></mat-form-field>
-  <mat-form-field><mat-label>Header row (0 for none)</mat-label><input matInput type="number" min="0" [max]="grid.rows.length" [(ngModel)]="mapping.headerRow" [disabled]="importing"></mat-form-field>
-  <mat-form-field><mat-label>First data row</mat-label><input matInput type="number" min="1" [max]="grid.rows.length" [(ngModel)]="mapping.startRow" [disabled]="importing"></mat-form-field>
-  <button mat-stroked-button type="button" (click)="analyse()" [disabled]="importing || analysing">Apply mapping</button>
- </div>
- </details>
- <div class="import-summary" *ngIf="rows.length" role="group" aria-label="Import summary filters"><button mat-stroked-button type="button" *ngFor="let f of filters" (click)="setFilter(f)" [class.summary-active]="filter===f" [class.attention-summary]="f==='review' && summary.review" [attr.aria-pressed]="filter===f" [attr.data-summary-filter]="f">{{summary[f] || 0}} {{filterLabels[f]}}</button></div>
+@if (context) {
+  <section class="file-drop" (dragover)="$event.preventDefault()" (drop)="drop($event)"><label for="player-import-file">Choose a roster file or drop it here</label><input id="player-import-file" type="file" accept=".txt,.csv,.xlsx,.xls" (change)="choose($event)" [disabled]="importing || parsing"><p>TXT, CSV, XLSX or binary XLS · 2 MB · up to 1000 players and 20 columns. Files stay in this browser.</p></section>
+}
+@if (parsing || analysing) {
+  <p role="status">{{ parsing ? 'Reading the selected file safely...' : 'Matching existing players...' }}</p>
+}
+@if (sheets.length > 1) {
+  <mat-form-field appearance="outline"><mat-label>Worksheet</mat-label><mat-select [(ngModel)]="sheet" (selectionChange)="changeSheet()" [disabled]="importing || parsing">@for (name of sheets; track name) {
+  <mat-option [value]="name">{{ name }}</mat-option>
+}</mat-select></mat-form-field>
+}
+@if (grid) {
+  <details class="column-mapping" [open]="mappingOpen"><summary>Column mapping and header rows</summary><p>Verify the name columns. Unmapped columns are ignored; uploaded gender never changes a profile.</p>
+  <div class="mapping-controls">
+    <mat-form-field><mat-label>Name format</mat-label><mat-select [(ngModel)]="nameFormat" (selectionChange)="analyse()" [disabled]="importing"><mat-option value="full">One full name column</mat-option><mat-option value="separate">Separate first and last names</mat-option></mat-select></mat-form-field>
+    @if (nameFormat === 'full') {
+      <mat-form-field><mat-label>Full name column</mat-label><mat-select [(ngModel)]="mapping.fullName" (selectionChange)="analyse()" [disabled]="importing"><mat-option [value]="-1">Choose a column</mat-option>@for (col of columns; track col) {
+      <mat-option [value]="col">{{ columnLabel(col) }}</mat-option>
+    }</mat-select></mat-form-field>
+  }
+  @if (nameFormat === 'separate') {
+    <mat-form-field><mat-label>First name column</mat-label><mat-select [(ngModel)]="mapping.firstName" (selectionChange)="analyse()" [disabled]="importing"><mat-option [value]="-1">Choose a column</mat-option>@for (col of columns; track col) {
+    <mat-option [value]="col">{{ columnLabel(col) }}</mat-option>
+  }</mat-select></mat-form-field>
+}
+@if (nameFormat === 'separate') {
+  <mat-form-field><mat-label>Last name column</mat-label><mat-select [(ngModel)]="mapping.lastName" (selectionChange)="analyse()" [disabled]="importing"><mat-option [value]="-1">Choose a column</mat-option>@for (col of columns; track col) {
+  <mat-option [value]="col">{{ columnLabel(col) }}</mat-option>
+}</mat-select></mat-form-field>
+}
+<mat-form-field><mat-label>Division column</mat-label><mat-select [(ngModel)]="mapping.division" (selectionChange)="analyse()" [disabled]="importing"><mat-option [value]="-1">Use default division</mat-option>@for (col of columns; track col) {
+<mat-option [value]="col">{{ columnLabel(col) }}</mat-option>
+}</mat-select></mat-form-field>
+<mat-form-field><mat-label>Gender column (informational)</mat-label><mat-select [(ngModel)]="mapping.gender" (selectionChange)="analyse()" [disabled]="importing"><mat-option [value]="-1">Ignore</mat-option>@for (col of columns; track col) {
+<mat-option [value]="col">{{ columnLabel(col) }}</mat-option>
+}</mat-select></mat-form-field>
+<mat-form-field><mat-label>Header row (0 for none)</mat-label><input matInput type="number" min="0" [max]="grid.rows.length" [(ngModel)]="mapping.headerRow" [disabled]="importing"></mat-form-field>
+<mat-form-field><mat-label>First data row</mat-label><input matInput type="number" min="1" [max]="grid.rows.length" [(ngModel)]="mapping.startRow" [disabled]="importing"></mat-form-field>
+<button mat-stroked-button type="button" (click)="analyse()" [disabled]="importing || analysing">Apply mapping</button>
+</div>
+</details>
+}
+@if (rows.length) {
+  <div class="import-summary" role="group" aria-label="Import summary filters">@for (f of filters; track f) {
+    <button mat-stroked-button type="button" (click)="setFilter(f)" [class.summary-active]="filter===f" [class.attention-summary]="f==='review' && summary.review" [attr.aria-pressed]="filter===f" [attr.data-summary-filter]="f">{{summary[f] || 0}} {{filterLabels[f]}}</button>
+  }</div>
+}
 
- <table class="import-preview" *ngIf="rows.length"><thead><tr><th scope="col">Uploaded Name</th><th scope="col">Matched Existing Player</th><th scope="col">Division</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody><tr *ngFor="let row of visibleRows; trackBy: trackRow" [attr.data-import-row]="row.line" [class.import-attention]="needsAttention(row)" [class.import-reviewed]="row.line===lastReviewedLine">
-  <td data-label="Uploaded Name"><div>{{ row.uploadedName }}<small>Row {{ row.line }}<span *ngIf="row.sourceGender"> · File gender: {{ row.sourceGender }}</span></small></div></td>
-  <td data-label="Matched Existing Player"><div>{{ playerName(row.playerId) || 'Not confirmed' }}<small *ngIf="row.playerId">Player ID {{ row.playerId }} · {{ row.exact ? 'Unique exact name' : 'Administrator confirmed' }}</small></div></td>
-  <td data-label="Division"><div *ngIf="row.status === 'already' || row.status === 'added'; else divisionChoice">Existing assignment unchanged</div><ng-template #divisionChoice><mat-form-field><mat-label>Division for row {{ row.line }}</mat-label><mat-select [(ngModel)]="row.divisionId" (selectionChange)="changeDivision(row)" [disabled]="importing || row.status === 'invalid'"><mat-option [value]="null">Choose division</mat-option><mat-option [value]="0">No Division</mat-option><mat-option *ngFor="let d of context.divisions" [value]="d.id">{{ d.name || d.code }}</mat-option></mat-select></mat-form-field><small *ngIf="row.sourceDivision">File: {{ row.sourceDivision }}</small></ng-template></td>
-  <td data-label="Status"><div><strong><span *ngIf="needsAttention(row)" aria-hidden="true">? </span>{{ labels[row.status] }}</strong><small>{{ row.problem }}</small></div></td>
-  <td data-label="Action"><div><button mat-stroked-button type="button" (click)="review(row)" [disabled]="importing || row.status === 'invalid' || row.status === 'added'">{{ row.playerId ? 'Change match' : 'Review match' }}</button><button mat-button type="button" *ngIf="!row.playerId && (row.status === 'not-found' || row.status === 'review')" (click)="create(row)" [disabled]="importing">Create New Player</button></div></td>
- </tr></tbody></table>
- <p *ngIf="rows.length && !visibleRows.length">No preview rows match these filters.</p>
+@if (rows.length) {
+  <table class="import-preview"><thead><tr><th scope="col">Uploaded Name</th><th scope="col">Matched Existing Player</th><th scope="col">Division</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody>@for (row of visibleRows; track trackRow($index, row)) {
+  <tr [attr.data-import-row]="row.line" [class.import-attention]="needsAttention(row)" [class.import-reviewed]="row.line===lastReviewedLine">
+    <td data-label="Uploaded Name"><div>{{ row.uploadedName }}<small>Row {{ row.line }}@if (row.sourceGender) {
+      <span> · File gender: {{ row.sourceGender }}</span>
+    }</small></div></td>
+    <td data-label="Matched Existing Player"><div>{{ playerName(row.playerId) || 'Not confirmed' }}@if (row.playerId) {
+      <small>Player ID {{ row.playerId }} · {{ row.exact ? 'Unique exact name' : 'Administrator confirmed' }}</small>
+    }</div></td>
+    <td data-label="Division">@if (row.status === 'already' || row.status === 'added') {
+      <div>Existing assignment unchanged</div>
+    } @else {
+      <mat-form-field><mat-label>Division for row {{ row.line }}</mat-label><mat-select [(ngModel)]="row.divisionId" (selectionChange)="changeDivision(row)" [disabled]="importing || row.status === 'invalid'"><mat-option [value]="null">Choose division</mat-option><mat-option [value]="0">No Division</mat-option>@for (d of context.divisions; track d) {
+      <mat-option [value]="d.id">{{ d.name || d.code }}</mat-option>
+    }</mat-select></mat-form-field>@if (row.sourceDivision) {
+    <small>File: {{ row.sourceDivision }}</small>
+  }
+}</td>
+<td data-label="Status"><div><strong>@if (needsAttention(row)) {
+  <span aria-hidden="true">? </span>
+  }{{ labels[row.status] }}</strong><small>{{ row.problem }}</small></div></td>
+  <td data-label="Action"><div><button mat-stroked-button type="button" (click)="review(row)" [disabled]="importing || row.status === 'invalid' || row.status === 'added'">{{ row.playerId ? 'Change match' : 'Review match' }}</button>@if (!row.playerId && (row.status === 'not-found' || row.status === 'review')) {
+  <button mat-button type="button" (click)="create(row)" [disabled]="importing">Create New Player</button>
+}</div></td>
+</tr>
+}</tbody></table>
+}
+@if (rows.length && !visibleRows.length) {
+  <p>No preview rows match these filters.</p>
+}
 </main>
 <footer class="import-footer"><span>{{ importing ? 'Adding confirmed memberships. Please wait for the server.' : 'Only resolved existing players will be added. Unresolved rows are skipped.' }}</span><button mat-raised-button color="primary" type="button" (click)="importPlayers()" [disabled]="!ready.length || importing || parsing || analysing || loading">{{ importing ? 'Adding Players...' : 'Add '+ready.length+' Matched Players' }}</button></footer>

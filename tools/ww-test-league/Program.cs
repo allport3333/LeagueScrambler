@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -49,7 +49,7 @@ namespace LeagueHubDevelopmentSeed {
      if(plan!=null&&plan.NeedsSeparateTestPlayer)Require(preparePlayer&&authority.Value<bool>("allowTestAccountRelink"),"Both accounts currently link to the same player. Explicit approval to prepare/relink only the regular test account is required before seeding.");
      var originalPlayerIds=c.Players.AsNoTracking().Select(p=>p.Id).ToList();var excludeLink=plan!=null&&plan.NeedsSeparateTestPlayer?plan.Accounts.Single(a=>a.Email==RegularEmail).UserId:0;
      using(var tx=c.Database.BeginTransaction(IsolationLevel.Serializable)) {
-      c.Database.ExecuteSqlCommand("DECLARE @r int; EXEC @r=sys.sp_getapplock @Resource=N'LeagueHub.WWTestLeague.v1', @LockMode=N'Exclusive', @LockOwner=N'Transaction', @LockTimeout=5000; IF @r<0 THROW 50000,'Test league seeding is already running',1;");
+      c.Database.ExecuteSqlRaw("DECLARE @r int; EXEC @r=sys.sp_getapplock @Resource=N'LeagueHub.WWTestLeague.v1', @LockMode=N'Exclusive', @LockOwner=N'Transaction', @LockTimeout=5000; IF @r<0 THROW 50000,'Test league seeding is already running',1;");
       // A second process cannot pass the name check and insert a duplicate after the initial inspection.
       existing=c.Leagues.SingleOrDefault(l=>l.LeagueName==Name);
       if(mode=="create")Require(existing==null,"Test league was created by another process; retry create to verify it.");

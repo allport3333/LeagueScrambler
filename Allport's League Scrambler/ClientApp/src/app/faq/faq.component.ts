@@ -1,10 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { LeagueService } from '../services/league.service';
 interface FAQPart {text:string;route?:string;query?:any;}
 interface FAQItem {id:string;question:string;answer:FAQPart[];expanded:boolean;}
 interface FAQCategory {id:string;title:string;items:FAQItem[];}
-@Component({selector:'app-faq',templateUrl:'./faq.component.html',styleUrls:['./faq.component.css']})
+@Component({
+    selector: 'app-faq', templateUrl: './faq.component.html', styleUrls: ['./faq.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
+})
 export class FaqComponent implements OnInit,OnDestroy {
  selectedLeagueId:number=null;private subscription:Subscription;
  readonly categories:FAQCategory[]=[

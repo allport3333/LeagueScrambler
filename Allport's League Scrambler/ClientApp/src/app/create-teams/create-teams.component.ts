@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, Input, SimpleChanges } from '@angular/core';
+import { Component, OnInit, ViewChild, Input, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 import { KingQueenRoundScore } from '../data-models/KingQueenRoundScore';
@@ -9,7 +9,9 @@ import { MatTabGroup } from '@angular/material/tabs';
 @Component({
     selector: 'app-create-teams',
     templateUrl: './create-teams.component.html',
-    styleUrls: ['./create-teams.component.css']
+    styleUrls: ['./create-teams.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class CreateTeamsComponent implements OnInit {
     @Input() selectedLeagueDto!: Leagues;

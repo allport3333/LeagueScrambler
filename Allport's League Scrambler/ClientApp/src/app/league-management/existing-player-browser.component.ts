@@ -1,4 +1,4 @@
-import { Component, ElementRef, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { timeout } from 'rxjs/operators';
@@ -8,7 +8,9 @@ import { LeagueService } from '../services/league.service';
 @Component({
     selector: 'app-existing-player-browser',
     templateUrl: './existing-player-browser.component.html',
-    styleUrls: ['./existing-player-browser.component.css']
+    styleUrls: ['./existing-player-browser.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
     players: any[] = [];

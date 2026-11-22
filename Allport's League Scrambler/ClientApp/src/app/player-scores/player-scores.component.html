@@ -1,37 +1,42 @@
-<div class="page-loading" *ngIf="loading" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; margin-top: -200px;">
+@if (loading) {
+  <div class="page-loading" style="height: 200px; width: 400px; position: fixed; top: 50%; left: 50%; margin-top: -200px;">
     <h2 class="ml-4">Loading...</h2>
     <mat-spinner diameter="200"></mat-spinner>
-</div>
-<div *ngIf="!loading">
+  </div>
+}
+@if (!loading) {
+  <div>
     <table class='table'>
-        <thead>
-            <tr>
-                <th>First Name</th>
-                <th>Last Name</th>
-
-            </tr>
-        </thead>
-        <tbody *ngFor="let player of players">
-            <tr>
-                <td>{{ player.firstName }}</td>
-                <td>{{ player.lastName }}</td>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Score</th>
-                            <th>Date</th>
-
-                        </tr>
-                    </thead>
-                    <tbody *ngFor="let score of player.allPlayerScores">
-                        <tr>
-                            <td>{{score.playersScore}}</td>
-                            <td>{{score.date}}</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-            </tr>
+      <thead>
+        <tr>
+          <th>First Name</th>
+          <th>Last Name</th>
+        </tr>
+      </thead>
+      @for (player of players; track player) {
+        <tbody>
+          <tr>
+            <td>{{ player.firstName }}</td>
+            <td>{{ player.lastName }}</td>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Score</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              @for (score of player.allPlayerScores; track score) {
+                <tbody>
+                  <tr>
+                    <td>{{score.playersScore}}</td>
+                    <td>{{score.date}}</td>
+                  </tr>
+                </tbody>
+              }
+            </table>
+          </tr>
         </tbody>
+      }
     </table>
-</div>
+  </div>
+}

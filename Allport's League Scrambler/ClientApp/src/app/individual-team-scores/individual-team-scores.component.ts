@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { StatisticsService } from '../services/statistics.service';
 import { LeagueService } from '../services/league.service';
 import { LoginService } from '../services/login.service';
@@ -8,7 +8,9 @@ import { Leagues } from '../data-models/leagues.model';
 @Component({
     selector: 'app-individual-team-scores',
     templateUrl: './individual-team-scores.component.html',
-    styleUrls: ['./individual-team-scores.component.css']
+    styleUrls: ['./individual-team-scores.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class IndividualTeamScoresComponent implements OnInit {
     teamScores: LeagueTeamScoreDto[] = [];

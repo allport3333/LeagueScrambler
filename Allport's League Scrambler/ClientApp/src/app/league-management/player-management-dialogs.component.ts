@@ -1,4 +1,4 @@
-import {Component, Inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, Inject, OnDestroy, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import {forkJoin, Subscription} from 'rxjs';
 import {timeout} from 'rxjs/operators';
@@ -6,17 +6,35 @@ import {PlayerService} from '../services/player.service';
 import {LeagueService} from '../services/league.service';
 import {normalName, importPlayerCandidates} from './player-import';
 
-@Component({selector:'app-league-player-edit',styleUrls:['./player-management-dialogs.component.css'],template:`
+@Component({
+    selector: 'app-league-player-edit', styleUrls: ['./player-management-dialogs.component.css'], template: `
  <h2 mat-dialog-title>Edit Player</h2>
- <div mat-dialog-content><p *ngIf="loading" role="status">Loading current membership...</p><p *ngIf="error" role="alert">{{error}}</p>
- <ng-container *ngIf="member"><section class="edit-profile"><h3>Player Profile</h3><p class="secondary">Name changes update this global player profile in every league. Player ID {{member.player.id}} stays the same.</p>
- <p *ngIf="!member.canEditProfile" class="secondary">Profile names can only be changed by an application administrator. You can manage this league's membership.</p>
- <mat-form-field appearance="outline"><mat-label>First Name</mat-label><input matInput [(ngModel)]="firstName" required maxlength="100" [readonly]="!member.canEditProfile || busy"></mat-form-field>
- <mat-form-field appearance="outline"><mat-label>Last Name</mat-label><input matInput [(ngModel)]="lastName" required maxlength="100" [readonly]="!member.canEditProfile || busy"></mat-form-field></section>
- <section class="edit-membership"><h3>League Membership</h3><p>{{data.leagueName}}</p><p>Current division: <strong>{{member.leagueDivisionName || 'No Division'}}</strong></p>
- <mat-form-field appearance="outline"><mat-label>Division</mat-label><mat-select [(ngModel)]="divisionId" [disabled]="busy"><mat-option [value]="0">No Division</mat-option><mat-option *ngFor="let d of divisions" [value]="d.id">{{d.name || d.code}}</mat-option></mat-select></mat-form-field>
- <div class="team-note" *ngIf="member.teams && member.teams.length"><strong>Existing teams</strong><p *ngFor="let t of member.teams">{{t.teamName}} &middot; {{t.division || 'No Division'}}</p><p>Team assignments and team divisions are managed separately and stay unchanged.</p></div></section></ng-container></div>
- <div mat-dialog-actions><button mat-button color="warn" type="button" (click)="remove()" [disabled]="busy || loading || !member">Remove from League</button><button mat-button type="button" [disabled]="busy" mat-dialog-close>Cancel</button><button mat-raised-button color="primary" type="button" (click)="save()" [disabled]="busy || loading || !member || !validNames() || !changed">{{busy?'Saving...':'Save Changes'}}</button></div>`})
+ <div mat-dialog-content>@if (loading) {
+   <p role="status">Loading current membership...</p>
+   }@if (error) {
+   <p role="alert">{{error}}</p>
+ }
+ @if (member) {
+   <section class="edit-profile"><h3>Player Profile</h3><p class="secondary">Name changes update this global player profile in every league. Player ID {{member.player.id}} stays the same.</p>
+   @if (!member.canEditProfile) {
+     <p class="secondary">Profile names can only be changed by an application administrator. You can manage this league's membership.</p>
+   }
+   <mat-form-field appearance="outline"><mat-label>First Name</mat-label><input matInput [(ngModel)]="firstName" required maxlength="100" [readonly]="!member.canEditProfile || busy"></mat-form-field>
+   <mat-form-field appearance="outline"><mat-label>Last Name</mat-label><input matInput [(ngModel)]="lastName" required maxlength="100" [readonly]="!member.canEditProfile || busy"></mat-form-field></section>
+   <section class="edit-membership"><h3>League Membership</h3><p>{{data.leagueName}}</p><p>Current division: <strong>{{member.leagueDivisionName || 'No Division'}}</strong></p>
+   <mat-form-field appearance="outline"><mat-label>Division</mat-label><mat-select [(ngModel)]="divisionId" [disabled]="busy"><mat-option [value]="0">No Division</mat-option>@for (d of divisions; track d) {
+   <mat-option [value]="d.id">{{d.name || d.code}}</mat-option>
+ }</mat-select></mat-form-field>
+ @if (member.teams && member.teams.length) {
+   <div class="team-note"><strong>Existing teams</strong>@for (t of member.teams; track t) {
+   <p>{{t.teamName}} &middot; {{t.division || 'No Division'}}</p>
+   }<p>Team assignments and team divisions are managed separately and stay unchanged.</p></div>
+ }</section>
+ }</div>
+ <div mat-dialog-actions><button mat-button color="warn" type="button" (click)="remove()" [disabled]="busy || loading || !member">Remove from League</button><button mat-button type="button" [disabled]="busy" mat-dialog-close>Cancel</button><button mat-raised-button color="primary" type="button" (click)="save()" [disabled]="busy || loading || !member || !validNames() || !changed">{{busy?'Saving...':'Save Changes'}}</button></div>`,
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
+})
 export class LeaguePlayerEditComponent implements OnInit,OnDestroy {
     loading=true;busy=false;error='';member:any;divisions:any[]=[];divisionId=0;firstName='';lastName='';private scope:Subscription;private read:Subscription;
     constructor(@Inject(MAT_DIALOG_DATA)public data:any,public ref:MatDialogRef<LeaguePlayerEditComponent>,private players:PlayerService,private leagues:LeagueService){}
@@ -37,18 +55,32 @@ export class LeaguePlayerEditComponent implements OnInit,OnDestroy {
     ngOnDestroy():void{if(this.scope)this.scope.unsubscribe();if(this.read)this.read.unsubscribe();}
 }
 
-@Component({selector:'app-import-player-create',styleUrls:['./player-management-dialogs.component.css'],template:`
+@Component({
+    selector: 'app-import-player-create', styleUrls: ['./player-management-dialogs.component.css'], template: `
  <h2 mat-dialog-title>Create New Player</h2><p class="uploaded-name">{{data.row.uploadedName}}</p>
  <form #form="ngForm" (ngSubmit)="create()"><div mat-dialog-content>
- <p class="secondary">Create a player profile only. Add them to {{data.leagueName}} later using the import confirmation.</p>
- <p *ngIf="!data.row.firstName">The uploaded full name is not split automatically. Review both name fields.</p>
- <mat-form-field appearance="outline"><mat-label>First Name</mat-label><input matInput name="firstName" [(ngModel)]="firstName" (ngModelChange)="checkDuplicates()" required maxlength="100" [disabled]="busy"></mat-form-field>
- <mat-form-field appearance="outline"><mat-label>Last Name</mat-label><input matInput name="lastName" [(ngModel)]="lastName" (ngModelChange)="checkDuplicates()" required maxlength="100" [disabled]="busy"></mat-form-field>
- <mat-form-field appearance="outline"><mat-label>Gender</mat-label><mat-select name="gender" [(ngModel)]="gender" required [disabled]="busy"><mat-option value="Male">Male</mat-option><mat-option value="Female">Female</mat-option></mat-select></mat-form-field>
- <section class="duplicate-warning" *ngIf="suggestions.length"><strong>{{exact?'Existing players already use this name. Choose the correct record.':'Possible existing players — review before creating a separate profile.'}}</strong>
- <button mat-stroked-button type="button" *ngFor="let p of suggestions" (click)="use(p)" [disabled]="busy">Use {{p.firstName}} {{p.lastName}} · ID {{p.id}} · {{p.isMale?'Men':'Women'}}</button>
- <mat-checkbox *ngIf="!exact" name="reviewed" [(ngModel)]="reviewed" [disabled]="busy">I reviewed the possible matches and need a separate player profile.</mat-checkbox></section>
- <p *ngIf="error" role="alert">{{error}}</p></div><div mat-dialog-actions><button mat-button type="button" mat-dialog-close [disabled]="busy">Cancel</button><button mat-raised-button color="primary" type="submit" [disabled]="busy || form.invalid || !validNames() || exact || (suggestions.length > 0 && !reviewed)">{{busy?'Creating...':'Create Player'}}</button></div></form>`})
+   <p class="secondary">Create a player profile only. Add them to {{data.leagueName}} later using the import confirmation.</p>
+   @if (!data.row.firstName) {
+     <p>The uploaded full name is not split automatically. Review both name fields.</p>
+   }
+   <mat-form-field appearance="outline"><mat-label>First Name</mat-label><input matInput name="firstName" [(ngModel)]="firstName" (ngModelChange)="checkDuplicates()" required maxlength="100" [disabled]="busy"></mat-form-field>
+   <mat-form-field appearance="outline"><mat-label>Last Name</mat-label><input matInput name="lastName" [(ngModel)]="lastName" (ngModelChange)="checkDuplicates()" required maxlength="100" [disabled]="busy"></mat-form-field>
+   <mat-form-field appearance="outline"><mat-label>Gender</mat-label><mat-select name="gender" [(ngModel)]="gender" required [disabled]="busy"><mat-option value="Male">Male</mat-option><mat-option value="Female">Female</mat-option></mat-select></mat-form-field>
+   @if (suggestions.length) {
+     <section class="duplicate-warning"><strong>{{exact?'Existing players already use this name. Choose the correct record.':'Possible existing players — review before creating a separate profile.'}}</strong>
+     @for (p of suggestions; track p) {
+       <button mat-stroked-button type="button" (click)="use(p)" [disabled]="busy">Use {{p.firstName}} {{p.lastName}} · ID {{p.id}} · {{p.isMale?'Men':'Women'}}</button>
+     }
+     @if (!exact) {
+       <mat-checkbox name="reviewed" [(ngModel)]="reviewed" [disabled]="busy">I reviewed the possible matches and need a separate player profile.</mat-checkbox>
+     }</section>
+   }
+   @if (error) {
+     <p role="alert">{{error}}</p>
+     }</div><div mat-dialog-actions><button mat-button type="button" mat-dialog-close [disabled]="busy">Cancel</button><button mat-raised-button color="primary" type="submit" [disabled]="busy || form.invalid || !validNames() || exact || (suggestions.length > 0 && !reviewed)">{{busy?'Creating...':'Create Player'}}</button></div></form>`,
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
+})
 export class ImportPlayerCreateComponent implements OnInit {
     firstName='';lastName='';gender='';busy=false;error='';suggestions:any[]=[];exact=false;reviewed=false;
     constructor(@Inject(MAT_DIALOG_DATA)public data:any,public ref:MatDialogRef<ImportPlayerCreateComponent>,private players:PlayerService){}

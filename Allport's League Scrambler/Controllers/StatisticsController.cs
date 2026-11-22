@@ -9,7 +9,6 @@ using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
 
 namespace Allport_s_League_Scrambler.Controllers
 {

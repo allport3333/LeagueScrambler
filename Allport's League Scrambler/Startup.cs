@@ -2,8 +2,6 @@ using dotenv.net;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -13,7 +11,7 @@ using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Net.Mail;
 using System.Text;
@@ -33,10 +31,11 @@ namespace Allport_s_League_Scrambler
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc(options => options.SuppressAsyncSuffixInActionNames = false)
+                .AddNewtonsoftJson();
             services.AddSpaStaticFiles(configuration =>
             {
-                configuration.RootPath = "ClientApp/dist";
+                configuration.RootPath = "ClientApp/dist/browser";
             });
 
             // Configure authentication with cookie settings
@@ -111,7 +110,7 @@ namespace Allport_s_League_Scrambler
             });
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -126,18 +125,21 @@ namespace Allport_s_League_Scrambler
             app.UseHttpsRedirection();
             app.UseStaticFiles(PwaStaticFiles());
             app.UseSpaStaticFiles(PwaStaticFiles());
+            app.UseRouting();
             app.UseAuthentication();
+            app.UseAuthorization();
 
-            app.UseMvc(routes =>
+            app.UseEndpoints(endpoints =>
             {
-                routes.MapRoute(
+                endpoints.MapControllerRoute(
                     name: "default",
-                    template: "{controller}/{action=Index}/{id?}");
+                    pattern: "{controller}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
             });
 
             app.UseSpa(spa =>
             {
-                spa.Options.SourcePath = "ClientApp";
+                spa.Options.SourcePath = System.IO.Path.Combine(env.ContentRootPath, "ClientApp");
                 spa.Options.DefaultPageStaticFileOptions = PwaStaticFiles();
 
                 if (env.IsDevelopment())

@@ -1,5 +1,23 @@
 # Dependency migration inventory
 
+## Final acceptance update — 2026-11-22
+
+The verified versions below are installed, built and now exercised through real account-backed API/browser and SQL persistence testing, not only fixture compilation. Both frontend build modes and backend Debug/Release pass. Final npm tree/audits and backend/active-tool NuGet audits report no peer conflicts or known vulnerable packages. The latest package is staging-package-accepted; no dependency override or further framework/package change was needed for the EF/reset compatibility fixes. The baseline inventory and earlier target-selection notes are historical and are not instructions to rerun migrations. See RESULTS.md/SECURITY.md for current acceptance and remaining server/device/vendor maintenance limits.
+
+## Effective verified versions — 2026-11-22
+
+The historical inventory below is retained. Angular/Core/CLI/build/Material/CDK/Service Worker **22.3.0**, TypeScript **6.0.3**, RxJS **7.8.2**, Zone **0.16.3**, Node **22.23.5**, angular-eslint **22.8.0**, ESLint **10.15.0**, typescript-eslint **8.73.0**, Vitest/coverage **5.1.1** and jsdom **31.0.1** are installed and verified, not merely planned. Clean npm ci and npm ls passed without peer-conflict bypasses. Full and production-only npm audits report zero known vulnerabilities. Root functional Playwright stays **1.55.1**.
+
+Main backend and all five existing verification/seeding projects now target **net10.0**. The new isolated read-integration runner also targets net10.0. SDK **10.0.404**, local shared runtime **10.0.15**, EF SQL Server/MVC Newtonsoft/SpaServices packages **10.0.15**, Newtonsoft.Json **13.0.4**, ConfigurationManager **10.0.15**, dotenv.net **3.2.1**. All projects build. Main and six-tool transitive NuGet audits return no vulnerable packages. Removal of old ASP.NET Core metapackages and unused EF6/JWT/OAuth/WindowsCompatibility eliminates obsolete paths; modern platform/framework references supply ASP.NET APIs. Preserved System.Configuration usage has an explicit supported package. Main production framework deployment remains unchanged until a separately authorized release.
+
+Exact audits: `artifacts/modernization/{net10-nuget-audit.json,net10-tool-audit-summary.json,nuget-*.json}` under tests/functional. Frontend package locks and final npm audits are retained in the same artifact root. See SECURITY.md for all eleven prior alert dispositions and GitHub/local distinctions.
+
+## Final frontend testing/tooling decision (continuation)
+
+Registry peer metadata was reverified at `artifacts/modernization/final-test-tooling-metadata.json`: Angular build 22.3.0 accepts Vitest 4.0.8 or 5.x; Vitest 5.1.1, jsdom 31.0.1, angular-eslint 22.8.0, typescript-eslint 8.73.0 and ESLint 10.15.0 have compatible Node/TypeScript peer ranges for the planned Node 22.23.5 / TypeScript 6.0.3 target. These are investigated targets, not yet installed or verified application checkpoints.
+
+After the Angular 22 framework checkpoint, use the official application-builder migration and Angular's unit-test builder for the obsolete Jasmine/Karma scaffolds; preserve meaningful assertions and the existing Playwright browser suites. The existing-project Vitest refactoring schematic is explicitly experimental, so inspect its output and repair fixture providers manually rather than claiming automatic test conversion is proof of correctness. Keep Zone-based application behavior. Do not mass-format legacy source to clear lint debt. Sources: https://angular.dev/guide/testing/migrating-to-vitest and official npm peer metadata.
+
 Baseline: 0d30bc9. Registry metadata is in artifacts/modernization/target-registry.json.
 
 |Scope|Package|Original range|Classification|Approach|

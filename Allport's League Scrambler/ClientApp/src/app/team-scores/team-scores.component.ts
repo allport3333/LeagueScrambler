@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { forkJoin, Subscription } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
 import { LeagueTeams } from '../data-models/leagueTeams.model';
@@ -22,7 +22,9 @@ interface MatchupEditor {
 @Component({
     selector: 'app-team-scores',
     templateUrl: './team-scores.component.html',
-    styleUrls: ['./team-scores.component.less']
+    styleUrls: ['./team-scores.component.less'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class TeamScoresComponent implements OnInit, OnDestroy {
     teams: LeagueTeams[] = [];

@@ -1,7 +1,11 @@
-import { Component, Input, OnChanges, OnDestroy } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
-@Component({ selector: 'app-detailed-player-stats', templateUrl: './detailed-player-stats.component.html', styleUrls: ['../player-stats-tabs/profile-statistics.shared.css', './grouped-rounds.css'] })
+@Component({
+    selector: 'app-detailed-player-stats', templateUrl: './detailed-player-stats.component.html', styleUrls: ['../player-stats-tabs/profile-statistics.shared.css', './grouped-rounds.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
+})
 export class DetailedPlayerStatsComponent implements OnChanges, OnDestroy {
  @Input() playerId: number; @Input() leagueId: number;
  loading = false; error = ''; performanceStats: any = null; history: any[] = []; detailedGroups: any[] = []; teammates: any[] = [];

@@ -1,36 +1,37 @@
-import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { configureComponentTests } from '../../test-support';
+import { ScramblerComponent } from './scrambler.component';
 
-import { CounterComponent } from './counter.component';
-
-describe('CounterComponent', () => {
-  let component: CounterComponent;
-  let fixture: ComponentFixture<CounterComponent>;
-
-  beforeEach(waitForAsync(() => {
-    TestBed.configureTestingModule({
-      declarations: [ CounterComponent ]
-    })
-    .compileComponents();
-  }));
-
-  beforeEach(() => {
-    fixture = TestBed.createComponent(CounterComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should display a title', waitForAsync(() => {
-    const titleText = fixture.nativeElement.querySelector('h1').textContent;
-    expect(titleText).toEqual('Counter');
-  }));
-
-  it('should start with count 0, then increments by 1 when clicked', waitForAsync(() => {
-    const countElement = fixture.nativeElement.querySelector('strong');
-    expect(countElement.textContent).toEqual('0');
-
-    const incrementButton = fixture.nativeElement.querySelector('button');
-    incrementButton.click();
-    fixture.detectChanges();
-    expect(countElement.textContent).toEqual('1');
-  }));
+describe('Scrambler setup after framework migration', () => {
+ let fixture: ComponentFixture<ScramblerComponent>;
+ beforeEach(async () => {
+  await configureComponentTests();
+  fixture = TestBed.createComponent(ScramblerComponent);
+  fixture.detectChanges();
+  await Promise.resolve();
+  fixture.detectChanges();
+ });
+ it('renders the existing setup with all four rules collapsed by default', () => {
+  expect(fixture.nativeElement.textContent).toContain('Scrambler Setup');
+  const rules = fixture.nativeElement.querySelector('details.scramble-rules');
+  expect(rules.open).toBe(false);
+  expect(rules.querySelectorAll('mat-checkbox').length).toBe(4);
+ });
+ it('retains an enabled rule while its disclosure closes and reopens', () => {
+  const rules = fixture.nativeElement.querySelector('details.scramble-rules');
+  rules.open = true;
+  rules.dispatchEvent(new Event('toggle'));
+  const option = Array.from(rules.querySelectorAll('mat-checkbox')).find((element: HTMLElement) => element.textContent.includes('Prioritize fewer')) as HTMLElement;
+  option.querySelector('input').click();
+  fixture.detectChanges();
+  expect(fixture.componentInstance.prioritizePreviousTeammates).toBe(true);
+  rules.open = false;
+  rules.dispatchEvent(new Event('toggle'));
+  rules.open = true;
+  rules.dispatchEvent(new Event('toggle'));
+  fixture.detectChanges();
+  expect(fixture.componentInstance.prioritizePreviousTeammates).toBe(true);
+  expect(rules.querySelector('summary').getAttribute('aria-expanded')).toBe('true');
+ });
 });

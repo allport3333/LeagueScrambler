@@ -1,18 +1,27 @@
 <section class="league-schedule">
- <h2>League Schedule</h2>
- <div *ngIf="loading" class="schedule-state" role="status"><p>Loading schedule...</p><mat-spinner diameter="40"></mat-spinner></div>
- <div *ngIf="error && !loading" class="schedule-state" role="alert"><p>{{ error }}</p><button mat-stroked-button type="button" (click)="retrySchedule()">Retry Schedule</button></div>
- <ng-container *ngIf="!loading && !error && selectedWeek">
-  <div class="schedule-controls"><nav class="week-navigation" aria-label="Schedule weeks">
-   <button mat-icon-button type="button" aria-label="Previous Week" [disabled]="activeTabIndex === 0" (click)="selectWeek(activeTabIndex - 1)"><mat-icon>chevron_left</mat-icon></button>
-   <mat-form-field appearance="outline"><mat-label>Scheduled week</mat-label><mat-select aria-label="Scheduled week" [value]="activeTabIndex" (selectionChange)="selectWeek($event.value)"><mat-option *ngFor="let week of schedule;let index=index" [value]="index">Week {{ week.weekNumber }} &middot; {{ week.date | date:'mediumDate' }}</mat-option></mat-select></mat-form-field>
-   <button mat-icon-button type="button" aria-label="Next Week" [disabled]="activeTabIndex === schedule.length - 1" (click)="selectWeek(activeTabIndex + 1)"><mat-icon>chevron_right</mat-icon></button>
+  <h2>League Schedule</h2>
+  @if (loading) {
+    <div class="schedule-state" role="status"><p>Loading schedule...</p><mat-spinner diameter="40"></mat-spinner></div>
+  }
+  @if (error && !loading) {
+    <div class="schedule-state" role="alert"><p>{{ error }}</p><button mat-stroked-button type="button" (click)="retrySchedule()">Retry Schedule</button></div>
+  }
+  @if (!loading && !error && selectedWeek) {
+    <div class="schedule-controls"><nav class="week-navigation" aria-label="Schedule weeks">
+      <button mat-icon-button type="button" aria-label="Previous Week" [disabled]="activeTabIndex === 0" (click)="selectWeek(activeTabIndex - 1)"><mat-icon>chevron_left</mat-icon></button>
+      <mat-form-field appearance="outline"><mat-label>Scheduled week</mat-label><mat-select aria-label="Scheduled week" [value]="activeTabIndex" (selectionChange)="selectWeek($event.value)">@for (week of schedule; track week; let index = $index) {
+      <mat-option [value]="index">Week {{ week.weekNumber }} &middot; {{ week.date | date:'mediumDate' }}</mat-option>
+    }</mat-select></mat-form-field>
+    <button mat-icon-button type="button" aria-label="Next Week" [disabled]="activeTabIndex === schedule.length - 1" (click)="selectWeek(activeTabIndex + 1)"><mat-icon>chevron_right</mat-icon></button>
   </nav>
   <div class="schedule-actions"><button mat-stroked-button (click)="currentWeek()">Current Week</button><button mat-raised-button color="primary" (click)="openFullSchedule()">Full Schedule</button></div></div>
-  <p class="schedule-state" *ngFor="let event of selectedWeek.events">{{event.title}}</p>
+  @for (event of selectedWeek.events; track event) {
+    <p class="schedule-state">{{event.title}}</p>
+  }
   <div class="schedule-matchups" aria-live="polite">
-   <ng-container *ngFor="let week of [selectedWeek]">
-                    <mat-card appearance="outlined" *ngFor="let match of week.matches"
+    @for (week of [selectedWeek]; track week) {
+      @for (match of week.matches; track match) {
+        <mat-card appearance="outlined"
                               [ngStyle]="{
               'background-color': match.division === 'Gold' ? '#FFF8DC' :
                                  match.division === 'Silver' ? '#E0E0E0' :
@@ -28,26 +37,25 @@
               'border-radius': '8px',
               'transition': 'transform 0.2s, box-shadow 0.2s'
           }"
-                              (mouseenter)="match.hovered = true"
-                              (mouseleave)="match.hovered = false"
-                              [style.transform]="match.hovered ? 'scale(1.03)' : 'scale(1)'"
-                              [style.boxShadow]="match.hovered ? '0 4px 12px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.2)'">
-
-                        <!-- Match Header -->
-                        <mat-card-header style="text-align: center; display: flex; flex-direction: column;">
-                            <mat-card-title style="text-align: center; font-weight: bold;">
-                                <app-team-roster-button [teamId]="match.team1Id" [leagueId]="leagueId" [teamName]="match.team1Name" [leagueName]="leagueName"></app-team-roster-button>
-                            </mat-card-title>
-                            <mat-card-subtitle style="text-align: center; font-size: 14px; color: gray;">
-                                vs
-                            </mat-card-subtitle>
-                            <mat-card-title style="text-align: center; font-weight: bold;">
-                                <app-team-roster-button [teamId]="match.team2Id" [leagueId]="leagueId" [teamName]="match.team2Name" [leagueName]="leagueName"></app-team-roster-button>
-                            </mat-card-title>
-                        </mat-card-header>
-
-                        <!-- Division Tag -->
-                        <mat-chip-option *ngIf="match.division"
+          (mouseenter)="match.hovered = true"
+          (mouseleave)="match.hovered = false"
+          [style.transform]="match.hovered ? 'scale(1.03)' : 'scale(1)'"
+          [style.boxShadow]="match.hovered ? '0 4px 12px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.2)'">
+          <!-- Match Header -->
+          <mat-card-header style="text-align: center; display: flex; flex-direction: column;">
+            <mat-card-title style="text-align: center; font-weight: bold;">
+              <app-team-roster-button [teamId]="match.team1Id" [leagueId]="leagueId" [teamName]="match.team1Name" [leagueName]="leagueName"></app-team-roster-button>
+            </mat-card-title>
+            <mat-card-subtitle style="text-align: center; font-size: 14px; color: gray;">
+              vs
+            </mat-card-subtitle>
+            <mat-card-title style="text-align: center; font-weight: bold;">
+              <app-team-roster-button [teamId]="match.team2Id" [leagueId]="leagueId" [teamName]="match.team2Name" [leagueName]="leagueName"></app-team-roster-button>
+            </mat-card-title>
+          </mat-card-header>
+          <!-- Division Tag -->
+          @if (match.division) {
+            <mat-chip-option
                                   [ngStyle]="{
                   'background-color': match.division === 'Gold' ? '#FFF8DC' :
                                      match.division === 'Silver' ? '#E0E0E0' :
@@ -56,36 +64,62 @@
                   'font-weight': 'bold',
                   'margin-top': '10px'
               }"
-                                  style="align-self: center;">
-                            {{ match.division }} Division
-                        </mat-chip-option>
-                    </mat-card>
-   </ng-container>
+              style="align-self: center;">
+              {{ match.division }} Division
+            </mat-chip-option>
+          }
+        </mat-card>
+      }
+    }
   </div>
-  <p class="schedule-state" *ngIf="!selectedWeek.matches || !selectedWeek.matches.length">No matchups scheduled for this week.</p>
- </ng-container>
- <p *ngIf="!loading && !error && !schedule.length" class="schedule-state">No schedule available for this league.</p>
+  @if (!selectedWeek.matches || !selectedWeek.matches.length) {
+    <p class="schedule-state">No matchups scheduled for this week.</p>
+  }
+}
+@if (!loading && !error && !schedule.length) {
+  <p class="schedule-state">No schedule available for this league.</p>
+}
 </section>
 
 <ng-template #fullScheduleDialog>
- <div class="season-dialog-layout">
-  <header><div><h2 mat-dialog-title>Full Schedule</h2><p>{{ leagueName }}</p></div><button mat-icon-button aria-label="Close full schedule" (click)="closeFullSchedule()"><mat-icon>close</mat-icon></button></header>
-  <mat-form-field><mat-label>Print / view division</mat-label><mat-select [(ngModel)]="fullDivision" (selectionChange)="filterFullSchedule()"><mat-option value="">Entire League</mat-option><mat-option *ngFor="let d of fullDivisions" [value]="d">{{d}}</mat-option></mat-select></mat-form-field>
+  <div class="season-dialog-layout">
+    <header><div><h2 mat-dialog-title>Full Schedule</h2><p>{{ leagueName }}</p></div><button mat-icon-button aria-label="Close full schedule" (click)="closeFullSchedule()"><mat-icon>close</mat-icon></button></header>
+    <mat-form-field><mat-label>Print / view division</mat-label><mat-select [(ngModel)]="fullDivision" (selectionChange)="filterFullSchedule()"><mat-option value="">Entire League</mat-option>@for (d of fullDivisions; track d) {
+    <mat-option [value]="d">{{d}}</mat-option>
+  }</mat-select></mat-form-field>
   <mat-dialog-content>
-   <p *ngIf="loading" role="status">Loading schedule...</p><p *ngIf="error" role="alert">{{ error }}</p>
-   <div id="full-season-tables"><p *ngIf="!schedule.length && !loading">No schedule available for this league.</p>
-    <div class="season-week-grid"><section class="season-week" *ngFor="let week of fullScheduleWeeks;let i=index" [class.current-season-week]="isCurrentWeek(week)">
-     <h3>Week {{ week.weekNumber }} &middot; {{ calendarDate(week.date) | date:'mediumDate' }}</h3>
-     <table [attr.aria-label]="'Week '+week.weekNumber+' matchups'"><colgroup><col><col class="season-versus-column"><col></colgroup>
-      <tbody *ngFor="let group of week.groups">
-       <tr class="season-division" *ngIf="group.division"><th colspan="3" scope="rowgroup">{{ group.division }}</th></tr>
-       <tr class="season-match" *ngFor="let match of group.matches"><td><app-team-roster-button [teamId]="match.team1Id" [leagueId]="leagueId" [teamName]="match.team1Name" [leagueName]="leagueName"></app-team-roster-button></td><td class="season-versus"><span aria-label="versus">v</span></td><td><app-team-roster-button [teamId]="match.team2Id" [leagueId]="leagueId" [teamName]="match.team2Name" [leagueName]="leagueName"></app-team-roster-button></td></tr>
-      </tbody>
-     </table>
-     <p class="season-event" *ngFor="let event of week.events">{{ event }}</p><p *ngIf="!week.matches || !week.matches.length">No matchups scheduled.</p>
-    </section></div>
-   </div>
-  </mat-dialog-content>
-  <mat-dialog-actions align="end"><button mat-raised-button color="primary" (click)="printFullSchedule()" [disabled]="loading || !!error || !schedule.length">Print Full Schedule</button></mat-dialog-actions>
- </div>
+    @if (loading) {
+      <p role="status">Loading schedule...</p>
+      }@if (error) {
+      <p role="alert">{{ error }}</p>
+    }
+    <div id="full-season-tables">@if (!schedule.length && !loading) {
+      <p>No schedule available for this league.</p>
+    }
+    <div class="season-week-grid">@for (week of fullScheduleWeeks; track week; let i = $index) {
+      <section class="season-week" [class.current-season-week]="isCurrentWeek(week)">
+        <h3>Week {{ week.weekNumber }} &middot; {{ calendarDate(week.date) | date:'mediumDate' }}</h3>
+        <table [attr.aria-label]="'Week '+week.weekNumber+' matchups'"><colgroup><col><col class="season-versus-column"><col></colgroup>
+        @for (group of week.groups; track group) {
+          <tbody>
+            @if (group.division) {
+              <tr class="season-division"><th colspan="3" scope="rowgroup">{{ group.division }}</th></tr>
+            }
+            @for (match of group.matches; track match) {
+              <tr class="season-match"><td><app-team-roster-button [teamId]="match.team1Id" [leagueId]="leagueId" [teamName]="match.team1Name" [leagueName]="leagueName"></app-team-roster-button></td><td class="season-versus"><span aria-label="versus">v</span></td><td><app-team-roster-button [teamId]="match.team2Id" [leagueId]="leagueId" [teamName]="match.team2Name" [leagueName]="leagueName"></app-team-roster-button></td></tr>
+            }
+          </tbody>
+        }
+      </table>
+      @for (event of week.events; track event) {
+        <p class="season-event">{{ event }}</p>
+        }@if (!week.matches || !week.matches.length) {
+        <p>No matchups scheduled.</p>
+      }
+    </section>
+  }</div>
+</div>
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button mat-raised-button color="primary" (click)="printFullSchedule()" [disabled]="loading || !!error || !schedule.length">Print Full Schedule</button></mat-dialog-actions>
+</div>
 </ng-template>

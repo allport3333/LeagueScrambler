@@ -1,9 +1,13 @@
-import {Component,Input,OnChanges,OnDestroy,Output,EventEmitter} from '@angular/core';
+import {Component, Input, OnChanges, OnDestroy, Output, EventEmitter, ChangeDetectionStrategy} from '@angular/core';
 import {forkJoin,Subscription} from 'rxjs';
 import {StatisticsService} from '../services/statistics.service';
 import {scheduleEventDescription} from '../league-schedule/schedule-presentation';
 import {selectNextGames} from './next-game-selection';
-@Component({selector:'app-player-next-game',templateUrl:'./player-next-game.component.html',styleUrls:['./player-next-game.component.css']})
+@Component({
+    selector: 'app-player-next-game', templateUrl: './player-next-game.component.html', styleUrls: ['./player-next-game.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
+})
 export class PlayerNextGameComponent implements OnChanges,OnDestroy {
  @Output() gamesLoaded=new EventEmitter<any>();
  @Input() playerId:number;@Input() leagueId:number;

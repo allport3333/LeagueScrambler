@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { StatisticsService } from '../services/statistics.service';
 import { TeamWithPlayersDto } from '../data-models/DTOs';
 import { TeamUpdateService } from '../services/team-update.service';
@@ -6,7 +6,9 @@ import { TeamUpdateService } from '../services/team-update.service';
 @Component({
     selector: 'app-league-teams',
     templateUrl: './league-teams.component.html',
-    styleUrls: ['./league-teams.component.css']
+    styleUrls: ['./league-teams.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class LeagueTeamsComponent implements OnInit {
     @Input() leagueId: number | null = null;

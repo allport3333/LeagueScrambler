@@ -1,7 +1,7 @@
 // Presentation/integration checks only: every API intercepted, all writes/external URLs blocked.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {chromium,expect}=require('@playwright/test');const {BASE_URL,assertLocalUrl}=require('../helpers/safety.cjs');
-const out=path.resolve(__dirname,'../score-links-evidence');fs.mkdirSync(out,{recursive:true});let browser;
+const out=process.env.LEAGUE_TEST_OUT?path.resolve(process.env.LEAGUE_TEST_OUT):path.resolve(__dirname,'../score-links-evidence');fs.mkdirSync(out,{recursive:true});let browser;
 const leagues=[{id:101,leagueName:'Synthetic A'},{id:202,leagueName:'Synthetic B'}];
 const scores=[{scrambleNumber:12,roundId:1,score:30,roundWon:0,isSubScore:true,kingQueenTeamId:107,hasSavedScore:true},
  {scrambleNumber:12,roundId:2,score:0,roundWon:0,isSubScore:true,kingQueenTeamId:107,hasSavedScore:true},
@@ -27,6 +27,7 @@ function teamResponse(scramble,malformed=false){
  browser=await chromium.launch();const context=await browser.newContext({serviceWorkers:'block',viewport:{width:390,height:844}});
  const writes=[],errors=[],checks=[];let malformed=false;
  await context.route('**/*',async route=>{
+  if(await require('./fixture-asset.cjs')(route))return;
   let u;try{u=assertLocalUrl(route.request().url());}catch{await route.abort();return;}
   const p=u.pathname.toLowerCase();if(route.request().method()!=='GET'){if(p.startsWith('/api/'))writes.push(p);await route.abort();return;}
   if(!p.startsWith('/api/')){await route.continue();return;}
@@ -44,7 +45,9 @@ function teamResponse(scramble,malformed=false){
   await route.fulfill({status,contentType:'application/json',body:JSON.stringify(body)});
  });
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
- const pane=()=>page.locator('app-league-standings .standings-card > mat-tab-group > .mat-tab-body-wrapper > mat-tab-body.mat-tab-body-active > .mat-tab-body-content > mat-tab-group > .mat-tab-body-wrapper > mat-tab-body.mat-tab-body-active > .mat-tab-body-content');
+ const pane=()=>page.locator('app-league-standings .standings-card > mat-tab-group > :is(.mat-tab-body-wrapper,.mat-mdc-tab-body-wrapper) > mat-tab-body:is(.mat-tab-body-active,.mat-mdc-tab-body-active) > :is(.mat-tab-body-content,.mat-mdc-tab-body-content) > mat-tab-group > :is(.mat-tab-body-wrapper,.mat-mdc-tab-body-wrapper) > mat-tab-body:is(.mat-tab-body-active,.mat-mdc-tab-body-active) > :is(.mat-tab-body-content,.mat-mdc-tab-body-content)');
+ const visibleScores=()=>page.locator('.comparison-table:visible');
+ const selectedRound=()=>visibleScores().locator('tr').filter({has:page.locator('.selected-score')});
  async function standings(mode='round',division=8,gender='women'){
   await page.goto(BASE_URL+`/standings?leagueId=202&standingsMode=${mode}&divisionId=${division}&gender=${gender}`);
   await expect(pane().locator('.mobile-player-row')).toHaveCount(1);await page.waitForTimeout(550);
@@ -56,27 +59,27 @@ function teamResponse(scramble,malformed=false){
   await expect(page.locator('.team-card').last()).toContainText('Synthetic Man');
   await expect(page.locator('mat-select')).toContainText('Week 1');await expect(page.locator('mat-select')).toContainText('11/1/26');
   const q=new URL(page.url()).searchParams;assert.equal(q.get('leagueId'),'202');assert.equal(q.get('scrambleNumber'),'12');
-  await expect(page.locator('.team-card').first().locator('.score-item').first()).toContainText('30');
-  await expect(page.locator('.sub-score-badge')).toHaveCount(1);await expect(page.locator('.won-badge')).toHaveCount(1);
-  await expect(page.locator('.score-item.selected-score')).toHaveCount(round?1:0);
+  await expect(visibleScores().locator('tbody tr').first().locator('td').first()).toContainText('30');
+  await expect(page.locator('.sub-score-badge:visible')).toHaveCount(1);await expect(page.locator('.won-badge:visible')).toHaveCount(1);
+  await expect(visibleScores().locator('.selected-score')).toHaveCount(round?1:0);
  }
  if(process.argv.includes('--league-change')){
   await page.goto(BASE_URL+'/kqmatchups?fromStandings=1&leagueId=202&scrambleNumber=12&kingQueenTeamId=107&playerId=707&roundId=1');await single(true);
-  await page.evaluate(()=>{const d=window.ng.probe(document.querySelector('app-nav-menu'));d.injector.get(window.ng.coreTokens.NgZone).run(()=>d.componentInstance.onLeagueChange(101));});
+  await require('./angular-component.cjs')(page,'app-nav-menu',component=>component.onLeagueChange(101));
   await page.waitForURL(u=>u.searchParams.get('leagueId')==='101'&&!u.searchParams.has('fromStandings'));
   await expect(page.locator('.match-row')).toHaveCount(0);await expect(page.getByRole('button',{name:'Back to Standings'})).toHaveCount(0);
-  assert.equal(await page.evaluate(()=>window.ng.probe(document.querySelector('app-nav-menu')).componentInstance.selectedLeagueId),101);
+  assert.equal(await require('./angular-component.cjs')(page,'app-nav-menu',component=>component.selectedLeagueId),101);
   assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
   fs.writeFileSync(path.join(out,'league-change.json'),JSON.stringify({passed:true,check:'Changing navigation league exits score focus and preserves the newly selected league',databaseAccess:false}));
   console.log('Focused navigation league-change check passed.');await browser.close();return;
  }
  await standings('round');let details=await expand();
- await expect(details.locator('a')).toHaveCount(2);await expect(details.locator('a').nth(1)).toHaveText('0');
+ await expect(details.locator('a.standings-score-link')).toHaveCount(2);await expect(details.locator('a.standings-score-link').nth(1)).toHaveText('0');
  await expect(details.locator('.mobile-round-scores li').last().locator('a')).toHaveCount(0);
- assert.equal(await details.locator('a').first().innerText(),'15');
+ assert.equal(await details.locator('a.standings-score-link').first().innerText(),'15');
  await page.screenshot({path:path.join(out,'mobile-clickable-standings.png'),fullPage:true});
- await details.locator('a').first().click();await single(true);
- await expect(page.locator('.score-item.selected-score')).toContainText('Round 1');
+ await details.locator('a.standings-score-link').first().click();await single(true);
+ await expect(selectedRound()).toContainText('Round 1');
  await page.screenshot({path:path.join(out,'mobile-single-matchup.png'),fullPage:true});
  checks.push('Mobile round link: adjusted 15 opens raw 30, correct league B/week scramble12, teams107/108, Match#4 and round highlight');
  await page.reload();await single(true);checks.push('Direct link refresh restores the same week and single matchup');
@@ -84,24 +87,25 @@ function teamResponse(scramble,malformed=false){
  await expect(pane().locator('.mobile-player-row')).toHaveCount(1);
  assert.equal(new URL(page.url()).searchParams.get('divisionId'),'8');assert.equal(new URL(page.url()).searchParams.get('gender'),'women');
  await expect(pane()).toContainText('Synthetic Woman');checks.push('Back returns to league B, round mode, Gold and Women');
- details=await expand();await details.locator('a').nth(1).click();await single(true);
- await expect(page.locator('.score-item.selected-score')).toContainText('Round 2');checks.push('Legitimate saved zero remains linked; placeholder zero is not linked');
+ details=await expand();await details.locator('a.standings-score-link').nth(1).click();await single(true);
+ await expect(selectedRound()).toContainText('Round 2');checks.push('Legitimate saved zero remains linked; placeholder zero is not linked');
  await page.getByRole('button',{name:'View All Matchups',exact:true}).click();await expect(page.locator('.match-row')).toHaveCount(4);
  await expect(page.locator('.bye-players')).toContainText('Synthetic Bye');checks.push('View All restores all four original matchups and bye players');
- await standings('matchup');details=await expand();await details.locator('a').first().click();await single(false);
+ await standings('matchup');details=await expand();await details.locator('a.standings-score-link').first().click();await single(false);
  checks.push('Mobile combined matchup link shows original individual rounds without a false round highlight');
  await page.locator('mat-select').click();await page.getByRole('option',{name:/Week 2/}).click();
  await expect(page.locator('.match-row')).toHaveCount(4);checks.push('Manual week change removes single-match filter');
  await standings('round');await pane().getByRole('button',{name:'View Full Table',exact:true}).click();
- await pane().locator('.standings-full-table a').first().click();await single(true);checks.push('Mobile full-table score link works');
+ await pane().locator('.standings-full-table a.standings-score-link').first().click();await single(true);checks.push('Mobile full-table score link works');
  await page.setViewportSize({width:1366,height:768});await standings('round');
  await expect(pane().locator('tbody td').nth(2).locator('a')).toHaveCount(0);
- await pane().locator('.standings-full-table a').first().click();await single(true);checks.push('Desktop individual score links work; total columns remain plain');
+ await pane().locator('.standings-full-table a.standings-score-link').first().click();await single(true);checks.push('Desktop individual score links work; total columns remain plain');
  await page.screenshot({path:path.join(out,'desktop-single-matchup.png'),fullPage:true});
  for(const [division,gender,player] of [[0,'men',708],[0,'women',707],[9,'men',708]]){
-  await standings('round',division,gender);await pane().locator('.standings-full-table a').first().click();await single(true);
+  await standings('round',division,gender);await pane().locator('.standings-full-table a.standings-score-link').first().click();await single(true);
   assert.equal(new URL(page.url()).searchParams.get('playerId'),String(player));
-  await expect(page.locator('.score-item.selected-score').locator('..').locator('..')).toContainText(player===708?'Synthetic Man':'Synthetic Woman');
+  const selectedColumn=await visibleScores().locator('.selected-score').evaluate(cell=>cell.cellIndex);
+  await expect(visibleScores().locator('thead th').nth(selectedColumn)).toHaveText(player===708?'Team 8':'Team 7');
  }
  checks.push('Overall Men/Women and division Men/Women links retain the correct stable player/team association');
  for(const bad of ['leagueId=999&scrambleNumber=12&kingQueenTeamId=107&playerId=707',
@@ -116,7 +120,7 @@ function teamResponse(scramble,malformed=false){
  await expect(page.locator('[role=alert]')).toBeVisible();await expect(page.locator('.match-row')).toHaveCount(0);malformed=false;
  checks.push('Missing league/week/team/player/round, incomplete link and incomplete pairing never show an unrelated matchup');
  await page.goto(BASE_URL+'/kqmatchups');await expect(page.locator('mat-option')).toHaveCount(0);
- await page.waitForFunction(()=>window.ng.probe(document.querySelector('app-kqmatchups')).componentInstance.queriedScrambles.length===2);
+ await expect.poll(()=>require('./angular-component.cjs')(page,'app-kqmatchups',component=>component.queriedScrambles.length)).toBe(2);
  await page.locator('mat-select').click();await page.getByRole('option',{name:/Week 1/}).click();
  await expect(page.locator('.match-row')).toHaveCount(4);await expect(page.getByRole('button',{name:'Back to Standings'})).toHaveCount(0);
  await expect(page.locator('.bye-players')).toBeVisible();checks.push('Normal browsing retains week selection, all matchups and byes without extra back button');

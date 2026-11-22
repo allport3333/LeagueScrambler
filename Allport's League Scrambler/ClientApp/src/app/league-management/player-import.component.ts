@@ -1,4 +1,4 @@
-import { AfterViewChecked, Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { timeout } from 'rxjs/operators';
@@ -7,7 +7,11 @@ import { LeagueService } from '../services/league.service';
 import { ImportGrid, ImportMapping, ImportRow, analyseImport, detectMapping, normalName, refreshImportRows, importRowMatchesFilter, importRowNeedsAttention } from './player-import';
 import { ImportPlayerCreateComponent } from './player-management-dialogs.component';
 
-@Component({selector:'app-player-import',templateUrl:'./player-import.component.html',styleUrls:['./player-import.component.css']})
+@Component({
+    selector: 'app-player-import', templateUrl: './player-import.component.html', styleUrls: ['./player-import.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
+})
 export class PlayerImportComponent implements OnInit, OnDestroy, AfterViewChecked {
     context:any=null; loading=true; parsing=false; analysing=false; importing=false; error=''; notice=''; file:File; filename='';
     grid:ImportGrid; mapping:ImportMapping; sheets:string[]=[]; sheet=''; rows:ImportRow[]=[]; visibleRows:ImportRow[]=[]; ready:ImportRow[]=[];

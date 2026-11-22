@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'../../..'),ts=require(path.join(root,"Allport
 const file=path.join(root,"Allport's League Scrambler/ClientApp/src/app/scrambler/scramble-engine.ts");
 const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES5,module:ts.ModuleKind.CommonJS}}).outputText;
 const compiled=new Module(file,module);compiled.filename=file;compiled.paths=module.paths;compiled._compile(code,file);const e=compiled.exports;
-const out=path.resolve(__dirname,'../artifacts/scrambler-v2');fs.mkdirSync(out,{recursive:true});
+const out=process.env.LEAGUE_TEST_OUT?path.resolve(process.env.LEAGUE_TEST_OUT):path.resolve(__dirname,'../artifacts/scrambler-v2');fs.mkdirSync(out,{recursive:true});
 function random(seed=1234567){let value=seed>>>0;return max=>{const limit=4294967296-(4294967296%max);let next;do{value^=value<<13;value^=value>>>17;value^=value<<5;next=value>>>0;}while(next>=limit);return next%max;};}
 const pool=(n,male=Math.ceil(n/2))=>Array.from({length:n},(_,i)=>({id:i+1,isMale:i<male,firstName:'Player',lastName:String(i+1)}));
 const signature=teams=>teams.map(t=>t.map(p=>p.id).sort((a,b)=>a-b).join(',')).join('|');
