@@ -1,3 +1,4 @@
+import { onLeagueResume } from '../pwa/pending-work.service';
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
@@ -44,7 +45,7 @@ export class FetchDataComponent implements OnInit, OnDestroy {
         private router: Router,
         public playerService: PlayerService,
         public leagueService: LeagueService
-    ) { }
+    ) { onLeagueResume(() => { if (this.selectedLeagueId && !this.loading) this.loadPlayersByLeague(this.selectedLeagueId); }); }
 
     ngOnInit(): void {
         // Listen for league changes

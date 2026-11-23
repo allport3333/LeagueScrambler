@@ -61,20 +61,30 @@ internal static class IntegrationCheck
   }
  }
  static async Task Run(string[] args) {
-  Need(args.Length == 2 || args.Length == 3 && (args[2] == "--serve" || args[2] == "--development" || args[2] == "--authorized-development" || args[2] == "--cleanup-authorized"), "Pass Development env path, artifact directory and supported test mode.");
+  if (args.Length is >= 1 and <= 3 && args[0] == "--verify-team-development") {
+   await TeamVerification.Run(args, Run);
+   return;
+  }
+  if (args.Length == 1 && args[0] == "--cookie-cancellation") {
+   await CookieCancellationScenario.Run();
+   return;
+  }
+  Need(args.Length == 2 || args.Length == 3 && (args[2] == "--serve" || args[2] == "--development" || args[2] == "--authorized-development" || args[2] == "--cleanup-authorized" || args[2] == "--team-authorization" || args[2] == "--cleanup-team-authorization"), "Pass Development env path, artifact directory and supported test mode.");
   var development = args.Length == 3 && args[2] == "--development";
-  var authorized = args.Length == 3 && args[2] == "--authorized-development";
-  var cleanup = args.Length == 3 && args[2] == "--cleanup-authorized";
+  var focused = args.Length == 3 && (args[2] == "--team-authorization" || args[2] == "--cleanup-team-authorization");
+  var authorized = focused || args.Length == 3 && args[2] == "--authorized-development";
+  var cleanup = args.Length == 3 && (args[2] == "--cleanup-authorized" || args[2] == "--cleanup-team-authorization");
   var root = Directory.GetCurrentDirectory();
   Need(File.Exists(Path.Combine(root, "tools/modernization/STATUS.md")), "Run from modernization root.");
   var output = Path.GetFullPath(args[1]);
   Need(output.StartsWith(Path.GetFullPath(Path.Combine(root, "tests/functional/artifacts/modernization")) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) && (cleanup ? Directory.Exists(output) : !Directory.Exists(output)), "Use an appropriate modernization artifact directory.");
   var source = Path.Combine(root, "Allport's League Scrambler");
-  Need(File.Exists(Path.Combine(source, "ClientApp/dist/browser/index.html")), "Copy the verified browser assets first.");
+  Need(focused || File.Exists(Path.Combine(source, "ClientApp/dist/browser/index.html")), "Copy the verified browser assets first.");
   var line = File.ReadLines(Path.GetFullPath(args[0])).Single(x => x.TrimStart().StartsWith("LEAGUESCRAMBLER_DB_CONNECTION=", StringComparison.Ordinal));
   var connection = new SqlConnectionStringBuilder(line.Substring(line.IndexOf('=') + 1).Trim().Trim('"', '\''));
   Need(connection.DataSource == "localhost" && connection.InitialCatalog == "LeagueScramblerDev" && connection.IntegratedSecurity &&
    string.IsNullOrEmpty(connection.UserID) && string.IsNullOrEmpty(connection.Password) && string.IsNullOrEmpty(connection.AttachDBFilename), "Refusing SQL target.");
+  if (focused) connection.DataSource = "lpc:localhost";
   connection.TrustServerCertificate = true; // Verified local test certificate only; never production configuration.
   Environment.SetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION", connection.ConnectionString);
   Environment.SetEnvironmentVariable("SMTP_SERVER", "localhost");
@@ -89,16 +99,24 @@ internal static class IntegrationCheck
    Need(reader.Read() && reader.GetString(0) == "LeagueScramblerDev" && reader.GetString(1).Equals(Environment.MachineName, StringComparison.OrdinalIgnoreCase) && reader.GetInt32(2) == 130, "Runtime SQL identity mismatch.");
   }
   Directory.CreateDirectory(output);
-  if (cleanup) { DevelopmentAuthorization.Configure(args[0], Path.Combine(output, "cleanup-recovery-results.json")); AuthenticatedScenario.RecoverCleanup(root, output); return; }
-  if (authorized) DevelopmentAuthorization.Configure(args[0], Path.Combine(output, "authorized-results.json"));
+  if (cleanup) { DevelopmentAuthorization.Configure(args[0], Path.Combine(output, "cleanup-recovery-results.json"), focused); AuthenticatedScenario.RecoverCleanup(root, output); return; }
+  if (authorized) DevelopmentAuthorization.Configure(args[0], Path.Combine(output, "authorized-results.json"), focused);
   var pickup = Path.Combine(output, "smtp-pickup"); Directory.CreateDirectory(pickup);
   var keyring = Path.Combine(output, "synthetic-cookie-keys"); Directory.CreateDirectory(keyring);
   // Staging pipeline serves the compiled production SPA; SQL remains the guarded Development database.
   // No real key ring, SMTP connection, account password or role is read or modified.
+  using var loopbackKey = focused ? System.Security.Cryptography.RSA.Create(2048) : null;
+  using var loopbackCertificate = focused
+   ? new System.Security.Cryptography.X509Certificates.CertificateRequest("CN=localhost", loopbackKey,
+      System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1)
+      .CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddHours(1))
+   : null;
   using var host = Allport_s_League_Scrambler.Program.CreateHostBuilder(Array.Empty<string>())
    .UseEnvironment(development ? "Development" : "Staging")
    .ConfigureLogging(logging => { logging.ClearProviders(); if (authorized) logging.AddProvider(new SanitizedExceptionLogger(Path.Combine(output, "server-exception-types.log"))); })
-   .ConfigureWebHost(web => web.UseEnvironment(development ? "Development" : "Staging").UseContentRoot(source).UseSetting(WebHostDefaults.ApplicationKey, typeof(Startup).Assembly.FullName).UseUrls(Origin))
+   .ConfigureWebHost(web => web.UseEnvironment(development ? "Development" : "Staging").UseContentRoot(source).UseSetting(WebHostDefaults.ApplicationKey, typeof(Startup).Assembly.FullName).UseUrls(Origin).ConfigureKestrel(options => {
+    if (focused) options.ConfigureHttpsDefaults(https => https.ServerCertificate = loopbackCertificate);
+   }))
    .ConfigureServices(services => {
     services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keyring)).SetApplicationName("LeagueHubModernizationReadOnlyHttpFixtures");
     if (!authorized) services.AddSingleton<IStartupFilter, ReadOnlyFilter>();
@@ -108,7 +126,7 @@ internal static class IntegrationCheck
   Need(Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION") == connection.ConnectionString, "Startup changed the guarded SQL target.");
   await host.StartAsync();
   try {
-   if (authorized) { await AuthenticatedScenario.Run(root, output, smtp); return; }
+   if (authorized) { await AuthenticatedScenario.Run(root, output, smtp, focused); return; }
    var checks = new List<object>();
    var options = host.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>();
    string Cookie(string scheme, string role, bool expired = false) {
@@ -132,31 +150,32 @@ internal static class IntegrationCheck
     checks.Add(new { path, status, legacyDigestMatched = digest != null }); return json;
    }
    var admin = Cookie("Cookies", "Admin");
-   var legacyAdmin = Cookie("LeagueAdminPassword", "LegacyAdmin");
+   const string retiredCookie = "LeagueScrambler.Admin=retired-cookie-placeholder";
    var ordinary = Cookie("Cookies", "Player");
    var manager = Cookie("Cookies", "Manager");
    foreach (var id in new[] { 37, 133 }) {
     foreach (var path in new[] { "/api/ScheduleManagement/" + id, "/api/ScrambleData/AvailableLeaguePlayers/" + id + "?includeMembers=true&membersOnly=true" }) {
-     await Get(path, 401); await Get(path, 403, ordinary); await Get(path, 403, manager);
-     await Get(path, 200, admin); await Get(path, 200, legacyAdmin); await Get(path, 401, Cookie("Cookies", "Admin", true));
+     // Signed tickets with no valid account must not grant any role.
+     await Get(path, 401); await Get(path, 401, ordinary); await Get(path, 401, manager);
+     await Get(path, 401, admin); await Get(path, 401, retiredCookie); await Get(path, 401, Cookie("Cookies", "Admin", true));
     }
    }
    var baseline = JObject.Parse(File.ReadAllText(Path.Combine(root, "tests/functional/artifacts/modernization/legacy-query-results.json")));
    string Digest(string name) => (string)((JArray)baseline["entries"]).Single(e => (string)e["Query"] == name)["OrderedDigest"];
    foreach (var id in new[] { 37, 133 }) {
-    await Get("/api/ScrambleData/AvailableLeaguePlayers/" + id + "?includeMembers=true&membersOnly=true", 200, admin, Digest("league-" + id + "/memberships"));
     await Get("/api/Statistics/league-standings/" + id, 200, null, Digest("league-" + id + "/team-standings"));
     await Get("/api/Statistics/GetLeagueSchedule/" + id, 200, null, Digest("league-" + id + "/public-schedule"));
     await Get("/api/ScrambleData/TeammateHistory/" + id, 200, null, Digest("league-" + id + "/history"));
    }
-   await Get("/api/Login/isauthenticated", 200, admin);
+   var invalidAccount = await Get("/api/Login/isauthenticated", 200, admin);
+   Need(!(bool)invalidAccount, "A signed cookie without a valid account authenticated.");
    var auth = await Get("/api/Login/isauthenticated", 200); Need(!(bool)auth, "Anonymous authenticated.");
    using (var request = new HttpRequestMessage(HttpMethod.Post, "/api/Login/logout")) {
-    request.Headers.Add("Cookie", admin + "; " + legacyAdmin);
+    request.Headers.Add("Cookie", admin + "; " + retiredCookie);
     using var response = await client.SendAsync(request); Need(response.StatusCode == HttpStatusCode.OK, "Logout failed.");
     var cleared = response.Headers.GetValues("Set-Cookie").ToArray();
-    Need(cleared.Any(c => c.StartsWith(options.Get("Cookies").Cookie.Name + "=;")) && cleared.Any(c => c.StartsWith("LeagueScrambler.Admin=;")), "Logout did not clear both schemes.");
-    checks.Add(new { path = "/api/Login/logout", status = 200, bothSchemesCleared = true });
+    Need(cleared.Any(c => c.StartsWith(options.Get("Cookies").Cookie.Name + "=;")), "Logout did not clear the account session.");
+    checks.Add(new { path = "/api/Login/logout", status = 200, accountCookieCleared = true });
    }
    foreach (var path in development ? new[] { "/", "/fetch-data", "/scrambler", "/league-management", "/resetpassword" } : new[] { "/", "/fetch-data", "/scrambler", "/league-management", "/resetpassword", "/manifest.webmanifest", "/ngsw.json", "/ngsw-worker.js" }) {
     using var response = await client.GetAsync(path); Need(response.StatusCode == HttpStatusCode.OK, "SPA/static route unavailable: " + path);
@@ -165,10 +184,9 @@ internal static class IntegrationCheck
    }
    Need(!Directory.GetFiles(pickup).Any(), "Unexpected email generated.");
    File.WriteAllText(Path.Combine(output, "http-results.json"), JsonConvert.SerializeObject(new { pass = true, realKestrel = true, realStartup = true, realSqlReads = true, syntheticAuthenticationOnly = true, databaseWrites = false, environment = (development ? "Development CLI proxy" : "Staging compiled SPA") + " / guarded Development SQL", checks }, Formatting.Indented));
-   Console.WriteLine("PASS: real HTTP/SQL read integration, auth boundaries, legacy JSON parity, logout and compiled SPA/PWA hosting (" + checks.Count + " checks).");
+   Console.WriteLine("PASS: real public HTTP/SQL reads, retired-cookie and invalid-account rejection, logout and compiled SPA/PWA hosting (" + checks.Count + " checks).");
    if (args.Length == 3) {
-    // Synthetic local fixture only. Never protect a real identity or use a real application's keys.
-    File.WriteAllText(Path.Combine(output, "browser-fixture.json"), JsonConvert.SerializeObject(new { origin = Origin, name = options.Get("LeagueAdminPassword").Cookie.Name, value = legacyAdmin.Substring(legacyAdmin.IndexOf('=') + 1), syntheticOnly = true }));
+    File.WriteAllText(Path.Combine(output, "browser-fixture.json"), JsonConvert.SerializeObject(new { origin = Origin, syntheticOnly = true }));
     Console.WriteLine("READONLY_INTEGRATION_READY");
     var deadline = DateTime.UtcNow.AddMinutes(15);
     while (DateTime.UtcNow < deadline && !File.Exists(Path.Combine(output, "stop-request"))) await Task.Delay(250);

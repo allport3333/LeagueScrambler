@@ -20,6 +20,8 @@ export interface Match {
     courtNumber: number;
     team1Name: string;
     team2Name: string;
+    team1Division?: string;
+    team2Division?: string;
     matchDescription: string;
     division: string;
 }

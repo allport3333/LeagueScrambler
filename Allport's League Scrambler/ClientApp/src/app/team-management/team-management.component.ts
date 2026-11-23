@@ -1,12 +1,13 @@
-import { Component, Input, OnInit, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, OnDestroy, OnChanges, SimpleChanges, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { forkJoin, map, Subscription } from 'rxjs';
+import { onLeagueResume, protectPendingWork } from '../pwa/pending-work.service';
 import { StatisticsService } from '../services/statistics.service';
-import { LeagueTeams } from '../data-models/leagueTeams.model';
-import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
-import { UntypedFormControl } from '@angular/forms';
-import { startWith, map } from 'rxjs/operators';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { TeamUpdateService } from '../services/team-update.service';
+import { TeamWithPlayersDto } from '../data-models/DTOs';
+import { Player } from '../data-models/player.model';
+import { ExistingPlayerBrowserComponent } from '../league-management/existing-player-browser.component';
 
 @Component({
     selector: 'app-team-management',
@@ -15,212 +16,188 @@ import { TeamUpdateService } from '../services/team-update.service';
     changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
-export class TeamManagementComponent implements OnInit {
+export class TeamManagementComponent implements OnChanges, OnDestroy {
     @Input() leagueId: number | null = null;
+    @Input() leagueName = '';
+    @ViewChild('newTeamDialog') newTeamDialog: TemplateRef<unknown>;
 
-    // CREATE A NEW TEAM
-    newTeamName: string = '';
-    newTeamDivision: string = 'Silver'; // Default division
-    creatingTeam = false;
-
-    // ADD PLAYER
-    teams: LeagueTeams[] = [];
+    teams: TeamWithPlayersDto[] = [];
+    private players: Player[] = [];
+    divisions: string[] = [];
+    divisionFilter: string | null = null;
     selectedTeamId: number | null = null;
-
-    allPlayers: Player[] = [];
-    filteredPlayers: Player[] = [];
-    searchTerm: string = '';
-    selectedPlayerId: number | null = null;
-    playerCtrl = new UntypedFormControl();  
-    selectedPlayer: Player | null = null;
+    newTeamName = '';
+    newTeamDivision = '';
+    creatingTeam = false;
+    creationError = '';
+    notice = '';
     loadingData = false;
+    dataError = '';
 
-    constructor(private statisticsService: StatisticsService, private playerService: PlayerService, private snackBar: MatSnackBar,
-        private teamUpdateService: TeamUpdateService) { }
+    private loadedLeague: number | null = null;
+    private request: Subscription;
+    private browser: MatDialogRef<ExistingPlayerBrowserComponent>;
+    private createDialog: MatDialogRef<unknown>;
+    private destroyed = false;
 
-    ngOnInit(): void {
-        // If we have a leagueId at start, load data
-        if (this.leagueId) {
-            this.loadTeams();
-            this.loadAllPlayers();
-        }
-
-        // We subscribe to changes in the FormControl (playerCtrl)
-        // whenever the user types or selects an option
-        this.playerCtrl.valueChanges
-            .pipe(
-                startWith(''),
-                map(value => this._filterPlayers(value))
-            )
-            .subscribe(filtered => {
-                this.filteredPlayers = filtered;
-            });
+    constructor(private stats: StatisticsService, private playersApi: PlayerService,
+        private updates: TeamUpdateService, private dialog: MatDialog) {
+        protectPendingWork(() => this.creatingTeam || !!(this.createDialog && this.newTeamName.trim()) ||
+            !!this.browser?.componentInstance?.pending.size);
+        onLeagueResume(() => {
+            if (!this.creatingTeam && !this.browser && !this.loadingData && this.request?.closed) this.loadData();
+        });
     }
-
 
     ngOnChanges(changes: SimpleChanges): void {
-        if (changes['leagueId']) {
-            const leagueId = changes['leagueId'].currentValue;
-            if (leagueId) {
-                this.loadTeams();
-                this.loadAllPlayers();
-            }
-        }
+        if (!changes.leagueId) return;
+        this.browser?.close();
+        this.createDialog?.close();
+        this.selectedTeamId = null;
+        this.divisionFilter = null;
+        this.notice = '';
+        this.loadedLeague = null;
+        this.loadData();
     }
 
-    private loadTeams(): void {
-        if (!this.leagueId) return;
-
-        this.loadingData = true;
-
-        this.statisticsService.GetTeamsByLeagueId(this.leagueId).subscribe({
-            next: (res) => {
-                this.teams = res;
-                this.loadingData = false;
-            },
-            error: (err) => {
-                console.error('Error loading teams:', err);
-                this.loadingData = false;
-            }
-        });
+    ngOnDestroy(): void {
+        this.destroyed = true;
+        this.request?.unsubscribe();
+        this.browser?.close();
+        this.createDialog?.close();
     }
 
-    private loadAllPlayers(): void {
-        if (!this.leagueId) return;
-
-        this.playerService.GetPlayersByLeague(this.leagueId).subscribe({
-            next: (players) => {
-                this.allPlayers = players;
-                this.filteredPlayers = [...players];
-            },
-            error: (err) => console.error('Error loading players:', err)
-        });
+    get visibleTeams(): TeamWithPlayersDto[] {
+        return this.divisionFilter === null ? this.teams : this.teams.filter(team => (team.division || '') === this.divisionFilter);
     }
 
-    // *** CREATE A NEW TEAM ***
-    createTeam(): void {
-        if (!this.leagueId) {
-            alert('No league selected.');
-            return;
-        }
-        if (!this.newTeamName) {
-            alert('Please enter a team name.');
-            return;
-        }
+    get selectedTeam(): TeamWithPlayersDto | undefined { return this.teams.find(team => team.id === this.selectedTeamId); }
+    get hasCurrentLeagueData(): boolean { return !!this.leagueId && this.loadedLeague === this.leagueId; }
 
-        this.creatingTeam = true;
-        this.statisticsService.AddLeagueTeam(this.leagueId, this.newTeamName, this.newTeamDivision).subscribe({
-            next: (newTeam) => {
-                alert(`Created new team: ${newTeam.teamName} in division: ${newTeam.division}`);
-                this.teamUpdateService.notifyTeamUpdate();
-                this.loadTeams();
-                this.newTeamName = '';
-                this.newTeamDivision = 'Silver'; // Reset to default
-                this.creatingTeam = false;
-            },
-            error: (err) => {
-                console.error('Error creating team:', err);
-                this.creatingTeam = false;
-            }
-        });
-    }
-
-    onSelectPlayer(player: Player) {
-        this.selectedPlayer = player;
-    }
-
-    // *** SEARCH/TYPEAHEAD FOR PLAYERS ***
-    onSearchChange(searchValue: string): void {
-        this.filteredPlayers = this.allPlayers.filter((player) =>
-            `${player.firstName} ${player.lastName}`.toLowerCase().includes(searchValue.toLowerCase())
-        );
-    }
-
-    displayPlayerName(player: Player): string {
-        return player ? `${player.firstName} ${player.lastName}` : '';
-    }
-
-    // *** ADD PLAYER TO TEAM ***
-    addPlayerToTeam(): void {
-        if (!this.selectedTeamId) {
-            this.snackBar.open('Please select a team first.', 'Close', {
-                duration: 3000,
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: ['custom-snackbar']
-            });
-            return;
-        }
-        if (!this.selectedPlayer) {
-            this.snackBar.open('Please select a player from the dropdown.', 'Close', {
-                duration: 3000,
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: ['custom-snackbar']
-            });
-            return;
-        }
-
-        // Find the selected team by ID to get the team name
-        const selectedTeam = this.teams.find(team => team.id === this.selectedTeamId);
-
-        if (!selectedTeam) {
-            this.snackBar.open('Selected team not found.', 'Close', {
-                duration: 3000,
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: ['red-snackbar']
-            });
-            return;
-        }
-
-        this.statisticsService.AddPlayerToLeagueTeam(this.selectedTeamId, this.selectedPlayer.id)
-            .subscribe({
-                next: () => {
-                    this.snackBar.open(
-                        `Player ${this.selectedPlayer.firstName} was added to ${selectedTeam.teamName}.`,
-                        'Close',
-                        {
-                            duration: 3000,
-                            horizontalPosition: 'center',
-                            verticalPosition: 'top',
-                            panelClass: ['custom-snackbar']
-                        }
-                    );
-                    this.selectedPlayer = null;
-                    this.teamUpdateService.notifyTeamUpdate();
-                    this.playerCtrl.setValue(''); // Clear input
-                },
-                error: (err) => {
-                    console.error('Error adding player to team:', err);
-                    this.snackBar.open('Error adding player to the team.', 'Close', {
-                        duration: 3000,
-                        horizontalPosition: 'center',
-                        verticalPosition: 'top',
-                        panelClass: ['red-snackbar']
-                    });
+    loadData(): void {
+        this.request?.unsubscribe();
+        const leagueId = this.leagueId;
+        this.dataError = '';
+        this.loadingData = !!leagueId && !this.hasCurrentLeagueData;
+        if (!leagueId || this.destroyed) return;
+        this.request = forkJoin([
+            this.stats.GetAllTeamsWithPlayers(leagueId),
+            this.playersApi.leagueRosterContext(leagueId)
+        ]).subscribe({
+            next: ([teams, context]) => {
+                if (!Array.isArray(teams) || !Array.isArray(context?.players) ||
+                    !Array.isArray(context?.members) || !Array.isArray(context?.divisions)) {
+                    this.loadFailed();
+                    return;
                 }
-            });
+                this.loadedLeague = leagueId;
+                this.teams = teams;
+                const enrolled = new Set(context.members.map(member => member.playerId));
+                this.players = context.players.filter(player => enrolled.has(player.id));
+                const names: string[] = context.divisions.map(division => division.name || division.code).filter(Boolean);
+                this.divisions = [...new Set([...names, ...teams.map(team => team.division || '')])];
+                this.loadingData = false;
+                this.selectDivision(this.divisionFilter);
+            },
+            error: () => this.loadFailed()
+        });
     }
 
+    private loadFailed(): void {
+        this.loadingData = false;
+        this.dataError = 'Unable to load league teams and players.';
+    }
 
-    private _filterPlayers(value: string | Player): Player[] {
-        // If user typed nothing or typed a partial object, return all
-        if (!value) {
-            return this.allPlayers;
+    selectDivision(division: string | null): void {
+        this.divisionFilter = division === null || this.divisions.includes(division) ? division : null;
+        if (!this.visibleTeams.some(team => team.id === this.selectedTeamId)) {
+            this.selectedTeamId = this.visibleTeams[0]?.id ?? null;
         }
+    }
 
-        // If value is actually a Player object, use that for display
-        let filterValue: string;
-        if (typeof value === 'string') {
-            filterValue = value.toLowerCase();
-        } else {
-            // 'value' is Player => e.g. { id: 5, firstName: 'John', lastName: 'Doe' }
-            filterValue = `${value.firstName} ${value.lastName}`.toLowerCase();
-        }
+    get teamCreationDivisions(): string[] {
+        return this.divisions.some(Boolean) ? this.divisions.filter(Boolean) : ['Gold', 'Silver', 'Bronze'];
+    }
 
-        return this.allPlayers.filter(player =>
-            (`${player.firstName} ${player.lastName}`).toLowerCase().includes(filterValue)
-        );
+    openCreate(): void {
+        if (this.createDialog || this.creatingTeam) return;
+        this.newTeamName = '';
+        const choices = this.teamCreationDivisions;
+        this.newTeamDivision = this.divisionFilter || (choices.includes('Silver') ? 'Silver' : choices[0]);
+        this.creationError = '';
+        const ref = this.dialog.open(this.newTeamDialog, { width: '400px', maxWidth: '94vw' });
+        this.createDialog = ref;
+        ref.afterClosed().subscribe(() => { if (this.createDialog === ref) this.createDialog = null; });
+    }
+
+    createTeam(): void {
+        const name = this.newTeamName.trim();
+        const leagueId = this.leagueId;
+        const division = this.newTeamDivision;
+        if (!leagueId || !name || !division || this.creatingTeam) return;
+        this.creatingTeam = true;
+        this.creationError = '';
+        const ref = this.createDialog;
+        if (ref) ref.disableClose = true;
+        this.stats.AddLeagueTeam(leagueId, name, division).subscribe({
+            next: team => {
+                this.creatingTeam = false;
+                this.updates.notifyTeamUpdate();
+                if (this.destroyed || this.leagueId !== leagueId) return;
+                this.teams = [...this.teams.filter(row => row.id !== team.id), { ...team, players: [] }];
+                if (!this.divisions.includes(team.division)) this.divisions = [...this.divisions, team.division];
+                this.divisionFilter = team.division;
+                this.selectedTeamId = team.id;
+                this.notice = team.teamName + ' was created.';
+                ref?.close();
+                this.loadData();
+            },
+            error: error => {
+                this.creatingTeam = false;
+                if (ref) ref.disableClose = false;
+                if (this.leagueId === leagueId) this.creationError = error.status === 409 ?
+                    'A team with that name already exists in this division.' : 'Unable to create the team. Try again.';
+            }
+        });
+    }
+
+    private eligiblePlayers(teams: TeamWithPlayersDto[]): Player[] {
+        const assigned = new Set(teams.flatMap(team => team.players.map(player => player.id)));
+        return this.players.filter(player => !assigned.has(player.id));
+    }
+
+    openPlayers(team: TeamWithPlayersDto): void {
+        const leagueId = this.leagueId;
+        if (!leagueId || this.browser) return;
+        this.request?.unsubscribe();
+        const ref = this.dialog.open(ExistingPlayerBrowserComponent, {
+            width: '94vw', maxWidth: '2200px', panelClass: ['existing-player-browser-panel', 'team-player-browser-panel'],
+            data: {
+                leagueId, leagueName: this.leagueName,
+                team: { id: team.id, name: team.teamName, division: team.division,
+                    players: this.eligiblePlayers(this.teams),
+                    refreshPlayers: () => this.stats.GetAllTeamsWithPlayers(leagueId).pipe(map(teams => {
+                        if (!this.destroyed && this.leagueId === leagueId) this.teams = teams;
+                        return this.eligiblePlayers(teams);
+                    })) },
+                onAdded: ({ player }: { player: Player }) => {
+                    if (!this.destroyed && this.leagueId === leagueId) {
+                        const current = this.teams.find(row => row.id === team.id);
+                        if (current && !current.players.some(row => row.id === player.id)) {
+                            this.request?.unsubscribe();
+                            current.players = [...current.players, {
+                                id: player.id, fullName: player.firstName + ' ' + player.lastName, isMale: player.isMale
+                            }];
+                        }
+                    }
+                    this.updates.notifyTeamUpdate();
+                }
+            }
+        });
+        this.browser = ref;
+        ref.afterClosed().subscribe(() => {
+            if (this.browser === ref) this.browser = null;
+            if (!this.destroyed && this.leagueId === leagueId) this.loadData();
+        });
     }
 }

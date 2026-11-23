@@ -1,3 +1,4 @@
+import { onLeagueResume } from '../pwa/pending-work.service';
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -13,9 +14,10 @@ export class PlayerStatsTabsComponent implements OnInit, OnDestroy {
     player: any = null; loading = false; error = ''; leagueError = ''; activeTab = 0;
     private subscriptions = new Subscription(); private version = 0; private key = ''; private resolvingLeague = false;
     private invalidLeagueRequest = false;
+    private headerRequest: Subscription;
     get selectingLeague(): boolean { return this.resolvingLeague; }
     readonly tabKeys = ['kq', 'team', 'player'];
-    constructor(private route: ActivatedRoute, private router: Router, private leagues: LeagueService, private stats: StatisticsService) { }
+    constructor(private route: ActivatedRoute, private router: Router, private leagues: LeagueService, private stats: StatisticsService) { onLeagueResume(() => { if (this.player && !this.loading && this.headerRequest?.closed) this.loadHeader(true); }); }
     ngOnInit() {
         this.subscriptions.add(this.route.params.subscribe(params => { this.playerId = Number(params.playerId); this.loadHeader(); }));
         this.subscriptions.add(this.route.queryParams.subscribe(params => {
@@ -55,10 +57,14 @@ export class PlayerStatsTabsComponent implements OnInit, OnDestroy {
     loadHeader(force = false) {
         if (!Number.isInteger(this.playerId) || this.playerId <= 0) { this.version++; this.key = ''; this.loading = false; this.player = null; this.error = 'This player profile is unavailable.'; return; }
         const key = this.playerId + ':' + (this.selectedLeagueId || ''); if (key === this.key && !force) { return; }
-        this.key = key; const version = ++this.version; this.player = null; this.loading = true; this.error = '';
-        this.subscriptions.add(this.stats.getPlayerProfile(this.playerId, this.selectedLeagueId).subscribe(player => {
+        this.headerRequest?.unsubscribe();
+        const background = force && key === this.key && !!this.player;
+        this.key = key; const version = ++this.version;
+        if (!background) this.player = null;
+        this.loading = !background; this.error = '';
+        this.headerRequest = this.stats.getPlayerProfile(this.playerId, this.selectedLeagueId).subscribe(player => {
             if (version !== this.version) { return; } this.player = player; this.loading = false;
-        }, error => { if (version !== this.version) { return; } this.loading = false; this.error = error.status === 404 ? 'This player could not be found.' : 'Unable to load this player. Please retry.'; }));
+        }, error => { if (version !== this.version) { return; } this.loading = false; this.error = error.status === 404 ? 'This player could not be found.' : 'Unable to load this player. Please retry.'; });
     }
-    ngOnDestroy() { this.version++; this.subscriptions.unsubscribe(); }
+    ngOnDestroy() { this.version++; this.headerRequest?.unsubscribe(); this.subscriptions.unsubscribe(); }
 }

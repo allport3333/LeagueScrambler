@@ -17,7 +17,7 @@
 }
 
     .clickable-row:hover {
-        background-color: #f8f9fa;
+        background-color: var(--hub-section, #f8f9fa);
     }
 
 table.mat-mdc-table {
@@ -58,7 +58,7 @@ table.signed-in-players-table td {
 
 /* Hover effect for rows */
 table.signed-in-players-table tr:hover {
-    background-color: #f8f9fa; /* Light gray hover effect */
+    background-color: var(--hub-section, #f8f9fa); /* Light gray hover effect */
 }
 
 /* Ensure header rows maintain consistent size */
@@ -68,7 +68,7 @@ table.signed-in-players-table th {
 }
 /* Styling for the locked message card */
 .locked-message-card {
-    background-color: #ffe6e6; /* Light red background */
+    background-color: var(--hub-loss-surface, #ffe6e6); /* Light red background */
     border: 1px solid #f44336; /* Red border */
     padding: 15px;
     border-radius: 8px;
@@ -106,7 +106,7 @@ table.signed-in-players-table th {
 }
 
     .signed-in-players-table th {
-        background-color: #f0f0f0;
+        background-color: var(--hub-header, #f0f0f0);
         font-weight: bold;
         padding: 8px;
     }

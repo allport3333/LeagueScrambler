@@ -1,3 +1,6 @@
+import { MatRadioModule } from '@angular/material/radio';
+import { PageLoadingComponent } from './page-loading.component';
+import { AppearanceComponent } from './appearance.component';
 import { ManageScheduleComponent } from './schedule-management/manage-schedule.component';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { environment } from '../environments/environment';
@@ -19,7 +22,7 @@ import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
 import { HomeComponent } from './home/home.component';
 import { ScramblerComponent } from './scrambler/scrambler.component';
-import { LeagueManagementGuard, ScramblerWorkspaceComponent, WorkspaceRouteComponent } from './scrambler/scrambler-workspace.component';
+import { LeagueManagementGuard, ScramblerWorkspaceComponent, WorkspaceRouteComponent, LeagueManagementDeniedComponent } from './scrambler/scrambler-workspace.component';
 import { FetchDataComponent } from './fetch-data/fetch-data.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -74,6 +77,7 @@ import { FaqComponent } from './faq/faq.component';
 import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
 
 @NgModule({ declarations: [
+        PageLoadingComponent, AppearanceComponent,
         AppComponent,
         NavMenuComponent,
         HomeComponent,
@@ -111,7 +115,8 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         FaqComponent,
         KqmatchupsComponent,
         ScramblerWorkspaceComponent,
-        WorkspaceRouteComponent
+        WorkspaceRouteComponent,
+        LeagueManagementDeniedComponent
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         FormsModule,
@@ -121,7 +126,7 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         MatButtonModule,
         MatSlideToggleModule,
         MatMenuModule,
-        MatProgressSpinnerModule,
+        MatProgressSpinnerModule, MatRadioModule,
         MatToolbarModule,
         MatIconModule,
         MatTableModule,
@@ -146,6 +151,7 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         MatTreeModule,
         MatSnackBarModule,
         RouterModule.forRoot([
+            { path: 'access-denied', component: LeagueManagementDeniedComponent },
             { path: '', component: HomeComponent, pathMatch: 'full' },
             { path: '', component: ScramblerWorkspaceComponent, children: [
                     { path: 'scrambler', component: WorkspaceRouteComponent },

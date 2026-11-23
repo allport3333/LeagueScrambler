@@ -1,14 +1,45 @@
-:host{display:block;min-width:0}.home-dashboard{max-width:1000px;margin:8px auto;padding:0 12px}.home-dashboard header,.home-dashboard h2{text-align:center;color:#29446c}.home-dashboard h1{font-size:26px;margin:8px 0}.home-dashboard h2{font-size:19px;margin:0 0 10px}.home-panel{padding:14px;background:#fff;border:1px solid #d5dfec;border-radius:5px;min-width:0;text-align:center}.home-table-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d7e1ed;padding:6px;text-align:center}td:first-child{overflow-wrap:break-word}ul{list-style:none;padding:0}li{display:flex;gap:8px;align-items:center;justify-content:center;border-bottom:1px solid #e2e7ed;padding:8px 0}li span:first-child{min-width:0;overflow-wrap:break-word}.home-win{color:#367447}a{color:#526e9f}@media(max-width:700px){.home-dashboard{padding:0 6px;margin:12px auto}.home-panel{padding:12px}li{font-size:14px}}
+:host{display:block;min-width:0}.home-dashboard{max-width:1000px;margin:8px auto;padding:0 12px}.home-dashboard header,.home-dashboard h2{text-align:center;color:var(--hub-heading, #29446c)}.home-dashboard h1{font-size:26px;margin:8px 0}.home-dashboard h2{font-size:19px;margin:0 0 10px}.home-panel{padding:14px;background:var(--hub-surface, #fff);border:1px solid var(--hub-border, #d5dfec);border-radius:5px;min-width:0;text-align:center}.home-table-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{border:1px solid var(--hub-border, #d7e1ed);padding:6px;text-align:center}td:first-child{overflow-wrap:break-word}ul{list-style:none;padding:0}li{display:flex;gap:8px;align-items:center;justify-content:center;border-bottom:1px solid #e2e7ed;padding:8px 0}li span:first-child{min-width:0;overflow-wrap:break-word}.home-win{color:#367447}a{color:var(--hub-link, #526e9f)}@media(max-width:700px){.home-dashboard{padding:0 6px;margin:12px auto}.home-panel{padding:12px}li{font-size:14px}}
 .home-upcoming{margin:12px auto}.home-upcoming ul{margin:0}.home-upcoming li{padding:2px 0}.home-upcoming a{display:flex;align-items:center;justify-content:center;line-height:1.4;min-height:44px}
 
-.recent-kq{max-width:620px;margin:12px auto}.recent-kq h2{margin-bottom:8px}.recent-kq p{margin:6px 0}.recent-kq strong{font-size:20px;color:#29446c}.recent-kq small{display:block;color:#607188;margin-bottom:8px}
+.recent-kq{max-width:620px;margin:12px auto}.recent-kq h2{margin-bottom:8px}.recent-kq p{margin:6px 0}.recent-kq strong{font-size:20px;color:var(--hub-heading, #29446c)}.recent-kq small{display:block;color:var(--hub-muted, #607188);margin-bottom:8px}
 
 .current-kq-standing{margin:8px 0}.current-kq-standing strong{font-size:18px}.current-kq-standing a{display:inline-block;min-height:32px;line-height:32px}.current-kq-standing small{margin-bottom:3px}
 
-.home-team{margin:12px auto}.home-team h2{margin-bottom:12px}.home-team-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}.home-team-sections>section{min-width:0}.home-team-sections h3{font-size:18px;color:#29446c;margin:0 0 10px}.home-team-sections>section+section{border-left:1px solid #d7e1ed;padding-left:16px}
-@media(max-width:700px){.home-team-sections{grid-template-columns:minmax(0,1fr);gap:12px}.home-team-sections>section+section{border-left:0;padding-left:0;border-top:1px solid #d7e1ed;padding-top:12px}}
+.home-team{margin:12px auto}.home-team h2{margin-bottom:12px}.home-team-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}.home-team-sections>section{min-width:0}.home-team-sections h3{font-size:18px;color:var(--hub-heading, #29446c);margin:0 0 10px}.home-team-sections>section+section{border-left:1px solid var(--hub-border, #d7e1ed);padding-left:16px}
+@media(max-width:700px){.home-team-sections{grid-template-columns:minmax(0,1fr);gap:12px}.home-team-sections>section+section{border-left:0;padding-left:0;border-top:1px solid var(--hub-border, #d7e1ed);padding-top:12px}}
 
-.home-team-sections h3{padding-bottom:8px;border-bottom:1px solid #d7e1ed}
-.recent-scores-table{margin-bottom:10px;font-size:14px;table-layout:fixed}.recent-scores-table th{background:#f2f5f9;font-weight:500}.recent-scores-table th:first-child{width:25%}.recent-scores-table th:nth-child(2){width:35%}.recent-scores-table th:nth-child(3){width:17%}.recent-scores-table td{vertical-align:middle;overflow-wrap:break-word}.recent-scores-table .score-date{font-size:13px;color:#5b6c81}.recent-scores-table .score-opponent{font-weight:500}.recent-scores-table .score-value strong{font-size:21px;font-variant-numeric:tabular-nums;color:#29446c}.mobile-score-label{display:none}.result-label{display:inline-block;font-size:13px;font-weight:500;padding:3px 6px;border-radius:3px;background:#f0f3f7;color:#485a70}.result-label.home-win{color:#2e6540;background:#edf5ef}.result-label.home-loss{color:#7a4545;background:#f8efef}
-.home-upcoming li{display:block;padding:0}.home-upcoming .upcoming-link{display:grid;grid-template-columns:130px minmax(0,1fr);gap:4px 16px;padding:10px 8px;text-align:left;min-height:48px;text-decoration:none}.upcoming-date{font-size:14px;color:#4f627b}.upcoming-date small{display:block;font-size:12px;margin-top:3px}.upcoming-opponent{font-size:16px;overflow-wrap:break-word}.upcoming-details{grid-column:2;color:#62738b}.upcoming-link:hover .upcoming-opponent{text-decoration:underline}.upcoming-link:focus-visible{outline:2px solid #526f9f;outline-offset:2px}
-@media(max-width:700px){.recent-scores-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.recent-scores-table,.recent-scores-table tbody{display:block;width:100%}.recent-scores-table tr{display:grid;grid-template-columns:minmax(90px,auto) minmax(0,1fr);gap:4px 10px;padding:8px;border:1px solid #d7e1ed;border-top:0}.recent-scores-table tr:first-child{border-top:1px solid #d7e1ed}.recent-scores-table td{display:block;border:0;padding:2px;min-width:0;text-align:left}.recent-scores-table td:nth-child(even){text-align:right}.mobile-score-label{display:inline;font-size:12px;color:#5b6c81;margin-right:8px}.home-upcoming .upcoming-link{grid-template-columns:105px minmax(0,1fr);gap:4px 10px;padding:10px 4px}.upcoming-opponent{font-size:15px}}
+.home-team-sections h3{padding-bottom:8px;border-bottom:1px solid var(--hub-border, #d7e1ed)}
+
+.recent-scores-table { width: 100%; max-width: 440px; margin: 0 auto 8px; font-size: 13px; }
+.recent-scores-table th, .recent-scores-table td { padding: 4px 6px; vertical-align: middle; }
+.recent-scores-table th { background: var(--hub-header, #f2f5f9); font-weight: 600; }
+.recent-scores-table :is(th, td):first-child { text-align: left; white-space: nowrap; }
+.score-format { overflow-wrap: anywhere; line-height: 1.2; }
+.score-format small { display: block; color: var(--hub-muted, #52647b); }
+.score-value strong { font-size: 15px; font-variant-numeric: tabular-nums; color: var(--hub-heading, #29446c); }
+.result-label { color: var(--hub-muted, #485a70); font-weight: 500; }
+.result-label.home-win { color: var(--hub-win-text, #2e6540); background: var(--hub-win-surface, #edf5ef); }
+.result-label.home-loss { color: var(--hub-loss-text, #7a4545); background: var(--hub-loss-surface, #f8efef); }
+
+.home-upcoming ul { width: 100%; max-width: 440px; margin-inline: auto; }
+.home-upcoming li { display: block; padding: 0; }
+.home-upcoming li:last-child { border-bottom: 0; }
+.home-upcoming .upcoming-link {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 2px 10px;
+  padding: 6px 4px;
+  text-align: left;
+  text-decoration: none;
+  line-height: 1.25;
+}
+.upcoming-date, .upcoming-opponent { font-size: 14px; }
+.upcoming-opponent { overflow-wrap: anywhere; }
+.upcoming-week, .upcoming-details { color: var(--hub-muted, #52647b); font-size: 12px; }
+.upcoming-link:hover .upcoming-opponent { text-decoration: underline; }
+.upcoming-link:focus-visible { outline: 2px solid #526f9f; outline-offset: 2px; }
+@media (max-width: 430px) {
+  .recent-scores-table th, .recent-scores-table td { padding-inline: 4px; }
+  .home-upcoming .upcoming-link { grid-template-columns: 100px minmax(0, 1fr); gap: 2px 8px; }
+}

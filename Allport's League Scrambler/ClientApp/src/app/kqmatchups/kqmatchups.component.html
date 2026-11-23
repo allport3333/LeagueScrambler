@@ -8,7 +8,7 @@
     </div>
   }
   @if (loading) {
-    <p role="status">Loading saved matchups...</p>
+    <app-page-loading label="Loading saved matchups"></app-page-loading>
   }
   @if (message) {
     <p role="alert" class="score-navigation-message">{{ message }}</p>

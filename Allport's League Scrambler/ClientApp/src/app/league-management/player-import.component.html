@@ -26,7 +26,7 @@
   }<button mat-button type="button" (click)="cancelReview()">Cancel match selection</button></section>
 }
 @if (loading) {
-  <p role="status">Loading existing players and league divisions...</p>
+  <app-page-loading label="Loading import data"></app-page-loading>
 }
 @if (error) {
   <div class="import-error" role="alert">{{ error }} @if (!context && !loading) {

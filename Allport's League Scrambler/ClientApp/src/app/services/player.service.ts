@@ -295,7 +295,7 @@ export class PlayerService {
 
 
     public AddNewLeague(leagueName: string) {
-        return this.httpClient.post<Leagues>(this.baseUrl + 'api/ScrambleData/AddNewLeague/' + leagueName, []);
+        return this.httpClient.post<Leagues>(this.baseUrl + 'api/ScrambleData/AddNewLeague/' + encodeURIComponent(leagueName), []);
     }
 
     public signInPlayer(playerSignIn: PlayerSignIn): Observable<any> {

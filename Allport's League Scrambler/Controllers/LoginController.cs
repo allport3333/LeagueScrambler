@@ -39,26 +39,14 @@ namespace Allport_s_League_Scrambler.Controllers
         private readonly IConfiguration _config;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly SmtpClient _smtpClient;
-        private readonly IMemoryCache _adminPasswordAttempts;
+        private readonly IMemoryCache _requestCache;
 
-        public LoginController(IConfiguration config, IHttpContextAccessor httpContextAccessor, SmtpClient smtpClient, IMemoryCache adminPasswordAttempts)
+        public LoginController(IConfiguration config, IHttpContextAccessor httpContextAccessor, SmtpClient smtpClient, IMemoryCache requestCache)
         {
             _config = config;
             _httpContextAccessor = httpContextAccessor;
             _smtpClient = smtpClient; // Injected SMTP Client
-            _adminPasswordAttempts = adminPasswordAttempts;
-        }
-
-        // Compatibility bridge for the administration password used by the old Angular UI.
-        // Authentication is validated on the server; the stored password is never sent to clients.
-        public class AdminPasswordRequest
-        {
-            public string Password { get; set; }
-        }
-
-        private class AdminPasswordAttempt
-        {
-            public int Failures { get; set; }
+            _requestCache = requestCache;
         }
 
         // Simple in-process limits for this legacy single-server application.
@@ -87,7 +75,7 @@ namespace Allport_s_League_Scrambler.Controllers
             // increment the same counter object.
             lock (RateCacheCreationLock)
             {
-                return _adminPasswordAttempts.GetOrCreate("rate:" + scope + ":" + remoteAddress, entry =>
+                return _requestCache.GetOrCreate("rate:" + scope + ":" + remoteAddress, entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
                     return new RequestCounter();
@@ -133,102 +121,12 @@ namespace Allport_s_League_Scrambler.Controllers
             }
             lock (RateCacheCreationLock)
             {
-                return _adminPasswordAttempts.GetOrCreate("recovery-address:" + key, entry =>
+                return _requestCache.GetOrCreate("recovery-address:" + key, entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2);
                     return new RecoveryCooldown();
                 });
             }
-        }
-
-        [HttpPost("VerifyAdminPassword")]
-        public async Task<IActionResult> VerifyAdminPassword([FromBody] AdminPasswordRequest request)
-        {
-            if (request == null || string.IsNullOrEmpty(request.Password) || request.Password.Length > 256)
-            {
-                return BadRequest(new { message = "Enter the administration password." });
-            }
-
-            // A basic per-address throttle for the legacy password, until a stronger
-            // account-specific authentication system replaces this compatibility flow.
-            var remoteAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var cacheKey = "legacy-admin:" + remoteAddress;
-            var attempt = _adminPasswordAttempts.GetOrCreate(cacheKey, entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
-                return new AdminPasswordAttempt();
-            });
-
-            bool blocked;
-            lock (attempt)
-            {
-                blocked = attempt.Failures >= 8;
-            }
-            if (blocked)
-            {
-                return StatusCode(StatusCodes.Status429TooManyRequests,
-                    new { message = "Too many attempts. Try again later." });
-            }
-
-            string savedPassword;
-            using (var context = new DataContext())
-            {
-                savedPassword = await context.Passwords
-                    .Select(p => p.password)
-                    .FirstOrDefaultAsync();
-            }
-
-            // Hash both values for a fixed-length comparison, avoiding early-exit
-            // character-by-character password comparison. Migration of the stored
-            // plaintext password to an adaptive password hash remains required.
-            bool valid = false;
-            using (var sha256 = SHA256.Create())
-            {
-                var provided = sha256.ComputeHash(Encoding.UTF8.GetBytes(request.Password));
-                var expected = sha256.ComputeHash(Encoding.UTF8.GetBytes(savedPassword ?? ""));
-                int diff = 0;
-                for (int i = 0; i < provided.Length; i++)
-                {
-                    diff |= provided[i] ^ expected[i];
-                }
-                valid = !string.IsNullOrEmpty(savedPassword) && diff == 0;
-            }
-
-            if (!valid)
-            {
-                lock (attempt)
-                {
-                    attempt.Failures++;
-                }
-                return Unauthorized(new { message = "Incorrect administration password." });
-            }
-
-            lock (attempt)
-            {
-                attempt.Failures = 0;
-            }
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, "legacy-admin"),
-                new Claim(ClaimTypes.Role, "LegacyAdmin")
-            };
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(
-                claims, "LeagueAdminPassword"));
-
-            // Let CookieAuthenticationOptions.ExpireTimeSpan (six hours) control
-            // expiration so SlidingExpiration can renew an active league session.
-            await HttpContext.SignInAsync("LeagueAdminPassword", principal,
-                new AuthenticationProperties { IsPersistent = false });
-
-            return Ok(new { authorized = true });
-        }
-
-        [HttpGet("IsAdminPasswordAuthorized")]
-        public async Task<IActionResult> IsAdminPasswordAuthorized()
-        {
-            var result = await HttpContext.AuthenticateAsync("LeagueAdminPassword");
-            return Ok(result.Succeeded && result.Principal.IsInRole("LegacyAdmin"));
         }
 
         [HttpPost("register")]
@@ -296,6 +194,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("SetLockSignInStatus")]
         [Authorize(Policy = "LeagueManagement")]
+        [SameOrigin]
         public IActionResult SetLockSignInStatus([FromBody] LockSignInRequest request)
         {
             if (request == null || request.LeagueId <= 0)
@@ -394,6 +293,43 @@ namespace Allport_s_League_Scrambler.Controllers
             {
                 return Unauthorized(new { isAuthenticated = false, role = "None" }); // Not authenticated
             }
+        }
+
+        public sealed class LeagueManagerRequest
+        {
+            public string Email { get; set; }
+            public bool? Assigned { get; set; }
+        }
+
+        [HttpPut("LeagueManager/{leagueId:int}")]
+        [Authorize(Roles = "Admin")]
+        [SameOrigin]
+        public async Task<IActionResult> SetLeagueManager(int leagueId, [FromBody] LeagueManagerRequest request)
+        {
+            var email = request?.Email?.Trim();
+            if (leagueId <= 0 || string.IsNullOrWhiteSpace(email) || email.Length > 254 || request.Assigned == null)
+                return BadRequest(new { message = "Select a league, an existing manager account, and an action." });
+
+            await using var context = new DataContext();
+            await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            if (!await context.Leagues.AnyAsync(league => league.ID == leagueId))
+                return NotFound(new { message = "League not found." });
+
+            var managerIds = await context.Users.Where(user => user.Email == email && user.UserRoleId == 2)
+                .Select(user => user.UserId).Take(2).ToListAsync();
+            if (managerIds.Count != 1)
+                return NotFound(new { message = "Select an existing League Manager account." });
+
+            var managerId = managerIds[0];
+            var links = await context.UserLeagues.Where(link => link.UserId == managerId && link.LeagueTypeId == leagueId).ToListAsync();
+            if (request.Assigned.Value && links.Count == 0)
+                context.UserLeagues.Add(new UserLeague { UserId = managerId, LeagueTypeId = leagueId });
+            if (!request.Assigned.Value)
+                context.UserLeagues.RemoveRange(links);
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return NoContent();
         }
 
 
@@ -546,23 +482,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     return BadRequest(new { message = "Invalid email or password." });
                 }
 
-                string roleName;
-
-                switch (userInfo.UserRoleId)
-                {
-                    case 1:
-                        roleName = "Admin";
-                        break;
-                    case 2:
-                        roleName = "Manager";
-                        break;
-                    case 3:
-                        roleName = "Player";
-                        break;
-                    default:
-                        roleName = "Unknown";
-                        break;
-                }
+                var roleName = LeagueAccess.AccountRole(userInfo.UserRoleId);
 
 
                 userInfo.LastLogin = DateTime.Now;
@@ -607,7 +527,6 @@ namespace Allport_s_League_Scrambler.Controllers
             }
 
             // Logging out must also clear temporary administration privileges.
-            await HttpContext.SignOutAsync("LeagueAdminPassword");
             Response.Cookies.Delete("access_token");
             return Ok(new { message = "Logout successful" });
         }
@@ -658,26 +577,22 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpGet("getuserleagues")]
         public async Task<IActionResult> GetUserLeagues()
         {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value; // Get the email from the claims
+            if (!LeagueAccess.TryGetAccountId(User, out var userId))
+                return Unauthorized();
 
-            if (string.IsNullOrEmpty(email))
-            {
-                return Unauthorized(new { message = "Email claim not found." });
-            }
-
-            var _context = new DataContext(); // Ensure proper disposal of DataContext
+            await using var _context = new DataContext();
 
             // Fetch user-related data including linked leagues
             var userData = await _context.Users
-                .Where(u => u.Email == email)
+                .Where(u => u.UserId == userId)
                 .Select(u => new
                 {
                     u.UserId,
-                    u.Email,
-                    u.IsAdmin,
                     u.UserRoleId
                 })
                 .FirstOrDefaultAsync();
+            if (userData == null)
+                return Unauthorized();
             var userLeagues = new List<LeagueType>();
             if (userData.UserRoleId == 1)
             {
@@ -712,17 +627,15 @@ namespace Allport_s_League_Scrambler.Controllers
             }
             else if (userData.UserRoleId == 2)
             {
-                userLeagues = await _context.UserLeagues
-                .Where(u => u.UserId == userData.UserId)
-                .Select(u => u.LeagueType)
-                .ToListAsync();
+                userLeagues = await _context.Leagues.Where(league => _context.UserLeagues.Any(
+                    link => link.UserId == userId && link.LeagueTypeId == league.ID)).ToListAsync();
             }
             else
             {
                 return NotFound(new { message = "No linked leagues found for this user." });
             }
 
-            if (userLeagues == null || !userLeagues.Any())
+            if (userData.UserRoleId == 3 && userLeagues.Count == 0)
             {
                 return NotFound(new { message = "No linked leagues found for this user." });
             }
@@ -830,6 +743,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("updatesetting")]
         [Authorize(Policy = "LeagueManagement")]
+        [SameOrigin]
         public async Task<IActionResult> UpdateSettingAsync([FromBody] UpdateSettingRequest request)
         {
             var context = new DataContext();

@@ -1,3 +1,4 @@
+import { protectPendingWork } from '../pwa/pending-work.service';
 import {Component, Inject, OnDestroy, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import {forkJoin, Subscription} from 'rxjs';
@@ -37,7 +38,7 @@ import {normalName, importPlayerCandidates} from './player-import';
 })
 export class LeaguePlayerEditComponent implements OnInit,OnDestroy {
     loading=true;busy=false;error='';member:any;divisions:any[]=[];divisionId=0;firstName='';lastName='';private scope:Subscription;private read:Subscription;
-    constructor(@Inject(MAT_DIALOG_DATA)public data:any,public ref:MatDialogRef<LeaguePlayerEditComponent>,private players:PlayerService,private leagues:LeagueService){}
+    constructor(@Inject(MAT_DIALOG_DATA)public data:any,public ref:MatDialogRef<LeaguePlayerEditComponent>,private players:PlayerService,private leagues:LeagueService){ protectPendingWork(() => this.busy || !!this.member && this.changed);}
     ngOnInit():void {
         this.scope=this.leagues.selectedLeague$.subscribe(c=>{if(c.leagueId!==this.data.leagueId)this.ref.close();});
         this.read=forkJoin([this.players.leaguePlayerMembership(this.data.leagueId,this.data.player.id),this.players.leagueRosterContext(this.data.leagueId)]).pipe(timeout(20000)).subscribe(([member,context])=>{this.member=member;this.divisions=context.divisions;this.divisionId=member.leagueDivisionId;this.firstName=member.player.firstName||'';this.lastName=member.player.lastName||'';this.loading=false;},()=>{this.loading=false;this.error='Could not load this membership. Close and try Edit again.';});

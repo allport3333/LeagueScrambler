@@ -84,8 +84,8 @@ export class StatisticsService {
         });
     }
 
-    public AddPlayerToLeagueTeam(leagueTeamId: number, playerId: number): Observable<any> {
-        const url = `${this.baseUrl}api/Statistics/AddPlayerToLeagueTeam?leagueTeamId=${leagueTeamId}&playerId=${playerId}`;
+    public AddPlayerToLeagueTeam(leagueTeamId: number, playerId: number, leagueId?: number): Observable<any> {
+        const url = `${this.baseUrl}api/Statistics/AddPlayerToLeagueTeam?leagueTeamId=${leagueTeamId}&playerId=${playerId}${leagueId ? '&leagueId=' + leagueId : ''}`;
         return this.httpClient.post<any>(url, {});
     }
 

@@ -19,12 +19,12 @@ class OriginCompatibility
         if (valid) { passed++; Console.WriteLine("PASS " + name); }
         else { failed++; Console.WriteLine("FAIL " + name); }
     }
-    static void Endpoint(Type controller, string method)
+    static void Endpoint(Type controller, string method, string policy = "LeagueManagement", string roles = null)
     {
         var action = controller.GetMethod(method);
         var filter = (SameOriginAttribute)Attribute.GetCustomAttribute(action, typeof(SameOriginAttribute));
         var auth = (AuthorizeAttribute)Attribute.GetCustomAttribute(action, typeof(AuthorizeAttribute));
-        Contract(method + " compiled SameOrigin plus unchanged LeagueManagement policy", filter != null && auth != null && auth.Policy == "LeagueManagement");
+        Contract(method + " compiled SameOrigin and authorization", filter != null && auth != null && auth.Policy == policy && auth.Roles == roles);
         // Invoke the attached filter, never the database-backed controller action.
         foreach (var role in new[] { "Admin", "Manager", "Player", "LegacyAdmin" })
         {
@@ -90,8 +90,15 @@ class OriginCompatibility
         Endpoint(typeof(StatisticsController), "UpdateTeamScores");
         Endpoint(typeof(StatisticsController), "AddPlayerToLeagueTeam");
         Endpoint(typeof(StatisticsController), "SetTeamDivision");
-        foreach (var method in new[] { "VerifyAdminPassword", "Logout" })
-            Contract(method + " frozen origin-filter attachment unchanged", Attribute.GetCustomAttribute(typeof(LoginController).GetMethod(method), typeof(SameOriginAttribute)) == null);
+        Endpoint(typeof(LoginController), "SetLeagueManager", null, "Admin");
+        Endpoint(typeof(LoginController), "SetLockSignInStatus");
+        Endpoint(typeof(LoginController), "UpdateSettingAsync");
+        Endpoint(typeof(ScrambleDataController), "DeleteSignInPlayer", null);
+        Contract("Shared password endpoints are retired",
+            typeof(LoginController).GetMethod("VerifyAdminPassword") == null &&
+            typeof(LoginController).GetMethod("IsAdminPasswordAuthorized") == null);
+        Contract("Logout origin-filter attachment unchanged",
+            Attribute.GetCustomAttribute(typeof(LoginController).GetMethod("Logout"), typeof(SameOriginAttribute)) == null);
         Console.WriteLine("RESULT passed=" + passed + " failed=" + failed + " scope=compiled-filter-only no-network no-SQL");
         return failed == 0 ? 0 : 1;
     }

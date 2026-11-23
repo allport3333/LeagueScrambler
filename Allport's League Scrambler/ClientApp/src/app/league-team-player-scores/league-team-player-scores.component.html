@@ -1,6 +1,6 @@
 <section class="profile-section league-team-history">
   @if (loading) {
-    <p role="status" class="state-message">Loading league team history...</p>
+    <app-page-loading label="Loading league team history"></app-page-loading>
     }@if (error) {
     <div role="alert" class="state-message"><p>{{ error }}</p><button mat-stroked-button (click)="loadLeagueScores(playerId,leagueId)">Retry league team stats</button></div>
   }

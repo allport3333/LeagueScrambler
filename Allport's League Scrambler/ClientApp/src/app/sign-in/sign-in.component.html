@@ -15,7 +15,12 @@
     </div>
   }
 
-  @if (userRole === 'Admin' || userRole === 'Manager') {
+  @if (attendanceLoading) { <app-page-loading label="Loading sign-in sheet"></app-page-loading> }
+  @if (attendanceError) {
+    <p role="alert" class="text-center">{{ attendanceError }} <button mat-button (click)="loadAttendance()">Retry</button></p>
+  }
+  @if (hasCurrentAttendance) {
+  @if (canManageAttendance) {
     <div class="text-center mt-3">
       <button mat-raised-button color="primary" (click)="toggleAddPlayerForm()">
         {{ showAddPlayerForm ? 'Hide Add Player' : 'Add New Player' }}
@@ -23,7 +28,7 @@
     </div>
   }
 
-  @if (userRole === 'Admin' || userRole === 'Manager') {
+  @if (canManageAttendance) {
     <div class="text-center mt-3">
       <button mat-raised-button color="primary" (click)="fetchSignedInPlayers()">
         {{ 'Fetch Signed-In Players' }}
@@ -32,7 +37,7 @@
   }
 
   <!-- Add Player Form -->
-  @if (showAddPlayerForm) {
+  @if (canManageAttendance && showAddPlayerForm) {
     <div class="mt-4">
       <h4>Add New Player</h4>
       <form [formGroup]="PlayerForm">
@@ -55,7 +60,7 @@
     </div>
   }
 
-  @if (userRole === 'Admin' || userRole === 'Manager') {
+  @if (canManageAttendance) {
     <div class="text-center mt-3">
       <mat-checkbox [(ngModel)]="isSignInLocked" (change)="onLockSignInChange($event.checked)">
         Lock Sign In
@@ -68,7 +73,7 @@
     <div class="text-center mt-3">
       <mat-card appearance="outlined" class="locked-message-card">
         <mat-card-content>
-          <h3 style="color: red; font-weight: bold;">Sign In is Currently Locked</h3>
+          <h3 style="color: var(--hub-loss-text, red); font-weight: bold;">Sign In is Currently Locked</h3>
           <p>Either your league is on a different day than today, or your league admin locked sign in.</p>
         </mat-card-content>
       </mat-card>
@@ -78,7 +83,7 @@
   <!-- Tables Side by Side -->
   <div class="row mt-4">
     <!-- Players in League Grid for Admin/Manager -->
-    @if (userRole === 'Admin' || userRole === 'Manager') {
+    @if (canManageAttendance) {
       <div class="col-lg-9 col-md-8 col-sm-12">
         <h4 class="mb-3">Players in League</h4>
         <div class="mb-3">
@@ -92,7 +97,7 @@
               <div
                 class="col-lg-2 col-md-3 col-sm-4 col-6 player-card">
                 <div class="card text-center clickable"
-                  [ngStyle]="{'background-color': player.gender === 'Female' ? '#ffe6f2' : player.gender === 'Male' ? '#e6f7ff' : 'white'}"
+                  [ngStyle]="{'background-color': player.gender === 'Female' ? 'var(--hub-female, #ffe6f2)' : player.gender === 'Male' ? 'var(--hub-male, #e6f7ff)' : 'var(--hub-surface, white)'}"
                   [class.disabled]="isSignInLocked"
                   (click)="!isSignInLocked && selectPlayer(player)">
                   <div class="card-body" style="padding: 3px; text-align: center;">
@@ -158,7 +163,8 @@
     </div>
 
 
-  </div>
+    }
+</div>
 
   <!-- Confirmation/Notification Dialog Template -->
   <ng-template #confirmationDialog let-data>

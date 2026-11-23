@@ -1,4 +1,5 @@
-import { Component, Input, OnInit, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
 import { TeamWithPlayersDto } from '../data-models/DTOs';
 import { TeamUpdateService } from '../services/team-update.service';
@@ -10,52 +11,48 @@ import { TeamUpdateService } from '../services/team-update.service';
     changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
-export class LeagueTeamsComponent implements OnInit {
+export class LeagueTeamsComponent implements OnInit, OnChanges, OnDestroy {
     @Input() leagueId: number | null = null;
 
     teams: TeamWithPlayersDto[] = [];
     loading = false;
+    error = '';
+    private request: Subscription;
+    private updates: Subscription;
+    private loadedLeague: number | null = null;
 
     constructor(private statsService: StatisticsService,
         private teamUpdateService: TeamUpdateService) { }
 
     ngOnInit(): void {
-        if (this.leagueId) {
-            this.loadTeamsWithPlayers();
-        }
-
-        this.teamUpdateService.teamUpdated$.subscribe(() => {
-            this.loadTeamsWithPlayers();
-        });
+        this.updates = this.teamUpdateService.teamUpdated$.subscribe(() => this.loadTeamsWithPlayers());
     }
 
-    // If leagueId can change after init, handle it:
-    ngOnChanges(changes: SimpleChanges) {
-        if (changes['leagueId']) {
-            const newLeagueId = changes['leagueId'].currentValue;
-            if (newLeagueId) {
-                this.loadTeamsWithPlayers();
-            }
-        }
-    }
+    ngOnChanges(): void { this.loadTeamsWithPlayers(); }
+    ngOnDestroy(): void { this.request?.unsubscribe(); this.updates?.unsubscribe(); }
 
     loadTeamsWithPlayers(): void {
+        this.request?.unsubscribe();
+        this.error = '';
+        if (this.loadedLeague !== this.leagueId) this.teams = [];
+        this.loading = !!this.leagueId && this.loadedLeague !== this.leagueId;
         if (!this.leagueId) return;
 
-        this.loading = true;
-        this.statsService.GetAllTeamsWithPlayers(this.leagueId).subscribe({
+        const leagueId = this.leagueId;
+        this.request = this.statsService.GetAllTeamsWithPlayers(leagueId).subscribe({
             next: (res) => {
+                this.loadedLeague = leagueId;
                 this.teams = res.map(team => ({
                     ...team,
                     players: team.players.map(player => ({
                         ...player,
-                        backgroundColor: player.isMale ? 'lightblue' : 'lightpink'
+                        backgroundColor: player.isMale ? 'var(--hub-male, lightblue)' : 'var(--hub-female, lightpink)'
                     }))
                 }));
                 this.loading = false;
             },
-            error: (err) => {
-                console.error(err);
+            error: () => {
+                this.error = 'Unable to load the league teams.';
                 this.loading = false;
             }
         });

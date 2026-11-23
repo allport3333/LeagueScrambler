@@ -1,3 +1,4 @@
+import { onLeagueResume } from '../pwa/pending-work.service';
 import {Component, OnInit, OnDestroy, Output, EventEmitter, ChangeDetectionStrategy} from '@angular/core';
 import {Subscription,forkJoin,of,throwError} from 'rxjs';
 import {catchError,switchMap,map} from 'rxjs/operators';
@@ -16,9 +17,12 @@ export class PlayerHomeDashboardComponent implements OnInit,OnDestroy {
  playerId:number=null;leagueId:number=null;leagueName='';role='';accountReady=false;accountError='';overviewLoading=false;
  standings:any[]=[];recent:any[]=[];upcoming:any[]=[];ownTeamIds:number[]=[];teamsReady=false;standingsError='';recentError='';
  latestKq:any=null;kqError='';currentStanding:any=null;standingLoading=false;standingError='';
+ nextGameSettled=false; overviewSettled=false; standingSettled=false;
+ get initialLoading(): boolean { return !this.accountReady || !!(this.playerId && this.leagueId && (!this.overviewSettled || !this.nextGameSettled || !this.standingSettled)); }
  private standingRequest:Subscription;
+ private refreshing=false;
  private subscriptions=new Subscription();private request:Subscription;private version=0;private key='';
- constructor(private leagues:LeagueService,private login:LoginService,private stats:StatisticsService,private players:PlayerService){}
+ constructor(private leagues:LeagueService,private login:LoginService,private stats:StatisticsService,private players:PlayerService){onLeagueResume(() => { if (this.playerId && this.leagueId && !this.overviewLoading && !this.refreshing) this.loadOverview(true); });}
  ngOnInit(){
   this.subscriptions.add(this.leagues.selectedLeague$.subscribe(league=>{this.leagueId=league.leagueId;this.leagueName=league.leagueName;this.loadOverview();}));
   this.subscriptions.add(this.login.getUsersRole().subscribe(value=>this.role=value.role,()=>{}));
@@ -26,9 +30,17 @@ export class PlayerHomeDashboardComponent implements OnInit,OnDestroy {
  }
  get ownStandings():any[]{return this.standings.filter(row=>this.ownTeamIds.indexOf(row.teamId)>=0);}
  acceptGames(event:any){if(event.playerId!==this.playerId||event.leagueId!==this.leagueId)return;this.teamsReady=true;this.ownTeamIds=event.result.ownTeamIds||[];this.upcoming=event.result.upcoming||[];}
- loadOverview(force=false){const key=this.playerId+':'+this.leagueId;if(!force&&key===this.key)return;this.key=key;const version=++this.version;if(this.request)this.request.unsubscribe();if(this.standingRequest)this.standingRequest.unsubscribe();this.currentStanding=null;this.standingLoading=false;this.standingError='';this.latestKq=null;this.kqError='';this.standings=[];this.recent=[];this.upcoming=[];this.ownTeamIds=[];this.teamsReady=false;this.standingsError='';this.recentError='';this.overviewLoading=false;
-  if(!(this.playerId>0&&this.leagueId>0))return;this.overviewLoading=true;this.loadCurrentStanding(version);
-  this.request=forkJoin(this.stats.getLeagueStandings(this.leagueId).pipe(catchError(()=>of(null))),this.stats.getLeagueTeamScores(this.playerId,this.leagueId).pipe(catchError(()=>of(null))),this.stats.getDetailedPerformanceStats(this.playerId,this.leagueId).pipe(catchError(()=>of(null)))).subscribe(([standings,recent,kq])=>{if(version!==this.version)return;this.overviewLoading=false;
+ loadOverview(force=false){const key=this.playerId+':'+this.leagueId;if(!force&&key===this.key)return;this.key=key;const version=++this.version;if(this.request)this.request.unsubscribe();if(this.standingRequest)this.standingRequest.unsubscribe();if(!force){
+   this.currentStanding=null;this.standingLoading=false;this.standingError='';this.latestKq=null;this.kqError='';
+   this.standings=[];this.recent=[];this.upcoming=[];this.ownTeamIds=[];this.teamsReady=false;
+   this.overviewSettled=false;this.nextGameSettled=false;this.standingSettled=false;
+   this.standingsError='';this.recentError='';this.overviewLoading=false;
+  }
+  this.refreshing=false;
+  if(!(this.playerId>0&&this.leagueId>0))return;
+  this.overviewLoading=!force;this.refreshing=force;
+  this.loadCurrentStanding(version,force);
+  this.request=forkJoin(this.stats.getLeagueStandings(this.leagueId).pipe(catchError(()=>of(null))),this.stats.getLeagueTeamScores(this.playerId,this.leagueId).pipe(catchError(()=>of(null))),this.stats.getDetailedPerformanceStats(this.playerId,this.leagueId).pipe(catchError(()=>of(null)))).subscribe(([standings,recent,kq])=>{if(version!==this.version)return;this.overviewLoading=false;this.refreshing=false;this.overviewSettled=true;this.standingsError='';this.recentError='';this.kqError='';
    if(kq && Array.isArray(kq.scrambleTotals)){
     const dated=kq.scrambleTotals.filter(game=>game.dateOfTeam && !String(game.dateOfTeam).startsWith('0001') && Number.isFinite(new Date(game.dateOfTeam).getTime()));
     this.latestKq=dated.slice().sort((a,b)=>new Date(b.dateOfTeam).getTime()-new Date(a.dateOfTeam).getTime() || b.scrambleNumber-a.scrambleNumber)[0]||null;
@@ -36,8 +48,8 @@ export class PlayerHomeDashboardComponent implements OnInit,OnDestroy {
    }else this.kqError='Recent King/Queen results could not be loaded.';
    if(Array.isArray(standings))this.standings=standings;else this.standingsError='Standings could not be loaded.';if(Array.isArray(recent))this.recent=recent.slice().sort((a,b)=>new Date(b.date).getTime()-new Date(a.date).getTime()).slice(0,3);else this.recentError='Recent results could not be loaded.';});
  }
- loadCurrentStanding(version:number){
-  this.standingLoading=true;
+ loadCurrentStanding(version:number,background:boolean){
+  this.standingLoading=!background;
   this.standingRequest=forkJoin(
    this.login.getSettingValue('numberOfSubsAllowed',this.leagueId),this.login.getSettingValue('dropLowest',this.leagueId),
    this.login.getSettingValue('subScorePercent',this.leagueId),this.login.getSettingValue('standingsType',this.leagueId)
@@ -49,15 +61,16 @@ export class PlayerHomeDashboardComponent implements OnInit,OnDestroy {
    const standingsMode=mode as 'round'|'matchup';
    return request.pipe(map(data=>({data,mode:standingsMode,options})));
   })).subscribe(response=>{
-   if(version!==this.version)return;this.standingLoading=false;
+   if(version!==this.version)return;this.standingLoading=false;this.standingSettled=true;
    if(!response.data||!Array.isArray(response.data.playerScores)){this.standingError='Current standing could not be loaded.';return;}
+   this.standingError='';this.currentStanding=null;
    const player=response.data.playerScores.find(p=>p&&p.playerId===this.playerId);if(!player)return;
    const group=transformKingQueenStandings(response.data.playerScores.filter(p=>p&&(p.isMale===true)===(player.isMale===true)),response.options,response.mode);
    const index=group.findIndex(p=>p.playerId===this.playerId);if(index<0)return;
    const division=player.leagueDivisionId>0?group.filter(p=>p.leagueDivisionId===player.leagueDivisionId):[];
    this.currentStanding={rank:index+1,total:group.length,gender:player.isMale===true?"Men's":"Women's",genderKey:player.isMale===true?'men':'women',mode:response.mode,
     divisionLabel:division.length?(player.leagueDivisionCode||'Division '+player.leagueDivisionId):'',divisionRank:division.findIndex(p=>p.playerId===this.playerId)+1,divisionTotal:division.length};
-  },()=>{if(version===this.version){this.standingLoading=false;this.standingError='Current standing could not be loaded.';}});
+  },()=>{if(version===this.version){this.standingLoading=false;this.standingSettled=true;this.standingError='Current standing could not be loaded.';}});
  }
  ordinal(value:number):string{const last=value%100;return value+(last>=11&&last<=13?'th':value%10===1?'st':value%10===2?'nd':value%10===3?'rd':'th');}
  gameDate(value:string):Date{const p=value.split('-').map(Number);return new Date(p[0],p[1]-1,p[2]);}

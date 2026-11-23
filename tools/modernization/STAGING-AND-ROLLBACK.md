@@ -1,14 +1,88 @@
 # Staging and rollback procedure (preparation; not a deployment authorization)
 
-Status: **local framework/authenticated integration acceptance passed; package prepared for controlled staging verification**. Actual staging deployment requires separate authorization and completion of the server prerequisites below. No staging/production service or IIS configuration has been accessed or changed. Production deployment is not recommended until staging acceptance passes.
+Status: **the accepted package is serving trusted HTTPS at `https://127.0.0.1:8086/`**. The staging administrator journal records a committed IIS update. The current managed session cannot read administrative IIS configuration or write to the deployment directory. A database-backed read passed over IIS. Exact worker SQL identity and account-backed acceptance remain pending. See STATUS.md and RESULTS.md for verified outcomes.
+
+## Verify the staging worker before testing with an account
+
+In elevated Windows PowerShell, use the dedicated pool's current worker PID. If there is no worker yet, load the staging homepage first.
+
+```powershell
+Add-Type -Path "$env:windir\System32\inetsrv\Microsoft.Web.Administration.dll"
+$iis = New-Object Microsoft.Web.Administration.ServerManager
+try { $iis.ApplicationPools['LeagueHubStagingPool'].WorkerProcesses | Select-Object ProcessId }
+finally { $iis.Dispose() }
+```
+
+After an IIS request to `/api/ScrambleData/GetLeagues`, use local SQL Server security/session metadata in an authorized SSMS connection. Substitute the staging PID. Confirm the observed login and database before writes. A pooled connection can disappear when the worker recycles.
+
+```sql
+DECLARE @StagingWorkerPid int = 0; -- Replace with the dedicated pool's worker PID.
+SELECT DB_NAME(s.database_id) AS database_name, s.original_login_name, c.auth_scheme
+FROM sys.dm_exec_sessions AS s
+JOIN sys.dm_exec_connections AS c ON c.session_id = s.session_id
+WHERE s.host_process_id = @StagingWorkerPid AND s.is_user_process = 1;
+```
+
+After confirming `LeagueScramblerDev` and the pool identity, use a run-owned synthetic fixture with a known password. Record the login response status and generic body without copying the request, cookie or credentials into logs. Verify the cookie, authenticated role and league, logout and persistence across a recycle of only the staging pool. Clean up by fixture ID and verify the Development baseline. The existing IIS evidence includes a synthetic unknown-account check only, which reaches the user lookup path and returns the expected generic failure.
+
+## Deploy or roll back the visual restoration
+
+The candidate ZIP is `tests/functional/artifacts/modernization/visual-restoration/handoff-release/leaguehub-visual-restoration-staging.zip`. Its SHA-256 is `129464CCC9E4F389E075B8FFEE6D0073CB5F05E819309D6EA33B5C643647DD25`. The accompanying manifest verifies all 92 files. The 69 non-browser files match the accepted package, and the 11 service-worker asset hashes match the rebuilt browser directory.
+
+1. From the administrator session, verify the staging site's dedicated pool, root path, and existing configuration. Verify the new ZIP and extract it to a fresh worktree artifact directory. Preserve the accepted review ZIP and existing rollback copy.
+2. Capture a new backup of the live staging tree and its staging-specific settings. Confirm the deployed application binaries match the candidate manifest. With this frontend-only release, replace only `C:\inetpub\wwwroot\LeagueHubStaging\ClientApp\dist\browser` with the clean, verified browser tree while the **dedicated staging pool** is stopped. Preserve the existing IIS pool variables, site bindings, web.config, and key material. Start the staging pool and verify the browser subdirectory against the candidate manifest.
+3. From a fresh browser context, verify that `https://127.0.0.1:8086/` references `main-IHY7SZHO.js`. Confirm the live Angular service-worker metadata matches the new package and test the update from an existing staging session as well. Run the account-backed staging checks after verifying the worker's SQL identity.
+4. If rollback is needed, stop only the staging pool, restore the saved live browser directory, restart that pool, and verify the prior hashed script and service-worker metadata in a fresh context.
+
+## Administrator setup
+
+Open 64-bit **Windows PowerShell 5.1** as Administrator using the same Windows account that will browse staging. Run these commands from the existing worktree. The first command inspects IIS, ports, and Development SQL without applying changes. Run the second only after reading the preflight. Use the same options in both runs.
+
+Windows PowerShell currently has `AllSigned` at LocalMachine scope and rejected the unsigned file. Sign the reviewed script with an approved code-signing certificate trusted by this machine and confirm `Get-AuthenticodeSignature` reports `Valid` before running the commands under that policy.
+
+```powershell
+Set-Location -LiteralPath 'C:\Users\Allport\source\repos\LeagueHub-modernization'
+.\tools\modernization\Set-LeagueHubStaging.ps1
+.\tools\modernization\Set-LeagueHubStaging.ps1 -Apply
+```
+
+- The default HTTPS port is 8086. If preflight finds a conflict, pass the same free `-HttpsPort <port>` to both commands. The script checks the existing site, physical path, exclusive pool use, IIS bindings, TCP listener, HTTP.sys certificate reservations, runtime, handler and configuration overrides. It updates only the target site's bindings and dedicated pool. It keeps a previously stopped site or pool stopped.
+- The SQL probes compare an encrypted connection with certificate validation, an encrypted local connection that skips certificate validation, and Windows authentication over shared memory. These tests use the invoking account through Windows PowerShell's SQL client. They can distinguish a certificate validation failure from a failure that also affects the trusted-certificate probe. They do not prove that the IIS worker can authenticate or that the deployed SQL client behaves identically. The optional `-TrustLoopbackSqlCertificate` switches the application to the encrypted loopback connection only when strict validation fails and the encrypted diagnostic succeeds. Windows-integrated authentication and the local database guard still apply.
+- SQL administration rights on the invoking account are separate from Windows elevation. The script checks the local default instance and Development compatibility level 130. It preserves existing `db_datareader` and `db_datawriter` memberships in `LeagueScramblerDev` and plans only grants those roles and existing direct grants do not cover. A missing login or user is created with individual object grants from the application allowlist. Preflight rejects unexpected explicit permissions and roles, disabled logins, database ownership, and mappings outside Development. For an existing login, the mapping audit uses SQL Server's `sp_helplogins` security metadata and stops if the audit is incomplete. The invoking account needs permission to run that audit, in addition to login management and Development database control.
+- Apply stores the dedicated certificate in Local Machine Personal and its public copy in the invoking account's Trusted Root store. Use a browser that trusts this Windows user store. Other Windows users and browsers with independent trust stores may need to trust the same public certificate separately. The script does not edit shared trust, SQL TLS settings, firewall rules, or other sites. Run one staging configuration operation at a time.
+
+After apply, verify the redirect and TLS without disabling client validation. These examples use the default port and force the loopback IPv4 address while validating the name `localhost`.
+
+```powershell
+curl.exe --noproxy '*' --resolve localhost:8085:127.0.0.1 -I http://localhost:8085/
+curl.exe --noproxy '*' --resolve localhost:8086:127.0.0.1 --fail --silent --show-error --output NUL https://localhost:8086/
+```
+
+Check that the first response redirects to `https://localhost:8086/`. Correlate a database-backed staging request with the worker's effective Windows identity and Development database before fixture writes. Then run the account, authorization, recycle and browser acceptance checks in RESULTS.md. If startup or SQL access fails, capture the staging response and staging-specific events before changing permissions.
+
+### Roll back an administrator setup run
+
+Use the printed `rollback.json` under `tests/functional/artifacts/modernization/iis-staging-admin-*/`. It records original site and pool state, the prior binding and managed environment values, the SQL changes planned for this run, commit flags and the certificate thumbprint. For interrupted runs, compare the journal with actual state before reverting, since a change may have completed before its flag was saved. Preserve changes made after the recorded run.
+
+1. In IIS Manager, confirm the staging site ID matches the journal and stop only `LeagueHub Staging` and `LeagueHubStagingPool` if running. Remove the exact `AddedHttps` binding if this run added it. Restore the site HTTP binding from `Http`. If that binding was a wildcard, keep staging stopped pending review of loopback isolation. Restore the pool CLR, bitness, identity and profile loading from the matching journal fields.
+2. In IIS Manager's Configuration Editor, open `system.applicationHost/applicationPools` and the environment variable collection for `LeagueHubStagingPool`. Restore recorded `PoolEnvironment` entries. Remove only managed entries absent from that snapshot. The managed keys are `ASPNETCORE_ENVIRONMENT`, `DOTNET_ENVIRONMENT`, `ASPNETCORE_HTTPS_PORT`, and `LEAGUESCRAMBLER_DB_CONNECTION`. Keep unrelated variables and the staging worker's existing Data Protection keys.
+3. Connect to local `LeagueScramblerDev` with Windows authentication and verify the SQL machine, database and authentication scheme again. In a transaction, revert only applied entries from `AddedGrants` using `REVOKE <Permission> ON OBJECT::[dbo].[<Table>] FROM [IIS APPPOOL\LeagueHubStagingPool]`. Drop the Development user only if this run created it. Drop the server login only if this run created it and server metadata confirms it has acquired no other use. Preserve all pre-existing grants and principals.
+4. Remove the journaled thumbprint from the same Windows user's Trusted Root store only if this run added the trust. Remove the thumbprint from Local Machine Personal only if this run created the certificate and no IIS binding or HTTP.sys reservation still uses it. Verify the dedicated staging friendly name before deleting the certificate.
+5. Restore the recorded pool and site running states and verify the original staging HTTP URL. The package stays in place. Use the verified live-file backup only if the deployment files changed in a separate operation.
 
 ## Accepted package and deployment sequence
 
-Use **`tests/functional/artifacts/modernization/staging-package-accepted/`**. This supersedes older package folders retained below. `authorized-accepted-package-verification.json` confirms 92 files, no forbidden source/tool/secret-file paths, net10.0 target and matching tested backend/final browser hashes. `authorized-accepted-package-manifest.json` lists every relative file, size and SHA256. Both Release and Debug builds, actual account-backed SQL/HTTP/browser tests, data cleanup and final production-worker regressions passed. Development permission is already granted; no database testing approval is pending.
+For PWA releases, verify the built browser directory as one version. Check every entry in `ngsw.json` against its on-disk SHA-1, and include the application shell, worker script, web manifest and icons. Preserve the root registration scope and the `/ngsw-worker.js` URL so existing installations can update. Verify the deployed HTTP headers for `ngsw.json`, `ngsw-worker.js`, the web manifest and a deep-link shell. They must revalidate. Fingerprinted scripts and styles can be immutable. API responses use `no-store`.
+
+Prepare the release in a separate directory before it becomes available. When a deployment is authorized, switch the staged site to the verified release as a unit or take the dedicated application offline for the complete replacement. Keep previous fingerprinted files available where the hosting strategy supports it so open clients can finish loading their assigned version. When rolling back, publish the previous working browser contents as a new worker version, for example by adding a unique release identifier to `appData` in its manifest. Angular can ignore a manifest it has already installed. Reverify the rollback shell and every hashed asset, then regenerate the package integrity manifest. Routine releases and rollbacks require no browser cache clearing.
+
+Use a clean extraction of **`tests/functional/artifacts/modernization/leaguehub-angular22-net10-staging-review.zip`** as the package source. `authorized-accepted-package-manifest.json` lists every relative file, size and SHA-256. Local Release and Debug builds, account-backed SQL/HTTP/browser tests, data cleanup and production-worker regressions passed.
 
 A transport/review archive is also prepared: **leaguehub-angular22-net10-staging-review.zip** in the same modernization artifact root. `staging-review-archive.json` records its size/SHA256; `staging-review-archive-verification.json` confirms 92 files with web.config at the archive root and the browser shell at its configured path. Creating this local archive did not deploy it.
 
-After a separate staging deployment authorization:
+The latest local integrity check verified the review ZIP's SHA-256 and all 92 archived files against the accepted manifest. The loose package folder has a different `web.config`. Use a fresh extraction of the verified ZIP as the staging source, and apply staging-specific configuration to that extraction when the deployment is authorized. Preserve the existing folder for review.
+
+For the current authorized staging recovery, compare the live file hashes before replacing files. The comparison found zero differences. Preserve the verified `live-file-backup/` and `accepted-extraction/` under `tests/functional/artifacts/modernization/iis-staging-resume-f4dc3339/`. An elevated session should capture the dedicated site's binding and pool settings and locate its key ring before configuration changes. Continue with the remaining items below:
 
 1. Inventory supported Windows/IIS and .NET shared runtimes; arrange an authorized .NET 10 Hosting Bundle/ANCM installation at **10.0.15 or newer supported .NET 10 servicing**. Verify Microsoft.NETCore.App and Microsoft.AspNetCore.App 10.x are present. Coordinate any restart because ANCM installation can affect other applications. None has been installed on a server during this task.
 2. Create a dedicated staging HTTPS **hostname/site at its root**, separate physical directory and 64-bit No Managed Code app pool/identity. A same-host virtual subapplication needs separately verified Angular base href/PathBase/service-worker scope and cookie isolation; do not assume the root-built package supports it unchanged.

@@ -88,7 +88,7 @@ async function run(){
    checks.push('Actual Edit global name, confirmed Remove and TXT import confirmation re-added the same player ID to Gold.');
   }
   }else{
-   checks.push('Protected management browser flows deferred: fresh approval is needed for a database-backed synthetic account. Actual authorized APIs passed separately through the real cookie middleware.');
+   checks.push('Protected management browser flows require a database-backed synthetic account. This run verifies public routes.');
   }
   for(const route of ['fetch-data','scrambler','kqmatchups','schedule','']){
    await page.setViewportSize({width:1280,height:1000});await page.goto(fixture.origin+'/'+route);

@@ -9,8 +9,6 @@ using Allport_s_League_Scrambler.Security;
 using Allport_s_League_Scrambler.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
 namespace Allport_s_League_Scrambler.Controllers
@@ -716,6 +714,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("[action]")]
         [Authorize(Policy = "LeagueManagement")]
+        [SameOrigin]
         public async Task<IActionResult> UpdateKingQueenPlayerSubStatus([FromBody] UpdateSubStatusDto dto)
         {
             var context = new DataContext();
@@ -1172,6 +1171,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("SaveCreatedTeamScores")]
         [Authorize(Policy = "LeagueManagement")]
+        [SameOrigin]
         public async Task<IActionResult> SaveCreatedTeamScores([FromBody] List<TeamScoreDto> scores)
         {
             var context = new DataContext();
@@ -1490,7 +1490,8 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpDelete("SignInPlayer/{playerSignInId}")]
-        [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme + ",LeagueAdminPassword")]
+        [Authorize]
+        [SameOrigin]
         public async Task<IActionResult> DeleteSignInPlayer(int playerSignInId)
         {
             var context = new DataContext();
@@ -1517,7 +1518,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 return Forbid();
             }
 
-            // Preserve manager/legacy administrator removal behavior. Ordinary owners
+            // Preserve league administrator removal behavior. Ordinary owners
             // must not bypass the profile's league-day/lock rules through this older route.
             if (!isLeagueManager)
             {
@@ -2104,111 +2105,33 @@ namespace Allport_s_League_Scrambler.Controllers
         [SameOrigin]
         public async Task<IActionResult> AddNewLeague(string leagueName)
         {
-            // A Player cookie may coexist with the legacy administration cookie.
-            // Only an account that is itself Admin/Manager should become owner.
-            // Otherwise fall back to the explicitly configured legacy Admin.
-            var email = User.IsInRole("Admin") || User.IsInRole("Manager")
-                ? User.FindFirst(ClaimTypes.Email)?.Value
-                : null;
-            var context = new DataContext();
-
-            // Legacy password-based administration has a separate authorized
-            // cookie but no email claim. Assign new leagues to an actual admin
-            // account instead of failing or creating an ownerless league.
-            User retrievedUser = null;
-            if (!string.IsNullOrWhiteSpace(email))
-            {
-                retrievedUser = context.Users.FirstOrDefault(x => x.Email == email);
-            }
-            else
-            {
-                var legacyAuth = await HttpContext.AuthenticateAsync("LeagueAdminPassword");
-                if (!legacyAuth.Succeeded || !legacyAuth.Principal.IsInRole("LegacyAdmin"))
-                {
-                    return Unauthorized(new { message = "Sign in or unlock administration." });
-                }
-
-                var ownerEmail = Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_LEGACY_ADMIN_EMAIL");
-                if (!string.IsNullOrWhiteSpace(ownerEmail))
-                {
-                    retrievedUser = context.Users.FirstOrDefault(x => x.Email == ownerEmail);
-                }
-                else
-                {
-                    var admins = context.Users.Where(x => x.UserRoleId == 1).Take(2).ToList();
-                    if (admins.Count == 1)
-                    {
-                        retrievedUser = admins[0];
-                    }
-                }
-            }
-
-            if (retrievedUser == null)
-            {
-                return BadRequest(new
-                {
-                    message = "A league owner could not be identified. Sign in with an Admin account, " +
-                        "or set LEAGUESCRAMBLER_LEGACY_ADMIN_EMAIL to an existing admin account email."
-                });
-            }
-
-            var leagueExists = context.Leagues.FirstOrDefault(x => x.LeagueName == leagueName);
-
-            // Managers can create new leagues, but not take over existing
-            // leagues they were never assigned to.
-            if (leagueExists != null &&
-                !LeagueAccess.CanManage(User, context, leagueExists.ID))
+            if (!LeagueAccess.TryGetAccountId(User, out var ownerId))
                 return Forbid();
 
-            LeagueType league;
+            leagueName = leagueName?.Trim();
+            if (string.IsNullOrEmpty(leagueName))
+                return BadRequest(new { message = "Enter a league name." });
 
-            if (leagueExists == null)
-            {
-                // Create new league
-                league = new LeagueType()
-                {
-                    LeagueName = leagueName
-                };
+            await using var context = new DataContext();
+            await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            var existing = await context.Leagues.FirstOrDefaultAsync(league => league.LeagueName == leagueName);
+            if (existing != null)
+                return LeagueAccess.CanManage(User, context, existing.ID)
+                    ? Conflict(new { message = "A league with that name already exists." })
+                    : Forbid();
 
-                context.Leagues.Add(league);
-                context.SaveChanges();
+            var league = new LeagueType { LeagueName = leagueName };
+            context.Leagues.Add(league);
+            await context.SaveChangesAsync();
 
-                // Retrieve the newly created league ID
-                var newLeagueId = league.ID;
-
-                // Insert default league settings
-                var defaultSettings = new List<LeagueSettings>
-        {
-            new LeagueSettings { LeagueId = newLeagueId, SettingName = "subScorePercent", SettingValue = "50" },
-            new LeagueSettings { LeagueId = newLeagueId, SettingName = "numberOfSubsAllowed", SettingValue = "100" },
-            new LeagueSettings { LeagueId = newLeagueId, SettingName = "dropLowest", SettingValue = "0" },
-            new LeagueSettings { LeagueId = newLeagueId, SettingName = "dayOfLeague", SettingValue = "Monday" }
-        };
-
-                context.LeagueSettings.AddRange(defaultSettings);
-                context.SaveChanges();
-            }
-            else
-            {
-                league = leagueExists;
-            }
-
-            // Check if the user is already associated with the league
-            var userLeagueExists = context.UserLeagues
-                .Any(ul => ul.LeagueTypeId == league.ID && ul.UserId == retrievedUser.UserId);
-
-            if (!userLeagueExists)
-            {
-                var newUserLeague = new UserLeague
-                {
-                    LeagueTypeId = league.ID,
-                    UserId = retrievedUser.UserId
-                };
-
-                context.UserLeagues.Add(newUserLeague);
-                context.SaveChanges();
-            }
-
+            context.LeagueSettings.AddRange(
+                new LeagueSettings { LeagueId = league.ID, SettingName = "subScorePercent", SettingValue = "50" },
+                new LeagueSettings { LeagueId = league.ID, SettingName = "numberOfSubsAllowed", SettingValue = "100" },
+                new LeagueSettings { LeagueId = league.ID, SettingName = "dropLowest", SettingValue = "0" },
+                new LeagueSettings { LeagueId = league.ID, SettingName = "dayOfLeague", SettingValue = "Monday" });
+            context.UserLeagues.Add(new UserLeague { LeagueTypeId = league.ID, UserId = ownerId });
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
             return Ok(league);
         }
 

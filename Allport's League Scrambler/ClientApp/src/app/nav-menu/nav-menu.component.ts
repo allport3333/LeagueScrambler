@@ -1,3 +1,6 @@
+import { MatDialog } from '@angular/material/dialog';
+import { AppearanceComponent } from '../appearance.component';
+import { onLeagueResume } from '../pwa/pending-work.service';
 import { Component, HostListener, OnInit, OnDestroy, AfterViewInit, DoCheck, ViewChild, ElementRef, NgZone, ChangeDetectionStrategy } from '@angular/core';
 import { LoginService } from '../services/login.service';
 import { NavigationStart, Router } from '@angular/router';
@@ -105,8 +108,18 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         private router: Router,
         private authService: AuthService,
         private zone: NgZone,
-        private leagueService: LeagueService
-    ) { }
+        private leagueService: LeagueService,
+        private dialog: MatDialog
+    ) {
+        onLeagueResume(() => {
+            if (this.loggedIn && this.authenticationChecked) this.loadSessionContext(++this.sessionVersion, true);
+        });
+    }
+
+    openAppearance(): void {
+        this.collapse();
+        this.dialog.open(AppearanceComponent, { width: '380px', maxWidth: 'calc(100vw - 24px)' });
+    }
 
     collapse() {
         this.isExpanded = false;
@@ -121,6 +134,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             if (event instanceof NavigationStart) { this.collapse(); }
         }));
         this.subscriptions.add(this.leagueService.selectedLeague$.subscribe(selected => {
+            if (this.loggedIn) this.leagues = this.leagueService.leaguesAvailable;
             this.selectedLeagueId = selected.leagueId;
             this.selectedLeagueName = selected.leagueName;
         }));
@@ -134,22 +148,30 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
                 this.leagues = [];
             }
             if (state !== true) { return; }
-            const fallback = (error, value) => error.status === 401 || error.status === 403 ? throwError(error) : of(value);
-            this.subscriptions.add(forkJoin([
-                this.loginService.getUsersRole().pipe(catchError(error => fallback(error, { role: '' }))),
-                // An unclaimed account legitimately has no player association (404).
-                this.loginService.getUsersPlayer().pipe(catchError(error => fallback(error, null))),
-                this.loginService.getUserLeagues().pipe(catchError(error => fallback(error, [])))
-            ]).subscribe(results => {
-                if (version !== this.sessionVersion) { return; }
-                this.userRole = results[0].role;
-                this.playerId = results[1] ? results[1].playerId : null;
-                this.leagueService.restoreLeagues(results[2]);
-                this.leagues = this.leagueService.leaguesAvailable;
-                this.authenticationChecked = true;
-            }, () => {
-                if (version === this.sessionVersion) { this.authService.setLoggedIn(false); }
-            }));
+            this.loadSessionContext(version);
+        }));
+    }
+
+    private loadSessionContext(version: number, refreshing = false): void {
+        const unauthorized = error => error.status === 401 || error.status === 403;
+        const fallback = (error, value) => unauthorized(error) || (refreshing && error.status !== 404)
+            ? throwError(error) : of(value);
+        this.subscriptions.add(forkJoin([
+            this.loginService.getUsersRole().pipe(catchError(error => fallback(error, { role: '' }))),
+            // An unclaimed account legitimately has no player association (404).
+            this.loginService.getUsersPlayer().pipe(catchError(error => fallback(error, null))),
+            this.loginService.getUserLeagues().pipe(catchError(error => fallback(error, [])))
+        ]).subscribe(results => {
+            if (version !== this.sessionVersion) { return; }
+            this.userRole = results[0].role;
+            this.playerId = results[1] ? results[1].playerId : null;
+            this.leagueService.restoreLeagues(results[2]);
+            this.leagues = this.leagueService.leaguesAvailable;
+            this.authenticationChecked = true;
+        }, error => {
+            if (version === this.sessionVersion && (!refreshing || unauthorized(error))) {
+                this.authService.setLoggedIn(false);
+            }
         }));
     }
 

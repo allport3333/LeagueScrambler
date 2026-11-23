@@ -1,9 +1,11 @@
+import { onLeagueResume, protectPendingWork } from '../pwa/pending-work.service';
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
-import { forkJoin, Subscription } from 'rxjs';
+import { combineLatest, forkJoin, of, Subscription, switchMap } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
 import { LeagueTeams } from '../data-models/leagueTeams.model';
 import { LeagueService } from '../services/league.service';
 import { LoginService } from '../services/login.service';
+import { AuthService } from '../auth.service';
 
 interface ScoreEntry { team1Score: number | null; team2Score: number | null; }
 interface MatchupEditor {
@@ -27,6 +29,12 @@ interface MatchupEditor {
     standalone: false
 })
 export class TeamScoresComponent implements OnInit, OnDestroy {
+    selectedWorkspaceTab = 0;
+
+    revealWorkspaceTab(workspace: HTMLElement): void {
+        requestAnimationFrame(() => workspace.querySelector('[role="tab"][aria-selected="true"]')
+            ?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+    }
     teams: LeagueTeams[] = [];
     selectedLeague: string;
     leagueID: number;
@@ -36,7 +44,6 @@ export class TeamScoresComponent implements OnInit, OnDestroy {
     gameDate = new Date();
     loadedDate: Date = new Date();
     isActionAllowed = false;
-    legacyPassword = '';
     matchups: MatchupEditor[] = [];
     savedScores: any[] = [];
     loadError = '';
@@ -45,53 +52,33 @@ export class TeamScoresComponent implements OnInit, OnDestroy {
     private subscriptions = new Subscription();
 
     constructor(public statisticsService: StatisticsService,
-        public leagueService: LeagueService, public loginService: LoginService) { }
+        public leagueService: LeagueService, public loginService: LoginService, private authService: AuthService) {
+        protectPendingWork(() => this.anySaving() || this.matchups.some(matchup => !this.hasSaved(matchup) &&
+            (matchup.manual && (!!matchup.team1Id || !!matchup.team2Id) ||
+                matchup.games.length !== this.numberOfGames ||
+                matchup.games.some(game => game.team1Score !== null || game.team2Score !== null))));
+        onLeagueResume(() => { if (this.isActionAllowed && !this.loadingMatchups) this.loadMatchups(); });
+    }
 
     ngOnInit() {
-        this.subscriptions.add(this.loginService.isAdminPasswordAuthorized().subscribe(
-            authorized => { if (authorized) { this.isActionAllowed = true; this.loadMatchups(); } },
-            () => { /* No legacy administration session. */ }
-        ));
-        this.subscriptions.add(this.leagueService.selectedLeague$.subscribe(selected => {
+        this.subscriptions.add(combineLatest([
+            this.authService.authenticationState$, this.leagueService.selectedLeague$
+        ]).pipe(switchMap(([loggedIn, selected]) => {
             this.leagueID = selected.leagueId;
             this.selectedLeague = selected.leagueName;
+            this.isActionAllowed = false;
             this.loadMatchups();
+            this.loading = loggedIn === null || (!!loggedIn && !!selected.leagueId);
+            return loggedIn ? this.loginService.getManagementAccess(selected.leagueId)
+                : of({ role: '', canManage: false });
+        })).subscribe(access => {
+            this.isActionAllowed = access.canManage;
+            this.loading = false;
+            if (access.canManage) this.loadMatchups();
         }));
-        this.subscriptions.add(this.loginService.isLoggedIn().subscribe(result => {
-            if (result) {
-                this.subscriptions.add(this.loginService.getUsersRole().subscribe(roleResult => {
-                    if (roleResult.role === 'Admin' || roleResult.role === 'Manager') {
-                        this.isActionAllowed = true;
-                        this.loadMatchups();
-                    }
-                    this.loading = false;
-                }, () => { this.loading = false; }));
-                // Preserve the existing league discovery workflow.
-                this.subscriptions.add(this.leagueService.getLeagues().subscribe(
-                    () => { this.loading = false; }, () => { this.loading = false; }));
-            } else { this.loading = false; }
-        }, () => { this.loading = false; }));
     }
 
     ngOnDestroy() { this.requestVersion++; this.subscriptions.unsubscribe(); }
-    unlockAdministration() {
-        if (!this.legacyPassword) {
-            alert('Enter the administration password.');
-            return;
-        }
-        this.loginService.verifyAdminPassword(this.legacyPassword).subscribe(
-            (result) => {
-                if (result && result.authorized) {
-                    this.isActionAllowed = true;
-                    this.legacyPassword = '';
-                    this.loadMatchups();
-                }
-            },
-            (error) => alert(error.status === 429
-                ? 'Too many attempts. Try again later.'
-                : 'Incorrect administration password.')
-        );
-    }
 
     dateKey(date: Date): string {
         return date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2);

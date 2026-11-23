@@ -1,77 +1,44 @@
-@if (!isActionAllowed) {
-  <mat-card appearance="outlined" class="m-2 text-center" style="background-color: #f3f3f3;">
-    <p>Viewing and previewing leagues is available without administration access.
-    To edit players, save scores, or update league settings, unlock administration.</p>
-    <mat-form-field appearance="outline">
-      <mat-label>Administration Password</mat-label>
-      <input matInput type="password" (input)="onPasswordInput($event.target.value)"
-        (keyup.enter)="unlockAdminPassword()" />
-      </mat-form-field>
-      <button mat-raised-button type="button" color="primary" class="ml-2"
-      (click)="unlockAdminPassword()">Unlock Administration</button>
-    </mat-card>
-  }
   @if (workspaceSection === 'scrambler') {
     <h2 class="workspace-section-header scrambler-setup-heading">Scrambler Setup</h2>
   }
-  <div class="container-fluid scrambler-workspace" [hidden]="workspaceSection !== 'scrambler'">
+  @if (workspaceSection === 'scrambler' && initialRosterLoading) {
+    <app-page-loading label="Loading league players"></app-page-loading>
+  }
+  @if (workspaceSection === 'scrambler' && initialRosterError) {
+    <p class="text-center" role="alert">{{ initialRosterError }} <button mat-button (click)="selectLeague()">Retry</button></p>
+  }
+  <div class="container-fluid scrambler-workspace" [hidden]="workspaceSection !== 'scrambler' || initialRosterLoading || !!initialRosterError">
 
     <div class="row">
       <div class="col-12">
-        <mat-card appearance="outlined" class="scramble-setup ml-1 mt-2"><h2>Team Configuration</h2><p class="workspace-help">Choose Max Team Size or Number of Teams. Choosing one clears the other; your player selection is retained.</p>
-        <div class="row">
-          <!--<div class="col">
-          <mat-card style="background-color:lightgray;" class="d-flex flex-column align-items-center">
-            <h4>Select League</h4>
-            <div class="mt-1">
-              <mat-form-field>
-                <mat-label>League</mat-label>
-                <mat-select style="min-width:180px;" [(ngModel)]="selectedLeague" (selectionChange)="selectLeague()">
-                  <mat-option *ngFor="let league of leaguesAvailable" [value]="league.leagueName">
-                    {{league.leagueName}}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
-          </mat-card>
-        </div>-->
-        <div class="col text-center mt-2">
-          <mat-card appearance="outlined" style="background-color:lightgray;" class="d-flex flex-column align-items-center">
-            <h4>Max Team Size</h4>
-            <div class="mt-1">
-              <mat-form-field>
-                <mat-label>Max Team Size</mat-label>
-                <mat-select [(ngModel)]="teamSize" (ngModelChange)="updateNumberOfTeams($event); teamSizeSelected = true; numberOfTeamsSelected = false; ">
-                  @for (team of teamSizePossible; track team) {
-                    <mat-option [value]="team">
-                      {{team}}
-                    </mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-              <p [style.color]="teamSizeSelected ? '#999' : 'red'" style="font-size: 12px; margin-top: 5px;">Deselected when number of teams selected.</p>
-            </div>
-          </mat-card>
-        </div>
-        <div class="col text-center mt-2">
-          <mat-card appearance="outlined" style="background-color: lightgray;" class="d-flex flex-column align-items-center">
-            <h4>Number of Teams</h4>
-            <div class="mt-1">
-              <mat-form-field>
-                <mat-label style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Number of Teams</mat-label>
-                <mat-select [(ngModel)]="numberOfTeams" (ngModelChange)="updateTeamSize($event); numberOfTeamsSelected = true; teamSizeSelected = false;">
-                  @for (maxNumberTeam of maxNumberOfTeams; track maxNumberTeam) {
-                    <mat-option [value]="maxNumberTeam">
-                      {{maxNumberTeam}}
-                    </mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-              <p [style.color]="numberOfTeamsSelected ? '#999' : 'red'" style="font-size: 12px; margin-top: 5px;">Deselected when max team size selected.</p>
-            </div>
+        <mat-card appearance="outlined" class="scramble-setup">
+          <h2 id="team-configuration-heading">Team Configuration</h2>
+          <fieldset class="team-configuration-modes">
+            <legend class="sr-only">Configure teams by</legend>
+            <label>
+              <input type="radio" name="team-configuration-mode" [checked]="teamConfigurationMode === 'size'" (change)="selectTeamConfigurationMode('size')">
+              Maximum Team Size
+            </label>
+            <label>
+              <input type="radio" name="team-configuration-mode" [checked]="teamConfigurationMode === 'count'" (change)="selectTeamConfigurationMode('count')">
+              Number of Teams
+            </label>
+          </fieldset>
+          <div class="active-team-configuration">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" floatLabel="always">
+              <mat-label>{{ teamConfigurationMode === 'size' ? 'Maximum Team Size' : 'Number of Teams' }}</mat-label>
+              <mat-select [ngModel]="teamConfigurationMode === 'size' ? teamSize : numberOfTeams"
+                (ngModelChange)="teamConfigurationMode === 'size' ? updateNumberOfTeams($event) : updateTeamSize($event)"
+                placeholder="Choose a number">
+                @for (value of (teamConfigurationMode === 'size' ? teamSizePossible : maxNumberOfTeams); track value) {
+                  <mat-option [value]="value">{{ value }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
             <!-- Teams Needed Section -->
-            <div class="text-center mt-3" style="font-size: 14px;">
-              <button mat-raised-button color="primary" (click)="toggleTeamFormationVisibility()">
+            <div class="team-formation">
+              <button mat-stroked-button type="button" color="primary" (click)="toggleTeamFormationVisibility()" [attr.aria-expanded]="showTeamFormation">
                 Teams That Can Be Formed
               </button>
 
@@ -79,8 +46,8 @@
               @if (showTeamFormation) {
                 <div class="d-flex justify-content-center align-items-center mt-3" style="gap: 20px;">
                   <!-- 2 Player Teams -->
-                  <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">2 Player Teams</p>
+                  <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">2 Player Teams</p>
                     <p [ngStyle]="{'color': remainderTwo === 0 ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                       {{ teamsNeededTwo }}
                     </p>
@@ -91,8 +58,8 @@
                     }
                   </div>
                   <!-- 3 Player Teams -->
-                  <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">3 Player Teams</p>
+                  <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">3 Player Teams</p>
                     <p [ngStyle]="{'color': remainderThree === 0 ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                       {{ teamsNeededThree }}
                     </p>
@@ -103,8 +70,8 @@
                     }
                   </div>
                   <!-- 4 Player Teams -->
-                  <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">4 Player Teams</p>
+                  <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">4 Player Teams</p>
                     <p [ngStyle]="{'color': remainderFour === 0 ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                       {{ teamsNeededFour }}
                     </p>
@@ -120,18 +87,16 @@
 
             </div>
 
-          </mat-card>
-
-        </div>
         @if (teamCount) {
+      <div class="row">
           <div class="col text-center mt-2">
-            <mat-card appearance="outlined" style="background-color: lightgray;" class="d-flex flex-column align-items-center">
+            <mat-card appearance="outlined" style="background-color: var(--hub-section, lightgray);" class="d-flex flex-column align-items-center">
               <h4>Team Breakdown</h4>
-              <div class="d-flex justify-content-center align-items-center mt-3" style="gap: 20px;">
+              <div class="team-breakdown-sizes d-flex flex-wrap justify-content-center align-items-center">
                 <!-- 10 Player Teams -->
                 @if (tenPlayerTeams > 0) {
-                  <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">10 Player Teams</p>
+                  <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">10 Player Teams</p>
                     <p [ngStyle]="{'color': (tenPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                       {{ tenPlayerTeams }}
                     </p>
@@ -139,8 +104,8 @@
                 }
                 <!-- 9 Player Teams -->
                 @if (ninePlayerTeams > 0) {
-                  <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">9 Player Teams</p>
+                  <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">9 Player Teams</p>
                     <p [ngStyle]="{'color': (ninePlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                       {{ ninePlayerTeams }}
                     </p>
@@ -148,8 +113,8 @@
                 }
                 <!-- 8 Player Teams -->
                 @if (eightPlayerTeams > 0) {
-                  <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">8 Player Teams</p>
+                  <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">8 Player Teams</p>
                     <p [ngStyle]="{'color': (eightPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                       {{ eightPlayerTeams }}
                     </p>
@@ -157,8 +122,8 @@
                 }
                 <!-- 7 Player Teams -->
                 @if (sevenPlayerTeams > 0) {
-                  <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">7 Player Teams</p>
+                  <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">7 Player Teams</p>
                     <p [ngStyle]="{'color': (sevenPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                       {{ sevenPlayerTeams }}
                     </p>
@@ -166,8 +131,8 @@
                 }
                 <!-- 6 Player Teams -->
                 @if (sixPlayerTeams > 0) {
-                  <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">6 Player Teams</p>
+                  <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">6 Player Teams</p>
                     <p [ngStyle]="{'color': (sixPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                       {{ sixPlayerTeams }}
                     </p>
@@ -175,36 +140,36 @@
                 }
                 <!-- 5 Player Teams -->
                 @if (fivePlayerTeams > 0) {
-                  <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">5 Player Teams</p>
+                  <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                    <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">5 Player Teams</p>
                     <p [ngStyle]="{'color': (fivePlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                       {{ fivePlayerTeams }}
                     </p>
                   </div>
                 }
                 <!-- 4 Player Teams -->
-                <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                  <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">4 Player Teams</p>
+                <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                  <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">4 Player Teams</p>
                   <p [ngStyle]="{'color': (fourPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                     {{ fourPlayerTeams }}
                   </p>
                 </div>
                 <!-- 3 Player Teams -->
-                <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                  <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">3 Player Teams</p>
+                <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                  <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">3 Player Teams</p>
                   <p [ngStyle]="{'color': (threePlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                     {{ threePlayerTeams }}
                   </p>
                 </div>
                 <!-- 2 Player Teams -->
-                <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
-                  <p style="margin: 0; font-weight: bold; font-size: 14px; color: gray;">2 Player Teams</p>
+                <div style="background-color: var(--hub-surface, #eeeeee); border: 1px solid gray; border-radius: 5px; padding: 10px 15px; text-align: center;">
+                  <p style="margin: 0; font-weight: bold; font-size: 14px; color: var(--hub-muted, gray);">2 Player Teams</p>
                   <p [ngStyle]="{'color': (twoPlayerTeams % 2 === 0 && leftoverPlayers === 0) ? 'green' : 'red'}" style="margin: 0; font-size: 16px; font-weight: bold;">
                     {{ twoPlayerTeams }}
                   </p>
                 </div>
               </div>
-              <div style="background-color: #eeeeee; border: 1px solid gray; border-radius: 5px; padding: 10px 10px; text-align: center;" class="mt-3">
+              <div class="team-breakdown-total">
                 @if (this.teamCount !== undefined && selectedList.length > 0) {
                   <div>
                     <h5>Number of Teams: {{ teamCount }}</h5>
@@ -220,9 +185,8 @@
               </div>
             </mat-card>
           </div>
-        }
       </div>
-
+    }
     </mat-card>
     <details #rulesDisclosure class="scramble-rules" (toggle)="scrambleRulesExpanded=rulesDisclosure.open"><summary role="button" [attr.aria-expanded]="scrambleRulesExpanded" class="scramble-rules-toggle" aria-controls="scramble-rules-options"><span class="rules-heading-group"><mat-icon class="scramble-rules-chevron" aria-hidden="true">expand_more</mat-icon><span id="scramble-rules-title">Scramble Rules</span></span>@if (enabledScrambleRuleCount) {
     <small>{{enabledScrambleRuleCount}} {{enabledScrambleRuleCount===1?'option':'options'}} enabled</small>
@@ -267,6 +231,21 @@ class="apply-top-button scramble-button"
 [matTooltipDisabled]="maleStandings && maleStandings.length > 0">
 Apply Top Players (Male Standings)
 </button></div><p class="workspace-help">Apply top-player preferences after player selection. Standings remain loaded for balancing.</p></div></section>
+@if (selectedTopPlayers.length) {
+  <section class="top-players-summary" aria-labelledby="top-players-heading">
+    <header>
+      <h2 id="top-players-heading">Top Players</h2>
+      <span role="status">{{ selectedTopPlayers.length }} selected</span>
+    </header>
+    <ul>
+      @for (player of selectedTopPlayers; track player.id) {
+        <li [class.top-player-male]="player.isMale" [class.top-player-female]="!player.isMale">
+          {{ player.firstName }} {{ player.lastName }}
+        </li>
+      }
+    </ul>
+  </section>
+}
 @if (hideInputOptions) {
   <div class="text-center mt-3">
     @if (!lockedResults) {
@@ -285,7 +264,7 @@ Apply Top Players (Male Standings)
     class="scramble-button primary-action"
     matTooltip="Button is disabled because no players are selected."
     [matTooltipDisabled]="selectedList && selectedList.length > 0"
-    [disabled]="generationBusy || !selectedList || selectedList.length === 0"
+    [disabled]="generationBusy || !selectedList || selectedList.length === 0 || (!teamSize && !numberOfTeams)"
                             [ngClass]="{'enabled' : selectedList && selectedList.length > 0,
                                             'disabled': !selectedList || selectedList.length === 0
                                             }">
@@ -334,7 +313,7 @@ Apply Top Players (Male Standings)
       }@if (scrambleSelected) {
       <strong>Scramble{{ listOfRetrievedScrambleNumbers.length>1 ? 's' : '' }} {{ listOfRetrievedScrambleNumbers.join(', ') }}</strong>
       }<span>{{ listOfTeams.length }} teams &middot; {{ matchupCount }} matchups</span></p>
-      <div class="compact-results-actions"><button mat-raised-button color="primary" (click)="openMatchups()">View Matchups</button><button mat-stroked-button color="primary" (click)="openMatchups(true)" [disabled]="!isActionAllowed || teamSaveBusy">Modify Teams</button><button mat-raised-button color="primary" (click)="saveKingQueenTeams()" [disabled]="!canSaveMatchupTeams || (isScrambleSaved && !teamEditsPending)">{{ teamSaveBusy ? 'Saving...' : 'Save Scramble' }}</button><button mat-raised-button class="results-print-button" (click)="printMatchups()" [disabled]="!canPrintMatchups" [attr.aria-describedby]="!canPrintMatchups ? 'scramble-print-save-help' : null">Print Matchups</button></div>
+      <div class="compact-results-actions"><button mat-raised-button color="primary" (click)="openMatchups()">View Matchups</button><button mat-stroked-button color="primary" (click)="openMatchups(true)" [disabled]="!isActionAllowed || teamSaveBusy">Modify Teams</button><button class="action-success" mat-raised-button color="primary" (click)="saveKingQueenTeams()" [disabled]="!canSaveMatchupTeams || (isScrambleSaved && !teamEditsPending)">{{ teamSaveBusy ? 'Saving...' : 'Save Scramble' }}</button><button mat-raised-button class="results-print-button" (click)="printMatchups()" [disabled]="!canPrintMatchups" [attr.aria-describedby]="!canPrintMatchups ? 'scramble-print-save-help' : null">Print Matchups</button></div>
       <details class="compact-print-settings"><summary>Print Settings</summary><div class="results-print-controls"><mat-form-field appearance="outline"><mat-label>Matchups Per Page</mat-label><mat-select [(value)]="selectedMatchupsPerPage" (selectionChange)="onSelectionChange($event)"><mat-option value="2">2 Matchups</mat-option><mat-option value="4">4 Matchups</mat-option><mat-option value="6">6 Matchups</mat-option></mat-select></mat-form-field><mat-form-field appearance="outline"><mat-label>Number of Rounds</mat-label><mat-select [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)">@for (round of [1,2,3,4,5,6,7,8,9,10]; track round) {
       <mat-option [value]="round">{{ round }} Rounds</mat-option>
     }</mat-select></mat-form-field></div></details>
@@ -368,7 +347,7 @@ Apply Top Players (Male Standings)
 
 <div class="row">
   <div class="col-12">
-    <mat-card appearance="outlined" class=" ml-3 mt-2 " style="background-color:lightgray; ">
+    <mat-card appearance="outlined" class=" ml-3 mt-2 " style="background-color:var(--hub-surface, lightgray); ">
       <mat-tab-group mat-align-tabs="center" #tabGroup (selectedTabChange)="onTabChange($event)">
 
         @if (selectedLeague) {
@@ -377,159 +356,111 @@ Apply Top Players (Male Standings)
               <div class="row">
                 <div class="col-12" id="hideInputOptions">
                   <div [hidden]="playerLoading">
-                    <div class="workspace-section-header"><h3>Player List</h3><button mat-button (click)="hidePlayerList()" [attr.aria-expanded]="!hidePlayers">{{ hidePlayers ? 'Show Player List' : 'Hide Player List' }}</button></div><mat-card appearance="outlined" id="playerListHidden" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-                    <mat-card-title style="color: gray; margin: -10px -10px -5px -10px; display: flex; justify-content: center; align-items: center; flex-direction: column;">
-                      <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap;">
-                        <button mat-raised-button color="primary" (click)="selectAllPlayers()" style="font-size: 14px; padding: 5px; min-width: 80px;">
-                          Select All
-                        </button>
-                        <span style="margin-left: 10px;"></span>
-                        <button mat-raised-button color="warn" (click)="deselectAllPlayers()" style="font-size: 14px; padding: 5px; min-width: 80px;">
-                          Deselect All
-                        </button>
-                      </div>
-                      <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap;">
-                        <!-- Player Selected Details -->
-                        @if (!isSmallScreen) {
-                          <div style="margin-right: 10px; margin-top:10px; font-size: 20px;">
-                            Total Players Selected - {{ selectedList.length }}
-                          </div>
-                        }
-                        @if (isSmallScreen) {
-                          <div style="margin-right: 10px; margin-top: 10px; font-size: 12px;">
-                            Total Players Selected - {{ selectedList.length }}
-                          </div>
-                        }
-                        <!-- Male and Female Details on Next Line -->
-                        <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; width: 100%; margin-top: 10px;">
-                          @if (!isSmallScreen) {
-                            <div style="margin-right: 10px; font-size: 20px;">
-                              Male: {{ getTotalMaleSelectedPlayers() }}
+                    <h3 class="workspace-section-header roster-heading">
+                      <button mat-button type="button" (click)="hidePlayerList()" [attr.aria-expanded]="!hidePlayers" aria-controls="playerListHidden">
+                        Player List <mat-icon iconPositionEnd aria-hidden="true">{{ hidePlayers ? 'expand_more' : 'expand_less' }}</mat-icon>
+                      </button>
+                    </h3>
+                    <mat-card appearance="outlined" id="playerListHidden" class="roster-panel" [hidden]="hidePlayers">
+                      <div class="roster-toolbar">
+                        <div class="roster-selection-actions">
+                          <button mat-raised-button type="button" color="primary" (click)="selectAllPlayers()">Select All</button>
+                          <button mat-raised-button type="button" color="warn" (click)="deselectAllPlayers()">Deselect All</button>
+                        </div>
+                        <div class="roster-guidance">
+                          <button mat-button type="button" class="roster-requirements-button" (click)="togglePlayersVisibility()"
+                            [attr.aria-expanded]="showPlayerTeams" aria-controls="roster-requirements">
+                            Player Requirements <mat-icon iconPositionEnd aria-hidden="true">{{ showPlayerTeams ? 'expand_less' : 'expand_more' }}</mat-icon>
+                          </button>
+                            <div class="player-action-key player-action-legend" aria-label="Player action symbols">
+                              <span><mat-icon aria-hidden="true">star</mat-icon> Top</span>
+                              <span><mat-icon aria-hidden="true">arrow_downward</mat-icon> Low</span>
+                              <span><mat-icon aria-hidden="true">radio_button_unchecked</mat-icon> Bye</span>
+                              <span><mat-icon aria-hidden="true">male</mat-icon><mat-icon aria-hidden="true">female</mat-icon> Temporary gender</span>
                             </div>
-                          }
-                          @if (!isSmallScreen) {
-                            <div style="margin-right: 10px; font-size: 20px;">
-                              Female: {{ getTotalFemaleSelectedPlayers() }}
-                            </div>
-                          }
-                          @if (isSmallScreen) {
-                            <div style="margin-right: 10px; font-size: 12px;">
-                              Male: {{ getTotalMaleSelectedPlayers() }}
-                            </div>
-                          }
-                          @if (isSmallScreen) {
-                            <div style="margin-right: 10px; font-size: 12px;">
-                              Female: {{ getTotalFemaleSelectedPlayers() }}
-                            </div>
+                        </div>
+                        <div id="roster-requirements" [hidden]="!showPlayerTeams">
+                          <p>The larger of the Top and Low groups sets the team count for these estimates.</p>
+                          @if (numberOfPlayersNeededTwo) {
+                            <dl class="roster-requirements">
+                              @for (option of [
+                                { size: 2, players: numberOfPlayersNeededTwo },
+                                { size: 3, players: numberOfPlayersNeededThree },
+                                { size: 4, players: numberOfPlayersNeededFour }
+                              ]; track option.size) {
+                                <div [class.requirement-met]="option.players <= selectedList.length">
+                                  <dt>{{ option.size }} per team</dt>
+                                  <dd>{{ option.players }} players needed</dd>
+                                </div>
+                              }
+                            </dl>
+                          } @else {
+                            <p>Mark a Top or Low player to see the estimated totals.</p>
                           }
                         </div>
                       </div>
-                      <div class="text-center mt-2" style="font-size: 14px;">
-                        <button mat-raised-button color="primary" (click)="togglePlayersVisibility()">
-                          Required Players For Top/Low Players
-                        </button>
-                        <!-- Toggleable content -->
-                        @if (showPlayerTeams) {
-                          <div class="d-flex justify-content-center align-items-center mt-3" style="gap: 20px;">
-                            <!-- 2 Player Teams -->
-                            <div [style.background-color]="numberOfPlayersNeededTwo <= selectedList.length ? '#d4edda' : '#f8d7da'"
-                              [style.color]="numberOfPlayersNeededTwo <= selectedList.length ? '#155724' : '#721c24'"
-                              style="border: 1px solid #ccc; padding: 10px 20px; border-radius: 5px; text-align: center;">
-                              <p style="margin: 0;">
-                                <strong>2 Player Teams:</strong><br />
-                                <span>{{ numberOfPlayersNeededTwo || '-' }}</span>
-                              </p>
-                            </div>
-                            <!-- 3 Player Teams -->
-                            <div [style.background-color]="numberOfPlayersNeededThree <= selectedList.length ? '#d4edda' : '#f8d7da'"
-                              [style.color]="numberOfPlayersNeededThree <= selectedList.length ? '#155724' : '#721c24'"
-                              style="border: 1px solid #ccc; padding: 10px 20px; border-radius: 5px; text-align: center;">
-                              <p style="margin: 0;">
-                                <strong>3 Player Teams:</strong><br />
-                                <span>{{ numberOfPlayersNeededThree || '-' }}</span>
-                              </p>
-                            </div>
-                            <!-- 4 Player Teams -->
-                            <div [style.background-color]="numberOfPlayersNeededFour <= selectedList.length ? '#d4edda' : '#f8d7da'"
-                              [style.color]="numberOfPlayersNeededFour <= selectedList.length ? '#155724' : '#721c24'"
-                              style="border: 1px solid #ccc; padding: 10px 20px; border-radius: 5px; text-align: center;">
-                              <p style="margin: 0;">
-                                <strong>4 Player Teams:</strong><br />
-                                <span>{{ numberOfPlayersNeededFour || '-' }}</span>
-                              </p>
-                            </div>
-                          </div>
-                        }
-                      </div>
-                    </mat-card-title>
-                    <div class="player-action-key player-action-legend" aria-label="Player action symbols">
-                      <span><mat-icon aria-hidden="true">star</mat-icon> Top</span>
-                      <span><mat-icon aria-hidden="true">signal_cellular_4_bar</mat-icon> Low</span>
-                      <span><mat-icon aria-hidden="true">radio_button_unchecked</mat-icon> Bye</span>
-                      <span><mat-icon aria-hidden="true">male</mat-icon><mat-icon aria-hidden="true">female</mat-icon> Temporary gender</span>
-                    </div>
                     <mat-selection-list class="league-roster" dense [(ngModel)]="selectedList" (ngModelChange)="addPlayer($event)">
                       <div>
                         <!-- Male Players -->
                         <div style="display: flex; flex-direction: column;">
                           <!-- Male Players -->
                           <div style="display: flex; flex-direction: column;">
-                            <mat-list style="display: flex; flex-wrap: wrap; justify-content: space-between;">
+                            <mat-list class="scramble-roster-grid">
                               @for (player1 of malePlayers1; track player1; let i = $index) {
-                                <mat-list-option [style.width.%]="isSmallScreen ? 48 : 23"
-                                  [style.margin-bottom.px]="5"
-                                  style="background-color: #DBFDFF; padding: 3px 5px; border-radius: 5px;"
+                                <mat-list-option
+                                  class="roster-player roster-player-male"
                                   [value]="player1"
                                   [disableRipple]="true"
-                                  checkboxPosition="before"
+                                  togglePosition="before"
                                   (click)="onOptionClick(player1)">
                                   @if (!isSmallScreen) {
-                                    <div style="display: flex; align-items: center; gap: 3px;">
+                                    <div class="desktop-player-controls">
+                                      <span class="desktop-player-name">{{ player1.firstName }} {{ player1.lastName }}</span>
+                                      <div class="desktop-player-actions">
                                       <!-- Top Player Button -->
                                       @if (!player1.isTopPlayer) {
-                                        <button mat-icon-button style="margin-left: -12px;" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
+                                        <button mat-icon-button type="button" class="player-icon-action" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" aria-label="Set Top Player" matTooltip="Set Top Player">
                                           <mat-icon>star_border</mat-icon>
                                         </button>
                                       }
                                       @if (player1.isTopPlayer) {
-                                        <button mat-icon-button style="margin-left: -12px;" (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
+                                        <button mat-icon-button type="button" class="player-icon-action" (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" aria-label="Remove Top Player" matTooltip="Remove Top Player">
                                           <mat-icon>star</mat-icon>
                                         </button>
                                       }
                                       <!-- Low Player Button -->
                                       @if (!player1.isLowPlayer) {
-                                        <button mat-icon-button style="margin-left: -12px;" (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" matTooltip="Set Low Player">
-                                          <mat-icon>signal_cellular_null</mat-icon>
+                                        <button mat-icon-button type="button" class="player-icon-action" (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" aria-label="Set Low Player" matTooltip="Set Low Player">
+                                          <mat-icon>arrow_downward</mat-icon>
                                         </button>
                                       }
                                       @if (player1.isLowPlayer) {
-                                        <button mat-icon-button style="margin-left: -12px;" (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Low Player">
-                                          <mat-icon>signal_cellular_4_bar</mat-icon>
+                                        <button mat-icon-button type="button" class="player-icon-action low-player-active" (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" aria-label="Remove Low Player" matTooltip="Remove Low Player">
+                                          <mat-icon>arrow_downward</mat-icon>
                                         </button>
                                       }
                                       <!-- Bye Player Button -->
                                       @if (!player1.isByePlayer) {
-                                        <button mat-icon-button style="margin-left: -12px;" (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
+                                        <button mat-icon-button type="button" class="player-icon-action" (click)="addPlayerToByeList(player1); $event.stopPropagation()" aria-label="Set Bye Player" matTooltip="Set Bye Player">
                                           <mat-icon>radio_button_unchecked</mat-icon>
                                         </button>
                                       }
                                       @if (player1.isByePlayer) {
-                                        <button mat-icon-button style="margin-left: -12px;" (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
+                                        <button mat-icon-button type="button" class="player-icon-action" (click)="removePlayerFromByeList(player1); $event.stopPropagation()" aria-label="Remove Bye Player" matTooltip="Remove Bye Player">
                                           <mat-icon>cancel</mat-icon>
                                         </button>
                                       }
                                       <!-- Female Player For a Day Button -->
-                                      <button mat-icon-button style="margin-left: -12px;"
+                                      <button mat-icon-button type="button" class="player-icon-action"
                                         (click)="swapGender(player1); $event.stopPropagation()"
-                                        [matTooltip]="player1.isMale ? 'Set Female Player' : 'Set Male Player'">
+                                        [attr.aria-label]="player1.isMale ? 'Set Female Player' : 'Set Male Player'" [matTooltip]="player1.isMale ? 'Set Female Player' : 'Set Male Player'">
                                         <mat-icon>{{ player1.isMale ? 'male' : 'female' }}</mat-icon>
                                       </button>
-                                      <!-- Player Name -->
-                                      <span style="font-size: .9rem;">{{ player1.firstName }} {{ player1.lastName }}</span>
+                                      </div>
                                     </div>
                                   }
                                   @if (isSmallScreen) {
-                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="mobile-player-controls">
                                       <!-- Player Name -->
                                       <div class="mobile-player-identity">
                                         <span class="mobile-player-name">{{ player1.firstName }} {{ player1.lastName }}</span>
@@ -550,31 +481,31 @@ Apply Top Players (Male Standings)
                                           </span>
                                         }
                                       </div>
-                                      <!-- Small Arrow Dropdown -->
-                                      <mat-select [(value)]="player1.action"
-                                        (selectionChange)="handleDropdownChange(player1, $event)"
-                                        (click)="$event.stopPropagation()"
-                                        style="flex-shrink: 0; width: 32px; height: 32px; padding: 0;">
+                                      <button mat-icon-button type="button" class="mobile-player-action" [matMenuTriggerFor]="playerActions"
+                                        [attr.aria-label]="'Actions for ' + player1.firstName + ' ' + player1.lastName" (click)="$event.stopPropagation()">
+                                        <mat-icon aria-hidden="true">more_vert</mat-icon>
+                                      </button>
+                                      <mat-menu #playerActions="matMenu">
                                         @if (!player1.isTopPlayer) {
-                                          <mat-option [value]="'setTopPlayer'">Set Top Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'setTopPlayer')">Set Top Player</button>
                                         }
                                         @if (player1.isTopPlayer) {
-                                          <mat-option [value]="'removeTopPlayer'">Remove Top Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'removeTopPlayer')">Remove Top Player</button>
                                         }
                                         @if (!player1.isLowPlayer) {
-                                          <mat-option [value]="'setLowPlayer'">Set Low Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'setLowPlayer')">Set Low Player</button>
                                         }
                                         @if (player1.isLowPlayer) {
-                                          <mat-option [value]="'removeLowPlayer'">Remove Low Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'removeLowPlayer')">Remove Low Player</button>
                                         }
                                         @if (!player1.isByePlayer) {
-                                          <mat-option [value]="'setByePlayer'">Set Bye Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'setByePlayer')">Set Bye Player</button>
                                         }
                                         @if (player1.isByePlayer) {
-                                          <mat-option [value]="'removeByePlayer'">Remove Bye Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'removeByePlayer')">Remove Bye Player</button>
                                         }
-                                        <mat-option [value]="'swapGender'">{{ player1.isMale ? 'Set Female Player' : 'Set Male Player' }}</mat-option>
-                                      </mat-select>
+                                        <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'swapGender')">{{ player1.isMale ? 'Set Female Player' : 'Set Male Player' }}</button>
+                                      </mat-menu>
                                     </div>
                                   }
                                 </mat-list-option>
@@ -587,62 +518,62 @@ Apply Top Players (Male Standings)
                         <!-- Female Players -->
                         <div style="display: flex; flex-direction: column;">
                           <div style="display: flex; flex-direction: column;">
-                            <mat-list style="display: flex; flex-wrap: wrap; justify-content: space-between;">
+                            <mat-list class="scramble-roster-grid">
                               @for (player1 of femalePlayers1; track player1; let i = $index) {
-                                <mat-list-option [style.width.%]="isSmallScreen ? 48 : 23"
-                                  [style.margin-bottom.px]="5"
-                                  style="background-color: #FCE0FF; padding: 3px 5px; border-radius: 5px;"
+                                <mat-list-option
+                                  class="roster-player roster-player-female"
                                   [value]="player1"
                                   [disableRipple]="true"
-                                  checkboxPosition="before"
+                                  togglePosition="before"
                                   (click)="onOptionClick(player1)">
                                   @if (!isSmallScreen) {
-                                    <div style="display: flex; align-items: center; gap: 3px;">
+                                    <div class="desktop-player-controls">
+                                      <span class="desktop-player-name">{{ player1.firstName }} {{ player1.lastName }}</span>
+                                      <div class="desktop-player-actions">
                                       <!-- Top Player Button -->
                                       @if (!player1.isTopPlayer) {
-                                        <button mat-icon-button style="margin-left: -12px;" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" matTooltip="Set Top Player">
+                                        <button mat-icon-button type="button" class="player-icon-action" (click)="addPlayerToTopPlayerList(player1); $event.stopPropagation()" aria-label="Set Top Player" matTooltip="Set Top Player">
                                           <mat-icon>star_border</mat-icon>
                                         </button>
                                       }
                                       @if (player1.isTopPlayer) {
-                                        <button mat-icon-button style="margin-left: -12px; " (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Top Player">
+                                        <button mat-icon-button type="button" class="player-icon-action" (click)="removePlayerFromTopPlayerList(player1); $event.stopPropagation()" aria-label="Remove Top Player" matTooltip="Remove Top Player">
                                           <mat-icon>star</mat-icon>
                                         </button>
                                       }
                                       <!-- Low Player Button -->
                                       @if (!player1.isLowPlayer) {
-                                        <button mat-icon-button style="margin-left: -12px; " (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" matTooltip="Set Low Player">
-                                          <mat-icon>signal_cellular_null</mat-icon>
+                                        <button mat-icon-button type="button" class="player-icon-action" (click)="addPlayerToLowPlayerList(player1); $event.stopPropagation()" aria-label="Set Low Player" matTooltip="Set Low Player">
+                                          <mat-icon>arrow_downward</mat-icon>
                                         </button>
                                       }
                                       @if (player1.isLowPlayer) {
-                                        <button mat-icon-button style="margin-left: -12px; " (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" matTooltip="Remove Low Player">
-                                          <mat-icon>signal_cellular_4_bar</mat-icon>
+                                        <button mat-icon-button type="button" class="player-icon-action low-player-active" (click)="removePlayerFromLowPlayerList(player1); $event.stopPropagation()" aria-label="Remove Low Player" matTooltip="Remove Low Player">
+                                          <mat-icon>arrow_downward</mat-icon>
                                         </button>
                                       }
                                       <!-- Bye Player Button -->
                                       @if (!player1.isByePlayer) {
-                                        <button mat-icon-button style="margin-left: -12px; " (click)="addPlayerToByeList(player1); $event.stopPropagation()" matTooltip="Set Bye Player">
+                                        <button mat-icon-button type="button" class="player-icon-action" (click)="addPlayerToByeList(player1); $event.stopPropagation()" aria-label="Set Bye Player" matTooltip="Set Bye Player">
                                           <mat-icon>radio_button_unchecked</mat-icon>
                                         </button>
                                       }
                                       @if (player1.isByePlayer) {
-                                        <button mat-icon-button style="margin-left: -12px; " (click)="removePlayerFromByeList(player1); $event.stopPropagation()" matTooltip="Remove Bye Player">
+                                        <button mat-icon-button type="button" class="player-icon-action" (click)="removePlayerFromByeList(player1); $event.stopPropagation()" aria-label="Remove Bye Player" matTooltip="Remove Bye Player">
                                           <mat-icon>cancel</mat-icon>
                                         </button>
                                       }
                                       <!-- Male Player For a Day Button -->
-                                      <button mat-icon-button style="margin-left: -12px;"
+                                      <button mat-icon-button type="button" class="player-icon-action"
                                         (click)="swapGender(player1); $event.stopPropagation()"
-                                        [matTooltip]="player1.isMale ? 'Set Female Player' : 'Set Male Player'">
+                                        [attr.aria-label]="player1.isMale ? 'Set Female Player' : 'Set Male Player'" [matTooltip]="player1.isMale ? 'Set Female Player' : 'Set Male Player'">
                                         <mat-icon>{{ player1.isMale ? 'male' : 'female' }}</mat-icon>
                                       </button>
-                                      <!-- Player Name -->
-                                      <span style="font-size: .9rem;">{{ player1.firstName }} {{ player1.lastName }}</span>
+                                      </div>
                                     </div>
                                   }
                                   @if (isSmallScreen) {
-                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="mobile-player-controls">
                                       <!-- Player Name -->
                                       <div class="mobile-player-identity">
                                         <span class="mobile-player-name">{{ player1.firstName }} {{ player1.lastName }}</span>
@@ -663,31 +594,31 @@ Apply Top Players (Male Standings)
                                           </span>
                                         }
                                       </div>
-                                      <!-- Small Arrow Dropdown -->
-                                      <mat-select [(value)]="player1.action"
-                                        (selectionChange)="handleDropdownChange(player1, $event)"
-                                        (click)="$event.stopPropagation()"
-                                        style="flex-shrink: 0; width: 32px; height: 32px; padding: 0;">
+                                      <button mat-icon-button type="button" class="mobile-player-action" [matMenuTriggerFor]="playerActions"
+                                        [attr.aria-label]="'Actions for ' + player1.firstName + ' ' + player1.lastName" (click)="$event.stopPropagation()">
+                                        <mat-icon aria-hidden="true">more_vert</mat-icon>
+                                      </button>
+                                      <mat-menu #playerActions="matMenu">
                                         @if (!player1.isTopPlayer) {
-                                          <mat-option [value]="'setTopPlayer'">Set Top Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'setTopPlayer')">Set Top Player</button>
                                         }
                                         @if (player1.isTopPlayer) {
-                                          <mat-option [value]="'removeTopPlayer'">Remove Top Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'removeTopPlayer')">Remove Top Player</button>
                                         }
                                         @if (!player1.isLowPlayer) {
-                                          <mat-option [value]="'setLowPlayer'">Set Low Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'setLowPlayer')">Set Low Player</button>
                                         }
                                         @if (player1.isLowPlayer) {
-                                          <mat-option [value]="'removeLowPlayer'">Remove Low Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'removeLowPlayer')">Remove Low Player</button>
                                         }
                                         @if (!player1.isByePlayer) {
-                                          <mat-option [value]="'setByePlayer'">Set Bye Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'setByePlayer')">Set Bye Player</button>
                                         }
                                         @if (player1.isByePlayer) {
-                                          <mat-option [value]="'removeByePlayer'">Remove Bye Player</mat-option>
+                                          <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'removeByePlayer')">Remove Bye Player</button>
                                         }
-                                        <mat-option [value]="'swapGender'">{{ player1.isMale ? 'Set Female Player' : 'Set Male Player' }}</mat-option>
-                                      </mat-select>
+                                        <button mat-menu-item type="button" (click)="handlePlayerAction(player1, 'swapGender')">{{ player1.isMale ? 'Set Female Player' : 'Set Male Player' }}</button>
+                                      </mat-menu>
                                     </div>
                                   }
                                 </mat-list-option>
@@ -699,14 +630,7 @@ Apply Top Players (Male Standings)
                     </mat-selection-list>
                   </mat-card>
                 </div>
-                <div [hidden]="!playerLoading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.8); display: flex; justify-content: center; align-items: center;">
-                  <div style="text-align: center;">
-                    <h2 class="ml-4">Loading...</h2>
-                    <div style="display: inline-block;">
-                      <mat-spinner diameter="200"></mat-spinner>
-                    </div>
-                  </div>
-                </div>
+                @if (playerLoading && !initialRosterLoading) { <app-page-loading label="Loading league players"></app-page-loading> }
               </div>
             </div>
           </div>
@@ -714,14 +638,14 @@ Apply Top Players (Male Standings)
       }
       @if (selectedLeague) {
         <mat-tab label="Retrieve Scramble">
-          <mat-card appearance="outlined" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+          <mat-card appearance="outlined" style="margin-top: 20px; margin-bottom: 20px; background-color: var(--hub-surface, #eeeeee)">
             <div class="tab-content d-flex flex-column align-items-center">
               <h5 class="mb-2">Retrieve Previous Scramble</h5>
               <mat-selection-list dense [(ngModel)]="selectedRetrieveScrambleList" (ngModelChange)="updateScrambleNumbers($event)">
                 <div>
                   <!-- Male Players -->
                   <div style="display: flex; flex-direction: column;">
-                    <mat-list style="display: flex; flex-wrap: wrap; justify-content: space-between;">
+                    <mat-list class="retrieved-scramble-list">
                       @for (scramble of queriedScrambles; track scramble; let i = $index) {
                         <mat-list-option [style.width.%]="getListItemWidth(queriedScrambles.length)" [style.margin-bottom.px]="isSmallScreen ? 10 : 2" style="background-color: lightgray; text-align: center;" [value]="scramble">
                           <div style="display: flex; align-items: center; justify-content: center;">
@@ -784,7 +708,7 @@ Apply Top Players (Male Standings)
             <!-- New Dropdown Retrieve Scramble Tab -->
             @if (selectedLeague) {
               <mat-tab label="Manage Scores">
-                <mat-card appearance="outlined" class="score-editor-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+                <mat-card appearance="outlined" class="score-editor-card" style="margin-top: 20px; margin-bottom: 20px; background-color: var(--hub-surface, #eeeeee)">
                   <div class="tab-content d-flex flex-column align-items-center">
                     <h5 class="mb-2">Select Scramble to Retrieve</h5>
                     <mat-form-field appearance="outline" style="width: 250px;">
@@ -823,7 +747,7 @@ Apply Top Players (Male Standings)
                     <div class="d-flex flex-column align-items-center desktop-score-save">
                       <p class="desktop-save-context">Save round scores for every matchup in this scramble.</p>
                       @if (showSaveRoundScores) {
-                        <button mat-raised-button color="primary" class="mb-3" [disabled]="scoreSaveBusy || scoreSubBusy || scoreRefreshRequired || !kingQueenRoundScores.length" (click)="saveKingQueenRoundScores()">{{ scoreSaveBusy ? 'Saving...' : 'Save Round Scores' }}</button>
+                        <button mat-raised-button color="primary" class="action-success mb-3" [disabled]="scoreSaveBusy || scoreSubBusy || scoreRefreshRequired || !kingQueenRoundScores.length" (click)="saveKingQueenRoundScores()">{{ scoreSaveBusy ? 'Saving...' : 'Save Round Scores' }}</button>
                       }
                     </div>
                   }
@@ -912,7 +836,7 @@ Apply Top Players (Male Standings)
           @if (showSaveRoundScores) {
             <div class="mobile-score-save">@if (scoreEditsPending) {
               <p class="score-editor-note">Unsaved round scores</p>
-              }<button mat-raised-button color="primary" type="button" [disabled]="scoreSaveBusy || scoreSubBusy || scoreRefreshRequired || !kingQueenRoundScores.length" (click)="saveKingQueenRoundScores()">{{ scoreSaveBusy ? 'Saving...' : 'Save Round Scores' }}</button><p class="score-editor-note">Saves all teams in this scramble.</p></div>
+              }<button class="action-success" mat-raised-button color="primary" type="button" [disabled]="scoreSaveBusy || scoreSubBusy || scoreRefreshRequired || !kingQueenRoundScores.length" (click)="saveKingQueenRoundScores()">{{ scoreSaveBusy ? 'Saving...' : 'Save Round Scores' }}</button><p class="score-editor-note">Saves all teams in this scramble.</p></div>
             }
           </section>
         }
@@ -925,31 +849,8 @@ Apply Top Players (Male Standings)
     </mat-tab>
   }
 </mat-tab-group>
-@if ((displayTopPlayers.length > 0 || displayLowPlayers.length > 0) && !hideInputOptions) {
-  <div class="d-flex justify-content-center align-items-start" style="gap: 20px;">
-    <!-- Top Players Section -->
-    @if (displayTopPlayers.length > 0) {
-      <div class="top-players-section" style="width: 45%;">
-        <h5 class="text-center">
-          Top Players
-          @if (totalTopPlayers.length > 0) {
-            <span>({{ totalTopPlayers.length }})</span>
-          }
-        </h5>
-        <div class="player-list text-center">
-          <!-- Top Players -->
-          @for (player of displayTopPlayers; track player) {
-            <div [ngClass]="getPlayerClass(player)"
-              style="margin: 10px 10px; padding: 5px; border-radius: 5px;"
-              [matTooltip]="!isPlayerInSelectedList(player) ? 'Not Selected' : ''">
-              {{ player.firstName }} {{ player.lastName }}
-            </div>
-          }
-        </div>
-      </div>
-    }
-    <!-- Vertical Divider -->
-    <div class="divider" style="border-left: 2px solid #ccc; height: auto;"></div>
+@if (displayLowPlayers.length > 0 && !hideInputOptions) {
+  <div class="d-flex justify-content-center align-items-start">
     <!-- Low Players Section -->
     @if (displayLowPlayers.length > 0) {
       <div class="low-players-section" style="width: 45%;">
@@ -978,18 +879,21 @@ Apply Top Players (Male Standings)
 </div>
 </div>
 </div>
-@if (workspaceSection === 'scrambler' && !listOfTeams.length) {
-  <p class="scramble-empty-state">No scramble has been generated yet. Select players and configure teams above.  @if (hidePlayers) {
-    <button mat-button (click)="hidePlayerList()">Show Player List</button>
-  }</p>
-  }<section class="league-management-page consolidated-management" [hidden]="workspaceSection !== 'league-management'"><mat-card appearance="outlined" class="management-workspace"><h1>Player and League Management</h1><mat-tab-group class="management-tabs" mat-align-tabs="center"><mat-tab label="Edit / Remove Players"><div class="management-players-section">
+@if (workspaceSection === 'scrambler' && !initialRosterLoading && !initialRosterError && !listOfTeams.length) {
+  <p class="scramble-empty-state">No scramble has been generated yet. Select players and configure teams above.</p>
+  }@if (workspaceSection === 'league-management') {
+<section #managementWorkspace class="league-management-page consolidated-management">
+@if (managementAccessLoading || leagueCreationPending) {
+  <app-page-loading [label]="leagueCreationPending ? 'Creating and selecting league' : 'Loading league management'"></app-page-loading>
+}
+@if (canCreateLeague) {<mat-card [hidden]="managementAccessLoading || leagueCreationPending" appearance="outlined" class="management-workspace"><h1>Player and League Management</h1><mat-tab-group class="management-tabs compact-tabs" [(selectedIndex)]="managementTabIndex" (selectedTabChange)="revealManagementTab(managementWorkspace)" mat-align-tabs="center" [mat-stretch-tabs]="false" [disablePagination]="true">@if (isActionAllowed) {<mat-tab label="Edit / Remove Players"><div class="management-players-section">
   <mat-card appearance="outlined" class="management-form-card management-roster-card">
     <h2>Current League Players</h2><p class="management-context">{{ selectedLeague || 'Select a league to manage its players.' }}</p>
     <div class="management-roster-tools"><div class="roster-search-row"><mat-form-field appearance="outline" class="roster-search"><mat-label>Search current league players</mat-label><input matInput [(ngModel)]="managementRosterSearch" (ngModelChange)="showAllManagementPlayers=false" placeholder="Player name"></mat-form-field></div><div class="roster-filter-row"><mat-form-field appearance="outline" class="roster-division-filter"><mat-label>Filter division</mat-label><mat-select [(ngModel)]="managementRosterDivision" (selectionChange)="showAllManagementPlayers=true"><mat-option value="all">All divisions</mat-option><mat-option value="0">No Division</mat-option>@for (d of leagueDivisionsForSelectedLeague; track d) {
     <mat-option [value]="''+d.id">{{d.name || d.code}}</mat-option>
     }</mat-select></mat-form-field><button mat-stroked-button type="button" (click)="toggleManagementRoster()" [disabled]="managementRosterLoading || !!managementRosterError || !managementRoster.length" [attr.aria-expanded]="showAllManagementPlayers">{{ showAllManagementPlayers ? 'Hide All Players' : 'Show All Players' }}</button></div></div>
     @if (managementRosterLoading) {
-      <p role="status">Loading league players...</p>
+      <app-page-loading label="Loading league members"></app-page-loading>
       }@if (managementRosterError) {
       <div role="alert"><p>{{ managementRosterError }}</p><button mat-stroked-button (click)="refreshManagementRoster()">Retry roster</button></div>
     }
@@ -1010,7 +914,11 @@ Apply Top Players (Male Standings)
 </mat-card>
 </div></mat-tab><mat-tab label="Add Players"><div class="management-players-section">
 <mat-card appearance="outlined" class="management-form-card management-add-card"><h2>Add Players</h2>
-<div class="management-add-actions"><section><mat-icon aria-hidden="true">people</mat-icon><h3>Browse existing players</h3><p>Find players and add them with one click.</p><button mat-raised-button color="primary" type="button" (click)="openExistingPlayerBrowser()" [disabled]="!isActionAllowed || !leagueId || managementRosterLoading || !!managementRosterError">Browse Existing Players</button></section><section><mat-icon aria-hidden="true">file_upload</mat-icon><h3>Import a roster</h3><p>Review names and divisions before adding players.</p><button mat-raised-button color="primary" type="button" (click)="openPlayerImport()" [disabled]="!isActionAllowed || !leagueId || managementRosterLoading || !!managementRosterError">Import Players From File</button></section></div>
+<div class="management-add-actions"><section><mat-icon aria-hidden="true">people</mat-icon><h3>Browse existing players</h3><p>Find players and add them with one click.</p><button mat-raised-button color="primary" type="button" (click)="openExistingPlayerBrowser()" [disabled]="!isActionAllowed || !leagueId || managementRosterLoading || !!managementRosterError">Browse Existing Players</button></section><section><mat-icon aria-hidden="true">file_upload</mat-icon><h3>Import a roster</h3><p>Review names and divisions before adding players.</p><button mat-raised-button color="primary" type="button" (click)="openPlayerImport()" [disabled]="!isActionAllowed || !leagueId || managementRosterLoading || !!managementRosterError">Import Players From File</button>
+@if (playerImportDraft && playerImportDraft.leagueId === leagueId) {
+  <button mat-button type="button" (click)="playerImportDraft = null">Discard Import Draft</button>
+}
+</section></div>
 <section class="management-quick-add"><h3>Quick Add Existing Player</h3><div class="quick-add-row">
 <mat-form-field appearance="outline"><mat-label>Search Player</mat-label><input matInput [matAutocomplete]="auto" [(ngModel)]="searchTerm" (input)="onSearchPlayer($event)" (blur)="onBlurPlayerInput()"><mat-autocomplete #auto="matAutocomplete" (optionSelected)="onPlayerSelected($event.option.value)" [displayWith]="displayPlayer">@for (player of searchedPlayers; track player) {
 <mat-option [value]="player">{{ player.firstName }} {{ player.lastName }}</mat-option>
@@ -1025,9 +933,6 @@ Apply Top Players (Male Standings)
 <p>Loading divisions...</p>
 }@if (!divisionsLoading && divisionsLoadedOnce && !leagueDivisionsForSelectedLeague.length) {
 <p class="management-context">No divisions for this league.</p>
-}
-@if (!isActionAllowed) {
-  <div><mat-form-field appearance="outline"><mat-label>Enter Password</mat-label><input matInput type="password" (input)="onPasswordInput($event.target.value)" placeholder="Password"></mat-form-field><button mat-raised-button color="primary" type="button" (click)="unlockAdminPassword()">Unlock Administration</button></div>
 }</section>
 <section class="create-player-section"><button mat-stroked-button color="primary" type="button" (click)="toggleNewPlayerForm()" [attr.aria-expanded]="showNewPlayerForm">Create New Player</button>@if (showNewPlayerForm) {
 <div class="new-player-form"><form [formGroup]="PlayerForm" (ngSubmit)="onSubmitClick()" class="d-flex flex-column align-items-center">
@@ -1043,12 +948,6 @@ Apply Top Players (Male Standings)
         <input matInput placeholder="Player Last Name" type="text" formControlName="lastName" value="{{addedPlayer?.lastName}}" required />
       </mat-form-field>
       <br />
-      @if (!isActionAllowed) {
-        <mat-form-field style="max-width: 180px" appearance="outline">
-          <mat-label>Password:</mat-label>
-          <input matInput placeholder="Password" type="password" formControlName="password" value="{{password}}" required />
-        </mat-form-field>
-      }
     </div>
     <div class="col-12 col-lg-6">
       <mat-form-field appearance="outline">
@@ -1081,7 +980,7 @@ Apply Top Players (Male Standings)
 <mat-tab label="Manage Schedule"><app-manage-schedule [leagueId]="leagueId" [leagueName]="selectedLeague" [canManage]="isActionAllowed" [draftStore]="scheduleDrafts"></app-manage-schedule></mat-tab>
 <mat-tab label="League Settings">
   <div class="container-fluid">
-    <mat-card appearance="outlined" class="management-form-card management-settings-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
+    <mat-card appearance="outlined" class="management-form-card management-settings-card" style="margin-top: 20px; margin-bottom: 20px; background-color: var(--hub-surface, #eeeeee)">
       <div style="margin: 20px;" class="tab-content d-flex flex-column align-items-center management-settings-grid">
         <h2>Modify League Settings</h2>
 
@@ -1145,95 +1044,77 @@ Apply Top Players (Male Standings)
         </mat-form-field>
         <!-- Save Button -->
         <div>
-          <button mat-raised-button color="primary" (click)="saveSettings()">Save Settings</button>
+          <button class="action-success" mat-raised-button color="primary" (click)="saveSettings()">Save Settings</button>
         </div>
       </div>
     </mat-card>
   </div>
-</mat-tab><mat-tab label="League Setup"><div class="management-setup-grid">
-<div class="container-fluid">
-  <mat-card appearance="outlined" class="management-form-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-    <h5 class="text-center">Create New League</h5>
-    <br />
-    <form [formGroup]="LeagueForm" (ngSubmit)="addLeague()">
-      <div class="d-flex flex-column align-items-center">
-        <mat-form-field style="max-width: 180px" appearance="outline">
-          <mat-label>New League Name</mat-label>
-          <input matInput placeholder="League Name" type="text" formControlName="newLeagueName" required />
-        </mat-form-field>
-        @if (!isActionAllowed) {
-          <mat-form-field style="max-width: 180px" appearance="outline">
-            <mat-label>Password</mat-label>
-            <input matInput placeholder="Password" type="password" formControlName="passwordLeague" required />
-          </mat-form-field>
-        }
-      </div>
-      <br />
-      <div class="d-flex justify-content-center">
-        <button mat-raised-button color="primary">Add New League</button>
-      </div>
-    </form>
-  </mat-card>
-</div>
-
-<div class="container-fluid">
-  <mat-card appearance="outlined" class="management-form-card" style="margin-top: 20px; margin-bottom: 20px; background-color: #eeeeee">
-    <h5 class="text-center">Add Division</h5>
-    <br />
-
-    <div class="d-flex flex-column align-items-center" style="margin-bottom: 10px;">
-      @if (selectedLeagueDto == null) {
-        <div style="color: #b00020; font-weight: bold;">
-          Select a league first to add a division.
-        </div>
+</mat-tab>}<mat-tab label="League Setup"><div class="management-setup-grid">
+    @if (!isActionAllowed) { <p class="text-center">Select a league to configure it, or open Create League.</p> }
+  @if (isActionAllowed) {
+    <mat-card appearance="outlined" class="setup-card">
+      <h3>Add Division</h3>
+      @if (selectedLeagueDto) {
+        <p>Selected league: {{ selectedLeagueDto.leagueName }}</p>
+      } @else {
+        <p>Select a league first to add a division.</p>
       }
-
-      @if (selectedLeagueDto != null) {
-        <div>
-          <div style="font-weight: bold;">Selected League:</div>
-          <div>{{ selectedLeagueDto.leagueName }}</div>
-        </div>
-      }
-    </div>
-
-    <form [formGroup]="LeagueDivisionForm" (ngSubmit)="addLeagueDivision()">
-      <div class="d-flex flex-column align-items-center">
-
-        <mat-form-field style="max-width: 220px" appearance="outline">
-          <mat-label>Code</mat-label>
+      <form class="setup-form division-setup-form" [formGroup]="LeagueDivisionForm" (ngSubmit)="addLeagueDivision()">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Division Abbreviation</mat-label>
           <input matInput placeholder="GM" type="text" formControlName="code" required />
         </mat-form-field>
-
-        <mat-form-field style="max-width: 220px" appearance="outline">
-          <mat-label>Name</mat-label>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Division Name</mat-label>
           <input matInput placeholder="Gold Male" type="text" formControlName="name" required />
         </mat-form-field>
-
-        <mat-form-field style="max-width: 220px" appearance="outline">
+        <mat-form-field class="division-sort" appearance="outline" subscriptSizing="dynamic">
           <mat-label>Sort Order</mat-label>
-          <input matInput placeholder="1" type="number" formControlName="sortOrder" required />
+          <input matInput type="number" formControlName="sortOrder" required />
         </mat-form-field>
-
-        @if (!isActionAllowed) {
-          <mat-form-field style="max-width: 220px" appearance="outline">
-            <mat-label>Password</mat-label>
-            <input matInput placeholder="Password" type="password" formControlName="passwordDivision" />
-          </mat-form-field>
-        }
-
+        <button mat-raised-button color="primary" [disabled]="selectedLeagueDto == null || LeagueDivisionForm.invalid">Add Division</button>
+      </form>
+    </mat-card>
+  }
+  @if (userRole === 'Admin' && isActionAllowed) {
+    <mat-card appearance="outlined" class="setup-card manager-assignment">
+      <h3>League Manager Access</h3>
+      <p>Grant or revoke access to <strong>{{ selectedLeague }}</strong> for an existing manager.</p>
+      <div class="setup-form">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Manager email</mat-label>
+          <input matInput type="email" [(ngModel)]="managerEmail" (ngModelChange)="managerEmailDirty = true" autocomplete="off" />
+        </mat-form-field>
+        <div class="setup-actions">
+          <button mat-stroked-button type="button" (click)="setLeagueManager(true)" [disabled]="managerAssignmentPending || !managerEmail.trim()">Grant Access</button>
+          <button mat-stroked-button color="warn" type="button" (click)="setLeagueManager(false)" [disabled]="managerAssignmentPending || !managerEmail.trim()">Revoke Access</button>
+        </div>
       </div>
-
-      <br />
-
-      <div class="d-flex justify-content-center">
-        <button mat-raised-button color="primary" [disabled]="selectedLeagueDto == null || LeagueDivisionForm.invalid">
-          Add Division
-        </button>
-      </div>
+    </mat-card>
+  }
+</div></mat-tab>
+<mat-tab label="Create League">
+  <div class="management-create-league">
+    <mat-card appearance="outlined" class="setup-card">
+    <h3>Create New League</h3>
+    <form class="setup-form" [formGroup]="LeagueForm" (ngSubmit)="addLeague()">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>New League Name</mat-label>
+        <input matInput type="text" formControlName="newLeagueName" required />
+      </mat-form-field>
+      <button mat-raised-button color="primary" [disabled]="LeagueForm.invalid || leagueCreationPending">Add New League</button>
     </form>
+    @if (creationError) { <p role="alert">{{ creationError }}</p> }
   </mat-card>
-</div>
-</div></mat-tab></mat-tab-group></mat-card></section>
+
+  </div>
+</mat-tab>
+</mat-tab-group></mat-card>
+} @else if (!managementAccessLoading) {
+  <p class="text-center" role="status">Sign in with a league manager or administrator account to manage leagues.</p>
+}
+</section>
+}
 <ng-template #removeMembershipDialog let-data>
   <h2 mat-dialog-title>Remove from League?</h2>
   <mat-dialog-content><p>Remove <strong>{{ data.player.firstName }} {{ data.player.lastName }}</strong> from <strong>{{ data.leagueName }}</strong>?</p><p>The player's global record, account and other league memberships will be kept.</p></mat-dialog-content>
@@ -1501,7 +1382,7 @@ Apply Top Players (Male Standings)
                                     <div class="printed-court-value" [attr.data-team-id]="listOfTeams[i + j].kingQueenTeamId" style="
                                                 width: 40px;
                                                 height: 40px;
-                                                background-color: white;
+                                                background-color: var(--hub-surface, white);
                                                 border: 1px solid black; display:flex;align-items:center;justify-content:center;font-size:16px;
                                             ">{{ getMatchCourt(listOfTeams[i + j]) }}</div>
                   </div>
@@ -2270,7 +2151,7 @@ Apply Top Players (Male Standings)
 
 </div>
 </mat-dialog-content><mat-dialog-actions align="end" [class.unsaved-print-footer]="!showTeamSorting && !canPrintMatchups">@if (showTeamSorting) {
-<button mat-button (click)="cancelMatchupChanges()" [disabled]="teamSaveBusy">Cancel Changes</button><button mat-raised-button color="primary" (click)="saveKingQueenTeams()" [disabled]="!canSaveMatchupTeams">{{ teamSaveBusy ? 'Saving Teams...' : 'Save Teams' }}</button>
+<button mat-button (click)="cancelMatchupChanges()" [disabled]="teamSaveBusy">Cancel Changes</button><button class="action-success" mat-raised-button color="primary" (click)="saveKingQueenTeams()" [disabled]="!canSaveMatchupTeams">{{ teamSaveBusy ? 'Saving Teams...' : 'Save Teams' }}</button>
 }@if (!showTeamSorting) {
 <span class="modal-print-hint" role="status" [class.modal-print-confirmation]="canPrintMatchups">{{ canPrintMatchups ? 'Scramble saved' : 'Save this scramble before printing.' }}</span><button mat-raised-button class="modal-print-button" (click)="printMatchups()" [disabled]="!canPrintMatchups">Print Matchups</button>
 }</mat-dialog-actions></div>

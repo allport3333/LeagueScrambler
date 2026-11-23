@@ -14,6 +14,7 @@ import { LoginService } from '../services/login.service';
 })
 export class LeagueDashboardComponent implements OnInit, OnDestroy {
     activeDashboardTab=0; requestedWeekNumber:number=null; requestedScheduleDate:string=null; navigationError='';
+    get selectingLeague(): boolean { return !!this.requestedLeague && !this.navigationResolved && !this.navigationError; }
     private navigationSubscriptions=new Subscription(); private requestedLeague:number=null; private navigationResolved=true;
     leagues$: Observable<Leagues[]>;          // Observable of all leagues
     selectedLeagueId: number | null = null;  // The chosen league's ID (or null)

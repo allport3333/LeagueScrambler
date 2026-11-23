@@ -3,13 +3,13 @@
 const fs=require('fs'),path=require('path'),crypto=require('crypto'),assert=require('assert/strict');
 const {chromium,expect}=require('@playwright/test');
 const {createPreview,root}=require('../../../tools/pwa/preview.cjs');
-const out=path.resolve(__dirname,'../artifacts/pwa');fs.mkdirSync(out,{recursive:true});
+const out=process.env.LEAGUE_TEST_OUT?path.resolve(process.env.LEAGUE_TEST_OUT):path.resolve(__dirname,'../artifacts/pwa');fs.mkdirSync(out,{recursive:true});
 const config=JSON.parse(fs.readFileSync(path.join(root,'ngsw.json'))),manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.webmanifest')));
 assert.equal(manifest.name,"Allport's League Hub");assert.equal(manifest.display,'standalone');assert.equal(manifest.scope,'/');assert.equal(manifest.start_url,'/');assert.deepEqual(config.dataGroups,[]);
 assert(!Object.keys(config.hashTable).some(p=>p.startsWith('/api/')));
 for(const icon of manifest.icons){const bytes=fs.readFileSync(path.join(root,icon.src));const [w,h]=icon.sizes.split('x').map(Number);assert.equal(bytes.readUInt32BE(16),w);assert.equal(bytes.readUInt32BE(20),h);}
 let browser,server,version2=false,role=null,privateCalls=0,networkDown=false;const calls=[],checks=[],errors=[];
-const index2=fs.readFileSync(path.join(root,'index.html'),'utf8')+'\n<!-- local PWA update fixture -->';
+const index2=fs.readFileSync(path.join(root,'index.html'),'utf8').replace('</head>','<meta name="pwa-update-fixture" content="ready"></head>');
 const updated={...config,timestamp:config.timestamp+1,hashTable:{...config.hashTable,'/index.html':crypto.createHash('sha1').update(index2).digest('hex')}};
 (async()=>{
  server=createPreview({asset:name=>version2&&name==='index.html'?index2:version2&&name==='ngsw.json'?JSON.stringify(updated):undefined,api:(req,res,url)=>{
@@ -33,7 +33,7 @@ const updated={...config,timestamp:config.timestamp+1,hashTable:{...config.hashT
   else if(p.includes('/getsettingvalue'))data='matchup';
   res.end(JSON.stringify(data));
  }});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base='http://127.0.0.1:'+server.address().port;
- browser=await chromium.launch();
+ browser=await chromium.launch(process.env.LEAGUE_BROWSER_CHANNEL ? {channel:process.env.LEAGUE_BROWSER_CHANNEL} : {});
  async function context(options={}){const c=await browser.newContext({viewport:{width:1366,height:900},...options});await c.route('**/*',r=>{const u=new URL(r.request().url());return u.origin===base||['fonts.googleapis.com','fonts.gstatic.com','use.fontawesome.com'].includes(u.hostname)?r.continue():r.abort();});return c;}
  const c=await context(),page=await c.newPage();page.on('pageerror',e=>{errors.push(e.message);console.error('PAGEERROR: '+e.stack)});page.on('console',m=>{if(m.type()==='error'&&m.text().startsWith('ERROR'))errors.push(m.text())});
  await page.goto(base+'/install-locally');await expect(page.getByRole('heading',{name:"Install Allport's League Hub"})).toBeVisible();await page.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:20000});
@@ -44,7 +44,7 @@ const updated={...config,timestamp:config.timestamp+1,hashTable:{...config.hashT
  const before=await page.evaluate(()=>fetch('/api/PwaCheck').then(r=>r.json())),after=await page.evaluate(()=>fetch('/api/PwaCheck').then(r=>r.json()));assert(after.request>before.request);
  const rejected=await page.evaluate(()=>fetch('/api/score-fixture',{method:'POST',body:'not-a-real-score'}).then(r=>r.status));assert.equal(rejected,503);
  const cacheUrls=await page.evaluate(async()=>{const urls=[];for(const key of await caches.keys()){for(const request of await (await caches.open(key)).keys())urls.push(request.url);}return urls;});assert(!cacheUrls.some(p=>new URL(p).pathname.toLowerCase().startsWith('/api/')));
- networkDown=true;await c.setOffline(true);await expect(page.getByText('You are offline.',{exact:false})).toBeVisible();const apiFailed=await page.evaluate(()=>fetch('/api/PwaCheck').then(r=>!r.ok,()=>true));assert(apiFailed,'Offline API must fail rather than return cached account data');await page.reload();await expect(page.locator('app-install-locally h1')).toBeVisible();await expect(page.locator('.pwa-notice')).toContainText('offline');networkDown=false;await c.setOffline(false);await expect(page.locator('.pwa-notice').filter({hasText:'You are offline'})).toHaveCount(0);
+ networkDown=true;await c.setOffline(true);await expect(page.getByText('You are offline.',{exact:false})).toBeVisible();const apiFailed=()=>page.evaluate(()=>fetch('/api/PwaCheck').then(r=>!r.ok,()=>true));assert(await apiFailed(),'Offline API must fail rather than return cached account data');await page.reload();await expect(page.locator('app-install-locally h1')).toBeVisible();assert(await apiFailed(),'Reloaded offline shell must still fail live API reads');if(!await page.evaluate(()=>navigator.onLine))await expect(page.locator('.pwa-notice')).toContainText('offline');networkDown=false;await c.setOffline(false);await expect(page.locator('.pwa-notice').filter({hasText:'You are offline'})).toHaveCount(0);
  checks.push('Static shell opens offline; API reads remain network-only, offline private read fails, POST returns server failure, no API cache or background write queue.');
  // Synthetic browser install events test application handling, not native/OS installation.
  async function installEvent(outcome){await page.evaluate(outcome=>{window.promptCalls=0;const event=new Event('beforeinstallprompt',{cancelable:true});event.prompt=async()=>{window.promptCalls++};event.userChoice=Promise.resolve({outcome});window.dispatchEvent(event);},outcome);}
@@ -66,9 +66,22 @@ const updated={...config,timestamp:config.timestamp+1,hashTable:{...config.hashT
  await page.evaluate(()=>{const open=window.open.bind(window);window.open=(...args)=>{const popup=open(...args);if(popup){popup.print=()=>{};popup.close=()=>{};}return popup;};});
  const popupPromise=page.waitForEvent('popup');await page.getByRole('button',{name:'Print Full Schedule'}).click();const printed=await popupPromise;await expect(printed.locator('.season-week td.season-versus')).toHaveCount(1);await expect(printed.locator('button,app-team-roster-button')).toHaveCount(0);await printed.pdf({path:path.join(out,'schedule-print.pdf'),preferCSSPageSize:true,printBackground:true});await printed.close();checks.push('Production schedule and shared roster load through worker; existing Full Schedule popup output retains matchup, excludes controls and generates PDF. Native installed printing still needs device testing.');
  await page.setViewportSize({width:1366,height:900});await page.goto(base+'/');await page.getByRole('button',{name:'Login',exact:true}).click();await page.locator('#loginEmail').fill('unfinished@example.invalid');
- version2=true;await page.evaluate(()=>navigator.serviceWorker.controller.postMessage({action:'CHECK_FOR_UPDATES',nonce:123456}));await expect(page.getByRole('button',{name:'Refresh to Update'})).toBeVisible({timeout:20000});await expect(page.locator('#loginEmail')).toHaveValue('unfinished@example.invalid');
- page.once('dialog',dialog=>dialog.dismiss());await page.getByRole('button',{name:'Refresh to Update'}).click();await expect(page.locator('#loginEmail')).toHaveValue('unfinished@example.invalid');await page.screenshot({path:path.join(out,'update-confirmation.png')});
- page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Refresh to Update'}).click();await expect(page.getByRole('button',{name:'Login',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Refresh to Update'})).toHaveCount(0);checks.push('Actual Angular SW update from a second hashed app version: update notice without reload, unfinished input retained, cancel retains form, explicit confirmed refresh activates version.');
+ await page.getByRole('button',{name:'Appearance',exact:true}).click();
+ await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();
+ await page.getByRole('radio',{name:'Dark Navy',exact:true}).check();
+ await page.getByRole('button',{name:'Done',exact:true}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','navy');
+ await c.setOffline(true);version2=true;await c.setOffline(false);
+ await expect(page.getByText('An update is ready.',{exact:false})).toBeVisible({timeout:25000});
+ await expect(page.locator('#loginEmail')).toHaveValue('unfinished@example.invalid');
+ await page.getByRole('button',{name:'Dismiss',exact:true}).click();
+ await expect(page.locator('#loginEmail')).toHaveValue('unfinished@example.invalid');
+ await page.screenshot({path:path.join(out,'update-confirmation.png')});
+ await page.goto(base+'/install-locally');
+ await expect(page.locator('meta[name="pwa-update-fixture"]')).toHaveAttribute('content','ready');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','navy');
+ checks.push('The selected appearance survives navigation to the updated service-worker version.');
+ checks.push('Actual Angular SW keeps the login draft through update readiness and dismissal. A new navigation uses the complete version.');
  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks,errors,installability:eligibility,cacheUrls,apiCalls:calls,limitations:['Device UAs/standalone/install events were simulated; no real Android/iOS/desktop installation or authenticated cookie flow tested.','Static preview has fixture APIs only, no database.','Production hosting/IIS/CDN routing must be checked before deployment.']},null,2));console.log(checks.join('\n'));
  await browser.close();await new Promise(r=>server.close(r));
 })().catch(async e=>{console.error(e.stack);if(browser){const page=browser.contexts()[0]&&browser.contexts()[0].pages()[0];if(page)await page.screenshot({path:path.join(out,'failure.png'),fullPage:true}).catch(()=>{});await browser.close();}if(server)server.close();process.exitCode=1;});

@@ -1,6 +1,6 @@
 :host { display: block; }
-.league-navigation { display: flex; align-items: center; gap: 10px; padding: 8px 12px; min-height: 60px; background: #343a40; color: #f1f4f8; }
-.league-selector { display: flex; flex: 0 1 220px; min-width: 140px; max-width: 220px; padding: 0 10px; min-height: 44px; background: #f0f8ff; color: #172534; text-align: left; }
+.league-navigation { display: flex; align-items: center; gap: 10px; padding: 8px 12px; min-height: 60px; background: var(--hub-nav, #343a40); color: #f1f4f8; }
+.league-selector { display: flex; flex: 0 1 220px; min-width: 140px; max-width: 220px; padding: 0 10px; min-height: 44px; background: var(--hub-header, #f0f8ff); color: var(--hub-text, #172534); text-align: left; }
 /* TODO(mdc-migration): The following rule targets internal classes of button that may no longer apply for the MDC version. */
 .league-selector ::ng-deep .mdc-button__label { display: flex; align-items: center; flex: 1; min-width: 0; }
 .league-name { display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
@@ -10,14 +10,14 @@
 .desktop-account { flex: 0 0 auto; }
 .menu-trigger { min-height: 44px; padding: 0 8px; color: #e1e6ec; }
 .menu-trigger mat-icon { width: 20px; height: 20px; font-size: 20px; vertical-align: middle; }
-.navigation-link:hover, .menu-trigger:hover { background: #47525f; color: #fff; }
-.active { background: #495c75; color: #fff; box-shadow: inset 0 -3px #98d0a7; }
-.selected-league, .selected-destination { background: #edf3fa; color: #23466d; }
+.navigation-link:hover, .menu-trigger:hover { background: var(--hub-nav-hover, #47525f); color: #fff; }
+.active { background: var(--hub-nav-active, #495c75); color: #fff; box-shadow: inset 0 -3px #98d0a7; }
+.selected-league, .selected-destination { background: var(--hub-header, #edf3fa); color: var(--hub-link, #23466d); }
 .session-status { font-size: 14px; }
 .drawer-toggle { display: none; margin-left: auto; color: #fff; }
 .navigation-drawer-container { position: fixed; top: 0; bottom: 0; left: 0; right: 0; z-index: 1200; visibility: hidden; pointer-events: none; background: transparent; }
 .navigation-drawer-container.drawer-open { visibility: visible; pointer-events: auto; }
-.navigation-drawer { width: 320px; max-width: 88vw; background: #343a40; color: #f1f4f8; }
+.navigation-drawer { width: 320px; max-width: 88vw; background: var(--hub-nav, #343a40); color: #f1f4f8; }
 .navigation-drawer ::ng-deep .mat-drawer-inner-container { overscroll-behavior: contain; }
 .drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #535e6b; }
 .drawer-header strong { font-size: 18px; }
@@ -25,8 +25,8 @@
 .navigation-drawer h2 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: #b9c7d8; margin: 10px 8px 6px; }
 .drawer-link { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 9px 12px; border: 0; border-radius: 4px; text-align: left; font: inherit; font-size: 15px; line-height: 24px; color: #f1f4f8; background: transparent; text-decoration: none; }
 .drawer-link mat-icon { flex: 0 0 20px; width: 20px; height: 20px; font-size: 20px; }
-.drawer-link:hover { background: #47525f; }
-.drawer-link.active { background: #495c75; box-shadow: inset 3px 0 #98d0a7; }
+.drawer-link:hover { background: var(--hub-nav-hover, #47525f); }
+.drawer-link.active { background: var(--hub-nav-active, #495c75); box-shadow: inset 3px 0 #98d0a7; }
 .navigation-link:focus-visible, .drawer-link:focus-visible, button:focus-visible { outline: 2px solid #b8dfc3; outline-offset: -2px; }
 @media (max-width: 1023px) {
     .desktop-navigation, .desktop-account { display: none; }

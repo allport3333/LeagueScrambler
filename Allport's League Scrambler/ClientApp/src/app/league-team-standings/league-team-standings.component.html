@@ -1,4 +1,10 @@
-@if (standings.length > 0) {
+@if (loading) {
+  <app-page-loading label="Loading league standings"></app-page-loading>
+}
+@if (error) {
+  <p class="text-center" role="alert">{{ error }} <button mat-button (click)="loadStandings()">Retry</button></p>
+}
+@if (!loading && standings.length > 0) {
   <div class="league-standings-panel">
     <h2 style="text-align: center;">League Standings</h2>
     <!-- Responsive Flexbox Container -->
@@ -68,7 +74,7 @@
       }
     </div>
   </div>
-} @else {
+} @else if (!loading && !error) {
   <p style="text-align: center;">No standings available for this league.</p>
 }
 

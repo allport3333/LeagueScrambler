@@ -1,4 +1,5 @@
 using dotenv.net;
+using Allport_s_League_Scrambler.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -39,36 +40,17 @@ namespace Allport_s_League_Scrambler
             });
 
             // Configure authentication with cookie settings
+            services.AddSingleton<AccountRoleLookup>(LeagueAccess.ReadAccountRole);
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options =>
                 {
+                    options.Events.OnValidatePrincipal = LeagueAccess.RefreshAccountRole;
                     options.LoginPath = "/"; // Set the login page
                     options.AccessDeniedPath = ""; // Set the access denied page
                     options.Cookie.HttpOnly = true; // Ensure cookies are only accessible via HTTP
                     options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Require HTTPS for authentication cookies
                     options.Cookie.SameSite = SameSiteMode.Lax; // Adjust SameSite mode as needed
                     options.ExpireTimeSpan = TimeSpan.FromDays(30); // Set cookie expiration
-                    options.Events.OnRedirectToLogin = context =>
-                    {
-                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                        return System.Threading.Tasks.Task.CompletedTask;
-                    };
-                    options.Events.OnRedirectToAccessDenied = context =>
-                    {
-                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                        return System.Threading.Tasks.Task.CompletedTask;
-                    };
-                })
-                .AddCookie("LeagueAdminPassword", options =>
-                {
-                    // A distinct short-lived credential for the existing administration password.
-                    // This never overwrites an ordinary player's login.
-                    options.Cookie.Name = "LeagueScrambler.Admin";
-                    options.Cookie.HttpOnly = true;
-                    options.Cookie.SameSite = SameSiteMode.Strict;
-                    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-                    options.ExpireTimeSpan = TimeSpan.FromHours(6);
-                    options.SlidingExpiration = true; // Renew the session during active league play.
                     options.Events.OnRedirectToLogin = context =>
                     {
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -86,11 +68,9 @@ namespace Allport_s_League_Scrambler
             {
                 options.AddPolicy("LeagueManagement", policy =>
                 {
-                    policy.AddAuthenticationSchemes(
-                        CookieAuthenticationDefaults.AuthenticationScheme,
-                        "LeagueAdminPassword");
+                    policy.AddAuthenticationSchemes(CookieAuthenticationDefaults.AuthenticationScheme);
                     policy.RequireAuthenticatedUser();
-                    policy.RequireRole("Admin", "Manager", "LegacyAdmin");
+                    policy.RequireRole("Admin", "Manager");
                 });
             });
 
@@ -125,8 +105,27 @@ namespace Allport_s_League_Scrambler
             app.UseHttpsRedirection();
             app.UseStaticFiles(PwaStaticFiles());
             app.UseSpaStaticFiles(PwaStaticFiles());
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path.StartsWithSegments("/api"))
+                {
+                    context.Response.OnStarting(() =>
+                    {
+                        context.Response.Headers["Cache-Control"] = "no-store";
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    });
+                }
+                await next();
+            });
             app.UseRouting();
-            app.UseAuthentication();
+            // The SPA shell has no identity-dependent content. Controllers and pages
+            // still validate the cookie before authorization and endpoint execution.
+            app.UseWhen(context => context.GetEndpoint() != null, branch => branch.UseAuthentication());
+            app.Use(async (context, next) =>
+            {
+                if (!context.RequestAborted.IsCancellationRequested)
+                    await next();
+            });
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
@@ -165,6 +164,10 @@ namespace Allport_s_League_Scrambler
                         name == "ngsw-worker.js" || name == "safety-worker.js" || name == "worker-basic.min.js")
                     {
                         context.Context.Response.Headers["Cache-Control"] = "no-cache";
+                    }
+                    else if (System.Text.RegularExpressions.Regex.IsMatch(name, @"-[A-Z0-9]{8,}\.(?:js|css)$"))
+                    {
+                        context.Context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
                     }
                 }
             };

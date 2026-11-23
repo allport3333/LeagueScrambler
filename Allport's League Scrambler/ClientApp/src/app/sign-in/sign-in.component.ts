@@ -1,4 +1,6 @@
-import { Component, OnInit, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DestroyRef, OnInit, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { combineLatest, forkJoin, of, Subscription, switchMap } from 'rxjs';
 import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort } from '@angular/material/sort';
@@ -38,6 +40,7 @@ export class SignInComponent implements OnInit {
     displayedColumns: string[] = ['firstName', 'lastName'];
     signedInColumns: string[] = ['firstName', 'lastName'];
     userRole: string; // To store the role of the user
+    canManageAttendance = false;
     isLoggedIn: boolean = false;
     maleCount: number = 0;
     femaleCount: number = 0;
@@ -45,6 +48,10 @@ export class SignInComponent implements OnInit {
     isPlayerSignedIn: boolean = false;  // Track if the player is signed in
     currentPlayerId: number;  
     dayOfWeekSetting: string = 'Sunday';
+    attendanceLoading = false;
+    attendanceError = '';
+    private attendanceRequest: Subscription;
+    private loadedLeague: number | null = null;
     PlayerForm = new UntypedFormGroup({
         firstName: new UntypedFormControl(),
         lastName: new UntypedFormControl(),
@@ -55,32 +62,28 @@ export class SignInComponent implements OnInit {
     @ViewChild(MatSort) sort: MatSort;
 
     constructor(private playerService: PlayerService, private loginService: LoginService, private authService: AuthService,
-        private leagueService: LeagueService, private http: HttpClient, private snackBar: MatSnackBar, private dialog: MatDialog) { }
+        private leagueService: LeagueService, private http: HttpClient, private snackBar: MatSnackBar, private dialog: MatDialog,
+        private destroyRef: DestroyRef) { }
 
     ngOnInit() {
         this.loadLeagues();
-        this.authService.isLoggedIn$.subscribe((loggedIn) => {
-            this.isLoggedIn = loggedIn;
-
-            if (this.isLoggedIn) {
-                this.loginService.getUsersRole().subscribe(
-                    (role) => {
-                        this.userRole = role.role;
-
-                        if (this.userRole === 'Player') {
-
-                            this.loadPlayerIdForUser();
-                        }
-                    },
-                    (error) => {
-                        console.error('ngOnInit: Error fetching user role:', error);
-                    }
-                );
-            }
-
+        combineLatest([this.authService.isLoggedIn$, this.leagueService.selectedLeague$]).pipe(
+            switchMap(([loggedIn, league]) => {
+                this.isLoggedIn = loggedIn;
+                this.canManageAttendance = false;
+                return loggedIn ? this.loginService.getManagementAccess(league.leagueId)
+                    : of({ role: '', canManage: false });
+            }),
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe(access => {
+            const shouldLoadProfile = access.role === 'Player' && this.userRole !== 'Player';
+            this.userRole = access.role;
+            this.canManageAttendance = access.canManage;
+            if (!access.canManage) this.showAddPlayerForm = false;
+            if (shouldLoadProfile) this.loadPlayerIdForUser();
         });
-        this.leagueService.selectedLeague$.subscribe(selectedLeague => {
-            if (selectedLeague) {
+        this.leagueService.selectedLeague$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(selectedLeague => {
+            if (selectedLeague.leagueId) {
                 this.selectedLeague = {
                     id: selectedLeague.leagueId,
                     leagueName: selectedLeague.leagueName
@@ -89,7 +92,6 @@ export class SignInComponent implements OnInit {
             }
         });
 
-        this.loadSignInLockStatus();
     }
 
     checkIfPlayerSignedIn(): void {
@@ -124,7 +126,7 @@ export class SignInComponent implements OnInit {
                     next: (player: Player) => {
                         this.currentPlayerId = player.id;
                         this.player = player;
-                        this.loadSignedInPlayers();
+                        this.updatePlayerSignInStatus();
                     },
                     error: (err) => {
                         console.error('Error fetching player details:', err);
@@ -143,7 +145,7 @@ export class SignInComponent implements OnInit {
         }
 
         // Allow only Admin/Manager or the Player themselves to unselect
-        if (this.userRole === 'Admin' || this.userRole === 'Manager' || (this.player && player.playerId === this.player.id)) {
+        if (this.canManageAttendance || (this.isLoggedIn && this.player && player.playerId === this.player.id)) {
             this.unselectPlayer(player);
 
             // If the removed player is the logged-in player, update the button state
@@ -200,7 +202,7 @@ export class SignInComponent implements OnInit {
 
 
     onLockSignInChange(locked: boolean): void {
-        if (!this.selectedLeague) {
+        if (!this.canManageAttendance || !this.selectedLeague) {
             console.error('No league selected. Cannot update sign-in lock status.');
             return;
         }
@@ -243,30 +245,6 @@ export class SignInComponent implements OnInit {
             (error) => console.error('Error fetching leagues:', error)
         );
     }
-
-    loadPlayers(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.playerService.GetPlayersByLeague(this.selectedLeague.id).subscribe(
-                (players) => {
-                    this.players = players.sort((a, b) => {
-                        if (a.firstName.toLowerCase() < b.firstName.toLowerCase()) return -1;
-                        if (a.firstName.toLowerCase() > b.firstName.toLowerCase()) return 1;
-                        if (a.lastName.toLowerCase() < b.lastName.toLowerCase()) return -1;
-                        if (a.lastName.toLowerCase() > b.lastName.toLowerCase()) return 1;
-                        return 0;
-                    });
-                    this.dataSource.data = [...this.players];
-                    this.filteredPlayers = [...this.players];
-                    resolve(); // Resolve the promise when players are loaded
-                },
-                (error) => {
-                    console.error('Error loading players:', error);
-                    reject(error); // Reject the promise on error
-                }
-            );
-        });
-    }
-
 
     selectPlayer(player: any): void {
         if (this.isSignInLocked) {
@@ -357,30 +335,47 @@ export class SignInComponent implements OnInit {
         );
     }
 
-    onLeagueSelect(league: Leagues) {
+    onLeagueSelect(league: Leagues): void {
         this.selectedLeague = league;
-
-        // Reset all related data
-        this.players = [];
-        this.playerSignIn = [];
-        this.signedInDataSource.data = this.playerSignIn;
-        this.isPlayerSignedIn = false; // Reset sign-in status for new league
-
-        // Load day of the week setting for sign-in lock
-        this.loginService.getSettingValue('dayOfLeague', this.selectedLeague.id).subscribe(
-            (dayOfLeague) => {
-                this.dayOfWeekSetting = dayOfLeague;
-                this.loadSignInLockStatus();
-            }
-        );
-
-        // Load players and signed-in players, then update sign-in status
-        this.loadPlayers()
-            .then(() => this.loadSignedInPlayers())
-            .then(() => this.updatePlayerSignInStatus()) // Check if the player is signed in for the selected league
-            .then(() => this.updateGenderCounts()) // Update gender counts after updating sign-in status
-            .catch((error) => console.error('Error during league selection:', error));
+        this.loadAttendance();
     }
+
+    loadAttendance(): void {
+        const league = this.selectedLeague;
+        this.attendanceRequest?.unsubscribe();
+        this.attendanceError = '';
+        if (!league) return;
+        this.attendanceLoading = this.loadedLeague !== league.id;
+        this.attendanceRequest = forkJoin([
+            this.loginService.getSettingValue('dayOfLeague', league.id),
+            this.playerService.getSignInLockStatus(league.id),
+            this.playerService.GetPlayersByLeague(league.id),
+            this.playerService.getSignedInPlayers(league.id, new Date())
+        ]).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: ([day, locked, players, signedIn]) => {
+                this.dayOfWeekSetting = day;
+                this.isSignInLocked = locked === true || this.getCurrentDayInEST() !== day;
+                this.playerSignIn = (signedIn || []).slice().sort((a, b) => a.firstName.localeCompare(b.firstName));
+                this.signedInDataSource.data = [...this.playerSignIn];
+                const signedInIds = new Set(this.playerSignIn.map(player => player.playerId));
+                this.players = players.filter(player => !signedInIds.has(player.id)).sort((a, b) =>
+                    a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName));
+                this.dataSource.data = [...this.players];
+                this.filteredPlayers = [...this.players];
+                this.updatePlayerSignInStatus();
+                this.updateGenderCounts();
+                this.loadedLeague = league.id;
+                this.attendanceLoading = false;
+            },
+            error: () => {
+                this.attendanceError = 'Unable to load the sign-in sheet.';
+                this.attendanceLoading = false;
+            }
+        });
+    }
+
+    get hasCurrentAttendance(): boolean { return this.selectedLeague?.id === this.loadedLeague; }
+
     updateGenderCounts(): void {
         const signedInPlayers = this.signedInDataSource.data;
         this.maleCount = signedInPlayers.filter((player: Player) => player.gender === 'Male').length;
@@ -390,14 +385,6 @@ export class SignInComponent implements OnInit {
         }
     }
 
-    fetchSignedInPlayers(): void {
-        this.loadPlayers()
-            .then(() => this.loadSignedInPlayers())
-            .then(() => this.updatePlayerSignInStatus()) // Check if the player is signed in for the selected league
-            .then(() => this.updateGenderCounts()) // Update gender counts after updating sign-in status
-            .catch((error) => console.error('Error during player sign in retrieval:', error));
-    }
-
     private updatePlayerSignInStatus(): void {
         if (this.userRole === 'Player' && this.currentPlayerId) {
             // Check if the current player is in the signed-in list
@@ -405,60 +392,6 @@ export class SignInComponent implements OnInit {
                 (player) => player.playerId === this.currentPlayerId
             );
         }
-    }
-
-    loadSignedInPlayers(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            // Get the current date
-            const now = new Date(); // Current local time
-            console.log('Current Date (Local Time):', now);
-
-            // Debug: Check if selectedLeague is defined
-            if (!this.selectedLeague || !this.selectedLeague.id) {
-                reject('No league selected.');
-                return;
-            }
-
-            this.playerService.getSignedInPlayers(this.selectedLeague.id, now).subscribe(
-                (signedInPlayers) => {
-                    if (signedInPlayers && signedInPlayers.length !== 0) {
-                        // Sort signed-in players alphabetically
-                        signedInPlayers.sort((a, b) => {
-                            if (a.firstName.toLowerCase() < b.firstName.toLowerCase()) return -1;
-                            if (a.firstName.toLowerCase() > b.firstName.toLowerCase()) return 1;
-                            return 0;
-                        });
-
-                        this.playerSignIn = signedInPlayers;
-                        this.signedInDataSource.data = [...this.playerSignIn];
-
-                        // Filter out signed-in players from the available players list
-                        const signedInPlayerIds = this.playerSignIn.map(player => player.playerId);
-                        this.players = this.players.filter(player => !signedInPlayerIds.includes(player.id));
-                        this.dataSource.data = [...this.players];
-                        this.filteredPlayers = [...this.players];
-
-                        this.updateGenderCounts();
-
-                        // Check if the current player is already signed in
-                        if (this.userRole === 'Player' && this.currentPlayerId) {
-                            this.isPlayerSignedIn = this.playerSignIn.some(
-                                (player) => player.playerId === this.currentPlayerId
-                            );
-                        }
-
-                        resolve();
-                    } else {
-                        this.playerSignIn = [];
-                        this.signedInDataSource.data = [];
-                        resolve();
-                    }
-                },
-                (error) => {
-                    reject(error);
-                }
-            );
-        });
     }
 
     signInPlayer(player: any, isFromButton: boolean = false): void {
@@ -503,7 +436,7 @@ export class SignInComponent implements OnInit {
                     this.openDialog('Sign-in is currently locked for this league.');
                 } else if (error.status === 409) {
                     this.openDialog('This player is already signed in for today.');
-                    this.fetchSignedInPlayers();
+                    this.loadAttendance();
                 } else if (error.status === 400) {
                     this.openDialog('This player is not assigned to the selected league.');
                 } else {

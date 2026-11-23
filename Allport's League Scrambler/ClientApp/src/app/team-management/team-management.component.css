@@ -1,0 +1,22 @@
+﻿:host { display: block; width: 100%; }
+.team-workspace { max-width: 1200px; margin: 0 auto; padding: 12px; text-align: center; }
+h2, h3 { color: var(--hub-heading, #293d69); margin: 0 0 4px; }
+h2 { font-size: 22px; }
+h3 { font-size: 19px; }
+p { margin: 4px 0 10px; }
+.team-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; }
+.team-controls mat-form-field { flex: 0 1 230px; min-width: 0; }
+.team-controls button, .team-roster button { min-height: 44px; }
+.team-roster { border: 1px solid var(--hub-border, #cbd7e5); border-radius: 6px; background: var(--hub-section, #f7f9fc); padding: 10px; }
+.roster-meta { color: var(--hub-muted, #526579); }
+.roster-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; list-style: none; padding: 0; margin: 8px 0 12px; }
+.roster-grid li { flex: 1 1 146px; max-width: 230px; border-radius: 4px; background: var(--hub-surface, #fff); }
+.roster-grid .male { background: var(--hub-male, #c1e0e8); }
+.roster-grid .female { background: var(--hub-female, #f5ceda); }
+.roster-grid a { color: var(--hub-link, #254b71); min-height: 44px; height: 100%; display: grid; place-items: center; padding: 4px 8px; overflow-wrap: anywhere; }
+.team-form { display: grid; gap: 8px; }
+.team-form p { margin: 0; color: var(--hub-loss-text, #a32636); }
+@media (max-width: 540px) {
+  .team-workspace { padding: 10px 4px; }
+  .team-controls mat-form-field { flex: 1 1 100%; }
+}

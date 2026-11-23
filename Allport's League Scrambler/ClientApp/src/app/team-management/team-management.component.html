@@ -1,55 +1,76 @@
-@if (leagueId) {
-  <div style="text-align: center; max-width: 100%; margin: auto; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
-    <!-- CREATE A NEW TEAM -->
-    <mat-card appearance="outlined" style="flex: 1 1 45%; max-width: 600px; padding: 10px; margin: 10px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);">
-      <h4 style="margin-bottom: 20px;">Create a New Team</h4>
-      <div style="display: flex; flex-direction: column; gap: 20px;">
-        <mat-form-field appearance="outline" style="width: 100%;">
-          <mat-label>Division</mat-label>
-          <mat-select [(ngModel)]="newTeamDivision">
-            <mat-option value="Gold">Gold</mat-option>
-            <mat-option value="Silver">Silver</mat-option>
-            <mat-option value="Bronze">Bronze</mat-option>
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline" style="width: 100%;">
-          <mat-label>Team Name</mat-label>
-          <input matInput [(ngModel)]="newTeamName" />
-        </mat-form-field>
-        <button mat-raised-button color="primary" (click)="createTeam()" [disabled]="creatingTeam" style="align-self: center;">
-          Create Team
-        </button>
-      </div>
-    </mat-card>
-    <!-- ADD PLAYER TO TEAM -->
-    <mat-card appearance="outlined" style="flex: 1 1 45%; max-width: 600px; padding: 10px; margin: 10px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);">
-      <h3 style="margin-bottom: 20px;">Add Player to Team</h3>
-      <div style="display: flex; flex-direction: column; gap: 20px;">
-        <mat-form-field appearance="fill" style="width: 100%;">
-          <mat-label>Select Team</mat-label>
-          <mat-select [(ngModel)]="selectedTeamId" placeholder="Choose a team">
-            @for (team of teams; track team) {
-              <mat-option [value]="team.id">
-                {{ team.teamName }} ({{ team.division }})
-              </mat-option>
+﻿<section class="team-workspace">
+  <header>
+    <h2>Team Management</h2>
+    @if (leagueName) { <p>{{ leagueName }}</p> }
+  </header>
+
+  @if (loadingData) { <app-page-loading label="Loading team management"></app-page-loading> }
+  @if (dataError) {
+    <p role="alert">{{ dataError }} <button mat-button type="button" (click)="loadData()">Retry</button></p>
+  }
+  @if (!leagueId) { <p>Select a league to manage its teams.</p> }
+
+  @if (hasCurrentLeagueData) {
+    <div class="team-controls">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Division</mat-label>
+        <mat-select [value]="divisionFilter" [canSelectNullableOptions]="true" (selectionChange)="selectDivision($event.value)">
+          <mat-option [value]="null">All divisions</mat-option>
+          @for (division of divisions; track division) { <mat-option [value]="division">{{ division || 'No Division' }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Team</mat-label>
+        <mat-select [(value)]="selectedTeamId" [disabled]="!visibleTeams.length">
+          @for (team of visibleTeams; track team.id) {
+            <mat-option [value]="team.id">{{ team.teamName }} &middot; {{ team.division || 'No Division' }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <button mat-stroked-button type="button" (click)="openCreate()" [disabled]="creatingTeam">New Team</button>
+    </div>
+    @if (notice) { <p role="status">{{ notice }}</p> }
+    @if (selectedTeam; as team) {
+      <section class="team-roster">
+        <h3>{{ team.teamName }}</h3>
+        <p class="roster-meta" aria-live="polite">{{ team.division || 'No Division' }} &middot; {{ team.players.length }} {{ team.players.length === 1 ? 'player' : 'players' }}</p>
+        @if (team.players.length) {
+          <ul class="roster-grid">
+            @for (player of team.players; track player.id) {
+              <li [class.male]="player.isMale === true" [class.female]="player.isMale === false">
+                <a [routerLink]="['/player-stats-tabs', player.id]" [queryParams]="{ leagueId: leagueId }">{{ player.fullName }}</a>
+              </li>
             }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="fill" style="width: 100%;">
-          <mat-label>Search Player</mat-label>
-          <input type="text" matInput placeholder="Type to search..." [formControl]="playerCtrl" [matAutocomplete]="playerAutocomplete" />
-          <mat-autocomplete #playerAutocomplete="matAutocomplete" [displayWith]="displayPlayerName" (optionSelected)="onSelectPlayer($event.option.value)">
-            @for (player of filteredPlayers; track player) {
-              <mat-option [value]="player">
-                {{ player.firstName }} {{ player.lastName }}
-              </mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
-        <button mat-raised-button color="accent" (click)="addPlayerToTeam()" style="align-self: center;">
-          Add Player to Team
-        </button>
-      </div>
-    </mat-card>
-  </div>
-}
+          </ul>
+        } @else { <p>No players are assigned to this team yet.</p> }
+        <button mat-raised-button color="primary" type="button" (click)="openPlayers(team)">Add League Players</button>
+      </section>
+    } @else {
+      <p>{{ teams.length ? 'No teams in this division.' : 'No teams have been created for this league.' }}</p>
+    }
+  }
+</section>
+
+<ng-template #newTeamDialog>
+  <h2 mat-dialog-title>Create a New Team</h2>
+  <form (ngSubmit)="createTeam()">
+    <mat-dialog-content class="team-form">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Team name</mat-label><input matInput name="teamName" [(ngModel)]="newTeamName" required [disabled]="creatingTeam">
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Division</mat-label>
+        <mat-select name="division" [(ngModel)]="newTeamDivision" [disabled]="creatingTeam">
+          @for (division of teamCreationDivisions; track division) { <mat-option [value]="division">{{ division }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+      @if (creationError) { <p role="alert">{{ creationError }}</p> }
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close type="button" [disabled]="creatingTeam">Cancel</button>
+      <button class="action-success" mat-raised-button color="primary" type="submit" [disabled]="creatingTeam || !newTeamName.trim()">
+        {{ creatingTeam ? 'Creating team...' : 'Create Team' }}
+      </button>
+    </mat-dialog-actions>
+  </form>
+</ng-template>

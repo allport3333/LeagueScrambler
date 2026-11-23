@@ -314,61 +314,66 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost("AddPlayerToLeagueTeam")]
         [Authorize(Policy = "LeagueManagement")]
         [SameOrigin]
-        public IActionResult AddPlayerToLeagueTeam(int leagueTeamId, int playerId)
+        public IActionResult AddPlayerToLeagueTeam(int leagueTeamId, int playerId, int? leagueId = null)
         {
-            using (var _context = new DataContext())
+            using var context = new DataContext();
+            var team = context.LeagueTeam.AsNoTracking().SingleOrDefault(t => t.Id == leagueTeamId);
+            if (team == null || (leagueId.HasValue && team.LeagueID != leagueId))
+                return BadRequest("Team does not belong to the selected league.");
+            if (!LeagueAccess.CanManage(User, context, team.LeagueID))
+                return Forbid();
+
+            try
             {
-                var leagueTeam = _context.LeagueTeam.FirstOrDefault(t => t.Id == leagueTeamId);
-                var player = _context.Players.FirstOrDefault(p => p.Id == playerId);
+                using var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
+                if (!context.PlayersLeagues.Any(member => member.LeagueID == team.LeagueID && member.PlayerID == playerId))
+                    return BadRequest("Player must be enrolled in the selected league.");
+                // Only fixed league-team memberships count toward the active roster.
+                if (context.LeagueTeamPlayer.Any(member => member.PlayerId == playerId &&
+                    member.LeagueTeam.LeagueID == team.LeagueID))
+                    return Conflict("Player is already assigned to a team in this league.");
 
-                if (leagueTeam == null || player == null)
-                    return BadRequest("LeagueTeam or Player not found.");
-
-                if (!LeagueAccess.CanManage(User, _context, leagueTeam.LeagueID))
-                {
-                    return Forbid();
-                }
-
-                // Check if the player is already on the team
-                var exists = _context.LeagueTeamPlayer
-                    .Any(ltp => ltp.LeagueTeamId == leagueTeamId && ltp.PlayerId == playerId);
-                if (exists)
-                    return BadRequest("Player is already on that team.");
-
-                // Add the player to the team
-                var newRow = new LeagueTeamPlayer
-                {
-                    LeagueTeamId = leagueTeamId,
-                    PlayerId = playerId
-                };
-                _context.LeagueTeamPlayer.Add(newRow);
-                _context.SaveChanges();
-
+                context.LeagueTeamPlayer.Add(new LeagueTeamPlayer { LeagueTeamId = leagueTeamId, PlayerId = playerId });
+                context.SaveChanges();
+                transaction.Commit();
                 return Ok(new { message = $"Added player {playerId} to team {leagueTeamId} successfully." });
+            }
+            catch (Microsoft.Data.SqlClient.SqlException error) when (error.Number == 1205)
+            {
+                return Conflict("Another roster update was in progress. Refresh the roster and try again.");
+            }
+            catch (DbUpdateException error) when (error.InnerException is Microsoft.Data.SqlClient.SqlException sql &&
+                (sql.Number == 1205 || sql.Number == 2601 || sql.Number == 2627))
+            {
+                return Conflict("Another roster update was in progress. Refresh the roster and try again.");
             }
         }
 
-
-
         [HttpPost("AddTeam")]
+        [SameOrigin]
         [Authorize(Policy = "LeagueManagement")]
         public IActionResult AddTeam([FromBody] AddTeamRequest request)
         {
-            var _context = new DataContext();
-            // Basic checks
-            var league = _context.Leagues.FirstOrDefault(x => x.ID == request.LeagueId);
-            if (league == null)
-                return BadRequest("League not found.");
-
+            if (request == null || string.IsNullOrWhiteSpace(request.TeamName))
+                return BadRequest("Enter a team name.");
+            using var _context = new DataContext();
             if (!LeagueAccess.CanManage(User, _context, request.LeagueId))
                 return Forbid();
+            if (!_context.Leagues.Any(league => league.ID == request.LeagueId))
+                return BadRequest("League not found.");
+
+            var name = request.TeamName.Trim();
+            var division = request.Division?.Trim() ?? "";
+            if (_context.LeagueTeam.Any(team => team.LeagueID == request.LeagueId &&
+                team.TeamName.Trim().ToUpper() == name.ToUpper() && (team.Division ?? "").Trim().ToUpper() == division.ToUpper()))
+                return Conflict("A team with that name already exists in this division.");
 
             // Create new LeagueTeam
             var newTeam = new LeagueTeam
             {
                 LeagueID = request.LeagueId,
-                TeamName = request.TeamName,
-                Division = request.Division ?? "", // e.g. "Silver" or "Gold"
+                TeamName = name,
+                Division = division,
                 TotalWins = 0,
                 TotalLosses = 0
             };

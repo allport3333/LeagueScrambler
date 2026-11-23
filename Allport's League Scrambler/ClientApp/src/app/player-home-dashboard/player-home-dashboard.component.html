@@ -1,6 +1,6 @@
-<section class="home-dashboard"><header><h1>Home</h1><p>{{ leagueName || 'Select a league to get started.' }}</p></header>
+<section class="home-dashboard">@if (initialLoading) { <app-page-loading label="Loading your league overview"></app-page-loading> }<div [hidden]="initialLoading"><header><h1>Home</h1><p>{{ leagueName || 'Select a league to get started.' }}</p></header>
 @if (!accountReady) {
-  <p role="status">Loading your league overview...</p>
+
   }@if (accountError) {
   <p role="alert">{{ accountError }}</p>
 }
@@ -8,7 +8,7 @@
   <div class="home-panel"><p>Link your player record to see your next game and personal attendance.</p><button mat-raised-button color="primary" (click)="claimPlayer.emit()">Find or claim my player</button></div>
 }
 @if (playerId && leagueId) {
-  <app-player-next-game [playerId]="playerId" [leagueId]="leagueId" (gamesLoaded)="acceptGames($event)"></app-player-next-game><app-player-attendance [playerId]="playerId" [leagueId]="leagueId"></app-player-attendance>
+  <app-player-next-game [playerId]="playerId" [leagueId]="leagueId" (gamesLoaded)="acceptGames($event)" (gamesSettled)="nextGameSettled = true"></app-player-next-game><app-player-attendance [playerId]="playerId" [leagueId]="leagueId"></app-player-attendance>
   <section class="home-panel recent-kq" aria-label="King/Queen results"><h2>Latest King/Queen Score</h2>@if (overviewLoading) {
   <p role="status">Loading King/Queen results...</p>
   }@if (kqError) {
@@ -51,18 +51,18 @@
   }@if (!overviewLoading && !recentError && !recent.length) {
   <p>No recorded league team results.</p>
   }@if (recent.length) {
-  <table class="recent-scores-table"><thead><tr><th scope="col">Date</th><th scope="col">Opponent</th><th scope="col">Score</th><th scope="col">Result</th></tr></thead><tbody>@for (game of recent; track game) {
-  <tr><td class="score-date">{{ game.date | date:'mediumDate' }}</td><td class="score-opponent">{{ game.opponentTeam || 'Opponent unavailable' }}</td><td class="score-value"><span class="mobile-score-label">Score</span><strong>{{ game.teamScore }}</strong></td><td class="score-result"><span class="result-label" [class.home-win]="game.wonGame===true" [class.home-loss]="game.wonGame===false">{{ game.wonGame===true ? 'Won' : game.wonGame===false ? 'Lost' : 'Result unavailable' }}</span></td></tr>
+  <table class="recent-scores-table"><thead><tr><th scope="col">Date</th><th scope="col">Format</th><th scope="col">Score</th><th scope="col">Result</th></tr></thead><tbody>@for (game of recent; track game) {
+  <tr><td class="score-date">{{ game.date | date:'mediumDate' }}</td><td class="score-format"><span>{{ game.format || 'League team play' }}</span><small>{{ game.opponentTeam || 'Opponent unavailable' }}</small></td><td class="score-value"><strong>{{ game.teamScore }}</strong></td><td class="score-result"><span class="result-label" [class.home-win]="game.wonGame===true" [class.home-loss]="game.wonGame===false">{{ game.wonGame===true ? 'Won' : game.wonGame===false ? 'Lost' : 'Result unavailable' }}</span></td></tr>
 }</tbody></table>
 }<a [routerLink]="['/player-stats-tabs',playerId]" [queryParams]="{leagueId:leagueId,tab:'team'}">View Game History</a></section>
 </div>
 </section>
 @if (upcoming.length) {
   <section class="home-panel home-upcoming"><h2>Upcoming Schedule</h2><ul>@for (game of upcoming; track game) {
-  <li><a class="upcoming-link" routerLink="/league-dashboard" [queryParams]="{leagueId:leagueId,tab:'schedule',weekNumber:game.weekNumber,scheduleDate:game.date}"><span class="upcoming-date">{{ gameDate(game.date) | date:'mediumDate' }}<small>Week {{ game.weekNumber }}</small></span><strong class="upcoming-opponent">{{ game.opponentName }}</strong>@if (game.division) {
+  <li><a class="upcoming-link" routerLink="/league-dashboard" [queryParams]="{leagueId:leagueId,tab:'schedule',weekNumber:game.weekNumber,scheduleDate:game.date}"><span class="upcoming-date">{{ gameDate(game.date) | date:'mediumDate' }}</span><strong class="upcoming-opponent">{{ game.opponentName }}</strong><small class="upcoming-week">Week {{ game.weekNumber }}</small>@if (game.division) {
   <small class="upcoming-details">{{ game.division }}</small>
 }</a></li>
 }</ul></section>
 }
 }
-</section>
+</div></section>

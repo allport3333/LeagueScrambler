@@ -1,10 +1,15 @@
 @if (pwa.offline) {
   <div class="pwa-notice" role="status">You are offline. Live data and saving are unavailable. Reconnect before making changes.</div>
 }
-@if (pwa.updateAvailable) {
-  <div class="pwa-notice pwa-update" role="status"><span>A League Hub update is ready. Save your work before refreshing.</span><button type="button" mat-stroked-button [disabled]="pwa.offline || pwa.updating" (click)="pwa.refreshToUpdate()">Refresh to Update</button>@if (pwa.updateError) {
-  <span>{{ pwa.updateError }}</span>
-}</div>
+@if (pwa.updateError || (pwa.updateAvailable && pwa.hasPendingWork && !pwa.deferredNotice)) {
+  <div class="pwa-notice pwa-update">
+    <span role="status">{{ pwa.updateError || 'An update is ready. League Hub will reload after you finish or discard your edits.' }}</span>
+    @if (pwa.updateError) {
+      <button type="button" mat-stroked-button [disabled]="pwa.offline || pwa.updating || pwa.hasPendingWork" (click)="pwa.refreshToUpdate()">Reload League Hub</button>
+    } @else {
+      <button type="button" mat-button (click)="pwa.deferUpdate()">Dismiss</button>
+    }
+  </div>
 }
 <div class='container-fluid'>
   <div class='row'>

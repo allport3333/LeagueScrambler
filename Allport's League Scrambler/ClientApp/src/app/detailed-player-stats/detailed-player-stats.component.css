@@ -40,7 +40,7 @@ mat-cell:hover {
 
 /* Hover effect for matchup scores rows */
 .hover-effect:hover {
-    background-color: #f5f5f5; /* Light gray for hover effect */
+    background-color: var(--hub-row-alt, #f5f5f5); /* Light gray for hover effect */
     cursor: pointer; /* Show pointer cursor */
 }
 

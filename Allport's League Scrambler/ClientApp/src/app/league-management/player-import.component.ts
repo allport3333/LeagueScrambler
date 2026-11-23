@@ -1,3 +1,4 @@
+import { protectPendingWork } from '../pwa/pending-work.service';
 import { AfterViewChecked, Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
@@ -26,7 +27,7 @@ export class PlayerImportComponent implements OnInit, OnDestroy, AfterViewChecke
     readonly labels={ready:'Ready',review:'Needs Review',already:'Already in League','not-found':'Not Found',duplicate:'Duplicate',invalid:'Invalid',added:'Added'};
     private worker:Worker; private reader:FileReader; private timer:any; private generation=0; private request=0; private closed=false;
     private contextSub:Subscription; private loadingSub:Subscription;
-    constructor(@Inject(MAT_DIALOG_DATA) public data:any,public dialogRef:MatDialogRef<PlayerImportComponent>,private service:PlayerService,private leagues:LeagueService,private dialogs:MatDialog){}
+    constructor(@Inject(MAT_DIALOG_DATA) public data:any,public dialogRef:MatDialogRef<PlayerImportComponent>,private service:PlayerService,private leagues:LeagueService,private dialogs:MatDialog){protectPendingWork(() => this.parsing || this.analysing || this.importing || this.hasImportDraft);}
     ngAfterViewChecked():void {
         if(!this.navigation||!this.importBody)return;
         const body=this.importBody.nativeElement as HTMLElement;
@@ -142,9 +143,11 @@ export class PlayerImportComponent implements OnInit, OnDestroy, AfterViewChecke
             this.data.onImported(results);this.importing=false;this.dialogRef.disableClose=false;this.refresh();this.error='The import response could not be confirmed. '+results.length+' selected players are currently in this league. Review remaining rows before explicitly retrying.';
         },()=>{if(!this.closed){this.importing=false;this.dialogRef.disableClose=false;this.ready=[];this.error='Could not confirm the import or reload memberships. Reload league data before retrying.';}});
     }
+    private get hasImportDraft(): boolean { return !!this.file && (this.rows.length === 0 || this.rows.some(row => !row.imported && row.status !== 'already')); }
     ngOnDestroy():void {
         if(this.createRef)this.createRef.close();
-        if(this.grid&&this.rows.length)this.data.onDraft({file:this.file,filename:this.filename,grid:this.grid,mapping:this.mapping,sheets:this.sheets,sheet:this.sheet,defaultDivision:this.defaultDivision,nameFormat:this.nameFormat,columns:this.columns,rows:this.rows});
+        if(this.hasImportDraft&&this.grid&&this.rows.length)this.data.onDraft({file:this.file,filename:this.filename,grid:this.grid,mapping:this.mapping,sheets:this.sheets,sheet:this.sheet,defaultDivision:this.defaultDivision,nameFormat:this.nameFormat,columns:this.columns,rows:this.rows});
+        else this.data.onDraft(null);
         this.closed=true;this.generation++;this.stopParser();if(this.contextSub)this.contextSub.unsubscribe();if(this.loadingSub)this.loadingSub.unsubscribe();
     }
 }

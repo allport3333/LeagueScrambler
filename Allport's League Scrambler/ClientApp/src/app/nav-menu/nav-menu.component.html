@@ -30,14 +30,15 @@
       }
     </mat-menu>
   </div>
-  @if (authenticationChecked && loggedIn) {
+  @if (authenticationChecked) {
     <div class="desktop-account">
-      <button type="button" mat-button class="menu-trigger" [class.active]="profilePageActive" [matMenuTriggerFor]="accountMenu"><mat-icon aria-hidden="true">account_circle</mat-icon> Account<mat-icon aria-hidden="true">arrow_drop_down</mat-icon></button>
+      <button type="button" mat-button class="menu-trigger" [class.active]="profilePageActive" [matMenuTriggerFor]="accountMenu"><mat-icon aria-hidden="true">account_circle</mat-icon> {{ loggedIn ? 'Account' : 'Appearance' }}<mat-icon aria-hidden="true">arrow_drop_down</mat-icon></button>
       <mat-menu #accountMenu="matMenu">
         @if (playerId) {
           <a mat-menu-item [routerLink]="['/player-stats-tabs', playerId]" [queryParams]="{leagueId:selectedLeagueId,tab:'kq'}" routerLinkActive="selected-destination" #accountActive="routerLinkActive" [attr.aria-current]="accountActive.isActive ? 'page' : null" (click)="collapse()"><mat-icon aria-hidden="true">person</mat-icon>Profile</a>
         }
-        <button type="button" mat-menu-item (click)="collapse(); logoutAndNavigate()"><mat-icon aria-hidden="true">exit_to_app</mat-icon>Logout</button>
+        <button type="button" mat-menu-item (click)="openAppearance()"><mat-icon aria-hidden="true">palette</mat-icon>Appearance</button>
+        @if (loggedIn) {<button type="button" mat-menu-item (click)="collapse(); logoutAndNavigate()"><mat-icon aria-hidden="true">exit_to_app</mat-icon>Logout</button>}
       </mat-menu>
     </div>
   }
@@ -61,6 +62,7 @@
   <section><h2>Account and Management</h2>@for (item of drawerLinks('management'); track trackDestination($index, item)) {
   <ng-container *ngTemplateOutlet="drawerLink; context: {$implicit: item}"></ng-container>
 }
+<button type="button" class="drawer-link" (click)="openAppearance()"><mat-icon aria-hidden="true">palette</mat-icon>Appearance</button>
 @if (authenticationChecked && loggedIn && playerId) {
   <a [routerLink]="['/player-stats-tabs', playerId]" routerLinkActive="active" #profileActive="routerLinkActive" [attr.aria-current]="profileActive.isActive ? 'page' : null" class="drawer-link" (click)="collapse()"><mat-icon aria-hidden="true">person</mat-icon>Profile</a>
 }

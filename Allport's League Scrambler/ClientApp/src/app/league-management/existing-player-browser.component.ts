@@ -3,6 +3,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { timeout } from 'rxjs/operators';
 import { PlayerService } from '../services/player.service';
+import { StatisticsService } from '../services/statistics.service';
 import { LeagueService } from '../services/league.service';
 
 @Component({
@@ -31,14 +32,18 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
     private focusAfterAdd = new Map<number, number>();
     constructor(@Inject(MAT_DIALOG_DATA) public data: any,
         public dialogRef: MatDialogRef<ExistingPlayerBrowserComponent>,
-        private service: PlayerService, private leagueService: LeagueService, private element: ElementRef) {}
+        private service: PlayerService, private statistics: StatisticsService, private leagueService: LeagueService, private element: ElementRef) {}
 
     ngOnInit(): void {
         this.divisionId = this.data.divisionId || 0;
         this.contextReader = this.leagueService.selectedLeague$.subscribe(context => {
             if (context.leagueId !== this.data.leagueId) this.dialogRef.close();
         });
-        this.load();
+        if (this.data.team) {
+            this.players = this.data.team.players.slice();
+            this.loading = false;
+            this.filter();
+        } else this.load();
     }
     load(): void {
         if (this.reader) this.reader.unsubscribe();
@@ -62,7 +67,7 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
     setGender(gender: string): void { this.gender = gender; this.filter(); }
     trackPlayer(index: number, player: any): number { return player.id; }
     add(player: any): void {
-        if (this.closed || this.blocked || this.loading || this.pending.has(player.id) || !this.players.some(p => p.id === player.id)) return;
+        if (this.closed || this.blocked || this.loading || (this.data.team ? this.pending.size > 0 : this.pending.has(player.id)) || !this.players.some(p => p.id === player.id)) return;
         if (this.divisionId && !this.divisions.some(d => d.id === this.divisionId)) { this.error = 'Select an available division.'; return; }
         const divisionId = this.divisionId, leagueId = this.data.leagueId, leagueName = this.data.leagueName;
         const active = document.activeElement;
@@ -71,6 +76,22 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
         this.pending.add(player.id); this.error = '';
         // Writes intentionally finish even if the dialog closes. The callback updates
         // the owning league's roster only while that league is still selected.
+        if (this.data.team) {
+            this.statistics.AddPlayerToLeagueTeam(this.data.team.id, player.id, leagueId).subscribe({
+                next: () => this.confirm({ player }),
+                error: response => {
+                    if (response.status === 401 || response.status === 403) {
+                        this.blocked = true;
+                        this.pending.delete(player.id);
+                        this.error = 'Your management access is no longer available.';
+                        return;
+                    }
+                    this.failed(player);
+                    if (response.status === 409) this.refreshTeamEligibility();
+                }
+            });
+            return;
+        }
         this.service.addExistingLeaguePlayer(leagueId, leagueName, player.id, divisionId).subscribe(result => {
             if (!result || result.leagueId !== leagueId || !result.player || result.player.id !== player.id) { this.reconcile(player); return; }
             this.confirm(result);
@@ -80,12 +101,32 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
             } else this.reconcile(player);
         });
     }
+    private refreshTeamEligibility(): void {
+        if (this.closed) return;
+        this.loading = true;
+        this.error = 'The roster changed. Checking available players.';
+        this.reader?.unsubscribe();
+        this.reader = this.data.team.refreshPlayers().pipe(timeout(15000)).subscribe({
+            next: players => {
+                this.loading = false;
+                this.players = players;
+                this.filter();
+                this.error = 'The assignment was not saved by this request. The available list has been refreshed.';
+            },
+            error: () => {
+                this.loading = false;
+                this.blocked = true;
+                this.error = 'Could not refresh the roster. Close and reopen the player browser.';
+            }
+        });
+    }
+
     private confirm(result: any): void {
         this.data.onAdded(result);
         if (this.closed) return;
         this.pending.delete(result.player.id);
         this.players = this.players.filter(p => p.id !== result.player.id); this.filter();
-        this.notice = result.player.firstName + ' ' + result.player.lastName + (result.alreadyMember ? ' is already in ' : ' added to ') + this.data.leagueName + '.';
+        this.notice = result.player.firstName + ' ' + result.player.lastName + (result.alreadyMember ? ' is already in ' : ' added to ') + (this.data.team?.name || this.data.leagueName) + '.';
         clearTimeout(this.noticeTimer); this.noticeTimer = setTimeout(() => this.notice = '', 4000);
         const index = this.focusAfterAdd.get(result.player.id); this.focusAfterAdd.delete(result.player.id);
         if (index !== undefined) setTimeout(() => {

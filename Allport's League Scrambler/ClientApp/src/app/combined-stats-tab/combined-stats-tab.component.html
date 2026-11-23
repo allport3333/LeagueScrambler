@@ -1,6 +1,6 @@
 <section class="profile-section combined-profile">
   @if (loading) {
-    <p role="status" class="state-message">Loading league player statistics...</p>
+    <app-page-loading label="Loading league statistics"></app-page-loading>
     }@if (error) {
     <div role="alert" class="state-message"><p>{{ error }}</p><button mat-stroked-button (click)="loadCombinedStats()">Retry league player stats</button></div>
   }

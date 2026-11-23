@@ -1,8 +1,9 @@
 @if (loading) {
-  <div style="text-align: center;">
-    <p>Loading teams & players...</p>
-    <mat-spinner diameter="50"></mat-spinner>
-  </div>
+  <app-page-loading label="Loading league teams"></app-page-loading>
+}
+
+@if (error) {
+  <p role="alert" class="text-center">{{ error }} <button mat-button (click)="loadTeamsWithPlayers()">Retry</button></p>
 }
 
 <!-- If teams are loaded and not empty -->
@@ -24,9 +25,9 @@
           (mouseenter)="team.hovered = true"
           (mouseleave)="team.hovered = false"
                   [ngStyle]="{
-                      'background-color': team.division === 'Gold' ? '#FFF8DC' :
-                                         team.division === 'Silver' ? '#E0E0E0' :
-                                         team.division === 'Bronze' ? '#F5F5DC' : 'white',
+                      'background-color': team.division === 'Gold' ? 'var(--hub-gold, #FFF8DC)' :
+                                         team.division === 'Silver' ? 'var(--hub-silver, #E0E0E0)' :
+                                         team.division === 'Bronze' ? 'var(--hub-bronze, #F5F5DC)' : 'var(--hub-surface, white)',
                       'border-left': team.division === 'Gold' ? '6px solid #FFD700' :
                                      team.division === 'Silver' ? '6px solid #C0C0C0' :
                                      team.division === 'Bronze' ? '6px solid #CD7F32' : 'none',
@@ -65,10 +66,10 @@
             @if (team.division) {
               <mat-chip-option
                           [ngStyle]="{
-                  'background-color': team.division === 'Gold' ? '#FFF8DC' :
-                                     team.division === 'Silver' ? '#E0E0E0' :
-                                     team.division === 'Bronze' ? '#F5F5DC' : '#E0E0E0',
-                  'color': '#000',
+                  'background-color': team.division === 'Gold' ? 'var(--hub-gold, #FFF8DC)' :
+                                     team.division === 'Silver' ? 'var(--hub-silver, #E0E0E0)' :
+                                     team.division === 'Bronze' ? 'var(--hub-bronze, #F5F5DC)' : 'var(--hub-silver, #E0E0E0)',
+                  'color': 'var(--hub-text, #000)',
                   'font-weight': 'bold',
                   'margin-top': '10px'
               }">
@@ -83,7 +84,7 @@
 }
 
 <!-- If teams are loaded but empty -->
-@if (!loading && teams.length === 0) {
+@if (!loading && !error && leagueId && teams.length === 0) {
   <div style="text-align: center;">
     <p>No teams found for this league.</p>
   </div>

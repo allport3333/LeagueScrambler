@@ -10,6 +10,7 @@ import { PlayerService } from './player.service';
     providedIn: 'root',
 })
 export class LeagueService {
+    private readonly selectionKey = 'league-hub-selected-league';
     private selectedLeagueSource = new BehaviorSubject<{ leagueId: number | null; leagueName: string | null }>({
         leagueId: null,
         leagueName: null,
@@ -39,7 +40,12 @@ export class LeagueService {
     restoreLeagues(leagues: Leagues[]): void {
         this.leaguesAvailable = (leagues || []).map(league => ({ id: league.id, leagueName: league.leagueName }));
         const current = this.selectedLeagueSource.getValue();
-        const selected = this.leaguesAvailable.find(league => league.id === current.leagueId) || this.leaguesAvailable[0];
+        let remembered: number | null = null;
+        try { remembered = Number(sessionStorage.getItem(this.selectionKey)) || null; }
+        catch { /* Session storage is optional. */ }
+        const selected = this.leaguesAvailable.find(league => league.id === current.leagueId)
+            || this.leaguesAvailable.find(league => league.id === remembered)
+            || this.leaguesAvailable[0];
         if (selected) {
             if (selected.id !== current.leagueId || selected.leagueName !== current.leagueName) {
                 this.setSelectedLeague(selected.id);
@@ -67,6 +73,8 @@ export class LeagueService {
 
         const selectedLeague = this.leaguesAvailable.find((league) => league.id === leagueId);
         if (selectedLeague) {
+            try { sessionStorage.setItem(this.selectionKey, String(leagueId)); }
+            catch { /* Session storage is optional. */ }
             this.selectedLeagueSource.next({
                 leagueId: selectedLeague.id,
                 leagueName: selectedLeague.leagueName,

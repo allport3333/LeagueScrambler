@@ -1,6 +1,6 @@
 <section class="profile-section kq-history">
   @if (loading) {
-    <p class="state-message" role="status">Loading King/Queen history...</p>
+    <app-page-loading label="Loading King/Queen history"></app-page-loading>
   }
   @if (error) {
     <div class="state-message" role="alert"><p>{{ error }}</p><button mat-stroked-button (click)="loadDetailedPerformanceStats(leagueId)">Retry King/Queen stats</button></div>

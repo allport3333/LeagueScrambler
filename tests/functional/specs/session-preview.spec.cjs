@@ -39,7 +39,7 @@ test('session cookie flags, browser cookie expiry and logout remove client autho
   expect(leagueSnapshot(target.name)).toEqual(before);
   expect((await api.post('/api/Login/logout',{})).status()).toBe(200);
   expect(await (await api.get('/api/Login/isauthenticated')).json()).toBe(false);
-  expect(await (await api.get('/api/Login/IsAdminPasswordAuthorized')).json()).toBe(false);
+  expect((await request.storageState()).cookies.some(cookie => cookie.name === '.AspNetCore.Cookies')).toBe(false);
   capture(records,target);
 });
 

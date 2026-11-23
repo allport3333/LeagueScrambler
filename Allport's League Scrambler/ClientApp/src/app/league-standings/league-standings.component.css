@@ -11,10 +11,12 @@
 
 .dropdown-container {
     display: flex;
-    gap: 16px;
-    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-bottom: 10px;
     justify-content: center;
 }
+.compact-table { font-variant-numeric: tabular-nums; }
 
 /* The original detailed tables keep their desktop boxes and styles. */
 .standings-full-table { display: contents; }
@@ -33,50 +35,46 @@
     .dropdown-container { flex-wrap: wrap; gap: 0 8px; width: 100%; }
     .dropdown-container mat-form-field { width: 100% !important; max-width: 320px; }
     .standings-settings { display: block; width: 100%; margin: 0 0 4px; }
-    .mobile-settings-toggle { display: block; width: 100%; min-height: 44px; padding: 0 8px; background: #f7f8fa; color: #344878; }
+    .mobile-settings-toggle { display: block; width: 100%; min-height: 44px; padding: 0 8px; background: var(--hub-section, #f7f8fa); color: var(--hub-heading, #344878); }
     .settings-toggle-content { display: flex; gap: 8px; align-items: center; text-align: left; }
     .settings-symbol { font-size: 18px; }
     .settings-expand { margin-left: auto; }
     .standings-settings .dropdown-container:not(.mobile-settings-open) { display: none; }
     .standings-settings .dropdown-container { margin: 4px 0 0; }
     .standings-card { width: 100%; min-width: 0; margin: 4px 0 !important; padding: 0 !important; overflow-x: hidden !important; }
-    /* TODO(mdc-migration): The following rule targets internal classes of tabs that may no longer apply for the MDC version. */
-    :host ::ng-deep .standings-card .mat-mdc-tab { height: 44px; min-width: 76px; padding: 0 12px; }
     .mobile-standings { display: block; width: 100%; padding: 4px 0; }
     .mobile-standings-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 8px; align-items: center; margin-bottom: 6px; }
     .mobile-standings-controls mat-form-field { grid-column: 1 / span 2; width: 100%; min-width: 0; font-size: 14px; }
-    /* TODO(mdc-migration): The following rule targets internal classes of form-field that may no longer apply for the MDC version. */
-    :host ::ng-deep .mobile-standings-controls .mat-mdc-form-field-subscript-wrapper { display: none; }
     .mobile-sort-direction, .mobile-table-toggle { min-height: 44px; margin: 0; padding: 0 6px; font-size: 13px; white-space: nowrap; }
     .mobile-standings-hint { font-size: 12px; line-height: 1.4; margin: 4px 0 6px; }
-    .mobile-rankings { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; color: #212529; }
+    .mobile-rankings { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; color: var(--hub-text, #212529); }
     .mobile-rankings th, .mobile-rankings td { border: 1px solid #dee2e6; padding: 6px 4px; text-align: center; vertical-align: middle; }
     .mobile-rankings thead th { font-size: 12px; font-weight: 600; overflow-wrap: break-word; }
     .mobile-rankings thead th:nth-child(1) { width: 13%; }
     .mobile-rankings thead th:nth-child(2) { width: 41%; }
     .mobile-rankings thead th:nth-child(3) { width: 24%; }
     .mobile-rankings thead th:nth-child(4) { width: 22%; }
-    .mobile-place { background-color: lightblue; font-weight: bold; }
-    .mobile-kq-score { background-color: lightgreen; }
+    .mobile-place { background-color: var(--hub-male, lightblue); font-weight: bold; }
+    .mobile-kq-score { background-color: var(--hub-win-surface, lightgreen); }
     .mobile-player-row { cursor: pointer; }
-    .mobile-player-row:nth-of-type(4n+3) { background-color: #f5f5f5; }
+    .mobile-player-row:nth-of-type(4n+3) { background-color: var(--hub-row-alt, #f5f5f5); }
     .mobile-player-name { font-weight: normal; }
     .mobile-player-toggle { display: block; width: 100%; min-height: 44px; padding: 2px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; overflow-wrap: anywhere; }
     .mobile-player-toggle:focus { outline: 2px solid #3f51b5; outline-offset: -2px; }
     .mobile-player-toggle span { white-space: nowrap; }
-    .mobile-player-details td { text-align: left; padding: 6px 4px; background: #f7f8fa; }
+    .mobile-player-details td { text-align: left; padding: 6px 4px; background: var(--hub-section, #f7f8fa); }
     .mobile-player-summary { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
     .mobile-round-scores { list-style: none; padding: 0; margin: 0; }
-    .mobile-round-scores li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 6px; padding: 6px 4px; border-bottom: 1px solid #dee2e6; color: #212529; }
+    .mobile-round-scores li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 6px; padding: 6px 4px; border-bottom: 1px solid #dee2e6; color: var(--hub-text, #212529); }
     .mobile-round-scores li > strong { display: block; text-align: center; }
-    .mobile-round-scores .mobile-score-dropped, .mobile-round-scores .mobile-score-reduced { color: red; }
+    .mobile-round-scores .mobile-score-dropped, .mobile-round-scores .mobile-score-reduced { color: var(--hub-loss-text, red); }
     .mobile-round-scores .mobile-score-dropped { font-weight: bold; }
-    .mobile-round-scores .mobile-score-sub { background-color: #D8BFD8; }
+    .mobile-round-scores .mobile-score-sub { background-color: var(--hub-sub-surface, #D8BFD8); }
     .mobile-score-indicators { display: flex; justify-content: flex-end; text-align: right; gap: 2px 6px; flex-wrap: wrap; font-size: 12px; }
     .mobile-standings-empty { padding: 16px 6px !important; }
     .standings-full-table { display: none; }
     .standings-full-table.mobile-full-table-open { display: block; width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .standings-full-table .compact-table th:nth-child(2), .standings-full-table .compact-table td:nth-child(2) { position: sticky; left: 0; background-color: #fff; z-index: 1; }
+    .standings-full-table .compact-table th:nth-child(2), .standings-full-table .compact-table td:nth-child(2) { position: sticky; left: 0; background-color: var(--hub-surface, #fff); z-index: 1; }
     .standings-full-table .compact-table th:nth-child(2) { z-index: 2; }
 }
 
@@ -85,13 +83,13 @@
 @media (max-width: 767px) { .mobile-round-scores .standings-score-link { display: flex; justify-content: center; align-items: center; min-height: 44px; } }
 
 .standings-player-profile { color: inherit; text-decoration: underline; text-decoration-color: rgba(45,78,130,.35); text-underline-offset: 2px; }
-.standings-player-profile:hover, .standings-player-profile:focus { color: #315a97; text-decoration-color: currentColor; }
+.standings-player-profile:hover, .standings-player-profile:focus { color: var(--hub-link, #315a97); text-decoration-color: currentColor; }
 
 @media (max-width: 767px) {
  .mobile-player-summary.mobile-player-context { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; padding: 0; }
- .mobile-player-context .mobile-view-profile { display: inline-flex; align-items: center; justify-content: flex-end; gap: 3px; margin-left: auto; min-height: 44px; padding: 0 2px 0 8px; color: #3f51b5; font-size: 12px; white-space: nowrap; text-decoration: none; }
+ .mobile-player-context .mobile-view-profile { display: inline-flex; align-items: center; justify-content: flex-end; gap: 3px; margin-left: auto; min-height: 44px; padding: 0 2px 0 8px; color: var(--hub-link, #3f51b5); font-size: 12px; white-space: nowrap; text-decoration: none; }
  .mobile-player-context .mobile-view-profile:hover, .mobile-player-context .mobile-view-profile:focus { text-decoration: underline; }
  .mobile-player-context .mobile-view-profile mat-icon { width: 16px; height: 16px; font-size: 16px; }
 }
 
-.sub-adjustment-marker{display:inline-block;font-size:12px;font-weight:600;color:#9b4d55;margin-left:2px}.mobile-score-dropped .sub-adjustment-marker{color:red}
+.sub-adjustment-marker{display:inline-block;font-size:12px;font-weight:600;color: var(--hub-loss-text, #9b4d55);margin-left:2px}.mobile-score-dropped .sub-adjustment-marker{color: var(--hub-loss-text, red)}

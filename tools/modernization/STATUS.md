@@ -1,5 +1,62 @@
 # Framework modernization checkpoint
 
+## Team Management and dark themes
+
+Team Management now uses a division and team selector, a linked roster, a compact New Team dialog, and the shared player browser for immediate assignment of enrolled league members. The existing membership endpoint verifies league enrollment, team ownership and same-team membership before inserting. The team membership model permits assignment to more than one roster. There is no team-only removal endpoint, and no schema change was needed.
+
+The Dark Navy and Charcoal pass updated shared action and table tokens and corrected local surfaces in team cards, standings, matchups, attendance, player links, schedule administration, install instructions and other routed screens. Classic Light component colors remain the styling fallback. See DARK-THEME-AUDIT.md and RESULTS.md for evidence and verification limits.
+
+
+## Division schedules, loading, appearance and league creation
+
+Weekly matchups are grouped by the division reported by the schedule API. The week selector, adjacent arrows, Current Week and Full Schedule controls share a compact responsive toolbar.
+
+The shared page loading component coordinates initial reads across league views, player views, the Scrambler, score entry, management and attendance. Read failures show an error where the page previously could remain loading or show an empty table. Schedule, team data and dashboard refreshes retain settled content where supported.
+
+Account > Appearance offers Classic Light, Dark Navy and Charcoal. The browser saves one appearance for the site, including guest sessions and the installed PWA shell. The saved appearance is applied at startup. Account profiles have no existing preference storage, so this checkpoint does not add cross-device account synchronization or a database schema change.
+
+Create League is a dedicated Admin and Manager tab. Successful creation refreshes the league list, selects the returned league and opens its League Setup. The management service retains the active league for the browser tab when the current user still has access. League Setup contains Add Division and the Admin-only manager assignment form.
+
+The Development SQL read-only probe failed while connecting with Windows Integrated authentication. Local build, browser and service-worker evidence is documented in RESULTS.md. This checkpoint made no database writes or deployment.
+
+## Automatic PWA updates, homepage, and League Setup
+
+The previous PWA checked on reconnection and at six-hour intervals, and a downloaded version still required explicit refresh. Its worker already excluded API data. The current source checks after registration, on foreground entry and reconnect, and every 15 minutes while visible. It reloads a complete version at the current URL after any drafts clear. Visible league data refreshes on resume and reconnect. API responses use `no-store`; fingerprinted bundles retain efficient caching.
+
+The homepage now uses a four-column score table and a two-line matchup grid. League Setup has compact upper forms and full-width manager access with centered controls. Both were exercised with synthetic fixtures. See RESULTS.md for verification and the local evidence paths.
+
+## Role-based administration and focused UI cleanup
+
+The modernization source uses the normal account session for league administration. `Users.UserRoleId` refers to `UserRoles.UserRoleId` and identifies Admin (1), Manager (2), and Player (3). `UserLeagues` maps a Manager's `UserId` to each managed `LeagueTypeId`. `UsersPlayer` remains the account-to-player-profile link. The historical `IsAdmin` database column remains for compatibility. Effective access comes from the role relationship and current league assignment.
+
+The separate administration password and cookie have been retired. An Admin can manage every league and grant or revoke league access for an existing Manager. A Manager can manage assigned leagues and create a league. League creation, default settings, and the creator's assignment commit together. Players keep their existing viewing and account workflows. The database schema is unchanged.
+
+The current build contains the Scrambler roster disclosure and mobile action menu, guided Team Configuration, and compact Team Scores controls. See RESULTS.md and VISUAL-REGRESSION.md for evidence. Account-backed integration remains pending because both shared-memory and TCP connections to local Development SQL failed during Windows authentication with an SSPI error. This checkpoint made zero SQL writes and no IIS deployment.
+
+## Visual restoration and staging authentication investigation — 2026-11-22
+
+Source changes cover compact shared Material controls and notifications, inline login feedback, Team Scores sizing, Scrambler roster layout, scrollable management and dashboard tabs, standings filters, and profile history spacing. The master comparison, existing evidence and new before captures are indexed in VISUAL-REGRESSION.md. The changes leave scoring and scramble generation logic intact.
+
+IIS now responds at `https://127.0.0.1:8086/` with certificate validation using the machine trust store. Read-only probes separated request validation from credential rejection. Empty JSON produced `Invalid login data` and a populated synthetic unknown-account request produced `Invalid email or password.` The league collection returned HTTP 200, demonstrating a database-backed read through IIS. The staging administrator journal records a successful IIS commit. The worker's exact SQL identity and selected database still require confirmation before any fixture writes. The previously reported account's response body and a successful account-backed IIS session remain unverified.
+
+Development and production builds passed using a temporary drive path to the same worktree, which avoided esbuild's need to enumerate a restricted parent directory. The drive was removed afterward. All 24 unit cases passed with a single Vitest worker. The verified 92-file release ZIP is in `tests/functional/artifacts/modernization/visual-restoration/handoff-release/`. IIS continues to serve the previously accepted build. Deployment needs elevated staging write access. Positive login, cookie, role and recycle verification also need the worker identity check and a run-owned Development account. See RESULTS.md and STAGING-AND-ROLLBACK.md.
+
+## Administrator setup prepared — 2026-11-22
+
+`Set-LeagueHubStaging.ps1` provides read-only preflight and explicit `-Apply` for dedicated IIS and Development SQL configuration. The PowerShell parser, IIS API signatures, 24-table allowlist comparison and rollback journal replacement passed local checks. The local PowerShell policy is `AllSigned`, which rejected invocation of the unsigned script. Use an approved code-signing certificate before running it under that policy. Administrative preflight and Apply remain pending. See STAGING-AND-ROLLBACK.md for commands and rollback.
+
+## IIS staging recovery — 2026-11-22
+
+**Staging serves HTTP and is blocked on administrative access for HTTPS and authenticated acceptance.** The user explicitly authorized work on `LeagueHub Staging`, `LeagueHubStagingPool`, and local `LeagueScramblerDev`. The earlier local acceptance below remains valid.
+
+- Before this continuation, the staging directory already held the accepted 92-file package, and the ASP.NET Core Module application event recorded successful startup there at 11:32:35 a.m. Eastern. The checkout already had edits to README.md and STAGING-AND-ROLLBACK.md. The exact operator and timing of individual IIS changes could not be established from accessible evidence.
+- This continuation verified the ZIP SHA-256 and all 92 manifest entries after a fresh extraction. The loose package still has a different `web.config`. The live staging tree matched every manifest entry, with zero extra files. A separate hash-verified backup of all 92 live files, the root ACL listing and verification report are under `tests/functional/artifacts/modernization/iis-staging-resume-f4dc3339/`. No replacement copy was needed.
+- Actual IIS requests at `http://127.0.0.1:8085/` returned 200 for the Angular shell, main bundle, web app manifest, worker script and worker metadata. A same-origin empty JSON login returned the expected application-generated HTTP 400, `Invalid login data`. This confirmed routing and validation. The prior login failure with populated fields remains undiagnosed. Full browser workflows, cookie issuance and persistence, and PWA lifecycle remain pending on IIS.
+- HTTPS at `https://localhost:8086/` refused the connection. The TCP listener appeared as `0.0.0.0:8085`; administrative inspection of the actual IIS bindings is required to establish loopback-only access. Installed shared runtimes include .NET/ASP.NET Core 10.0.15 and ANCM V2 is installed. The staging pool identity has read/execute on the directory. The dedicated pool's state, identity settings, profile loading, effective environment and IIS access logs could not be read in this session.
+- The deployed `web.config` contains no environment overrides, and no `.env` was found in the deployment tree or checked ancestor paths. The staging worker's effective SQL target was not verified. Direct integrated read-only probes to `localhost / LeagueScramblerDev` from the current session failed before query execution with TLS/SSPI errors. No SQL writes, fixtures, production operations, or external email were performed in this continuation.
+
+Resume from STAGING-AND-ROLLBACK.md with a session that can administer the dedicated staging site and validate Windows-integrated Development SQL access. The current managed session has a non-elevated token, cannot read IIS configuration, and has workspace-only write access. Staging authenticated and functional acceptance is still pending.
+
 ## Accepted local modernization checkpoint — authenticated Development integration, 2026-11-22
 
 **Current phase:** framework implementation and local acceptance are complete; the package is prepared for **controlled staging verification**, conditional on server prerequisites and a separate deployment authorization. **Production deployment is not recommended before staging acceptance.** No commit, push, merge, deployment, production access/configuration change or IIS operation occurred. All source remains uncommitted on `feature/framework-modernization`, HEAD `85cf8a3bcfe827ea59a785f05f9fc9aa77c2b420`. Original master tracked files remain unchanged at `0d30bc9`; its existing untracked `.angular/` cache was left untouched.

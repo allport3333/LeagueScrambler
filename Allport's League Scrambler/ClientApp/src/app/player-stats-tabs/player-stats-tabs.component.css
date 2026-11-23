@@ -1,10 +1,2 @@
 
-/* TODO(mdc-migration): The following rule targets internal classes of tabs that may no longer apply for the MDC version. */
-.profile-tabs ::ng-deep .mat-mdc-tab-labels { justify-content: center; }
-@media (max-width: 600px) {
- /* TODO(mdc-migration): The following rule targets internal classes of tabs that may no longer apply for the MDC version. */
- .profile-tabs ::ng-deep .mat-mdc-tab { min-width: 0; flex: 1 1 0; height: 48px; padding: 0 6px; font-size: 12px; }
- /* TODO(mdc-migration): The following rule targets internal classes of tabs that may no longer apply for the MDC version. */
- .profile-tabs ::ng-deep .mdc-tab__content { white-space: normal; text-align: center; line-height: 16px; }
-}
 .profile-return { display: flex; justify-content: center; margin-bottom: 8px; }.profile-return button { min-height: 44px; }

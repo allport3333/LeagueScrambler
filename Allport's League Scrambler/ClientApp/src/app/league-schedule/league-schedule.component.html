@@ -1,75 +1,41 @@
 <section class="league-schedule">
   <h2>League Schedule</h2>
   @if (loading) {
-    <div class="schedule-state" role="status"><p>Loading schedule...</p><mat-spinner diameter="40"></mat-spinner></div>
+    <app-page-loading label="Loading schedule"></app-page-loading>
   }
   @if (error && !loading) {
     <div class="schedule-state" role="alert"><p>{{ error }}</p><button mat-stroked-button type="button" (click)="retrySchedule()">Retry Schedule</button></div>
   }
+  @if (refreshError) { <p class="schedule-state" role="status">{{ refreshError }} <button mat-button (click)="retrySchedule()">Retry Schedule</button></p> }
   @if (!loading && !error && selectedWeek) {
     <div class="schedule-controls"><nav class="week-navigation" aria-label="Schedule weeks">
-      <button mat-icon-button type="button" aria-label="Previous Week" [disabled]="activeTabIndex === 0" (click)="selectWeek(activeTabIndex - 1)"><mat-icon>chevron_left</mat-icon></button>
-      <mat-form-field appearance="outline"><mat-label>Scheduled week</mat-label><mat-select aria-label="Scheduled week" [value]="activeTabIndex" (selectionChange)="selectWeek($event.value)">@for (week of schedule; track week; let index = $index) {
-      <mat-option [value]="index">Week {{ week.weekNumber }} &middot; {{ week.date | date:'mediumDate' }}</mat-option>
+      <button mat-icon-button type="button" aria-label="Previous Week" matTooltip="Previous week" [disabled]="activeTabIndex === 0" (click)="selectWeek(activeTabIndex - 1)"><mat-icon>chevron_left</mat-icon></button>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>Scheduled week</mat-label><mat-select aria-label="Scheduled week" [value]="activeTabIndex" (selectionChange)="selectWeek($event.value)">@for (week of schedule; track week; let index = $index) {
+      <mat-option [value]="index">Week {{ week.weekNumber }} &middot; {{ calendarDate(week.date) | date:'mediumDate' }}</mat-option>
     }</mat-select></mat-form-field>
-    <button mat-icon-button type="button" aria-label="Next Week" [disabled]="activeTabIndex === schedule.length - 1" (click)="selectWeek(activeTabIndex + 1)"><mat-icon>chevron_right</mat-icon></button>
+    <button mat-icon-button type="button" aria-label="Next Week" matTooltip="Next week" [disabled]="activeTabIndex === schedule.length - 1" (click)="selectWeek(activeTabIndex + 1)"><mat-icon>chevron_right</mat-icon></button>
   </nav>
-  <div class="schedule-actions"><button mat-stroked-button (click)="currentWeek()">Current Week</button><button mat-raised-button color="primary" (click)="openFullSchedule()">Full Schedule</button></div></div>
+  <div class="schedule-actions"><button mat-stroked-button (click)="currentWeek()">Current Week</button><button mat-stroked-button color="primary" (click)="openFullSchedule()">Full Schedule</button></div></div>
   @for (event of selectedWeek.events; track event) {
     <p class="schedule-state">{{event.title}}</p>
   }
-  <div class="schedule-matchups" aria-live="polite">
-    @for (week of [selectedWeek]; track week) {
-      @for (match of week.matches; track match) {
-        <mat-card appearance="outlined"
-                              [ngStyle]="{
-              'background-color': match.division === 'Gold' ? '#FFF8DC' :
-                                 match.division === 'Silver' ? '#E0E0E0' :
-                                 match.division === 'Bronze' ? '#F5F5DC' : 'white',
-              'border-left': match.division === 'Gold' ? '6px solid #FFD700' :
-                              match.division === 'Silver' ? '6px solid #C0C0C0' :
-                              match.division === 'Bronze' ? '6px solid #CD7F32' : 'none',
-              'flex': '1 1 calc(33% - 20px)',
-              'min-width': '250px',
-              'max-width': '300px',
-              'margin-bottom': '8px',
-              'box-shadow': '0 2px 6px rgba(0, 0, 0, 0.2)',
-              'border-radius': '8px',
-              'transition': 'transform 0.2s, box-shadow 0.2s'
-          }"
-          (mouseenter)="match.hovered = true"
-          (mouseleave)="match.hovered = false"
-          [style.transform]="match.hovered ? 'scale(1.03)' : 'scale(1)'"
-          [style.boxShadow]="match.hovered ? '0 4px 12px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.2)'">
-          <!-- Match Header -->
-          <mat-card-header style="text-align: center; display: flex; flex-direction: column;">
-            <mat-card-title style="text-align: center; font-weight: bold;">
+  <div aria-live="polite">
+    @for (group of weeklyDivisions; track group.division) {
+      <section class="schedule-division" [attr.aria-label]="group.division || 'No division'">
+        <h3>{{ group.division ? group.division + ' Division' : 'No Division' }}</h3>
+        <div class="schedule-matchups">
+          @for (match of group.matches; track match) {
+            <mat-card appearance="outlined" class="schedule-match"
+              [class.gold-match]="group.division.toLowerCase() === 'gold'"
+              [class.silver-match]="group.division.toLowerCase() === 'silver'"
+              [class.bronze-match]="group.division.toLowerCase() === 'bronze'">
               <app-team-roster-button [teamId]="match.team1Id" [leagueId]="leagueId" [teamName]="match.team1Name" [leagueName]="leagueName"></app-team-roster-button>
-            </mat-card-title>
-            <mat-card-subtitle style="text-align: center; font-size: 14px; color: gray;">
-              vs
-            </mat-card-subtitle>
-            <mat-card-title style="text-align: center; font-weight: bold;">
+              <span aria-label="versus">vs</span>
               <app-team-roster-button [teamId]="match.team2Id" [leagueId]="leagueId" [teamName]="match.team2Name" [leagueName]="leagueName"></app-team-roster-button>
-            </mat-card-title>
-          </mat-card-header>
-          <!-- Division Tag -->
-          @if (match.division) {
-            <mat-chip-option
-                                  [ngStyle]="{
-                  'background-color': match.division === 'Gold' ? '#FFF8DC' :
-                                     match.division === 'Silver' ? '#E0E0E0' :
-                                     match.division === 'Bronze' ? '#F5F5DC' : '#E0E0E0',
-                  'color': '#000',
-                  'font-weight': 'bold',
-                  'margin-top': '10px'
-              }"
-              style="align-self: center;">
-              {{ match.division }} Division
-            </mat-chip-option>
+            </mat-card>
           }
-        </mat-card>
-      }
+        </div>
+      </section>
     }
   </div>
   @if (!selectedWeek.matches || !selectedWeek.matches.length) {

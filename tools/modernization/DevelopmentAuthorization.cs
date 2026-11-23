@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 internal static class DevelopmentAuthorization
 {
  public const string Grant = "leaguehub-modernization-development-2026-11-22";
- public static void Configure(string envFile, string reportFile) {
+ public static void Configure(string envFile, string reportFile, bool sharedMemory = false) {
   var root = Directory.GetCurrentDirectory();
   var grantFile = Path.Combine(root, "tools/modernization/DEVELOPMENT-AUTHORIZATION.md");
   if (!File.Exists(grantFile) || !File.ReadAllText(grantFile).Contains(Grant)) throw new InvalidOperationException("Recorded user authorization required.");
@@ -21,6 +21,7 @@ internal static class DevelopmentAuthorization
   var builder = new SqlConnectionStringBuilder(line.Substring(line.IndexOf('=') + 1).Trim().Trim('"', '\''));
   if (builder.DataSource != "localhost" || builder.InitialCatalog != "LeagueScramblerDev" || !builder.IntegratedSecurity ||
       !string.IsNullOrEmpty(builder.UserID) || !string.IsNullOrEmpty(builder.Password) || !string.IsNullOrEmpty(builder.AttachDBFilename)) throw new InvalidOperationException("Refusing nonlocal/nondevelopment target.");
+  if (sharedMemory) builder.DataSource = "lpc:localhost";
   builder.TrustServerCertificate = true; // Verified loopback Development certificate only.
   using (var sql = new SqlConnection(builder.ConnectionString)) {
    sql.Open(); using var command = sql.CreateCommand();

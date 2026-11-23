@@ -8,16 +8,16 @@
 
 /* Win and Loss Badge Styles */
 .win-badge {
-    background-color: #4CAF50;
-    color: white;
+    background-color: var(--hub-win-surface, #4CAF50);
+    color: var(--hub-win-text, white);
     padding: 5px 10px;
     border-radius: 4px;
     font-weight: bold;
 }
 
 .loss-badge {
-    background-color: #F44336;
-    color: white;
+    background-color: var(--hub-loss-surface, #F44336);
+    color: var(--hub-loss-text, white);
     padding: 5px 10px;
     border-radius: 4px;
     font-weight: bold;
@@ -32,4 +32,35 @@ table {
 .mat-mdc-header-cell, .mat-mdc-cell {
     text-align: center;
     padding: 10px;
+}
+
+.score-card { max-width: calc(100% - 2rem); min-width: 0; }
+.score-card mat-card-content { min-width: 0; overflow-x: auto; }
+:host-context(html:is([data-theme="navy"], [data-theme="charcoal"])) .score-card {
+    background: var(--hub-section);
+    border-color: var(--hub-table-divider);
+}
+:host-context(html:is([data-theme="navy"], [data-theme="charcoal"])) table {
+    background: var(--hub-table-surface);
+    border: 1px solid var(--hub-table-divider);
+    box-shadow: none;
+}
+:host-context(html:is([data-theme="navy"], [data-theme="charcoal"])) .score-card .mat-mdc-header-row { background: var(--hub-table-header); }
+:host-context(html:is([data-theme="navy"], [data-theme="charcoal"])) .score-card .mat-mdc-row:nth-child(even) { background: var(--hub-table-alt); }
+:host-context(html:is([data-theme="navy"], [data-theme="charcoal"])) th,
+:host-context(html:is([data-theme="navy"], [data-theme="charcoal"])) td {
+    border-bottom-color: var(--hub-table-divider);
+    padding: 6px;
+}
+@media (max-width: 480px) {
+    :host-context(html:is([data-theme="navy"], [data-theme="charcoal"])) .score-card mat-card-content {
+        padding-inline: 4px;
+    }
+    :host-context(html:is([data-theme="navy"], [data-theme="charcoal"])) .mat-column-date {
+        white-space: nowrap;
+        font-size: 12px;
+    }
+    :host-context(html:is([data-theme="navy"], [data-theme="charcoal"])) :is(.win-badge, .loss-badge) {
+        padding-inline: 6px;
+    }
 }

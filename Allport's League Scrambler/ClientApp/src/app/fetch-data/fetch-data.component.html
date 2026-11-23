@@ -18,7 +18,7 @@
     </div>
   </div>
   @if (loading) {
-    <p class="directory-state" role="status"><mat-spinner diameter="28"></mat-spinner>Loading Players...</p>
+    <app-page-loading label="Loading players"></app-page-loading>
   }
   @if (error) {
     <div class="directory-state" role="alert"><p>{{ error }}</p><button mat-stroked-button type="button" (click)="retryLoad()">Retry</button></div>

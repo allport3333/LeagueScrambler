@@ -1,3 +1,4 @@
+import { onLeagueResume } from '../pwa/pending-work.service';
 import { Component, Input, OnChanges, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
@@ -10,7 +11,7 @@ export class DetailedPlayerStatsComponent implements OnChanges, OnDestroy {
  @Input() playerId: number; @Input() leagueId: number;
  loading = false; error = ''; performanceStats: any = null; history: any[] = []; detailedGroups: any[] = []; teammates: any[] = [];
  private request: Subscription; private version = 0; private sortField = ''; private sortAscending = true;
- constructor(private statistics: StatisticsService) { }
+ constructor(private statistics: StatisticsService) { onLeagueResume(() => { if (!this.loading) this.loadDetailedPerformanceStats(this.leagueId); }); }
  ngOnChanges() { this.loadDetailedPerformanceStats(this.leagueId); }
  loadDetailedPerformanceStats(leagueId: number) {
   if (this.request) { this.request.unsubscribe(); } const version = ++this.version;

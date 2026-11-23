@@ -1,4 +1,4 @@
-<div class="container" style="margin-top: 20px; text-align: center;">
+<div class="dashboard-page">
   <h2>League Dashboard</h2>
   @if (navigationError) {
     <p role="alert">{{ navigationError }}</p>
@@ -18,8 +18,9 @@
     }
 
 
+    @if (selectedLeagueId) {
     <div style="display: flex; justify-content: center; margin-top: 20px;">
-      <mat-tab-group [(selectedIndex)]="activeDashboardTab" style="width: 100%; max-width: 1200px;" mat-align-tabs="center">
+      <mat-tab-group [(selectedIndex)]="activeDashboardTab" class="compact-tabs dashboard-tabs" mat-align-tabs="center" [mat-stretch-tabs]="false" [disablePagination]="true">
         <mat-tab label="Standings">
           <app-league-team-standings [leagueId]="selectedLeagueId"></app-league-team-standings>
         </mat-tab>
@@ -43,5 +44,8 @@
       </mat-tab>-->
     </mat-tab-group>
   </div>
+  } @else if (selectingLeague) {
+    <app-page-loading label="Loading league dashboard"></app-page-loading>
+  }
 
 </div>

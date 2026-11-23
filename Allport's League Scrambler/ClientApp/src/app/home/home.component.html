@@ -2,13 +2,12 @@
   <app-player-home-dashboard (claimPlayer)="openClaimModal()"></app-player-home-dashboard>
 }
 @if (!isLoggedIn) {
-  <div style="display: flex; justify-content: center; align-items: center; margin-top: 20px;">
-    <img src="assets/img/sitelogo1.png"
-      style="width: 100%; max-width: 600px; height: auto; object-fit: contain;">
+  <div class="entry-logo" [class.entry-logo-compact]="showLoginForm || showRegistrationForm">
+    <img src="assets/img/sitelogo1.png" alt="Allport's League Hub">
     </div>
   }
 
-  <div [hidden]="!authenticationChecked || isLoggedIn" style="display: flex; justify-content: top; align-items: center; min-height: 100vh; flex-direction: column; text-align: center;">
+  <div [hidden]="!authenticationChecked || isLoggedIn" class="account-entry">
 
     <div style="margin-top: 1rem;">
       @if (!showLoginForm && !isLoggedIn && !showRegistrationForm) {
@@ -25,11 +24,11 @@
     </div>
 
     @if (showLoginForm && !isLoggedIn) {
-      <div style="background: #f4f4f4; padding: 20px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px; text-align: center; margin: 10px;">
+      <form class="login-form" (ngSubmit)="login()" novalidate>
         <h2>Login</h2>
         <div>
           <label for="loginEmail">Email:</label>
-          <input type="text" id="loginEmail" [(ngModel)]="loginEmail" placeholder="Enter your Email Address"
+          <input #loginEmailInput type="email" id="loginEmail" name="email" autocomplete="username" required [(ngModel)]="loginEmail" placeholder="Enter your Email Address"
             (input)="validateEmail()" [ngClass]="{'error': !isEmailValid && loginEmail?.length > 0}">
             @if (!isEmailValid && loginEmail?.length > 0) {
               <div class="error-message">Please enter a valid email address.</div>
@@ -37,12 +36,19 @@
           </div>
           <div>
             <label for="loginPassword">Password:</label>
-            <input type="password" id="loginPassword" [(ngModel)]="loginPassword" placeholder="Enter your password">
+            <input type="password" id="loginPassword" name="password" autocomplete="current-password" required [(ngModel)]="loginPassword" placeholder="Enter your password">
           </div>
-          <br />
-          <button (click)="login()" [disabled]="!isEmailValid">Submit</button>
-          <button (click)="cancel()">Cancel</button>
-        </div>
+          <div class="login-actions">
+            <button type="submit" [disabled]="loginPending || !isEmailValid || !loginEmail || !loginPassword">Submit</button>
+            <button type="button" (click)="cancel()" [disabled]="loginPending">Cancel</button>
+          </div>
+          <div class="login-feedback" [class.has-error]="loginError">
+            <span role="alert">{{ loginError }}</span>
+            @if (loginError) {
+              <button type="button" (click)="loginError = ''; loginEmailInput.focus()" aria-label="Dismiss sign-in message">Close</button>
+            }
+          </div>
+        </form>
       }
 
       <!--<button *ngIf="showLoginForm && !isLoggedIn" (click)="toggleRegistrationForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-left: 1rem;">
@@ -51,7 +57,7 @@
 
     @if (!isLoggedIn && !showRegistrationForm && !showLoginForm) {
       <button (click)="openForgotPasswordDialog()"
-        style="font-size: 1rem; padding: 0.25rem 1rem; background-color: white; color: blue; border-radius: 4px; cursor: pointer; margin-top: 1rem;">
+        style="font-size: 1rem; padding: 0.25rem 1rem; background-color: var(--hub-surface, white); color: var(--hub-link, blue); border-radius: 4px; cursor: pointer; margin-top: 1rem;">
         Forgot Password
       </button>
     }

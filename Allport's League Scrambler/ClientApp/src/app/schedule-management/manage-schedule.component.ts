@@ -1,3 +1,4 @@
+import { protectPendingWork } from '../pwa/pending-work.service';
 import {Component, Input, OnChanges, OnDestroy, SimpleChanges, AfterViewChecked, ViewChild, ElementRef, ChangeDetectionStrategy} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {timeout} from 'rxjs/operators';
@@ -20,16 +21,20 @@ export class ManageScheduleComponent implements OnChanges,OnDestroy,AfterViewChe
  readonly statuses=['all','valid','review','unresolved','division','duplicate','date','invalid'];readonly labels={all:'Total Records',valid:'Valid',review:'Needs Review',unresolved:'Unresolved Teams',division:'Division Conflicts',duplicate:'Duplicates',date:'Date Conflicts',invalid:'Invalid Rows'};
  readonly weekdays=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];readonly mappingFields=['week','date','team1','team2','division','notes','type','title'];
  private worker:Worker;private timer:any;private request=0;private fileVersion=0;private destroyed=false;private currentLeague:number;
- constructor(private http:HttpClient){}
+ constructor(private http:HttpClient){
+  protectPendingWork(() => this.busy || this.reading || this.dirty ||
+   !!this.context && this.workflow === 'create' && this.initialConfiguration !== this.configuration());
+ }
+ private initialConfiguration = '';
  @ViewChild('previewStart') previewStart:ElementRef;
  private views:any={};private fileBuffer:ArrayBuffer=null;fileExtension='';private scrollPreview=false;previewRevision='';validationGames=1;replacementScopes:string[]=[];previewCrossRules:CrossRule[]=[];previewAllowCross=false;previewConfiguration='';customWeekday=false;advancedOpen=false;adjustPreview=false;editingExisting=false;previewWeeks:any[]=[];existingConflictCount=0;
  private readonly viewFields=['entries','dirty','uncertain','mode','deletedGames','deletedEvents','crossRules','allowCross','games','filename','workflow','plans','weeks','firstDate','day','method','excluded','byes','warnings','specialDates','divisionFilter','weekFilter','statusFilter','previewRevision','validationGames','replacementScopes','previewCrossRules','previewAllowCross','previewConfiguration','customWeekday','advancedOpen','adjustPreview','editingExisting','notice','error','grid','mapping','sheet','sheets','dateFormat','text','referenceUrl','referenceKind','columns','fileExtension'];
  ngOnChanges(changes:SimpleChanges):void {if(changes.leagueId){this.remember();this.currentLeague=this.leagueId;this.views={};this.load(false);}}
  ngAfterViewChecked():void {if(this.scrollPreview&&this.previewStart){this.scrollPreview=false;const el=this.previewStart.nativeElement;el.scrollIntoView({block:'start',behavior:'smooth'});el.focus({preventScroll:true});}}
- private capture():any {const state:any={};this.viewFields.forEach(key=>state[key]=this[key]);const snapshot=JSON.parse(JSON.stringify(state));snapshot.fileBuffer=this.fileBuffer;snapshot.uncertain=this.uncertain||this.busy;return snapshot;}
+ private capture():any {const state:any={};this.viewFields.forEach(key=>state[key]=this[key]);const snapshot=JSON.parse(JSON.stringify(state));snapshot.fileBuffer=this.fileBuffer;snapshot.initialConfiguration=this.initialConfiguration;snapshot.uncertain=this.uncertain||this.busy;return snapshot;}
  private remember():void {if(this.currentLeague&&this.context){this.views[this.workflow]=this.capture();this.draftStore[this.currentLeague]={workflow:this.workflow,views:this.views};}}
  private defaults(view:string):any {const date=this.context.today||new Date().toISOString().slice(0,10),day=this.weekday(date);return {entries:view==='existing'?this.savedEntries():[],dirty:false,uncertain:false,mode:view==='existing'?'edit':this.context.entries.length?'':'append',deletedGames:[],deletedEvents:[],crossRules:[],allowCross:false,games:1,filename:'',workflow:view,plans:this.divisions.map(d=>({key:d.key,included:d.teams>=2,override:false,weeks:10,firstDate:date,day,games:1})),weeks:10,firstDate:date,day,method:'balanced',excluded:'',byes:[],warnings:[],specialDates:'',divisionFilter:'',weekFilter:0,statusFilter:'all',previewRevision:this.context.revision,validationGames:1,replacementScopes:[],previewCrossRules:[],previewAllowCross:false,previewConfiguration:'',customWeekday:false,advancedOpen:false,adjustPreview:false,editingExisting:false,notice:'',error:'',grid:null,mapping:null,sheet:'',sheets:[],dateFormat:'iso',text:'',referenceUrl:'',referenceKind:'',columns:[],fileBuffer:null,fileExtension:''};}
- private restore(view:string):void {const state=this.views[view];Object.assign(this,this.defaults(view),state||{});this.workflow=view;if(view==='existing'&&!this.dirty)this.entries=this.savedEntries();this.refresh();}
+ private restore(view:string):void {const state=this.views[view];Object.assign(this,this.defaults(view),state||{});this.workflow=view;this.initialConfiguration=state?.initialConfiguration||this.configuration();if(view==='existing'&&!this.dirty)this.entries=this.savedEntries();this.refresh();}
  load(reload=true):void {
   if(reload&&(this.busy||this.reading))return;if(reload)this.remember();else{this.busy=false;this.reading=false;}const retained=reload?{workflow:this.workflow,views:this.views}:this.draftStore[this.leagueId];
   const version=++this.version;this.stopWorker();this.loading=true;this.error='';this.context=null;this.entries=[];this.visible=[];

@@ -11,6 +11,7 @@ test('Admin and Manager authenticate; league ownership and default settings pers
   const manager = await account(api, records, 'manager', 2);
   const second = await league(api, records, 'manager');
   expect(leagueSnapshot(second.name).owners[0].UserId).toBe(manager.userId);
+  expect((await (await api.get('/api/Login/getuserleagues')).json()).map(league => league.id)).toEqual([second.id]);
   await deniedUnchanged(api, first, '/api/ScrambleData/AddNewLeague/'+first.name, [], 403);
   expect((await api.post('/api/Login/updatesetting', { leagueId: second.id, settingName: 'dropLowest', settingValue: '1' })).status()).toBe(200);
   expect(leagueSnapshot(second.name).settings.find(s => s.SettingName==='dropLowest').SettingValue).toBe('1');
@@ -18,6 +19,43 @@ test('Admin and Manager authenticate; league ownership and default settings pers
   expect((await api.post('/api/Login/updatesetting', { leagueId: second.id, settingName: 'dropLowest', settingValue: '2' })).status()).toBe(200);
   expect(leagueSnapshot(second.name).settings.find(s => s.SettingName==='dropLowest').SettingValue).toBe('2');
   capture(records, first, second);
+});
+
+test('only Admin can grant or revoke an existing Manager’s league assignments', async ({ api, records }) => {
+  const admin = await account(api, records, 'admin', 1);
+  const first = await league(api, records, 'first');
+  const second = await league(api, records, 'second');
+  const unrelated = await league(api, records, 'unrelated');
+  const manager = await account(api, records, 'manager', 2);
+  const player = await account(api, records, 'player', 3);
+  const assignment = leagueId => '/api/Login/LeagueManager/' + leagueId;
+  const update = league => ({ leagueId: league.id, settingName: 'dropLowest', settingValue: '1' });
+  const change = { email: manager.email, assigned: true };
+  expect((await api.put(assignment(first.id), change)).status()).toBe(403);
+  await login(api, manager);
+  expect((await api.put(assignment(first.id), change)).status()).toBe(403);
+  await deniedUnchanged(api, first, '/api/Login/updatesetting', update(first), 403);
+
+  await login(api, admin);
+  expect((await api.put(assignment(first.id), { ...change, email: player.email })).status()).toBe(404);
+  for (const target of [first, second, first]) {
+    expect((await api.put(assignment(target.id), change)).status()).toBe(204);
+    expect(leagueSnapshot(target.name).owners.filter(owner => owner.UserId === manager.userId)).toHaveLength(1);
+  }
+  await login(api, manager);
+  const assigned = await (await api.get('/api/Login/getuserleagues')).json();
+  expect(assigned.map(league => league.id).sort()).toEqual([first.id, second.id].sort());
+  for (const target of [first, second]) {
+    expect((await api.post('/api/Login/updatesetting', update(target))).status()).toBe(200);
+  }
+  await deniedUnchanged(api, unrelated, '/api/Login/updatesetting', update(unrelated), 403);
+
+  await login(api, admin);
+  expect((await api.put(assignment(first.id), { ...change, assigned: false })).status()).toBe(204);
+  await login(api, manager);
+  await deniedUnchanged(api, first, '/api/Login/updatesetting', update(first), 403);
+  expect((await api.post('/api/Login/updatesetting', update(second))).status()).toBe(200);
+  capture(records, first, second, unrelated);
 });
 
 test('divisions, player assignment, duplicate division rejection and roster removal', async ({ api, records }) => {
@@ -203,9 +241,11 @@ test('anonymous and Player changes are rejected with unchanged league database s
   capture(records,target);
 });
 
-test('legacy password disclosure is disabled and a wrong unlock does not authenticate', async ({ api }) => {
+test('legacy password disclosure is disabled and the retired cookie cannot unlock administration', async ({ api }) => {
   expect((await api.get('/api/ScrambleData/GetPassword')).status()).toBe(410);
-  expect((await api.post('/api/Login/VerifyAdminPassword',{password:'LSAuto-invalid-'+require('node:crypto').randomBytes(24).toString('hex')})).status()).toBe(401);
-  expect(await (await api.get('/api/Login/IsAdminPasswordAuthorized')).json()).toBe(false);
+  expect((await api.post('/api/Login/updatesetting',{leagueId:0,settingName:'dropLowest',settingValue:'0'}, {
+    Cookie: 'LeagueScrambler.Admin=retired-cookie-placeholder'
+  })).status()).toBe(401);
+  expect(await (await api.get('/api/Login/isauthenticated')).json()).toBe(false);
 });
 

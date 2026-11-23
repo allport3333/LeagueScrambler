@@ -9,14 +9,13 @@ const { db } = require('./database.cjs');
 
 const SAFE_READS = new Set([
   '/api/login/isauthenticated', '/api/login/getusersrole',
-  '/api/login/getusersplayer', '/api/login/getuserinfo',
-  '/api/login/isadminpasswordauthorized'
+  '/api/login/getusersplayer', '/api/login/getuserinfo'
 ]);
 const ALLOWED_WRITES = new Set([
   '/api/login/register', '/api/login/login', '/api/login/logout',
   '/api/scrambledata/addplayerwithoutleague', '/api/scrambledata/claimplayer'
 ]);
-const REGRESSION_WRITES = /^(?:\/api\/Login\/(?:updatesetting|SetLockSignInStatus|VerifyAdminPassword)|\/api\/LeagueDivision\/Add|\/api\/Statistics\/(?:AddTeam|AddPlayerToLeagueTeam|SetTeamDivision|RecordLeagueTeamScore|RecordMatchupScores|UpdateTeamScores\/LSAuto_[a-f0-9]{24}_L[a-z0-9]+)|\/api\/ScrambleData\/(?:SignInPlayer(?:\/\d+)?|SaveCreatedTeamScores|UpdateKingQueenPlayerSubStatus|(?:AddNewLeague|AddPlayer|DeletePlayer|GenerateScramble|SaveKingQueenTeams|SaveKingQueenRoundScores)\/LSAuto_[a-f0-9]{24}_L[a-z0-9]+))$/i;
+const REGRESSION_WRITES = /^(?:\/api\/Login\/(?:updatesetting|SetLockSignInStatus|LeagueManager\/\d+)|\/api\/LeagueDivision\/Add|\/api\/Statistics\/(?:AddTeam|AddPlayerToLeagueTeam|SetTeamDivision|RecordLeagueTeamScore|RecordMatchupScores|UpdateTeamScores\/LSAuto_[a-f0-9]{24}_L[a-z0-9]+)|\/api\/ScrambleData\/(?:SignInPlayer(?:\/\d+)?|SaveCreatedTeamScores|UpdateKingQueenPlayerSubStatus|(?:AddNewLeague|AddPlayer|DeletePlayer|GenerateScramble|SaveKingQueenTeams|SaveKingQueenRoundScores)\/LSAuto_[a-f0-9]{24}_L[a-z0-9]+))$/i;
 async function available() {
   return new Promise(resolve => {
     const req = https.get(BASE_URL + '/api/Login/isauthenticated', { timeout: 5000 }, res => {
@@ -103,7 +102,7 @@ const test = base.extend({
       if (response.status() >= 300 && response.status() < 400) throw new Error('Unexpected API redirect blocked.');
       return response;
     }
-    await use({ get: route => send('GET', route), post: (route, data, headers) => send('POST', route, data, headers), delete: route => send('DELETE', route) });
+    await use({ get: route => send('GET', route), post: (route, data, headers) => send('POST', route, data, headers), put: (route, data) => send('PUT', route, data), delete: route => send('DELETE', route) });
     await testInfo.attach('api-diagnostics', { body: JSON.stringify(diagnostics, null, 2), contentType: 'application/json' });
   },
   records: async ({}, use, testInfo) => {

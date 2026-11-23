@@ -14,7 +14,7 @@ export class LeagueManagementGuard  {
             switchMap(signedIn => signedIn ? this.login.getUsersRole().pipe(
                 map(result => result.role === 'Admin' || result.role === 'Manager'),
                 catchError(() => of(false))) : of(false)),
-            map(allowed => { if (!allowed) { this.router.navigate(['/']); } return allowed; })
+            map(allowed => allowed || this.router.createUrlTree(['/access-denied']))
         );
     }
 }
@@ -40,3 +40,9 @@ export class ScramblerWorkspaceComponent {
     standalone: false
 })
 export class WorkspaceRouteComponent { }
+
+@Component({
+    template: '<section class="text-center my-4"><h1>Access denied</h1><p>League Management requires an administrator or league manager account.</p><a routerLink="/">Return home</a></section>',
+    standalone: false
+})
+export class LeagueManagementDeniedComponent {}

@@ -1,3 +1,4 @@
+import { onLeagueResume } from '../pwa/pending-work.service';
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, Params } from '@angular/router';
 import { combineLatest, Subscription } from 'rxjs';
@@ -38,7 +39,17 @@ export class KqmatchupsComponent implements OnInit, OnDestroy {
     private navigationKey='';
 
     constructor(public leagueService: LeagueService, public playerService: PlayerService,
-        private route: ActivatedRoute, private router: Router) { }
+        private route: ActivatedRoute, private router: Router) {
+        onLeagueResume(() => {
+            if (!this.selectedLeagueId || !this.leagueName || this.loading) return;
+            const version = ++this.version;
+            this.loading = true;
+            this.subscriptions.add(this.playerService.SelectedLeagueScrambles(this.leagueName).subscribe({
+                next: weeks => { if (version === this.version) this.applySavedWeeks(weeks, this.params); },
+                error: () => { if (version === this.version) this.loading = false; }
+            }));
+        });
+    }
 
     ngOnInit() {
         this.subscriptions.add(combineLatest(this.route.queryParams, this.leagueService.selectedLeague$).subscribe(([params, selected]) => {

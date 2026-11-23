@@ -1,5 +1,14 @@
 <!-- league-standings.component.html -->
 
+@if (playerLoading) {
+  <app-page-loading label="Loading player standings"></app-page-loading>
+}
+@if (standingsError) {
+  <div class="text-center" role="alert">{{ standingsError }}
+    <button mat-button type="button" (click)="initializeSettings()">Retry</button>
+  </div>
+}
+@if (lastResult) {
 <mat-card appearance="outlined" style="margin-top: 20px; margin-bottom: 20px;">
     <div class="tab-content d-flex flex-column align-items-center">
         <h5 class="mb-2">Player Standings</h5>
@@ -23,7 +32,7 @@
                     <span>Standings Settings</span><span aria-hidden="true" class="settings-expand">{{ mobileSettingsOpen ? '▴' : '▾' }}</span></span>
             </button>
         <div id="standings-settings-controls" class="dropdown-container" [class.mobile-settings-open]="mobileSettingsOpen">
-            <mat-form-field appearance="outline" style="width: 200px;">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" style="width: 200px;">
                 <mat-label>Number of Subs Allowed</mat-label>
                 <mat-select [(value)]="numberOfSubsAllowed"
                             (selectionChange)="onNumberOfSubsChange($event.value)">
@@ -34,7 +43,7 @@
                 </mat-select>
             </mat-form-field>
 
-            <mat-form-field appearance="outline" style="width: 200px;">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" style="width: 200px;">
                 <mat-label>Percent of Score for Subs</mat-label>
                 <mat-select [(value)]="subScorePercent"
                             (selectionChange)="onSubScorePercentChange($event.value)">
@@ -44,7 +53,7 @@
                 </mat-select>
             </mat-form-field>
 
-            <mat-form-field appearance="outline" style="width: 200px;">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" style="width: 200px;">
                 <mat-label>Drop Lowest Scores</mat-label>
                 <mat-select [(value)]="dropLowest"
                             (selectionChange)="onDropLowestChange($event.value)">
@@ -61,20 +70,20 @@
         <div class="standings-legend" style="margin-bottom: 10px; text-align: center;">
             <div style="font-weight: bold; margin-bottom: 5px;">Key:</div>
             <div>
-                <span style="color: red; font-weight: bold;">Dropped Score</span> |
-                <span style="color:#9b4d55;">Adjusted substitute score (½ when reduced to 50%; otherwise the applied percentage)</span> |
-                <span style="background-color: #D8BFD8;">Sub Score</span>
+                <span style="color: var(--hub-loss-text, red); font-weight: bold;">Dropped Score</span> |
+                <span style="color:var(--hub-loss-text, #9b4d55);">Adjusted substitute score (½ when reduced to 50%; otherwise the applied percentage)</span> |
+                <span style="background-color: var(--hub-sub-surface, #D8BFD8);">Sub Score</span>
             </div>
         </div>
 
         <div class="card standings-card" style="margin: 20px; padding: 20px; max-width: 100%; overflow-x: auto;">
 
             <!-- OUTER TABS: Overall + one tab per ASSIGNED division -->
-            <mat-tab-group [selectedIndex]="mainTabIndex" (selectedTabChange)="onMainTabChange($event)" mat-align-tabs="center">
+            <mat-tab-group [selectedIndex]="mainTabIndex" (selectedTabChange)="onMainTabChange($event)" class="compact-tabs" mat-align-tabs="center" [mat-stretch-tabs]="false" [disablePagination]="true">
 
                 <!-- OVERALL TAB (always shown) -->
                 <mat-tab label="Overall">
-                    <mat-tab-group [selectedIndex]="returnGenderIndex" mat-align-tabs="center">
+                    <mat-tab-group [selectedIndex]="returnGenderIndex" class="compact-tabs" mat-align-tabs="center" [mat-stretch-tabs]="false" [disablePagination]="true">
 
                         <mat-tab label="Men's Standings">
                             <ng-container *ngTemplateOutlet="mobileStandings; context: { $implicit: maleStandings, group: 'overall-men' }"></ng-container>
@@ -121,18 +130,18 @@
                                 </thead>
                                 <tbody>
                                     <tr *ngFor="let player of maleStandings; let i = index">
-                                        <td [ngStyle]="{ 'background-color': 'lightblue' }"
+                                        <td [ngStyle]="{ 'background-color': 'var(--hub-male, lightblue)' }"
                                             style="padding: 2px; text-align: center; font-weight: bold;">
                                             {{ i + 1 }}
                                         </td>
                                         <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
-                                        <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
+                                        <td [ngStyle]="{ 'background-color': 'var(--hub-win-surface, lightgreen)'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
-                                            [style.color]="score.isDropped ? 'red' : hasSubAdjustment(score) ? '#9b4d55' : 'inherit'"
+                                            [style.color]="score.isDropped ? 'var(--hub-loss-text, red)' : hasSubAdjustment(score) ? 'var(--hub-loss-text, #9b4d55)' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
-                                            [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
+                                            [style.backgroundColor]="score.isSubScore ? 'var(--hub-sub-surface, #D8BFD8)' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
                                             <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template><span *ngIf="hasSubAdjustment(score)" class="sub-adjustment-marker" [attr.aria-label]="'Score adjusted to ' + subScorePercent + ' percent under substitute rules'"> {{ subAdjustmentLabel() }}</span>
                                         </td>
@@ -187,18 +196,18 @@
                                 </thead>
                                 <tbody>
                                     <tr *ngFor="let player of femaleStandings; let i = index">
-                                        <td [ngStyle]="{ 'background-color': 'lightblue' }"
+                                        <td [ngStyle]="{ 'background-color': 'var(--hub-male, lightblue)' }"
                                             style="padding: 2px; text-align: center; font-weight: bold;">
                                             {{ i + 1 }}
                                         </td>
                                         <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
-                                        <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
+                                        <td [ngStyle]="{ 'background-color': 'var(--hub-win-surface, lightgreen)'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
-                                            [style.color]="score.isDropped ? 'red' : hasSubAdjustment(score) ? '#9b4d55' : 'inherit'"
+                                            [style.color]="score.isDropped ? 'var(--hub-loss-text, red)' : hasSubAdjustment(score) ? 'var(--hub-loss-text, #9b4d55)' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
-                                            [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
+                                            [style.backgroundColor]="score.isSubScore ? 'var(--hub-sub-surface, #D8BFD8)' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
                                             <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template><span *ngIf="hasSubAdjustment(score)" class="sub-adjustment-marker" [attr.aria-label]="'Score adjusted to ' + subScorePercent + ' percent under substitute rules'"> {{ subAdjustmentLabel() }}</span>
                                         </td>
@@ -213,7 +222,7 @@
 
                 <!-- DIVISION TABS (only assigned divisions show up here) -->
                 <mat-tab *ngFor="let div of divisions" [label]="div.leagueDivisionCode">
-                    <mat-tab-group [selectedIndex]="returnGenderIndex" mat-align-tabs="center">
+                    <mat-tab-group [selectedIndex]="returnGenderIndex" class="compact-tabs" mat-align-tabs="center" [mat-stretch-tabs]="false" [disablePagination]="true">
 
                         <mat-tab label="Men's Standings"
                                  *ngIf="divisionMaleStandings[div.leagueDivisionId] && divisionMaleStandings[div.leagueDivisionId].length > 0">
@@ -261,18 +270,18 @@
                                 </thead>
                                 <tbody>
                                     <tr *ngFor="let player of divisionMaleStandings[div.leagueDivisionId]; let i = index">
-                                        <td [ngStyle]="{ 'background-color': 'lightblue' }"
+                                        <td [ngStyle]="{ 'background-color': 'var(--hub-male, lightblue)' }"
                                             style="padding: 2px; text-align: center; font-weight: bold;">
                                             {{ i + 1 }}
                                         </td>
                                         <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
-                                        <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
+                                        <td [ngStyle]="{ 'background-color': 'var(--hub-win-surface, lightgreen)'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
-                                            [style.color]="score.isDropped ? 'red' : hasSubAdjustment(score) ? '#9b4d55' : 'inherit'"
+                                            [style.color]="score.isDropped ? 'var(--hub-loss-text, red)' : hasSubAdjustment(score) ? 'var(--hub-loss-text, #9b4d55)' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
-                                            [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
+                                            [style.backgroundColor]="score.isSubScore ? 'var(--hub-sub-surface, #D8BFD8)' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
                                             <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template><span *ngIf="hasSubAdjustment(score)" class="sub-adjustment-marker" [attr.aria-label]="'Score adjusted to ' + subScorePercent + ' percent under substitute rules'"> {{ subAdjustmentLabel() }}</span>
                                         </td>
@@ -328,18 +337,18 @@
                                 </thead>
                                 <tbody>
                                     <tr *ngFor="let player of divisionFemaleStandings[div.leagueDivisionId]; let i = index">
-                                        <td [ngStyle]="{ 'background-color': 'lightblue' }"
+                                        <td [ngStyle]="{ 'background-color': 'var(--hub-male, lightblue)' }"
                                             style="padding: 2px; text-align: center; font-weight: bold;">
                                             {{ i + 1 }}
                                         </td>
                                         <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
-                                        <td [ngStyle]="{ 'background-color': 'lightgreen'}" style="padding: 2px;">{{ player.totalScore }}</td>
+                                        <td [ngStyle]="{ 'background-color': 'var(--hub-win-surface, lightgreen)'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
                                         <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
-                                            [style.color]="score.isDropped ? 'red' : hasSubAdjustment(score) ? '#9b4d55' : 'inherit'"
+                                            [style.color]="score.isDropped ? 'var(--hub-loss-text, red)' : hasSubAdjustment(score) ? 'var(--hub-loss-text, #9b4d55)' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
-                                            [style.backgroundColor]="score.isSubScore ? '#D8BFD8' : 'inherit'"
+                                            [style.backgroundColor]="score.isSubScore ? 'var(--hub-sub-surface, #D8BFD8)' : 'inherit'"
                                             style="padding: 2px; min-width: 70px;">
                                             <a *ngIf="canOpenScore(score); else plainScore" class="standings-score-link" [routerLink]="['/kqmatchups']" [queryParams]="scoreQuery(player, score)" [attr.aria-label]="'View saved matchup for ' + player.playerName">{{ score.score }}</a><ng-template #plainScore>{{ score.score }}</ng-template><span *ngIf="hasSubAdjustment(score)" class="sub-adjustment-marker" [attr.aria-label]="'Score adjusted to ' + subScorePercent + ' percent under substitute rules'"> {{ subAdjustmentLabel() }}</span>
                                         </td>
@@ -363,7 +372,7 @@
 <ng-template #mobileStandings let-players let-group="group">
     <div class="mobile-standings">
         <div class="mobile-standings-controls">
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>Sort standings</mat-label>
                 <mat-select [value]="sortColumn || 'totalScore'" (selectionChange)="sortMobileStandings($event.value)">
                     <mat-option value="playerName">Player Name</mat-option>
@@ -431,3 +440,5 @@
         </table>
     </div>
 </ng-template>
+
+}

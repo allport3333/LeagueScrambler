@@ -1,43 +1,22 @@
 
-/* TODO(mdc-migration): The following rule targets internal classes of card that may no longer apply for the MDC version. */
-mat-card {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-    /* TODO(mdc-migration): The following rule targets internal classes of card that may no longer apply for the MDC version. */
-    mat-card:hover {
-        transform: scale(1.05);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
-
-h2,
-h3 {
-    font-family: 'Arial', sans-serif;
-    margin-bottom: 10px;
-}
-
-p {
-    font-family: 'Verdana', sans-serif;
-}
-
-.mat-mdc-progress-spinner {
-    margin: auto;
-}
-
-
 :host { display: block; min-width: 0; }
-.league-schedule h2 { text-align: center; margin: 12px 0 6px; font-size: 24px; }
-.week-navigation { display: grid; grid-template-columns: 44px minmax(0, 270px) 44px; align-items: center; justify-content: center; gap: 4px; margin: 0 auto 4px; }
-.week-navigation button { width: 44px; height: 44px; line-height: 44px; margin-bottom: 16px; }
-.week-navigation mat-form-field { width: 100%; min-width: 0; font-size: 14px; }
-.schedule-matchups { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
+.league-schedule h2 { text-align: center; margin: 12px 0; font-size: 24px; }
+.week-navigation { display: grid; grid-template-columns: 44px minmax(0, 240px) 44px; align-items: center; gap: 4px; }
+.week-navigation button { width: 44px; height: 44px; }
+.week-navigation mat-form-field { width: 100%; min-width: 0; }
+.schedule-controls, .schedule-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; }
+.schedule-controls { margin: 0 auto 12px; }
+.schedule-actions button { min-height: 44px; }
 .schedule-state { text-align: center; padding: 8px; }
-@media(max-width:767px) { .league-schedule h2 { margin-top: 10px; font-size: 22px; }.week-navigation { grid-template-columns: 44px minmax(0, 1fr) 44px; max-width: 370px; gap: 2px; }.schedule-matchups { gap: 10px; } }
-
-
-.schedule-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 auto 12px}.schedule-controls .week-navigation{margin:0}.schedule-actions{display:flex;gap:8px;align-items:center;margin-bottom:16px}.schedule-actions button{min-height:40px}
-.season-dialog-layout{display:flex;flex-direction:column;max-height:88vh;max-height:88dvh;min-width:0}.season-dialog-layout header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d7e1ed;padding-bottom:8px}.season-dialog-layout h2{margin:0}.season-dialog-layout header p{font-size:13px;color:#5a6d84;margin:4px 0}.season-dialog-layout .mat-mdc-dialog-content{min-height:0;max-height:none;overflow:auto;padding-top:10px}.season-dialog-layout .mat-mdc-dialog-actions{flex-shrink:0;margin-bottom:0}
-.season-week-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}.season-week{border:1px solid #c8d4e4;border-radius:4px;padding:6px;min-width:0}.season-week h3{font-size:15px;text-align:center;margin:0 0 5px}.season-week table{width:100%;table-layout:fixed;border-collapse:collapse}.season-week td,.season-week th{border:1px solid #d7e1ed;padding:3px 5px;text-align:center;overflow-wrap:break-word;line-height:1.25}.season-versus-column{width:24px}.season-versus{color:#657285;font-size:12px}.season-division th{font-size:11px;letter-spacing:.2px;font-weight:600;background:#eef2f7;padding:2px 4px}.season-event{font-size:12px;color:#526579;text-align:center;margin:4px 0 0}.current-season-week{border-color:#739a83;background:#f2f8f4}.season-week p{text-align:center}
-@media(max-width:650px){.season-week-grid{grid-template-columns:minmax(0,1fr)}.season-week{padding:5px}.season-week td{font-size:13px}.schedule-controls{gap:0}.schedule-controls .week-navigation{width:100%}.schedule-actions{margin-bottom:0}}
+.schedule-division { margin: 12px auto; }
+.schedule-division h3 { margin: 0 0 6px; text-align: center; font-size: 18px; }
+.schedule-matchups { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.schedule-match { flex: 1 1 min(100%, 230px); max-width: 290px; min-width: 0; padding: 8px; align-items: center; text-align: center; }
+.schedule-match span { font-size: 13px; color: var(--hub-muted, #526579); }
+.gold-match { background: var(--hub-gold, #fff8dc); border-inline-start: 4px solid #c99719; }
+.silver-match { background: var(--hub-silver, #e0e0e0); border-inline-start: 4px solid #a5abb4; }
+.bronze-match { background: var(--hub-bronze, #f5f5dc); border-inline-start: 4px solid #cd7f32; }
+@media(max-width:600px) { .schedule-controls .week-navigation { width: min(100%, 370px); grid-template-columns: 44px minmax(0, 1fr) 44px; } }
+.season-dialog-layout{display:flex;flex-direction:column;max-height:88vh;max-height:88dvh;min-width:0}.season-dialog-layout header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--hub-border, #d7e1ed);padding-bottom:8px}.season-dialog-layout h2{margin:0}.season-dialog-layout header p{font-size:13px;color:var(--hub-muted, #5a6d84);margin:4px 0}.season-dialog-layout .mat-mdc-dialog-content{min-height:0;max-height:none;overflow:auto;padding-top:10px}.season-dialog-layout .mat-mdc-dialog-actions{flex-shrink:0;margin-bottom:0}
+.season-week-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}.season-week{border:1px solid var(--hub-border, #c8d4e4);border-radius:4px;padding:6px;min-width:0}.season-week h3{font-size:15px;text-align:center;margin:0 0 5px}.season-week table{width:100%;table-layout:fixed;border-collapse:collapse}.season-week td,.season-week th{border:1px solid var(--hub-border, #d7e1ed);padding:3px 5px;text-align:center;overflow-wrap:break-word;line-height:1.25}.season-versus-column{width:24px}.season-versus{color:var(--hub-muted, #657285);font-size:12px}.season-division th{font-size:11px;letter-spacing:.2px;font-weight:600;background:var(--hub-header, #eef2f7);padding:2px 4px}.season-event{font-size:12px;color:var(--hub-muted, #526579);text-align:center;margin:4px 0 0}.current-season-week{border-color:#739a83;background:var(--hub-win-surface, #f2f8f4)}.season-week p{text-align:center}
+@media(max-width:650px){.season-week-grid{grid-template-columns:minmax(0,1fr)}.season-week{padding:5px}.season-week td{font-size:13px}.schedule-controls{gap:6px}.schedule-controls .week-navigation{width:100%}.schedule-actions{margin-bottom:0}}

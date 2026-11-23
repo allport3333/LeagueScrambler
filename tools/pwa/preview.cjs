@@ -1,6 +1,11 @@
 // Static production-build preview only: no SQL, credentials, or production host connections.
 const http=require('http'),fs=require('fs'),path=require('path');
-const root=path.resolve(__dirname,"../../Allport's League Scrambler/ClientApp/dist");
+const root=process.env.LEAGUE_PWA_DIST
+ ? path.resolve(process.env.LEAGUE_PWA_DIST)
+ : path.resolve(__dirname,"../../Allport's League Scrambler/ClientApp/dist");
+if(process.env.LEAGUE_PWA_DIST && !root.startsWith(path.resolve(__dirname,'../../tests/functional/artifacts')+path.sep)){
+ throw Error('The PWA preview override must point to a local functional-test artifact.');
+}
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.ico':'image/x-icon','.woff':'font/woff','.woff2':'font/woff2','.ttf':'font/ttf'};
 function createPreview(options={}) {
  if(!fs.existsSync(path.join(root,'ngsw.json')))throw Error('Build the frontend with --prod before starting PWA preview.');

@@ -30,11 +30,11 @@
     }
 
     .styled-table tr:nth-child(even) {
-        background-color: #f2f2f2;
+        background-color: var(--hub-row-alt, #f2f2f2);
     }
 
     .styled-table th {
-        background-color: #3f51b5;
+        background-color: var(--hub-header, #3f51b5);
         color: white;
         font-weight: bold;
     }
@@ -51,7 +51,7 @@
     min-width: 350px;
     padding: 20px;
     border-radius: 8px;
-    background-color: #f9f9f9;
+    background-color: var(--hub-section, #f9f9f9);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -59,7 +59,7 @@
     text-align: center;
     font-weight: bold;
     font-size: 1.5em;
-    color: #3f51b5;
+    color: var(--hub-link, #3f51b5);
 }
 
 @media (max-width: 768px) {
@@ -75,6 +75,6 @@ mat-card-title, .mat-mdc-card-title {
     display: block;
     font-weight: bold;
     font-size: 1.5em;
-    color: #3f51b5;
+    color: var(--hub-link, #3f51b5);
     margin-bottom: 10px;
 }

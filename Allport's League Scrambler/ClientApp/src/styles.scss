@@ -1,12 +1,223 @@
 @use '@angular/material' as mat;
 
+@mixin hub-dark-colors {
+  color-scheme: dark;
+  --hub-text: #edf2fa;
+  --hub-heading: #e1ebff;
+  --hub-muted: #bac8d9;
+  --hub-border: #58697e;
+  --hub-link: #aecbff;
+  --hub-nav-text: #f1f4f8;
+  --hub-focus: #9dc3ff;
+  --hub-male: #213e55;
+  --hub-male-foreground: #e3f2ff;
+  --hub-female-foreground: #ffebf8;
+  --hub-link-hover: #f1f7ff;
+  --hub-female: #503047;
+  --hub-gold: #493d24;
+  --hub-silver: #333d4c;
+  --hub-bronze: #4e342a;
+  --hub-win-surface: #203e31;
+  --hub-win-text: #afe7c7;
+  --hub-loss-surface: #4d2933;
+  --hub-loss-text: #ffc1cb;
+  --hub-warning-surface: #463920;
+  --hub-warning-text: #ffe1a3;
+  --hub-sub-surface: #46344e;
+  --hub-action-text: #fff;
+  --hub-disabled-text: #aeb9c7;
+  --hub-primary-hover: #4b6f98;
+  --hub-success-hover: #367b5e;
+  --hub-primary-action: #41648d;
+  --hub-success-action: #316c53;
+  --hub-danger-action: #9b434a;
+  --hub-secondary-action: #383f49;
+}
+
+html[data-theme='navy'], html[data-theme='charcoal'] {
+  @include hub-dark-colors;
+  @include mat.all-component-colors(mat.m2-define-dark-theme((
+    color: (
+      primary: mat.m2-define-palette(mat.$m2-light-blue-palette, 200),
+      accent: mat.m2-define-palette(mat.$m2-cyan-palette, 200)
+    )
+  )));
+  background: var(--hub-page);
+  color: var(--hub-text);
+}
+
+html[data-theme='navy'] {
+  --hub-page: #111b2d;
+  --hub-row-alt: #253752;
+  --hub-table-surface: #142036;
+  --hub-table-alt: #24344d;
+  --hub-table-header: #304769;
+  --hub-table-divider: #526987;
+  --hub-surface: #1d2c45;
+  --hub-section: #22334e;
+  --hub-header: #293f60;
+  --hub-nav: #142741;
+  --hub-nav-hover: #29436a;
+  --hub-nav-active: #335182;
+}
+html[data-theme='charcoal'] {
+  --hub-page: #1b1d20;
+  --hub-row-alt: #35393e;
+  --hub-table-surface: #222429;
+  --hub-table-alt: #30343b;
+  --hub-table-header: #3d434c;
+  --hub-table-divider: #636a77;
+  --hub-primary-action: #445e7a;
+  --hub-primary-hover: #506e8b;
+  --hub-success-action: #3a6954;
+  --hub-success-hover: #47775f;
+  --hub-danger-action: #8d474f;
+  --hub-secondary-action: #42474f;
+  --hub-surface: #292c31;
+  --hub-section: #303439;
+  --hub-header: #393e44;
+  --hub-nav: #232629;
+  --hub-nav-hover: #41464d;
+  --hub-nav-active: #4d535c;
+  --hub-border: #69717a;
+  --hub-link: #c3e0db;
+  --hub-heading: #f0f2f4;
+  --hub-muted: #c5cbd1;
+  @include mat.all-component-colors(mat.m2-define-dark-theme((
+    color: (
+      primary: mat.m2-define-palette(mat.$m2-teal-palette, 100),
+      accent: mat.m2-define-palette(mat.$m2-blue-grey-palette, 100)
+    )
+  )));
+}
+
+@mixin hub-action($background) {
+  @include mat.button-overrides((
+    filled-container-color: $background,
+    filled-label-text-color: var(--hub-action-text),
+    protected-container-color: $background,
+    protected-label-text-color: var(--hub-action-text),
+    protected-state-layer-color: white,
+    filled-state-layer-color: white
+  ));
+}
+
+html:is([data-theme='navy'], [data-theme='charcoal']) {
+  .mat-mdc-button-base {
+    @include hub-action(var(--hub-secondary-action));
+    @include mat.button-overrides((
+      protected-disabled-label-text-color: var(--hub-disabled-text),
+      filled-disabled-label-text-color: var(--hub-disabled-text),
+      outlined-disabled-label-text-color: var(--hub-disabled-text),
+      text-disabled-label-text-color: var(--hub-disabled-text),
+      outlined-outline-color: var(--hub-border)
+    ));
+  }
+  .mat-mdc-button-base.mat-primary { @include hub-action(var(--hub-primary-action)); }
+  .mat-mdc-button-base.action-success { @include hub-action(var(--hub-success-action)); }
+  .mat-mdc-button-base.mat-warn {
+    @include hub-action(var(--hub-danger-action));
+    @include mat.button-overrides((text-label-text-color: var(--hub-loss-text), outlined-label-text-color: var(--hub-loss-text)));
+  }
+  .mat-mdc-button-base:focus-visible { outline: 2px solid var(--hub-focus); outline-offset: 2px; }
+  .card { background-color: var(--hub-surface); color: var(--hub-text); border-color: var(--hub-border); }
+  .custom-snackbar {
+    @include mat.snack-bar-overrides((container-color: var(--hub-header), supporting-text-color: var(--hub-text), button-color: var(--hub-link)));
+  }
+  .red-snackbar {
+    @include mat.snack-bar-overrides((container-color: var(--hub-loss-surface), supporting-text-color: var(--hub-loss-text), button-color: var(--hub-loss-text)));
+  }
+  .text-muted, .text-secondary { color: var(--hub-muted) !important; }
+  .text-danger { color: var(--hub-loss-text) !important; }
+  .text-success { color: var(--hub-win-text) !important; }
+  @include mat.form-field-overrides((filled-container-color: var(--hub-section)));
+  @include mat.table-overrides((
+    background-color: var(--hub-surface),
+    header-headline-color: var(--hub-heading),
+    row-item-label-text-color: var(--hub-text),
+    row-item-outline-color: var(--hub-border)
+  ));
+  @include mat.dialog-overrides((subhead-color: var(--hub-heading), supporting-text-color: var(--hub-text)));
+  body { background: var(--hub-page); color: var(--hub-text); }
+  a { color: var(--hub-link); }
+  .mat-mdc-card, .mat-mdc-menu-panel, .mat-mdc-select-panel, .mat-mdc-dialog-surface {
+    color: var(--hub-text);
+    background-color: var(--hub-surface);
+  }
+  .mat-mdc-menu-item, .mat-mdc-option, .mat-mdc-dialog-content, .mat-mdc-dialog-title { color: var(--hub-text); }
+  .mat-mdc-menu-item .mat-icon { color: currentColor; }
+  .mat-mdc-tooltip-surface { color: var(--hub-text); background: var(--hub-header); }
+  :focus-visible { outline-color: var(--hub-focus); }
+  .form-control, .form-select {
+    background-color: var(--hub-section);
+    border-color: var(--hub-border);
+    color: var(--hub-text);
+  }
+  .form-control::placeholder { color: var(--hub-muted); }
+  .table {
+    --bs-table-bg: var(--hub-surface);
+    --bs-table-color: var(--hub-text);
+    --bs-table-striped-bg: transparent;
+    --bs-table-striped-color: var(--hub-text);
+    --bs-table-hover-bg: var(--hub-header);
+    --bs-table-hover-color: var(--hub-text);
+    --bs-table-border-color: var(--hub-border);
+    color: var(--hub-text);
+  }
+  .table > thead { --bs-table-bg: var(--hub-table-header); }
+  .table-striped > tbody > tr:nth-of-type(odd) { --bs-table-bg: var(--hub-table-alt); }
+  .bg-white, .bg-light { background: var(--hub-surface) !important; }
+  .pwa-notice { color: #ffe4a3; background: #4b3a21; }
+  .pwa-update { color: var(--hub-text); background: var(--hub-header); }
+  .schedule-match.gold-match { background: var(--hub-gold); }
+  .schedule-match.silver-match { background: var(--hub-silver); }
+  .schedule-match.bronze-match { background: var(--hub-bronze); }
+}
+
+.league-navigation .menu-trigger.mat-mdc-button:not(:disabled),
+.navigation-drawer .drawer-header button:not(:disabled) {
+  color: var(--hub-nav-text, #f1f4f8);
+}
+.page-loader {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: 8rem;
+  color: var(--hub-muted, #45576c);
+}
+.appearance-options { display: grid; gap: 8px; }
+.theme-preview { display: inline-flex; align-items: center; width: 32px; height: 21px; margin-inline-end: 5px; border: 1px solid var(--hub-border, #718197); border-radius: 3px; vertical-align: middle; }
+.theme-preview i { width: 18px; height: 11px; margin: auto; border: 1px solid; border-radius: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .page-loader mat-spinner { animation: none !important; }
+  .page-loader mat-spinner * { animation: none !important; }
+}
+@media print { .page-loader { display: none; } }
+
 /* Preserve the existing compact typography and field density after MDC. */
 .mat-mdc-button-base, .mat-mdc-tab { letter-spacing: normal; }
 .mat-mdc-form-field { font-size: 14px; letter-spacing: normal; }
 .existing-player-browser-panel .browser-controls,
 .player-import-panel .import-filters,
 app-manage-schedule .basic-settings,
-.scramble-setup mat-form-field { @include mat.form-field-density(-2); }
+.scramble-setup mat-form-field,
+app-scrambler-component .management-setup-grid mat-form-field,
+app-team-scores mat-form-field,
+app-league-standings .dropdown-container mat-form-field { @include mat.form-field-density(-2); }
+
+app-league-schedule .week-navigation { @include mat.form-field-density(-3); }
+
+.league-roster .player-icon-action {
+  @include mat.icon-button-overrides((icon-size: 16px, state-layer-size: 28px, touch-target-display: none));
+}
+.compact-tabs {
+  @include mat.tabs-overrides((container-height: 44px, label-text-tracking: normal));
+}
+/* Let the Material header keep focus and tab semantics. The label viewport handles scrolling. */
+.compact-tabs .mat-mdc-tab-label-container { overflow-x: auto; scrollbar-width: thin; }
+.compact-tabs .mat-mdc-tab-list { flex: 1 0 max-content; }
+.compact-tabs .mat-mdc-tab { min-width: max-content; padding-inline: 12px; white-space: nowrap; }
 
 .existing-player-browser-panel { height: 94vh !important; height: 94dvh !important; max-height: 96vh !important; max-height: 96dvh !important; }
 .player-import-panel { height: 94vh !important; height: 94dvh !important; max-height: 96vh !important; max-height: 96dvh !important; }
@@ -16,6 +227,7 @@ app-manage-schedule .basic-settings,
   .player-import-panel { width: 100vw !important; max-width: 100vw !important; height: 100vh !important; height: 100dvh !important; max-height: 100vh !important; max-height: 100dvh !important; }
   .player-import-panel .mat-mdc-dialog-surface { padding: 10px 8px; border-radius: 0; }
 }
+@media (min-width: 601px) { .team-player-browser-panel.existing-player-browser-panel { height: min(82dvh, 660px) !important; } }
 .existing-player-browser-panel .mat-mdc-dialog-container { padding: 0; }
 .existing-player-browser-panel .mat-mdc-dialog-surface { padding: 16px; height: 100%; overflow: visible; box-sizing: border-box; }
 @media (max-width: 600px) {
@@ -32,28 +244,11 @@ body {
     font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
-/* Default style for 4 columns */
-/* TODO(mdc-migration): The following rule targets internal classes of list that may no longer apply for the MDC version. */
-.mat-list-option-four-columns {
-    background-color: #DBFDFF;
-    width: calc(25% - 10px);
-    margin-bottom: 10px;
-}
 .full-width {
     width: 100%;
 }
 
-.half-width {
-    width: 10%;
-}
-/* Style for 2 columns on smaller screens */
 @media screen and (max-width: 768px) {
-    /* TODO(mdc-migration): The following rule targets internal classes of list that may no longer apply for the MDC version. */
-    .mat-list-option-two-columns {
-        width: calc(50% - 10px);
-    }
-
-    /* Adjust the font size for smaller screens */
     td {
         font-size: 14px;
     }
@@ -61,16 +256,6 @@ body {
         width: 100px; /* Adjust the width for smaller screens */
     }
 
-    /* Your existing styles for screens up to 768px */
-    /* Add your existing styles here */
-}
-
-/* Default style for mat-selection-list in horizontal layout */
-/* TODO(mdc-migration): The following rule targets internal classes of select that may no longer apply for the MDC version. */
-mat-selection-list.list-horizontal {
-    display: inline-block;
-    height: auto;
-    width: auto;
 }
 
 /* Not Selected Style */
@@ -111,7 +296,7 @@ mat-selection-list.list-horizontal {
 }
 
 button.active {
-    background-color: #bdbdbd !important; /* Light grey */
+    background-color: var(--hub-row-alt, #bdbdbd) !important; /* Light grey */
     color: #ffffff !important; /* White text */
     box-shadow: none !important; /* Remove shadow to emphasize pressed look */
     transform: scale(0.98); /* Slightly shrink button */
@@ -124,7 +309,7 @@ button.active {
     padding-bottom: 5px;
     padding-top: 5px;
     padding-right: 80px; /* Adjust the padding as needed */
-    background-color: lightblue; /* Background color */
+    background-color: var(--hub-male, lightblue); /* Background color */
 }
 
 .extended-background-pink {
@@ -133,7 +318,7 @@ button.active {
     padding-bottom: 5px;
     padding-top: 5px;
     padding-right: 80px; /* Adjust the padding as needed */
-    background-color: pink; /* Background color */
+    background-color: var(--hub-female, pink); /* Background color */
 }
 
 /* Style for extended background */
@@ -143,7 +328,7 @@ button.active {
     padding-bottom: 5px;
     padding-top: 5px;
     padding-right: 80px !important; /* Adjust the padding as needed */
-    background-color: lightblue; /* Background color */
+    background-color: var(--hub-male, lightblue); /* Background color */
 }
 
 
@@ -153,7 +338,7 @@ button.active {
     padding-bottom: 5px;
     padding-top: 5px;
     padding-right: 80px !important; /* Adjust the padding as needed */
-    background-color: pink; /* Background color */
+    background-color: var(--hub-female, pink); /* Background color */
 }
 
 .name {
@@ -189,12 +374,12 @@ input {
     flex: 0 0 calc(33.33% - 10px); /* Adjust the width as needed */
     margin: 5px;
     word-wrap: break-word;
-    background-color: lightblue; /* Add background color for male players */
+    background-color: var(--hub-male, lightblue); /* Add background color for male players */
     white-space: nowrap; /* Prevent player names from wrapping */
 }
 
 .player-item.female-bg {
-    background-color: pink; /* Add background color for female players */
+    background-color: var(--hub-female, pink); /* Add background color for female players */
 }
 /* Center the tabs */
 .tab-container {
@@ -209,56 +394,6 @@ input {
 
 .navbar-toggler {
     width: 60px; /* Adjust the width to your desired size */
-}
-
-
-/* Enhanced Red Snackbar */
-.red-snackbar {
-    background-color: #FF0000 !important; /* Bright red background */
-    color: #FFFFFF !important; /* White text */
-    font-size: 24px !important; /* Larger font */
-    font-weight: bold !important;
-    text-align: center !important;
-    line-height: 1.5 !important;
-    padding: 30px 50px !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5) !important;
-    width: 700px !important;
-    max-width: 90vw !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    z-index: 9999 !important;
-    position: fixed !important;
-    top: 50% !important; /* Center vertically */
-    left: 50% !important; /* Center horizontally */
-    transform: translate(-50%, -50%) !important; /* Perfect centering */
-}
-
-/* Explicitly target the snackbar text inside the red snackbar */
-.red-snackbar span {
-    font-size: 24px !important; /* Force larger font for the message */
-    font-weight: bold !important;
-    line-height: 1.5 !important;
-}
-
-/* Action Button Style for Red Snackbar */
-.red-snackbar .mat-mdc-snack-bar-action {
-    color: #FFFFFF !important; /* White button text for contrast */
-    background-color: #B71C1C !important; /* Darker red for the button */
-    font-weight: bold !important;
-    font-size: 24px !important; /* Larger button text */
-    padding: 10px 20px !important;
-    border-radius: 6px !important;
-    margin-left: 20px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-    transition: background-color 0.3s ease, transform 0.3s ease !important;
-}
-
-/* Button Hover Effect */
-.red-snackbar .mat-mdc-snack-bar-action:hover {
-    background-color: #D32F2F !important; /* Slightly lighter red on hover */
-    transform: scale(1.05) !important;
 }
 
 
@@ -326,107 +461,16 @@ input {
 .mat-mdc-select-panel {
     z-index: 1000 !important; /* Ensure dropdown appears above everything else */
 }
-/* Enhanced Custom Snackbar */
 .custom-snackbar {
-    background-color: #212121 !important; /* Dark background for contrast */
-    color: #FFFFFF !important; /* White text */
-    font-size: 24px !important; /* Larger font */
-    font-weight: bold !important;
-    text-align: center !important;
-    padding: 30px 50px !important;
-    line-height: 1.5 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5) !important;
-    width: 700px !important;
-    max-width: 90vw !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    z-index: 9999 !important;
-    position: fixed !important;
-    top: 50% !important; /* Center vertically */
-    left: 50% !important; /* Center horizontally */
-    transform: translate(-50%, -50%) !important; /* Perfect centering */
+  @include mat.snack-bar-overrides((container-color: #293d69, supporting-text-color: #fff, button-color: #fff));
 }
-
-/* Explicitly target the text inside the snackbar */
-.custom-snackbar span {
-    font-size: 24px !important; /* Force larger font for the message */
-    font-weight: bold !important;
-    line-height: 1.5 !important;
+.red-snackbar {
+  @include mat.snack-bar-overrides((container-color: #fff0f1, supporting-text-color: #861d2c, button-color: #861d2c));
 }
-
-/* Action Button Style */
-.custom-snackbar .mat-mdc-snack-bar-action {
-    color: #FFC107 !important; /* Bright yellow button */
-    font-weight: bold !important;
-    font-size: 24px !important; /* Larger button text */
-    margin-left: 20px !important;
+.custom-dialog {
+  @include mat.dialog-overrides((container-shape: 6px, subhead-color: var(--hub-heading, #293d69)));
 }
-
-/* Dialog Container Styling */
-.custom-dialog .mat-mdc-dialog-container {
-    background-color: #212121 !important; /* Dark background */
-    color: #FFFFFF !important; /* White text */
-    font-size: 24px !important; /* Larger font */
-    font-weight: bold !important;
-    text-align: center !important;
-    padding: 30px 50px !important;
-    line-height: 1.5 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5) !important;
-    width: 700px !important;
-    max-width: 90vw !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    align-items: center !important;
-}
-
-/* Dialog Title */
-.custom-dialog h2 {
-    font-size: 28px !important;
-    font-weight: bold !important;
-    margin-bottom: 20px !important;
-}
-
-/* Dialog Content */
-.custom-dialog .mat-mdc-dialog-content {
-    font-size: 24px !important;
-    margin-bottom: 20px !important;
-}
-
-/* Ensure buttons are side by side */
-.custom-dialog .mat-mdc-dialog-actions {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    gap: 20px !important; /* Space between buttons */
-    width: 100% !important;
-    flex-wrap: nowrap !important; /* Prevent stacking */
-}
-
-/* Cancel Button Styling */
-.custom-dialog .mat-mdc-dialog-actions button[color="warn"] {
-    background-color: #4E342E !important; /* Dark brown */
-    color: #FFC107 !important; /* Yellow text */
-    font-weight: bold !important;
-    font-size: 18px !important;
-    padding: 10px 20px !important;
-    border-radius: 8px !important;
-    border: 2px solid #FFC107 !important;
-}
-
-/* Confirm Button Styling */
-.custom-dialog .mat-mdc-dialog-actions button[color="primary"] {
-    background-color: #1E88E5 !important; /* Blue */
-    color: #FFC107 !important; /* Yellow text */
-    font-weight: bold !important;
-    font-size: 18px !important;
-    padding: 10px 20px !important;
-    border-radius: 8px !important;
-    border: 2px solid #FFC107 !important;
-}
+.custom-dialog :is(mat-dialog-actions, [mat-dialog-actions]) { gap: 6px; flex-wrap: wrap; }
 
 .center-page {
     position: fixed;
@@ -479,4 +523,9 @@ input {
 }
 
 /* Legacy underline fields had no gray filled background. */
-.mat-mdc-text-field-wrapper.mdc-text-field--filled { background-color:transparent; }
+html { @include mat.form-field-overrides((
+  filled-container-color: transparent,
+  container-text-tracking: normal,
+  filled-label-text-tracking: normal,
+  outlined-label-text-tracking: normal
+)); }

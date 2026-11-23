@@ -1,3 +1,4 @@
+import { onLeagueResume, protectPendingWork } from '../pwa/pending-work.service';
 import {Component, Input, OnInit, OnChanges, OnDestroy, ChangeDetectionStrategy} from '@angular/core';
 import {Subscription} from 'rxjs';
 import {AuthService} from '../auth.service';
@@ -11,7 +12,7 @@ export class PlayerAttendanceComponent implements OnInit,OnChanges,OnDestroy {
  @Input() playerId:number;@Input() leagueId:number;
  authenticated:boolean=null;state:any=null;loading=false;busy=false;error='';
  private authSubscription:Subscription;private request:Subscription;private mutation:Subscription;private version=0;private key='';
- constructor(private auth:AuthService,private players:PlayerService){}
+ constructor(private auth:AuthService,private players:PlayerService){ protectPendingWork(() => this.busy); onLeagueResume(() => { if (!this.loading && !this.busy) this.load(true); }); }
  get unavailableText():string {const reason=this.state&&this.state.reason||'Attendance is currently unavailable.';const day=/^Sign in is available on ([A-Za-z]+) only\.$/.exec(reason);return day?'League sign in opens '+day[1]:reason;}
  get unavailableIcon():string {return this.state&&this.state.reason&&this.state.reason.toLowerCase().indexOf('locked')>=0?'lock':'event';}
  ngOnInit(){this.authSubscription=this.auth.authenticationState$.subscribe(value=>{if(this.authenticated!==value){this.authenticated=value;this.load(true);}});}

@@ -56,6 +56,14 @@
         text-align: center;
     }
 
+    html[data-theme="navy"] { background-color: #111b2d; }
+    html[data-theme="charcoal"] { background-color: #1b1d20; }
+    html:is([data-theme="navy"], [data-theme="charcoal"]) .center-page { background-color: transparent; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .rotating { animation: none; }
+    }
+
     .pulse {
         animation: pulsate 1s ease-out;
         -webkit-animation: pulsate 2s ease-out;
@@ -127,6 +135,16 @@
 
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script>
+    try {
+      const theme = localStorage.getItem('league-hub-appearance');
+      if (theme === 'navy' || theme === 'charcoal') {
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = 'dark';
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'navy' ? '#111b2d' : '#1b1d20');
+      }
+    } catch {}
+  </script>
 </head>
 
 <body>

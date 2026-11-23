@@ -1,5 +1,6 @@
-import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { LeagueService } from '../services/league.service';
+import { onLeagueResume } from '../pwa/pending-work.service';
+import { Component, Input, OnChanges, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { StatisticsService } from '../services/statistics.service';
 
 @Component({
@@ -9,30 +10,44 @@ import { StatisticsService } from '../services/statistics.service';
     changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
-export class LeagueTeamStandingsComponent implements OnInit {
+export class LeagueTeamStandingsComponent implements OnChanges, OnDestroy {
     @Input() leagueId!: number; // Input from the dashboard
     standings: any[] = [];
     divisions: { [key: string]: any[] } = {}; // To group standings by division
 
-    constructor(private statisticsService: StatisticsService, private leagueService: LeagueService) { }
-
-    ngOnInit() {
-        this.leagueService.selectedLeague$.subscribe(selectedLeague => {
-            if (selectedLeague) {
-                this.leagueId = selectedLeague.leagueId;
-                this.loadStandings(); 
-            }
-        });
-        if (this.leagueId) {
-            this.loadStandings();
-        }
+    loading = false;
+    error = '';
+    private request: Subscription;
+    private loadedLeague: number | null = null;
+    constructor(private statisticsService: StatisticsService) {
+        onLeagueResume(() => { if (this.leagueId && !this.loading) this.loadStandings(); });
     }
 
+    ngOnChanges(): void { this.loadStandings(); }
+    ngOnDestroy(): void { this.request?.unsubscribe(); }
 
-    loadStandings() {
-        this.statisticsService.getLeagueStandings(this.leagueId).subscribe(data => {
-            this.standings = data;
-            this.processDivisions();
+    loadStandings(): void {
+        this.request?.unsubscribe();
+        if (this.loadedLeague !== this.leagueId) {
+            this.standings = [];
+            this.divisions = {};
+        }
+        this.loadedLeague = this.leagueId;
+        this.error = '';
+        this.loading = !!this.leagueId && !this.standings.length;
+        if (!this.leagueId) return;
+        const failed = () => {
+            this.loading = false;
+            this.error = 'Unable to load standings.';
+        };
+        this.request = this.statisticsService.getLeagueStandings(this.leagueId).subscribe({
+            next: data => {
+                if (!Array.isArray(data)) { failed(); return; }
+                this.standings = data;
+                this.processDivisions();
+                this.loading = false;
+            },
+            error: failed
         });
     }
 

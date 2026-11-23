@@ -1,3 +1,4 @@
+import { protectPendingWork } from '../pwa/pending-work.service';
 import { LeaguePlayerEditComponent } from '../league-management/player-management-dialogs.component';
 import { Component, Inject, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, TemplateRef, ElementRef, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
@@ -14,7 +15,7 @@ import { UntypedFormGroup, UntypedFormControl, Validators } from '@angular/forms
 import { Team } from '../data-models/teams.model';
 import { Leagues } from '../data-models/leagues.model';
 import { Gender } from '../data-models/gender.model';
-import { Password } from '../data-models/password.model';
+import { AuthService } from '../auth.service';
 import { KingQueenTeam } from '../data-models/kingQueenTeam.model';
 import { KingQueenTeamWithPlayers } from '../data-models/KingQueenTeamWithPlayers.model';
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
@@ -28,7 +29,7 @@ import { LeagueService } from '../services/league.service';
 import { ExistingPlayerBrowserComponent } from '../league-management/existing-player-browser.component';
 import { PlayerImportComponent } from '../league-management/player-import.component';
 import { KingQueenTeamsResponse } from '../data-models/kingQueenTeamsResponse';
-import { Subject, Observable, forkJoin, of, Subscription } from 'rxjs';
+import { Subject, Observable, forkJoin, of, Subscription, combineLatest, switchMap } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { timeout } from 'rxjs/operators';
 import { generateScramble as runScrambleV2, rankTopPlayers, capacitiesFor, historyIndex, pairKey, validateAllocation, ScrambleInput, ScrambleResult, ScrambleIssue, TopPriority } from './scramble-engine';
@@ -59,11 +60,27 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     private generationVersion = 0;
     private generatedInput: ScrambleInput = null;
     private generatedLeagueId: number = null;
+    private generatedConfiguration = '';
 
     private generationSignature(): string {
         return JSON.stringify({league:this.leagueId,players:this.selectedList.map(p=>[p.id,p.isMale,p.isByePlayer,p.isTopPlayer,p.isLowPlayer]),
             tops:this.displayTopPlayers.map(p=>p.id),lows:this.displayLowPlayers.map(p=>p.id),size:this.teamSize,teams:this.numberOfTeams,
             random:this.completeRandom,history:this.prioritizePreviousTeammates,fallback:this.allowMinimumRepeats,selected:this.listOfScrambleNumbers});
+    }
+
+    private updateConfigurationSignature(): string {
+        return JSON.stringify([this.generationSignature(), this.teamConfigurationMode,
+            this.rememberedTeamSize, this.rememberedTeamCount, this.lockedResults]);
+    }
+
+    private hasPendingScrambleConfiguration(): boolean {
+        if (this.workspaceSection !== 'scrambler') return false;
+        if (this.isScrambleSaved && this.generatedInput) {
+            return this.updateConfigurationSignature() !== this.generatedConfiguration;
+        }
+        return this.selectedList.length > 0 || this.teamConfigurationMode !== 'size' ||
+            this.rememberedTeamSize !== 4 || this.rememberedTeamCount !== null ||
+            this.enabledScrambleRuleCount > 0 || this.listOfScrambleNumbers.length > 0;
     }
     private async loadGenerationTopPriorities(leagueId:number): Promise<TopPriority[]> {
         const rows=await this.playerService.getTopPlayersForLeague(leagueId,0).pipe(timeout(15000)).toPromise();
@@ -82,6 +99,10 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
     async scramblePlayers(nonDuplicates:boolean=false): Promise<void> {
         if(this.generationBusy||this.teamSaveBusy)return;
+        if (!this.teamSize && !this.numberOfTeams) {
+            this.generationProblem('Choose the number of teams before scrambling.', 'inputs-changed');
+            return;
+        }
         if(this.lockedResults&&this.locked){this.showSnackBar('Results are currently locked. Please uncheck lock results to rescramble.');return;}
         if(!this.cancelMatchupChanges()||(this.scoringScramble&&!this.canLeaveScores()))return;
         const leagueId=this.leagueId,leagueName=this.selectedLeague,signature=this.generationSignature(),version=++this.generationVersion;
@@ -131,8 +152,9 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             this.savedPrintSignature=null;this.teamSaveFeedback='';this.teamEditingSnapshot=null;this.showTeamSorting=false;this.scrambleSelected=false;this.showSaveRoundScores=false;
             this.listOfTeams=teams;this.byePlayers=result.byes.map(p=>selected.find(original=>original.id===p.id));this.teamCount=teams.length;this.scrambleNumber=number;
             this.topPlayerCount=result.retainedTopIds.length;this.lowPlayerCount=lowIds.filter(id=>topIds.indexOf(id)<0).length;this.generationResult=result;this.generatedInput=input;this.generatedLeagueId=leagueId;
+            this.generatedConfiguration = this.updateConfigurationSignature();
             this.locked=this.lockedResults;this.resultsCollapsed=false;this.generationFeedback='';
-            if(!this.isActionAllowed)this.generationFeedback='Preview only; unlock administration and generate again before saving.';
+            if(!this.isActionAllowed)this.generationFeedback='Preview only. Saving requires management access to this league.';
             this.announceGeneratedScramble();this.revealScrambleResults();this.cdr.detectChanges();
         }catch(error){if(version===this.generationVersion){this.generationFeedback=(error&&error.message&&!(error.status)?error.message:'History or generation service is unavailable. Please retry.')+' No new scramble was saved; your selections and previous results are retained.';this.generationProblem(this.generationFeedback);this.showSnackBar(this.generationFeedback,true);}}
         finally{if(version===this.generationVersion){this.generationBusy=false;this.cdr.detectChanges();}}
@@ -171,7 +193,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();this.scoreEditorLoading=false;this.scoringScramble=null;this.scoreSnapshot=null;this.scoreRefreshRequired=false;this.scoreEditorFeedback='';this.mobileScoreMatchIndex=0;
         this.retrievedListOfTeams=[];this.kingQueenRoundScores=[];this.scrambleSelected=false;this.showSaveRoundScores=false;
     }
-    ngOnDestroy():void { this.generationVersion++; clearTimeout(this.scrambleNoticeTimer); if(this.existingPlayerBrowserRef)this.existingPlayerBrowserRef.close(); if(this.matchupResizeObserver)this.matchupResizeObserver.disconnect();if(this.matchupLayoutFrame!==null)cancelAnimationFrame(this.matchupLayoutFrame); if(this.matchupsDialogRef)this.matchupsDialogRef.close(); this.scoreDestroyed=true;if(this.playerEditRef)this.playerEditRef.close();if(this.playerImportRef)this.playerImportRef.close();this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();if(this.scoreSaver)this.scoreSaver.unsubscribe(); }
+    ngOnDestroy():void { this.managementAccess.unsubscribe(); this.generationVersion++; clearTimeout(this.scrambleNoticeTimer); if(this.existingPlayerBrowserRef)this.existingPlayerBrowserRef.close(); if(this.matchupResizeObserver)this.matchupResizeObserver.disconnect();if(this.matchupLayoutFrame!==null)cancelAnimationFrame(this.matchupLayoutFrame); if(this.matchupsDialogRef)this.matchupsDialogRef.close(); this.scoreDestroyed=true;if(this.playerEditRef)this.playerEditRef.close();if(this.playerImportRef)this.playerImportRef.close();this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();if(this.scoreSaver)this.scoreSaver.unsubscribe(); }
     refreshSavedScoreIds():void {
         if(!this.scoringScramble||this.scoreSaveBusy)return;
         this.verifySavedScores();
@@ -237,7 +259,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             data:{leagueId,leagueName:this.selectedLeague,divisionId:this.selectedLeagueDivisionIdForAddPlayer,
                 draft:this.playerImportDraft&&this.playerImportDraft.leagueId===leagueId?this.playerImportDraft:null,
                 onImported:results=>this.recordManagementMemberships(leagueId,results),
-                onDraft:draft=>{if(!this.scoreDestroyed&&this.leagueId===leagueId)this.playerImportDraft={...draft,leagueId};}}});
+                onDraft:draft=>{if(!this.scoreDestroyed&&this.leagueId===leagueId)this.playerImportDraft=draft ? {...draft,leagueId} : null;}}});
         this.playerImportRef.afterClosed().subscribe(()=>this.playerImportRef=null);
     }
 
@@ -276,18 +298,24 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             this.managementRoster = []; this.managementRosterSearch = ''; this.managementRosterDivision='all';this.showAllManagementPlayers = false; this.managementRosterLeague = leagueId;
         }
         this.managementRosterLoading = true; this.managementRosterError = '';
+        const failed = () => {
+            if (version !== this.managementRosterVersion || this.leagueId !== leagueId) return;
+            this.managementRosterLoading = false;
+            this.managementRosterError = 'Unable to load league players. Please retry.';
+        };
         this.playerService.leagueRosterContext(leagueId).subscribe(context => {
             if (version !== this.managementRosterVersion || this.leagueId !== leagueId) { return; }
+            if (!Array.isArray(context?.players) || !Array.isArray(context?.members) || !Array.isArray(context?.divisions)) {
+                failed();
+                return;
+            }
             this.managementRoster = context.players.filter(player=>context.members.some(m=>m.playerId===player.id)).map(player=>{
                 const member=context.members.find(m=>m.playerId===player.id),division=context.divisions.find(d=>d.id===member.divisionId);
                 return {...player,leagueDivisionId:member.divisionId,managementDivision:division?(division.name||division.code):''};
             });
             this.managementRoster.sort((a,b)=>(a.firstName+' '+a.lastName).localeCompare(b.firstName+' '+b.lastName)||a.id-b.id);
             this.managementRosterLoading = false;
-        }, () => {
-            if (version !== this.managementRosterVersion || this.leagueId !== leagueId) { return; }
-            this.managementRosterLoading = false; this.managementRosterError = 'Unable to load league players. Please retry.';
-        });
+        }, failed);
     }
     confirmRemoveFromLeague(player: any, template: TemplateRef<any>): void {
         if (!this.isActionAllowed || this.managementRemovalPending) { return; }
@@ -420,10 +448,40 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     randomLowPlayer: Player;
     addedPlayer: Player;
     isActionAllowed: boolean = false;
-    userInputPassword: string = '';
-    password: Password;
-    passwordLeague: Password;
-    passwordDelete: Password;
+    private managementAccess = new Subscription();
+    private settingsDirty = false;
+    private settingsSaving = false;
+    managerEmail = '';
+    managerEmailDirty = false;
+    managerAssignmentPending = false;
+
+    get canCreateLeague(): boolean {
+        return this.userRole === 'Admin' || this.userRole === 'Manager';
+    }
+
+    revealManagementTab(workspace: HTMLElement): void {
+        requestAnimationFrame(() => {
+            workspace.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
+                ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        });
+    }
+
+    setLeagueManager(assigned: boolean): void {
+        if (this.userRole !== 'Admin' || !this.leagueId || this.managerAssignmentPending || !this.managerEmail.trim()) return;
+        this.managerAssignmentPending = true;
+        const submittedEmail = this.managerEmail;
+        this.loginService.setLeagueManager(this.leagueId, this.managerEmail.trim(), assigned).subscribe({
+            next: () => {
+                this.managerAssignmentPending = false;
+                if (submittedEmail === this.managerEmail) this.managerEmailDirty = false;
+                this.showSnackBar(assigned ? 'League access granted.' : 'League access revoked.');
+            },
+            error: error => {
+                this.managerAssignmentPending = false;
+                this.showSnackBar(error.status === 404 ? 'No matching manager account or league was found.' : 'Could not update league access.', true);
+            }
+        });
+    }
     teamsNeededTwo: number = 0;
     teamsNeededThree: number = 0;
     teamsNeededFour: number = 0;
@@ -452,13 +510,18 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     maxTeamSize: number;
     scrambleNumber: number;
     containsMale: boolean = false;
-    numberOfTeamsSelected: boolean = false;
-    teamSizeSelected: boolean = true;
+    teamConfigurationMode: 'size' | 'count' = 'size';
+    private rememberedTeamSize = 4;
+    private rememberedTeamCount: number = null;
     containsFemale: boolean = false;
     lockedResults: boolean = false;
     locked: boolean = false;
     hidePlayers: boolean = false;
-    containsLeague: boolean = false;
+    leagueCreationPending = false;
+    managementTabIndex = 0;
+    managementAccessLoading = true;
+    creationError = '';
+    private createdLeagueId: number | null = null;
     showNewPlayerForm: boolean = false;
     isSmallScreen = false;
     hideListOptions: boolean;
@@ -488,18 +551,15 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         lastName: new UntypedFormControl(),
         isMale: new UntypedFormControl(),
         leagueName: new UntypedFormControl(),
-        password: new UntypedFormControl(),
         isSub: new UntypedFormControl(),
         selectedGender: new UntypedFormControl()
     });
     deletePlayerForm = new UntypedFormGroup({
         firstName: new UntypedFormControl(),
         lastName: new UntypedFormControl(),
-        passwordDelete: new UntypedFormControl(),
     });
     LeagueForm = new UntypedFormGroup({
         newLeagueName: new UntypedFormControl(),
-        passwordLeague: new UntypedFormControl()
     });
 
     constructor(
@@ -510,9 +570,17 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         public leagueService: LeagueService,
         public loginService: LoginService,
         private snackBar: MatSnackBar,
-        private managementDialog: MatDialog
+        private managementDialog: MatDialog,
+        private authService: AuthService
     ) {
-        this.teamSize = 4;
+        this.teamSize = this.rememberedTeamSize;
+        protectPendingWork(() => this.generationBusy || this.teamSaveBusy || this.scoreSaveBusy ||
+            this.teamEditsPending || this.scoreEditsPending || (this.listOfTeams.length > 0 && !this.isScrambleSaved) ||
+            this.hasPendingScrambleConfiguration() ||
+            this.settingsDirty || this.settingsSaving || (this.managerEmailDirty && !!this.managerEmail.trim()) || this.managerAssignmentPending || this.leagueCreationPending ||
+            this.managementRemovalPending || Object.values(this.scheduleDrafts).some(draft =>
+                Object.values((draft as { views: Record<string, { dirty: boolean }> }).views).some(view => view.dirty)) ||
+            !!this.playerImportDraft);
 
         this.selectedListChanged.subscribe(() => {
             this.setTeamCount();
@@ -523,7 +591,6 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             code: new UntypedFormControl('', [Validators.required]),
             name: new UntypedFormControl('', [Validators.required]),
             sortOrder: new UntypedFormControl(1, [Validators.required]),
-            passwordDivision: new UntypedFormControl('')
         });
     }
 
@@ -799,37 +866,6 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         );
     }
 
-    onPasswordInput(inputPassword: string): void {
-        // Keep the password local until the user explicitly selects Unlock.
-        // Never download the stored password to the browser.
-        this.userInputPassword = inputPassword;
-    }
-
-    unlockAdminPassword(password: string = this.userInputPassword, afterUnlock?: () => void): void {
-        if (!password) {
-            this.showSnackBar('Enter the administration password first.', true);
-            return;
-        }
-
-        this.loginService.verifyAdminPassword(password).subscribe(
-            (result) => {
-                if (result && result.authorized) {
-                    this.isActionAllowed = true;
-                    this.userInputPassword = '';
-                    this.showSnackBar('Administration unlocked for 6 hours. Your session renews while you stay active.');
-                    if (afterUnlock) {
-                        afterUnlock();
-                    }
-                }
-            },
-            (error) => {
-                this.showSnackBar(error && error.status === 429
-                    ? 'Too many attempts. Try again later.'
-                    : 'Incorrect administration password.', true);
-            }
-        );
-    }
-
     public hasTopPlayers(leagueId: number): Observable<boolean> {
         return this.playerService.hasTopPlayers(leagueId);
     }
@@ -1080,13 +1116,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             return;
         }
 
-        if (!this.isActionAllowed) {
-            this.unlockAdminPassword(
-                this.LeagueDivisionForm.get('passwordDivision').value,
-                () => this.addLeagueDivision()
-            );
-            return;
-        }
+        if (!this.isActionAllowed) return;
 
         const code = this.LeagueDivisionForm.get('code').value;
         const name = this.LeagueDivisionForm.get('name').value;
@@ -1107,7 +1137,6 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
                     code: '',
                     name: '',
                     sortOrder: 1,
-                    passwordDivision: ''
                 });
 
                 this.loadDivisionsForSelectedLeague();
@@ -1194,8 +1223,8 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.rounds = Array.from({ length: this.selectedRounds }, (_, index) => index + 1);
     }
 
-    handleDropdownChange(player: any, event: any): void {
-        switch (event.value) {
+    handlePlayerAction(player: any, action: string): void {
+        switch (action) {
             case 'setTopPlayer':
                 this.addPlayerToTopPlayerList(player);
                 break;
@@ -1308,6 +1337,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.playerLoading = false;
 
         this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
+            if (selectedLeague.leagueId !== this.leagueId) this.settingsDirty = false;
             if(this.scoreDestroyed||this.scoreRestoreLeague)return;
             if(this.scoringScramble&&selectedLeague.leagueId===this.leagueId&&selectedLeague.leagueName===this.selectedLeague)return;
             if(this.leagueId&&selectedLeague.leagueId>0&&selectedLeague.leagueId!==this.leagueId){
@@ -1361,36 +1391,29 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             (error) => console.error(error)
         );
 
-        // A legacy administration session is separate from normal player login.
-        this.loginService.isAdminPasswordAuthorized().subscribe(
-            (authorized) => {
-                if (authorized) {
-                    this.isActionAllowed = true;
-                }
-            },
-            () => { /* No legacy session yet. */ }
-        );
-
-        this.loginService.isLoggedIn().subscribe((result) => {
-            this.loggedIn = result;
-            if (result) {
-                this.loginService.getUsersRole().subscribe((roleResult) => {
-                    this.userRole = roleResult.role;
-                    if (this.userRole === 'Admin' || this.userRole === 'Manager') {
-                        this.isActionAllowed = true;
-                    }
-                });
-                this.leagueService.getLeagues().subscribe(
-                    (leagueResult) => { this.leaguesAvailable = leagueResult; },
-                    (error) => console.error(error)
-                );
-            } else {
-                this.playerService.GetLeagues().subscribe(
-                    (leagueResult) => { this.leaguesAvailable = leagueResult; },
-                    (error) => console.error(error)
-                );
+        this.managementAccess.add(combineLatest([
+            this.authService.authenticationState$, this.leagueService.selectedLeague$
+        ]).pipe(switchMap(([loggedIn, league]) => {
+            this.loggedIn = !!loggedIn;
+            this.managementAccessLoading = loggedIn !== false;
+            this.isActionAllowed = false;
+            if (!loggedIn) this.userRole = '';
+            return loggedIn ? this.loginService.getManagementAccess(league.leagueId)
+                : of({ role: '', canManage: false });
+        })).subscribe(access => {
+            this.userRole = access.role;
+            this.isActionAllowed = access.canManage;
+            this.managementAccessLoading = false;
+            if (this.createdLeagueId !== null && this.createdLeagueId === this.leagueId) {
+                this.createdLeagueId = null;
+                this.leagueCreationPending = false;
+                if (access.canManage) this.managementTabIndex = 4;
+                else this.creationError = 'League created. Its management access could not be loaded.';
             }
-        });
+        }));
+        this.managementAccess.add(this.authService.authenticationState$.pipe(switchMap(loggedIn =>
+            loggedIn ? this.leagueService.getLeagues() : this.playerService.GetLeagues()
+        ), catchError(() => of([]))).subscribe(leagues => { this.leaguesAvailable = leagues; }));
     }
 
     ngAfterViewInit() {
@@ -1413,6 +1436,8 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
         this.generationVersion++; this.generationBusy=false; this.generationResult=null; this.generationAttempt=null; this.generatedInput=null; this.generationFeedback=''; this.configuredTopPriorities=[];
         const contextVersion=this.generationVersion;
+        this.initialRosterLoading = true;
+        this.initialRosterError = '';
         // Results locks and selections belong to their league, not the next league loaded.
         this.locked=false;this.lockedResults=false;this.selectedList=[];this.queriedPlayers=[];this.savedPrintSignature=null;
         this.listOfScrambleNumbers=[]; this.listOfRetrievedScrambleNumbers=[]; this.retrievedListOfTeams=[];
@@ -1453,19 +1478,26 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             this.femalePlayerCount = this.femalePlayers1.length;
 
             this.playerLoading = false;
+            this.initialRosterLoading = false;
             this.awaitSettingsAndInitialize();
+        }, () => {
+            if (contextVersion !== this.generationVersion || this.scoreDestroyed) return;
+            this.playerLoading = this.initialRosterLoading = false;
+            this.initialRosterError = 'Unable to load the league roster.';
         });
 
         // Fetch scrambles for the selected league
         this.playerService.SelectedLeagueScrambles(this.selectedLeague).subscribe((result) => {
             if(contextVersion!==this.generationVersion||this.scoreDestroyed)return;
             this.queriedScrambles = result;
-            this.playerLoading = false;
         });
 
         // Initialize standings
         this.initializeStandings();
     }
+
+    initialRosterLoading = false;
+    initialRosterError = '';
 
     selectLeague() { this.onLeagueChanged(); }
 
@@ -1565,6 +1597,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
     // Handle Drop Lowest Scores change
     onDropLowestChange(selectedDrop: string): void {
+        this.settingsDirty = true;
         this.dropLowest = parseInt(selectedDrop, 10); // Convert the string to a number
         this.processStandings(this.lastResult, this.getCurrentOptions());
         this.sortStandingsWithUpdates('totalScore');
@@ -1572,6 +1605,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
     // Handle Number of Subs Allowed change
     onNumberOfSubsChange(value: number): void {
+        this.settingsDirty = true;
         this.numberOfSubsAllowed = value;
         this.processStandings(this.lastResult, this.getCurrentOptions());
         this.sortStandingsWithUpdates('totalScore');
@@ -1579,6 +1613,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
     // Handle Percent of Score for Subs change
     onSubScorePercentChange(value: number): void {
+        this.settingsDirty = true;
         this.subScorePercent = value;
         this.processStandings(this.lastResult, this.getCurrentOptions());
         this.sortStandingsWithUpdates('totalScore');
@@ -1586,7 +1621,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
     saveSettings(): void {
         if (!this.isActionAllowed) {
-            this.showSnackBar('Unlock administration before saving league settings.', true);
+            this.showSnackBar('You do not have access to save these league settings.', true);
             return;
         }
         const settings = [
@@ -1603,8 +1638,15 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         );
 
         // Wait for all updates to complete
+        this.settingsSaving = true;
+        const leagueId = this.leagueId;
+        const savedValues = JSON.stringify(settings.map(setting => setting.settingValue));
         Promise.all(updatePromises)
-            .then(() => {
+            .then(results => {
+                if (leagueId === this.leagueId && results.every(result => result === true) &&
+                    savedValues === JSON.stringify([this.dropLowest, this.numberOfSubsAllowed, this.subScorePercent, this.leagueDay, this.standingsType])) {
+                    this.settingsDirty = false;
+                }
                 this.snackBar.open('Standings have been saved.', 'OK', {
                     duration: 5000, // Optional: Auto-close after 5 seconds
                     verticalPosition: 'top',
@@ -1614,11 +1656,12 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             })
             .catch(error => {
                 console.error('Error saving settings:', error);
-            });
+            }).finally(() => { this.settingsSaving = false; });
     }
 
 
     onStandingsTypeChange(selectedType: string): void {
+        this.settingsDirty = true;
         this.standingsType = selectedType as 'round' | 'matchup';
     }
 
@@ -2308,68 +2351,47 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
     }
 
-    addLeagueLogic() {
-        if (this.LeagueForm.controls["newLeagueName"].value == "") {
-            this.showSnackBar("Please enter a league name.")
+    addLeague(): void {
+        const name = this.LeagueForm.controls['newLeagueName'].value?.trim();
+        if (!this.canCreateLeague || !name || this.leagueCreationPending) return;
+        if (this.leaguesAvailable?.some(league => league.leagueName.toLowerCase() === name.toLowerCase())) {
+            this.showSnackBar('League name already exists.', true);
+            return;
         }
-        else {
-            this.containsLeague = false;
-            if (this.leaguesAvailable && this.leaguesAvailable.length > 0) {
-                this.containsLeague = false;
-                for (let i = 0; i < this.leaguesAvailable.length; i++) {
-                    if (this.leaguesAvailable[i].leagueName == this.LeagueForm.controls["newLeagueName"].value) {
-                        this.containsLeague = true;
-                        break;
+
+        this.creationError = '';
+        this.leagueCreationPending = true;
+        this.playerService.AddNewLeague(name).subscribe({
+            next: created => {
+                this.showSnackBar('League created.');
+                this.LeagueForm.reset();
+                this.leagueService.getLeagues().subscribe({
+                    next: leagues => {
+                        if (!leagues.some(league => league.id === created.id)) {
+                            this.leagueCreationPending = false;
+                            this.creationError = 'League created. Refresh your league list to configure it.';
+                            return;
+                        }
+                        this.createdLeagueId = created.id;
+                        this.leaguesAvailable = leagues;
+                        this.leagueService.setSelectedLeague(created.id);
+                    },
+                    error: () => {
+                        this.leagueCreationPending = false;
+                        this.creationError = 'League created. Reload the page to refresh your leagues.';
                     }
-                }
-            } else {
-                // Handle the case where this.leaguesAvailable is undefined or empty
-                this.containsLeague = false; // Or any other handling you need
+                });
+            },
+            error: error => {
+                this.leagueCreationPending = false;
+                this.creationError = error.status === 409 ? 'League name already exists.' : 'Could not create the league. Try again.';
             }
-            if (this.containsLeague) {
-                this.showSnackBar('League name already exists.')
-            }
-            else {
-                this.playerService.AddNewLeague(this.LeagueForm.controls["newLeagueName"].value).subscribe(result => {
-
-                    if (result.leagueName == null) {
-                        this.showSnackBar('Error creating league.', true);
-                    }
-                    else {
-                        this.showSnackBar('Succesfully created league.');
-                        this.leaguesAvailable.push(result);
-                    }
-
-                }, error => console.error(error));
-            }
-
-
-        }
-    }
-
-    addLeague() {
-        if (this.isActionAllowed) {
-            this.addLeagueLogic();
-        } else {
-            this.unlockAdminPassword(
-                this.LeagueForm.controls['passwordLeague'].value,
-                () => this.addLeagueLogic()
-            );
-        }
+        });
     }
 
     hidePlayerList() {
         this.hidePlayers = !this.hidePlayers;
-
-        var x = document.getElementById("playerListHidden");
-
-        // Check if the element with ID "playerListHidden" exists
-        if (x) {
-            // Toggle the display property directly
-            x.style.display = this.hidePlayers ? "none" : "block";
-        }
     }
-
 
     //hideOptions() {
     //    this.hideInputOptions = !this.hideInputOptions;
@@ -2539,6 +2561,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     onLeagueDayChange(selectedDay: string): void {
+        this.settingsDirty = true;
         this.leagueDay = selectedDay;
     }
 
@@ -2595,14 +2618,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
 
     onDeletePlayerClick() {
-        if (this.isActionAllowed) {
-            this.deletePlayerLogic();
-        } else {
-            this.unlockAdminPassword(
-                this.deletePlayerForm.controls['passwordDelete'].value,
-                () => this.deletePlayerLogic()
-            );
-        }
+        if (this.isActionAllowed) this.deletePlayerLogic();
     }
 
     addPlayerLogic() {
@@ -2678,14 +2694,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
 
     onSubmitClick() {
-        if (this.isActionAllowed) {
-            this.addPlayerLogic();
-        } else {
-            this.unlockAdminPassword(
-                this.PlayerForm.controls['password'].value,
-                () => this.addPlayerLogic()
-            );
-        }
+        if (this.isActionAllowed) this.addPlayerLogic();
     }
 
 
@@ -3218,16 +3227,19 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     }
 
 
-    updateNumberOfTeams(selectedTeamSize: number): void {
-        this.maxTeamSize = selectedTeamSize;
-        this.numberOfTeamsSelected = true;
-        this.teamSizeSelected = false;
-        // Deselect the other mat-select when one is selected
-        if (selectedTeamSize) {
-            this.numberOfTeams = null;
-        }
-        this.setTeamCount();
+    selectTeamConfigurationMode(mode: 'size' | 'count'): void {
+        if (this.teamConfigurationMode === mode) return;
+        this.teamConfigurationMode = mode;
+        if (mode === 'size') this.updateNumberOfTeams(this.rememberedTeamSize);
+        else this.updateTeamSize(this.rememberedTeamCount);
+    }
 
+    updateNumberOfTeams(selectedTeamSize: number): void {
+        this.rememberedTeamSize = selectedTeamSize;
+        this.teamSize = selectedTeamSize;
+        this.maxTeamSize = selectedTeamSize;
+        this.numberOfTeams = null;
+        this.setTeamCount();
     }
 
 
@@ -3248,14 +3260,11 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
 
     updateTeamSize(selectedNumberOfTeams: number): void {
+        this.rememberedTeamCount = selectedNumberOfTeams;
+        this.numberOfTeams = selectedNumberOfTeams;
         this.maxTeamSize = null;
-        // Deselect the other mat-select when one is selected
-        this.teamSizeSelected = true;
-        this.numberOfTeamsSelected = false;
+        this.teamSize = null;
         this.teamCount = selectedNumberOfTeams;
-        if (selectedNumberOfTeams) {
-            this.teamSize = null;
-        }
         this.calculateTeamsNeeded();
     }
 
@@ -3758,6 +3767,10 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             }
         }
         this.calculateTeamsNeeded();
+    }
+
+    get selectedTopPlayers(): Player[] {
+        return this.displayTopPlayers.filter(player => this.isPlayerInSelectedList(player));
     }
 
     getPlayerClass(player: Player): string {

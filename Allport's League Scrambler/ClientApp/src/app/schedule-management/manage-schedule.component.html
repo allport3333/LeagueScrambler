@@ -1,7 +1,7 @@
 <section class="schedule-manager">
   <header><h2>Manage Schedule</h2><p>{{leagueName}}</p></header>
   @if (loading) {
-    <p role="status">Loading teams, divisions and saved schedule...</p>
+    <app-page-loading label="Loading schedule administration"></app-page-loading>
   }
   @if (error) {
     <div role="alert" class="error">{{error}}</div>

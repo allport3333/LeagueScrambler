@@ -1,3 +1,4 @@
+import { onLeagueResume } from '../pwa/pending-work.service';
 /* league-standings.component.ts */
 
 import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
@@ -7,7 +8,7 @@ import { PlayerService } from '../services/player.service';
 import { LeagueService } from '../services/league.service';
 import { LoginService } from '../services/login.service';
 import { ActivatedRoute } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { transformKingQueenStandings } from './king-queen-standings';
 
 @Component({
@@ -37,7 +38,10 @@ export class LeagueStandingsComponent implements OnInit {
 
     lastResult: PlayerScoresResponse | null = null;
     originalStandings: PlayerScoreGroup[] | null = null;
-    playerLoading: boolean = false;
+    playerLoading = false;
+    standingsError = '';
+    private settingsRequest: Subscription;
+    private standingsRequest: Subscription;
     selectedLeagueId: number;
     userRole: string;
 
@@ -78,7 +82,7 @@ export class LeagueStandingsComponent implements OnInit {
     canOpenScore(score: any): boolean {
         return score.hasSavedScore === true && score.kingQueenTeamId > 0 && score.scrambleNumber > 0;
     }
-    ngOnDestroy() { this.navigationSubscriptions.unsubscribe(); }
+    ngOnDestroy() { this.navigationSubscriptions.unsubscribe(); this.settingsRequest?.unsubscribe(); this.standingsRequest?.unsubscribe(); }
 
     mobilePlayerKey(group: string, playerId: number): string {
         return group + '-' + playerId;
@@ -101,7 +105,7 @@ export class LeagueStandingsComponent implements OnInit {
         public leagueService: LeagueService,
         public loginService: LoginService,
         private route: ActivatedRoute
-    ) { }
+    ) { onLeagueResume(() => { if (this.lastResult && !this.playerLoading) this.initializeStandings(); }); }
 
     ngOnInit(): void {
         const requestedLeague = Number(this.route.snapshot.queryParamMap.get('leagueId'));
@@ -122,6 +126,11 @@ export class LeagueStandingsComponent implements OnInit {
         this.navigationSubscriptions.add(this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
             if (!this.navigationLeagueResolved && requestedLeague > 0 && selectedLeague.leagueId !== requestedLeague) { return; }
             if (selectedLeague.leagueId) { this.navigationLeagueResolved = true; }
+            this.settingsRequest?.unsubscribe();
+            this.standingsRequest?.unsubscribe();
+            this.standingsError = '';
+            this.playerLoading = false;
+            this.selectedLeagueId = selectedLeague.leagueId;
             this.standings = null;
             this.originalStandings = null;
             this.maleStandings = null;
@@ -145,107 +154,59 @@ export class LeagueStandingsComponent implements OnInit {
     }
 
     initializeStandings(): void {
-        this.playerLoading = true;
-
+        this.standingsRequest?.unsubscribe();
+        this.playerLoading = !this.lastResult;
+        this.standingsError = '';
         const request = this.standingsType === 'matchup'
             ? this.playerService.getStandingsByLeagueMatchup(this.leagueName)
             : this.playerService.getStandingsByLeague(this.leagueName);
-        request.subscribe(
-            (result: PlayerScoresResponse) => {
-                if (result != null) {
-                    this.lastResult = result;
-
-                    this.processStandings(result, this.getCurrentOptions());
-
-                    // Default sort
-                    this.sortStandingsWithUpdates('totalScore');
-
-                    this.playerLoading = false;
-                } else {
-                    this.standings = null;
-                    this.originalStandings = null;
-                    this.maleStandings = null;
-                    this.femaleStandings = null;
-                    this.lastResult = null;
-
-                    this.divisions = [];
-                    this.selectedDivisionId = 0;
-                    this.mainTabIndex = 0;
-                    this.divisionMaleStandings = {};
-                    this.divisionFemaleStandings = {};
-
-                    this.playerLoading = false;
-                }
-            },
-            error => {
-                console.error('initializeStandings: Error fetching standings:', error);
+        this.standingsRequest = request.subscribe({
+            next: result => {
                 this.playerLoading = false;
-            }
-        );
+                if (!result || !Array.isArray(result.playerScores)) {
+                    this.showStandingsError();
+                    return;
+                }
+                this.lastResult = result;
+                this.processStandings(result, this.getCurrentOptions());
+                this.sortStandingsWithUpdates('totalScore');
+            },
+            error: () => this.showStandingsError()
+        });
     }
 
-    private initializeSettings(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            this.loginService.getSettingValue('numberOfSubsAllowed', this.selectedLeagueId).subscribe(
-                (numberOfSubsAllowedValue) => {
-                    this.numberOfSubsAllowed = this.parseValueAsNumber(numberOfSubsAllowedValue, 100);
+    private showStandingsError(): void {
+        this.playerLoading = false;
+        this.standingsError = 'Unable to load player standings.';
+    }
 
-                    this.loginService.getSettingValue('dropLowest', this.selectedLeagueId).subscribe(
-                        (dropLowestValue) => {
-                            this.dropLowest = this.parseValueAsNumber(dropLowestValue, 0);
-
-                            this.loginService.getSettingValue('subScorePercent', this.selectedLeagueId).subscribe(
-                                (subScorePercentValue) => {
-                                    this.subScorePercent = this.parseValueAsNumber(subScorePercentValue, 100);
-
-                                    this.loginService.getSettingValue('standingsType', this.selectedLeagueId).subscribe(
-                                        (newStandingsType) => {
-                                            this.retrievedStandingsType = newStandingsType;
-
-                                            const returnMode = this.route.snapshot.queryParamMap.get('standingsMode');
-                                            if (!this.returnModeApplied && (returnMode === 'round' || returnMode === 'matchup')) {
-                                                this.returnModeApplied = true;
-                                                this.standingsType = returnMode;
-                                                this.initializeStandings();
-                                                resolve();
-                                                return;
-                                            }
-
-                                            if (this.retrievedStandingsType !== this.standingsType) {
-                                                this.toggleStandingsType();
-                                            } else {
-                                                if (this.lastResult != null) {
-                                                    this.processStandings(this.lastResult, this.getCurrentOptions());
-                                                } else {
-                                                    this.initializeStandings();
-                                                }
-                                            }
-
-                                            resolve();
-                                        },
-                                        (error) => {
-                                            console.error('Error fetching standingsType:', error);
-                                            resolve();
-                                        }
-                                    );
-                                },
-                                (error) => {
-                                    console.error('Error fetching subScorePercent:', error);
-                                    resolve();
-                                }
-                            );
-                        },
-                        (error) => {
-                            console.error('Error fetching dropLowest:', error);
-                            resolve();
-                        }
-                    );
-                },
-                (error) => {
-                    console.error('Error fetching numberOfSubsAllowed:', error);
-                    resolve();
+    initializeSettings(): void {
+        this.settingsRequest?.unsubscribe();
+        this.standingsRequest?.unsubscribe();
+        this.playerLoading = !this.lastResult;
+        this.standingsError = '';
+        const id = this.selectedLeagueId;
+        this.settingsRequest = forkJoin([
+            this.loginService.getSettingValue('numberOfSubsAllowed', id),
+            this.loginService.getSettingValue('dropLowest', id),
+            this.loginService.getSettingValue('subScorePercent', id),
+            this.loginService.getSettingValue('standingsType', id)
+        ]).subscribe({
+            next: ([subs, drop, percent, mode]) => {
+                this.numberOfSubsAllowed = this.parseValueAsNumber(subs, 100);
+                this.dropLowest = this.parseValueAsNumber(drop, 0);
+                this.subScorePercent = this.parseValueAsNumber(percent, 100);
+                this.retrievedStandingsType = mode;
+                const returnMode = this.route.snapshot.queryParamMap.get('standingsMode');
+                if (!this.returnModeApplied && (returnMode === 'round' || returnMode === 'matchup')) {
+                    this.returnModeApplied = true;
+                    this.standingsType = returnMode;
+                } else {
+                    this.standingsType = mode === 'matchup' ? 'matchup' : 'round';
                 }
-            );
+                this.initializeStandings();
+            },
+            error: () => this.showStandingsError()
         });
     }
 
@@ -261,29 +222,8 @@ export class LeagueStandingsComponent implements OnInit {
     }
 
     toggleStandingsType(): void {
-        if (this.standingsType === 'round') {
-            this.standingsType = 'matchup';
-
-            this.playerService.getStandingsByLeagueMatchup(this.leagueName).subscribe(
-                (result: PlayerScoresResponse) => {
-                    this.lastResult = result;
-                    this.processStandings(result, this.getCurrentOptions());
-                    this.sortStandingsWithUpdates('totalScore');
-                },
-                error => console.error('Error fetching matchup standings:', error)
-            );
-        } else {
-            this.standingsType = 'round';
-
-            this.playerService.getStandingsByLeague(this.leagueName).subscribe(
-                (result: PlayerScoresResponse) => {
-                    this.lastResult = result;
-                    this.processStandings(result, this.getCurrentOptions());
-                    this.sortStandingsWithUpdates('totalScore');
-                },
-                error => console.error('Error fetching round standings:', error)
-            );
-        }
+        this.standingsType = this.standingsType === 'round' ? 'matchup' : 'round';
+        this.initializeStandings();
     }
 
     onNumberOfSubsChange(value: number): void {

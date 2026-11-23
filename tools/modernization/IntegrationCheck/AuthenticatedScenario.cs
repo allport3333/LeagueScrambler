@@ -67,12 +67,12 @@ internal sealed class AuthenticatedScenario
   c.PlayersLeagues.Add(new PlayersLeague{PlayerID=roster[0].Id,LeagueID=other.ID,LeagueDivisionId=foreign.Id});
   c.SaveChanges();teams.AddRange(seasonTeams.Select(t=>t.Id));Journal();tx.Commit();
  }
- public static async Task Run(string root,string output,SmtpClient smtp){
+ public static async Task Run(string root,string output,SmtpClient smtp, bool focused = false){
   var test=new AuthenticatedScenario(root,output){smtp=smtp};Exception failure=null;
-  try{test.Seed();await test.Check();}catch(Exception error){failure=error;}
+  try{test.Seed();await test.Check(focused);}catch(Exception error){failure=error;}
   finally{try{test.Cleanup();}catch(Exception error){failure=error;}test.Journal(failure==null,failure);}
   if(failure!=null)throw new InvalidOperationException("Authenticated Development check failed; see sanitized artifact.",failure);
-  Console.WriteLine("PASS: actual accounts/login, roles, membership/schedule/Scrambler persistence, reset single use, browser integration and owned cleanup.");
+  Console.WriteLine(focused ? "PASS: real Development authorization, team eligibility, concurrent assignment and owned cleanup." : "PASS: actual accounts/login, roles, membership/schedule/Scrambler persistence, reset single use, browser integration and owned cleanup.");
  }
  public static void RecoverCleanup(string root,string output){
   var saved=JObject.Parse(File.ReadAllText(Path.Combine(output,"authorized-results.json")));
@@ -83,7 +83,7 @@ internal sealed class AuthenticatedScenario
   test.users.AddRange(saved["userIds"].ToObject<List<int>>());test.leagues.AddRange(saved["leagueIds"].ToObject<List<int>>());test.players.AddRange(saved["playerIds"].ToObject<List<int>>());test.teams.AddRange(saved["teamIds"].ToObject<List<int>>());
   test.Cleanup();test.Journal(true);Console.WriteLine("PASS: interrupted run's journal-owned fixtures removed; original failure journal preserved.");
  }
- async Task Check(){
+ async Task Check(bool focused){
   using var admin=Client(out var adminCookies);using var manager=Client(out _);using var player=Client(out _);using var anonymous=Client(out _);
   phase="actual registration and login";Journal();
   var registration=await Request(player,"POST","/api/Login/register",new{email=PlayerEmail,password,firstName=playerPrefix,lastName="Player Account",userRoleId=1});
@@ -103,6 +103,7 @@ internal sealed class AuthenticatedScenario
   var role=await Request(admin,"GET","/api/Login/GetUsersRole",null);Need((string)role["role"]=="Admin","Administrator claim lost.");
   var managerLeagues=await Request(manager,"GET","/api/Login/getuserleagues",null);Need(managerLeagues.Count()==1&&(int)managerLeagues[0]["id"]==main.ID,"Manager league scope changed.");
   await Request(player,"GET","/api/Login/getuserleagues",null);
+  if (focused) { await CheckTeamAuthorization(admin, manager, player, anonymous); return; }
   phase="HTTP role and membership boundaries";Journal();
   foreach(var path in new[]{"/api/ScheduleManagement/"+main.ID,"/api/ScrambleData/AvailableLeaguePlayers/"+main.ID}){
    await Request(admin,"GET",path,null);await Request(manager,"GET",path,null);await Request(player,"GET",path,null,403);await Request(anonymous,"GET",path,null,401);
@@ -219,12 +220,102 @@ internal sealed class AuthenticatedScenario
   var stdout=process.StandardOutput.ReadToEndAsync();var stderr=process.StandardError.ReadToEndAsync();await process.WaitForExitAsync();
   File.WriteAllText(Path.Combine(output,"browser-run.log"),(await stdout)+(await stderr));Need(process.ExitCode==0,"Actual authenticated browser verification failed; see browser artifacts.");
  }
+ async Task CheckTeamAuthorization(HttpClient admin, HttpClient manager, HttpClient player, HttpClient anonymous) {
+  phase = "real league creation and manager assignment"; Journal();
+  foreach (var (client, expected) in new[] { (admin, "Admin"), (manager, "Manager"), (player, "Player") }) {
+   var role = await Request(client, "GET", "/api/Login/GetUsersRole", null);
+   Need((string)role["role"] == expected, "The signed-in account role was not " + expected + ".");
+  }
+  string CreatePath(string suffix) => "/api/ScrambleData/AddNewLeague/" + prefix + suffix;
+  await Request(player, "POST", CreatePath("_PlayerDenied"), null, 403);
+  await Request(anonymous, "POST", CreatePath("_AnonymousDenied"), null, 401);
+  foreach (var (client, suffix, email) in new[] { (admin, "_AdminCreated", AdminEmail), (manager, "_ManagerCreated", ManagerEmail) }) {
+   var created = await Request(client, "POST", CreatePath(suffix), null);
+   var id = (int)created["id"];
+   leagues.Add(id); Journal();
+   using var c = new DataContext();
+   var account = c.Users.Single(u => u.Email == email);
+   Need(c.UserLeagues.Count(link => link.UserId == account.UserId && link.LeagueTypeId == id) == 1, "Creator assignment missing or duplicated.");
+   await Request(client, "GET", "/api/ScheduleManagement/" + id, null);
+   if (client == admin) await Request(manager, "GET", "/api/ScheduleManagement/" + id, null, 403);
+  }
+  var grant = "/api/Login/LeagueManager/" + other.ID;
+  var otherContext = "/api/ScheduleManagement/" + other.ID;
+  await Request(manager, "GET", otherContext, null, 403);
+  await Request(manager, "PUT", grant, new { email = ManagerEmail, assigned = true }, 403);
+  await Request(player, "PUT", grant, new { email = ManagerEmail, assigned = true }, 403);
+  await Request(admin, "PUT", grant, new { email = PlayerEmail, assigned = true }, 404);
+  await Request(admin, "PUT", grant, new { email = ManagerEmail, assigned = true }, 204);
+  await Request(manager, "GET", otherContext, null);
+  await Request(admin, "PUT", grant, new { email = ManagerEmail, assigned = false }, 204);
+  await Request(manager, "GET", otherContext, null, 403);
+  await Request(admin, "GET", otherContext, null);
+
+  phase = "real current roster and history fixtures"; Journal();
+  int historicalId, historicalScoreId, otherTeamId;
+  using (var c = new DataContext()) {
+   var otherTeam = new LeagueTeam { LeagueID = other.ID, TeamName = prefix + "_OtherTeam", Division = "Other" };
+   var historical = new KingQueenTeam { LeagueID = main.ID, ScrambleNumber = 1, DateOfTeam = new DateTime(2025, 1, 1) };
+   c.AddRange(otherTeam, historical); c.SaveChanges();
+   teams.Add(otherTeam.Id); otherTeamId = otherTeam.Id; historicalId = historical.Id; Journal();
+   var historicalScore = new KingQueenRoundScores { KingQueenTeamId = historicalId, RoundId = 1, RoundScore = 15, RoundWon = true };
+   c.AddRange(historicalScore, new KingQueenPlayer { KingQueenTeamId = historicalId, PlayerId = roster[1].Id });
+   c.SaveChanges(); historicalScoreId = historicalScore.Id;
+   checks.Add(new { phase, historicalId, historicalScoreId }); Journal();
+  }
+  var first = seasonTeams[0].Id;
+  var second = seasonTeams[1].Id;
+  string Assign(int team, int person, int league) =>
+   $"/api/Statistics/AddPlayerToLeagueTeam?leagueTeamId={team}&playerId={person}&leagueId={league}";
+  await Request(anonymous, "POST", Assign(first, roster[0].Id, main.ID), null, 401);
+  await Request(player, "POST", Assign(first, roster[0].Id, main.ID), null, 403);
+  await Request(manager, "POST", Assign(otherTeamId, roster[0].Id, other.ID), null, 403);
+  await Request(admin, "POST", Assign(otherTeamId, roster[0].Id, main.ID), null, 400);
+  await Request(admin, "POST", Assign(first, roster[20].Id, main.ID), null, 400);
+  await Request(admin, "POST", Assign(otherTeamId, roster[0].Id, other.ID), null);
+  await Request(manager, "POST", Assign(first, roster[0].Id, main.ID), null);
+  await Request(manager, "POST", Assign(first, roster[0].Id, main.ID), null, 409);
+  await Request(admin, "POST", Assign(second, roster[0].Id, main.ID), null, 409);
+  await Request(admin, "POST", Assign(second, roster[1].Id, main.ID), null);
+
+  phase = "concurrent assignment to different teams"; Journal();
+  var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+  async Task<int> Compete(HttpClient client, int teamId) {
+   using var request = new HttpRequestMessage(HttpMethod.Post, Assign(teamId, roster[2].Id, main.ID));
+   request.Headers.Add("Origin", Origin);
+   await start.Task;
+   using var response = await client.SendAsync(request);
+   return (int)response.StatusCode;
+  }
+  var attempts = new[] { Compete(admin, first), Compete(manager, second) };
+  start.SetResult();
+  var statuses = await Task.WhenAll(attempts);
+  checks.Add(new { phase, statuses }); Journal();
+  Need(statuses.OrderBy(code => code).SequenceEqual(new[] { 200, 409 }), "Concurrent assignment must yield one success and one conflict.");
+  using (var c = new DataContext()) {
+   var memberships = c.LeagueTeamPlayer.Where(row => row.LeagueTeam.LeagueID == main.ID).AsNoTracking().ToList();
+   Need(memberships.Count == 3 && memberships.GroupBy(row => row.PlayerId).All(group => group.Count() == 1),
+    "Expected exactly one current team per assigned fixture player.");
+   Need(c.LeagueTeamPlayer.Any(row => row.LeagueTeamId == otherTeamId && row.PlayerId == roster[0].Id), "Other league assignment changed.");
+   Need(c.KingQueenPlayer.Count(member => member.KingQueenTeamId == historicalId && member.PlayerId == roster[1].Id) == 1 &&
+    c.KingQueenRoundScores.Any(score => score.Id == historicalScoreId && score.KingQueenTeamId == historicalId &&
+     score.RoundId == 1 && score.RoundScore == 15 && score.RoundWon == true), "Historical memberships or scores changed.");
+   checks.Add(new { phase, membershipIds = memberships.Select(row => row.Id).ToArray(), historicalDataPreserved = true });
+  }
+  Journal();
+ }
+
  void Cleanup(){
   phase="owned cleanup";Journal();if(leagues.Count==0&&users.Count==0&&players.Count==0){cleaned=true;return;}
   using var c=new DataContext();using var tx=c.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
   // Recover a partial registration only for the exact new email, whose absence was guaranteed by our unique run prefix.
   var createdUser=c.Users.Where(u=>u.Email==PlayerEmail).Select(u=>u.UserId).SingleOrDefault();if(createdUser>0&&!users.Contains(createdUser))users.Add(createdUser);
+  // Recover API creations that committed before the response could be journaled.
+  var creationNames = new[] { prefix + "_AdminCreated", prefix + "_ManagerCreated", prefix + "_PlayerDenied", prefix + "_AnonymousDenied" };
+  leagues.AddRange(c.Leagues.Where(l => creationNames.Contains(l.LeagueName)).Select(l => l.ID).ToList().Except(leagues));
+  teams.AddRange(c.LeagueTeam.Where(t => leagues.Contains(t.LeagueID) && t.TeamName == prefix + "_OtherTeam").Select(t => t.Id).ToList().Except(teams));
   Need(c.Leagues.Count(l=>leagues.Contains(l.ID)&&l.LeagueName.StartsWith(prefix))==leagues.Count,"Cleanup league ownership mismatch.");
+  Need(c.LeagueTeam.Count(t=>teams.Contains(t.Id)&&leagues.Contains(t.LeagueID)&&t.TeamName.StartsWith(prefix))==teams.Count,"Cleanup team ownership mismatch.");
   Need(c.Users.Count(u=>users.Contains(u.UserId)&&u.Email.StartsWith(prefix))==users.Count,"Cleanup account ownership mismatch.");
   Need(c.Players.Count(p=>players.Contains(p.Id)&&p.FirstName==playerPrefix)==players.Count,"Cleanup player ownership mismatch.");
   Need(!c.PlayersLeagues.Any(m=>players.Contains(m.PlayerID)&&!leagues.Contains(m.LeagueID)),"Unrelated membership references a fixture player.");

@@ -24,6 +24,8 @@ export class HomeComponent implements OnInit {
     @ViewChild('confirmationDialog', { static: true }) confirmationDialog!: TemplateRef<any>;
     loginEmail: string = '';
     loginPassword: string = '';
+    loginError = '';
+    loginPending = false;
     registerEmail: string = '';
     registerPassword: string = '';
     confirmPassword: string = '';
@@ -114,8 +116,12 @@ export class HomeComponent implements OnInit {
     }
 
     login() {
+        if (this.loginPending || !this.isEmailValid || !this.loginEmail || !this.loginPassword) return;
+        this.loginError = '';
+        this.loginPending = true;
         this.loginService.login(this.loginEmail, this.loginPassword).subscribe(
             (response) => {
+                this.loginPending = false;
                 this.authService.setLoggedIn(true);
 
                 // Fetch user's role
@@ -155,12 +161,12 @@ export class HomeComponent implements OnInit {
                 });
             },
             (error) => {
-                this.showSnackBar(
-                    error.status === 429
-                        ? 'Too many login attempts. Please try again in 15 minutes.'
-                        : 'Login Failed',
-                    true
-                );
+                this.loginPending = false;
+                this.loginError = error.status === 429
+                    ? 'Too many attempts. Please try again in 15 minutes.'
+                    : error.status === 400 || error.status === 401
+                        ? 'Invalid email or password.'
+                        : 'Unable to sign in. Please try again.';
             }
         );
     }
@@ -174,6 +180,7 @@ export class HomeComponent implements OnInit {
     }
 
     toggleLoginForm() {
+        this.loginError = '';
         this.showLoginForm = true;
         this.showRegistrationForm =false;
     }
@@ -424,6 +431,8 @@ export class HomeComponent implements OnInit {
     }
 
     cancel() {
+        this.loginError = '';
+        this.loginPassword = '';
         this.showLoginForm = false;
         this.showRegistrationForm = false;
     }

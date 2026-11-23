@@ -1,6 +1,6 @@
 # Modernization worktree: build, test and resume
 
-Use `C:/Users/Allport/source/repos/LeagueHub-modernization`, branch `feature/framework-modernization`. Read STATUS.md first; its newest section overrides historical handoffs. Do not replay Angular migrations. Preserve master, all source changes, ignored recovery archives and portable runtimes. No commit/push/merge/deployment is authorized.
+Use `C:/Users/Allport/source/repos/LeagueHub-modernization`, branch `feature/framework-modernization`. Read STATUS.md first for the authorized IIS staging recovery and current blockers. Preserve master, all source changes, ignored recovery archives and portable runtimes. Production deployment and Git publication are outside the staging authorization.
 
 ## PowerShell toolchain
 
@@ -30,6 +30,21 @@ Pop-Location
 Do not unnecessarily rerun these accepted checkpoints. Save new logs under a distinct modernization artifact name. Final Angular unit suite has 24 tests; limited unit coverage does not replace the browser/business suites. `npm.cmd run lint` currently fails with 314 existing errors and 6 warnings; do not call it passing or mass-format unrelated source.
 
 ## Local running
+
+For Visual Studio 2026 Insiders, use the `Allport_s_League_Scrambler` project profile at `https://localhost:5001`. Put the following line in the ignored `Allport's League Scrambler/.env` next to `Startup.cs`. Restart the debug session after editing it. Startup loads this file into the application process.
+
+```dotenv
+LEAGUESCRAMBLER_DB_CONNECTION=Server=localhost;Database=LeagueScramblerDev;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;
+```
+
+This connection uses Windows authentication and trusts the SQL certificate for local loopback development only. Start a fresh Insiders instance from a PowerShell session prepared with the Node 22 PATH above if Visual Studio inherited the system Node 10 PATH. From that session, run:
+
+```powershell
+$insiders = 'C:/Program Files/Microsoft Visual Studio/18/Insiders/Common7/IDE/devenv.exe'
+& $insiders (Resolve-Path "Allport's League Scrambler.sln").Path
+```
+
+After F5, the home page should load through Angular CLI and `GET /api/ScrambleData/GetLeagues` should return HTTP 200. The Development host was verified on an isolated loopback port with those checks and no database writes.
 
 The normal backend still uses Startup and serves the SPA on the same origin. Set safe Development configuration externally before starting; never copy production secrets or print a connection string. `LEAGUESCRAMBLER_DB_CONNECTION` must identify the verified local Development database for migration tests. SMTP must use local pickup for test sends. Never start mutation tests without the fresh scoped approval in INTEGRATION-APPROVAL.md.
 
@@ -68,4 +83,14 @@ PlayerImportCheck and ScheduleCheck retain their old approval modes and addition
 
 ## Next gate
 
-Local framework and regression acceptance is complete at `checkpoints/net10-authenticated-accepted`. The next gate is separately authorized **staging deployment**, after checking the server/runtime/SQL TLS/key requirements. Follow STAGING-AND-ROLLBACK.md. Do not rerun framework migrations or recreate accepted fixtures just to resume. No production/IIS/commit/push/merge/deployment authorization is implied by the Development grant.
+Local framework and regression acceptance is complete at `checkpoints/net10-authenticated-accepted`. The dedicated IIS staging site serves that accepted package over HTTPS. Follow STAGING-AND-ROLLBACK.md to verify the worker's SQL identity and complete account-backed acceptance. Preserve the accepted ZIP and recovery artifacts when packaging the visual restoration.
+
+## Run the focused Development SQL authorization checks
+
+Run this in the Windows PowerShell session that connected successfully. The executable uses the existing guarded Development configuration and authorization. It verifies the actual database and local machine over shared memory before taking fingerprints or seeding fixtures. The private Kestrel host uses loopback port 5443 and an ephemeral TLS certificate.
+
+    dotnet run --project 'C:\Users\Allport\source\repos\LeagueHub-modernization\tools\modernization\IntegrationCheck\IntegrationCheck.csproj' -c Release -- --verify-team-development
+
+Expect a PASS, one HTTP 200 and one HTTP 409 for competing assignments, and identical before and after database fingerprints. The console prints the evidence directory under tests/functional/artifacts/modernization/authorized-team-*/. HTTP results and cleanup are in http/authorized-results.json. The run summary is integration-summary.json. Avoid unrelated Development writes while the fingerprints are being taken. Identity counters can advance normally as fixtures use generated IDs.
+
+An explicit Development .env path may follow --verify-team-development. To recover an interrupted run, pass that path followed by the exact authorized-team-* run name. Recovery rechecks the target, consults the original journal and baseline, and cleans up the owned fixtures. Headless browser fixture evidence is recorded separately.

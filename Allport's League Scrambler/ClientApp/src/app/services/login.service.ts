@@ -2,8 +2,8 @@ import { Injectable, Inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { TokenResponse } from '../data-models/tokenResponse.model';
 import { Leagues } from '../data-models/leagues.model';
-import { tap, catchError } from 'rxjs/operators';
-import { throwError } from 'rxjs';
+import { tap, catchError, map, switchMap } from 'rxjs/operators';
+import { of, throwError } from 'rxjs';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -51,21 +51,17 @@ export class LoginService {
         return this.httpClient.get<boolean>(this.isauthenticated, { withCredentials: true }); // Include the 'withCredentials' option
     }
 
-    // The administration password stays on the server. A successful check sets a
-    // short lived, HTTPS only admin session cookie without replacing player login.
-    verifyAdminPassword(password: string): Observable<{ authorized: boolean }> {
-        return this.httpClient.post<{ authorized: boolean }>(
-            this.baseUrl + 'api/Login/VerifyAdminPassword',
-            { password: password },
-            { withCredentials: true }
+    getManagementAccess(leagueId: number | null): Observable<{ role: string; canManage: boolean }> {
+        return this.getUsersRole().pipe(
+            switchMap(({ role }) => role === 'Manager' && leagueId
+                ? this.getUserLeagues().pipe(map(leagues => ({ role, canManage: leagues.some(league => league.id === leagueId) })))
+                : of({ role, canManage: role === 'Admin' && !!leagueId })),
+            catchError(() => of({ role: '', canManage: false }))
         );
     }
 
-    isAdminPasswordAuthorized(): Observable<boolean> {
-        return this.httpClient.get<boolean>(
-            this.baseUrl + 'api/Login/IsAdminPasswordAuthorized',
-            { withCredentials: true }
-        );
+    setLeagueManager(leagueId: number, email: string, assigned: boolean) {
+        return this.httpClient.put(this.baseUrl + 'api/Login/LeagueManager/' + leagueId, { email, assigned });
     }
 
     // Method for user registration
@@ -104,27 +100,11 @@ export class LoginService {
             .set('settingName', settingName)
             .set('leagueId', leagueId.toString());
 
-        return new Observable((observer) => {
-            this.httpClient
-                .get(this.getLeagueSettings, {
-                    params: params,
-                    withCredentials: true,
-                })
-                .subscribe(
-                    (response: any) => {
-                        const settingValue = response.settingValue || ''; // Default to an empty string if undefined
-                        observer.next(settingValue);
-                        observer.complete();
-                    },
-                    (error) => {
-                        observer.error(error);
-                    }
-                );
-        });
+        return this.httpClient.get<{ settingValue?: string }>(this.getLeagueSettings, {
+            params,
+            withCredentials: true
+        }).pipe(map(response => response.settingValue || ''));
     }
-
-
-
 
     forgotPassword(email: string) {
         const recoveryData = {
