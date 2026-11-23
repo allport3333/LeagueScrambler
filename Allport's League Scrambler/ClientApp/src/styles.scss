@@ -207,6 +207,7 @@ app-team-scores mat-form-field,
 app-league-standings .dropdown-container mat-form-field { @include mat.form-field-density(-2); }
 
 app-league-schedule .week-navigation { @include mat.form-field-density(-3); }
+.claim-search { @include mat.form-field-density(-2); }
 
 .league-roster .player-icon-action {
   @include mat.icon-button-overrides((icon-size: 16px, state-layer-size: 28px, touch-target-display: none));

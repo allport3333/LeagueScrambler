@@ -63,12 +63,28 @@ internal static class CookieCancellationScenario
             Need(observed is TaskCanceledException, "original EF query reproduces TaskCanceledException with an aborted token");
         }
 
+        using (var canceledSearch = new CancellationTokenSource())
+        using (var smtp = new System.Net.Mail.SmtpClient())
+        using (var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions()))
+        {
+            canceledSearch.Cancel();
+            var controller = new Allport_s_League_Scrambler.Controllers.AccountRecoveryController(new Allport_s_League_Scrambler.Services.TransactionalMail(smtp,
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<Allport_s_League_Scrambler.Services.TransactionalMail>.Instance), cache,
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<Allport_s_League_Scrambler.Controllers.AccountRecoveryController>.Instance)
+            {
+                ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { RequestAborted = canceledSearch.Token } }
+            };
+            var canceledResult = await controller.FindProfiles("Ch");
+            Need(canceledResult is EmptyResult, "recovery search completes quietly when EF observes an aborted request");
+        }
+
         var entered = Signal();
         var completed = Signal();
         var controls = new CancellationFilter(entered, completed);
         var source = Path.GetFullPath("Allport's League Scrambler");
         var calls = 0;
         var role = "Admin";
+        var version = 0;
         var mode = "";
         using var host = Allport_s_League_Scrambler.Program.CreateHostBuilder(Array.Empty<string>())
             .UseEnvironment("Staging")
@@ -96,7 +112,7 @@ internal static class CookieCancellationScenario
                         if (mode == "other-cancellation") throw new TaskCanceledException("Test-only independent cancellation.");
                     }
                     catch (Exception error) { controls.LookupFailure = error; throw; }
-                    return role;
+                    return role == null ? null : new AccountSession(role, version);
                 });
             }).Build();
         Need(Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION") == disconnectedSql, "failure probe uses only the isolated loopback SQL target");
@@ -115,6 +131,64 @@ internal static class CookieCancellationScenario
             return await client.SendAsync(request, token);
         }
 
+        async Task<HttpResponseMessage> PostWithoutRecords(string path, string body)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, path)
+            {
+                Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json")
+            };
+            request.Headers.Add("Origin", url);
+            return await client.SendAsync(request);
+        }
+        using (var response = await PostWithoutRecords("/api/Login/forgotpassword", "{\"email\":\"invalid-test-address\"}"))
+            Need(response.StatusCode == HttpStatusCode.BadRequest, "malformed reset mailbox fails before SQL or mail");
+        using (var response = await PostWithoutRecords("/api/account-recovery/resend", "{\"id\":\"00000000-0000-0000-0000-000000000000\"}"))
+            Need(response.StatusCode == HttpStatusCode.BadRequest, "resend exists and rejects an invalid request ID");
+        using (var response = await PostWithoutRecords("/api/account-recovery/request",
+            "{\"email\":\"synthetic@example.invalid\",\"playerId\":1,\"information\":\"    \"}"))
+            Need(response.StatusCode == HttpStatusCode.BadRequest, "whitespace-only reviewer information is rejected");
+        using (var response = await client.GetAsync("/api/account-recovery/review"))
+            Need(response.StatusCode == HttpStatusCode.Unauthorized, "recovery review resolves to a protected controller endpoint");
+        using (var response = await client.GetAsync("/api/account-recovery/unknown"))
+            Need(response.StatusCode == HttpStatusCode.NotFound, "unknown API routes do not return the SPA shell");
+        using (var response = await client.GetAsync("/api/account-recovery/profiles?search=x"))
+            Need(response.StatusCode == HttpStatusCode.BadRequest, "recovery profile search validates short terms before opening SQL");
+        using (var response = await client.GetAsync("/api/account-recovery/profiles?search=Chris&page=20"))
+            Need(response.StatusCode == HttpStatusCode.BadRequest, "public search rejects pages beyond its enumeration bound");
+        using (var response = await client.GetAsync("/api/account-recovery/profiles?search=Chris"))
+            Need(response.StatusCode == HttpStatusCode.ServiceUnavailable &&
+                response.Content.Headers.ContentType?.MediaType == "application/problem+json",
+                "anonymous Chris search reaches SQL and returns a structured 503 for an isolated SQL outage");
+        using (var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0))
+        using (var clientAbort = new CancellationTokenSource())
+        {
+            listener.Start();
+            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            var stalledConnection = $"Server=tcp:127.0.0.1,{port};Database=LeagueScramblerDev;Integrated Security=true;Connect Timeout=15";
+            Environment.SetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION", stalledConnection);
+            try
+            {
+                Environment.SetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION", stalledConnection.Replace("Timeout=15", "Timeout=1"));
+                var timeoutRequest = client.GetAsync("/api/account-recovery/profiles?search=Uwe");
+                using (var stalledSql = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(5)))
+                using (var timeoutResponse = await timeoutRequest.WaitAsync(TimeSpan.FromSeconds(10)))
+                {
+                    Need((int)timeoutResponse.StatusCode >= 500,
+                        "a SQL connection timeout remains a server failure with a live HTTP request");
+                }
+
+                Environment.SetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION", stalledConnection);
+                var pending = client.GetAsync("/api/account-recovery/profiles?search=Ch", clientAbort.Token);
+                using var sqlClient = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                clientAbort.Cancel();
+                try { using var response = await pending; }
+                catch (OperationCanceledException) when (clientAbort.IsCancellationRequested) { }
+                await controls.RecoveryAbortCompleted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                Need(controls.Failure == null && controls.RecoveryAbortStatus == 200,
+                    "aborting an in-flight anonymous search cancels the SQL operation without a server error");
+            }
+            finally { Environment.SetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION", disconnectedSql); }
+        }
         foreach (var path in new[] { "/api/Statistics/AddTeam", "/api/Statistics/AddPlayerToLeagueTeam?leagueTeamId=11&playerId=21&leagueId=101" })
         {
             using (var anonymous = await client.PostAsync(path, null))
@@ -137,10 +211,19 @@ internal static class CookieCancellationScenario
         role = "Player";
         using (var response = await Request("/api/cookie-cancellation-fixture"))
             Need(response.StatusCode == HttpStatusCode.Forbidden, "role demotion takes effect on the next protected request");
+        using (var response = await Request("/api/account-recovery/review"))
+            Need(response.StatusCode == HttpStatusCode.Forbidden, "Player cannot read recovery requests");
+        role = "Manager";
+        using (var response = await Request("/api/account-recovery/review"))
+            Need(response.StatusCode == HttpStatusCode.Forbidden, "Manager cannot read recovery requests");
         role = null;
         using (var response = await Request("/api/cookie-cancellation-fixture"))
             Need(response.StatusCode == HttpStatusCode.Unauthorized, "missing account invalidates the request principal");
         role = "Admin";
+        version = 1;
+        using (var response = await Request("/api/cookie-cancellation-fixture"))
+            Need(response.StatusCode == HttpStatusCode.Unauthorized, "session version change rejects a pre-change cookie");
+        version = 0;
         foreach (var failure in new[] { "timeout", "other-cancellation", "sql" })
         {
             mode = failure;
@@ -178,6 +261,8 @@ internal static class CookieCancellationScenario
 
     private sealed class CancellationFilter(TaskCompletionSource<bool> entered, TaskCompletionSource<bool> completed) : IStartupFilter
     {
+        public TaskCompletionSource<bool> RecoveryAbortCompleted { get; } = Signal();
+        public int RecoveryAbortStatus { get; private set; }
         public Exception Failure { get; set; }
         public Exception LookupFailure { get; set; }
         public bool AbortedPrincipalRejected { get; private set; }
@@ -189,6 +274,11 @@ internal static class CookieCancellationScenario
                 catch (Exception error) { Failure = error; throw; }
                 finally
                 {
+                    if (context.Request.Path == "/api/account-recovery/profiles" && context.RequestAborted.IsCancellationRequested)
+                    {
+                        RecoveryAbortStatus = context.Response.StatusCode;
+                        RecoveryAbortCompleted.TrySetResult(true);
+                    }
                     if (entered.Task.IsCompleted && context.RequestAborted.IsCancellationRequested)
                     {
                         AbortedPrincipalRejected = context.User.Identity?.IsAuthenticated != true;

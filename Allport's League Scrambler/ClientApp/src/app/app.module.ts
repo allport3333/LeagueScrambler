@@ -77,7 +77,7 @@ import { FaqComponent } from './faq/faq.component';
 import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
 
 @NgModule({ declarations: [
-        PageLoadingComponent, AppearanceComponent,
+        AppearanceComponent,
         AppComponent,
         NavMenuComponent,
         HomeComponent,
@@ -150,7 +150,11 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
         MatDatepickerModule,
         MatTreeModule,
         MatSnackBarModule,
+        PageLoadingComponent,
         RouterModule.forRoot([
+            { path: 'account-recovery', loadComponent: () => import('./account-recovery.component').then(m => m.AccountRecoveryComponent) },
+            { path: 'change-email', data: { mode: 'email-change' }, loadComponent: () => import('./account-recovery.component').then(m => m.AccountRecoveryComponent) },
+            { path: 'recovery-review', data: { mode: 'review' }, loadComponent: () => import('./account-recovery.component').then(m => m.AccountRecoveryComponent) },
             { path: 'access-denied', component: LeagueManagementDeniedComponent },
             { path: '', component: HomeComponent, pathMatch: 'full' },
             { path: '', component: ScramblerWorkspaceComponent, children: [

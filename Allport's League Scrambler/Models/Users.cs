@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
@@ -6,6 +6,8 @@ namespace Allport_s_League_Scrambler.Models
 {
     public class User
     {
+        public int SessionVersion { get; set; }
+
         public int UserId { get; set; } // Unique user identifier
         public byte[] PasswordHash { get; set; } // Hashed password
         public byte[] PasswordSalt { get; set; } // Password salt

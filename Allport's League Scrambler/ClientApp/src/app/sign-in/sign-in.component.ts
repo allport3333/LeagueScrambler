@@ -2,7 +2,7 @@ import { Component, DestroyRef, OnInit, ViewChild, TemplateRef, ChangeDetectionS
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { combineLatest, forkJoin, of, Subscription, switchMap } from 'rxjs';
 import { MatDialogRef, MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarRef, SimpleSnackBar } from '@angular/material/snack-bar';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
@@ -48,6 +48,7 @@ export class SignInComponent implements OnInit {
     isPlayerSignedIn: boolean = false;  // Track if the player is signed in
     currentPlayerId: number;  
     dayOfWeekSetting: string = 'Sunday';
+    private signInNotice: MatSnackBarRef<SimpleSnackBar>;
     attendanceLoading = false;
     attendanceError = '';
     private attendanceRequest: Subscription;
@@ -63,7 +64,9 @@ export class SignInComponent implements OnInit {
 
     constructor(private playerService: PlayerService, private loginService: LoginService, private authService: AuthService,
         private leagueService: LeagueService, private http: HttpClient, private snackBar: MatSnackBar, private dialog: MatDialog,
-        private destroyRef: DestroyRef) { }
+        private destroyRef: DestroyRef) {
+        this.destroyRef.onDestroy(() => this.signInNotice?.dismiss());
+    }
 
     ngOnInit() {
         this.loadLeagues();
@@ -420,11 +423,14 @@ export class SignInComponent implements OnInit {
     }
 
     private executePlayerSignIn(playerSignIn: PlayerSignIn, player: any): void {
-        this.playerService.signInPlayer(playerSignIn).subscribe(
+        this.playerService.signInPlayer(playerSignIn).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(
             (result: PlayerSignInResult) => {
                 this.playerSignIn.push(result);
                 this.signedInDataSource.data = [...this.playerSignIn];
-                this.openDialog(`${player.firstName} ${player.lastName} has been signed in.`);
+                this.signInNotice?.dismiss();
+                this.signInNotice = this.snackBar.open(`${player.firstName} ${player.lastName} has been signed in.`, 'OK', {
+                    duration: 3000, panelClass: ['custom-snackbar'], horizontalPosition: 'center'
+                });
                 this.players = this.players.filter(p => p.id !== player.id);
                 this.filteredPlayers = this.filteredPlayers.filter(p => p.id !== player.id);
                 this.updateGenderCounts();

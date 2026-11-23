@@ -2,6 +2,7 @@ import { Component, Inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 
 import { Player } from '../data-models/player.model';
+import { ProfileMatch } from '../data-models/profile-match';
 import { Leagues } from '../data-models/leagues.model';
 import { KingQueenTeamWithPlayers } from '../data-models/KingQueenTeamWithPlayers.model';
 import { Observable, of } from 'rxjs';
@@ -133,8 +134,17 @@ export class PlayerService {
         return this.httpClient.get<any[]>(this.baseUrl + `api/ScrambleData/SearchPlayers?searchTerm=${searchTerm}`);
     }
 
-    public claimPlayer(data: { userId: number; playerId: number }): Observable<any> {
+    public claimPlayer(data: { userId?: number; playerId: number }): Observable<any> {
         return this.httpClient.post(this.baseUrl + `api/ScrambleData/claimPlayer`, data);
+    }
+
+    public claimablePlayers(search: string) {
+        return this.httpClient.get<{ players: ProfileMatch[]; claimedProfiles: ProfileMatch[]; claimedExactMatch: boolean }>(
+            this.baseUrl + 'api/ScrambleData/ClaimablePlayers', { params: { search } });
+    }
+
+    public createAndClaimPlayer(input: { firstName: string; lastName: string; gender: string }) {
+        return this.httpClient.post(this.baseUrl + 'api/ScrambleData/CreateAndClaimPlayer', input);
     }
 
     public addPlayerWithoutLeague(player: any, importLeagueId?:number): Observable<any> {

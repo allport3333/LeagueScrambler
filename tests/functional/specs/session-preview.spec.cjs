@@ -12,11 +12,11 @@ test('browser registration claims an existing synthetic player through matching-
   expect(db('snapshot',identity).users).toEqual([]);
   const userId=await registerUi(page,identity);
   await dismissNotices(page);
-  await page.getByRole('button',{name:'Claim',exact:true}).click();
+  await page.getByRole('dialog').getByRole('button',{name:identity.firstName+' '+identity.lastName,exact:true}).click();
   const [claimed,logout]=await Promise.all([
     page.waitForResponse(r=>new URL(r.url()).pathname==='/api/ScrambleData/claimPlayer'&&r.request().method()==='POST'),
     page.waitForResponse(r=>new URL(r.url()).pathname==='/api/Login/logout'&&r.request().method()==='POST'),
-    page.getByRole('button',{name:'Confirm',exact:true}).click()
+    page.getByRole('button',{name:'Claim Selected Player',exact:true}).click()
   ]);
   expect(claimed.status()).toBe(200);expect(logout.status()).toBe(200);
   const snapshot=db('snapshot',identity);expect(snapshot.links).toHaveLength(1);expect(snapshot.links[0]).toMatchObject({UserId:userId,PlayerId:player.id});

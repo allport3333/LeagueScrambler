@@ -54,37 +54,82 @@ namespace Allport_s_League_Scrambler.Controllers
         [Authorize]
         public IActionResult ClaimPlayer([FromBody] ClaimPlayerRequest request)
         {
-            var claimedUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (request == null || !int.TryParse(claimedUserId, out var authenticatedUserId) ||
-                authenticatedUserId != request.UserId)
-            {
-                return Forbid();
-            }
+            if (request == null || !LeagueAccess.TryGetAccountId(User, out var accountId) ||
+                (request.UserId != 0 && request.UserId != accountId)) return Forbid();
 
-            var context = new DataContext();
-            if (!context.Players.Any(p => p.Id == request.PlayerId))
-            {
-                return NotFound();
-            }
-            if (context.UsersPlayer.Any(p => p.UserId == authenticatedUserId))
-            {
-                return Conflict("This account already has a player association.");
-            }
-            if (context.UsersPlayer.Any(p => p.PlayerId == request.PlayerId))
-            {
-                return Conflict("This player is already associated with an account.");
-            }
+            return WritePlayerAssociation(accountId, context =>
+                context.Players.SingleOrDefault(player => player.Id == request.PlayerId), false);
+        }
 
-            var userPlayer = new UsersPlayer
+        [HttpGet("ClaimablePlayers")]
+        [Authorize]
+        public IActionResult ClaimablePlayers([FromQuery] string search)
+        {
+            if (!LeagueAccess.TryGetAccountId(User, out var accountId)) return Forbid();
+            var term = search?.Trim() ?? "";
+            if (term.Length > 200) return BadRequest();
+            using var context = new DataContext();
+            if (context.UsersPlayer.Any(link => link.UserId == accountId)) return Conflict("This account already has a player profile.");
+            if (term.Length < 2) return Ok(new { players = Array.Empty<object>(), claimedProfiles = Array.Empty<object>(), claimedExactMatch = false });
+            var matches = Services.ProfileSearch.Match(context, term);
+            var available = Services.ProfileSearch.Results(context, matches.Where(player =>
+                !context.UsersPlayer.Any(link => link.PlayerId == player.Id))).ToList();
+            var exactName = System.Text.RegularExpressions.Regex.Replace(term, @"\s+", " ").ToUpperInvariant();
+            var recoveryAccounts = Services.RecoveryEligibility.Accounts(context);
+            var claimedProfiles = term.Contains(' ') ? Services.ProfileSearch.Results(context, matches.Where(player =>
+                (player.FirstName + " " + player.LastName).ToUpper() == exactName &&
+                recoveryAccounts.Any(link => link.PlayerId == player.Id))).ToArray() : Array.Empty<Services.ProfileSearch.ProfileMatch>();
+            return Ok(new { players = available, claimedProfiles, claimedExactMatch = claimedProfiles.Length > 0 });
+        }
+
+        [HttpPost("CreateAndClaimPlayer")]
+        [SameOrigin]
+        [Authorize]
+        public IActionResult CreateAndClaimPlayer([FromBody] Player input)
+        {
+            if (!LeagueAccess.TryGetAccountId(User, out var accountId)) return Forbid();
+            var first = input?.FirstName?.Trim();
+            var last = input?.LastName?.Trim();
+            if (string.IsNullOrWhiteSpace(first) || string.IsNullOrWhiteSpace(last) ||
+                first.Length > 100 || last.Length > 100 || input.Gender is not ("Male" or "Female"))
+                return BadRequest("Enter a first name, last name and supported gender classification.");
+            return WritePlayerAssociation(accountId, _ => new Player {
+                FirstName = first, LastName = last, Gender = input.Gender, IsMale = input.Gender == "Male", IsSub = null
+            }, true);
+        }
+
+        private IActionResult WritePlayerAssociation(int accountId, Func<DataContext, Player> resolvePlayer, bool create)
+        {
+            try
             {
-                UserId = request.UserId,
-                PlayerId = request.PlayerId
-            };
+                using var context = new DataContext();
+                using var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
+                if (context.UsersPlayer.Any(link => link.UserId == accountId)) return Conflict("This account already has a player association.");
+                var player = resolvePlayer(context);
+                if (player == null) return NotFound();
+                if (create)
+                {
+                    // Distinct players can share a name. The account link is the ownership check.
+                    context.Players.Add(player);
+                    context.SaveChanges();
+                }
+                else if (context.UsersPlayer.Any(link => link.PlayerId == player.Id))
+                    return Conflict("This player is already associated with an account.");
 
-            context.UsersPlayer.Add(userPlayer);
-            context.SaveChanges();
-
-            return Ok(new { message = "Player claimed successfully" });
+                context.UsersPlayer.Add(new UsersPlayer { UserId = accountId, PlayerId = player.Id });
+                context.SaveChanges();
+                transaction.Commit();
+                return Ok(new { message = "Player claimed successfully", playerId = player.Id });
+            }
+            catch (Microsoft.Data.SqlClient.SqlException error) when (error.Number == 1205)
+            {
+                return Conflict("The profile association changed. Refresh the search and try again.");
+            }
+            catch (DbUpdateException error) when (error.InnerException is Microsoft.Data.SqlClient.SqlException sql &&
+                (sql.Number == 1205 || sql.Number == 2601 || sql.Number == 2627))
+            {
+                return Conflict("The profile association changed. Refresh the search and try again.");
+            }
         }
 
         [HttpGet("GetPlayerByFirstLastName")]

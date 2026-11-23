@@ -12,11 +12,8 @@ test('browser registration, player creation, automatic claim, login and logout',
     const registered = db('snapshot', identity);
     expect(registered.users).toEqual([{ UserId: userId, UserRoleId: 3 }]);
     records.capture(identity, registered);
-    const pickerLink = page.getByRole('button', { name: 'Search or Add New Player To Claim', exact: true });
-    const createPlayer = page.getByRole('button', { name: 'Create New Player', exact: true });
-    await expect(pickerLink.or(createPlayer)).toBeVisible();
-    await dismissNotices(page);
-    if (await pickerLink.isVisible()) await pickerLink.click();
+    const createPlayer = page.getByRole('button', { name: 'Create New Player Profile', exact: true });
+    await expect(createPlayer).toBeVisible();
     await createPlayer.click();
     const form = page.locator('form').filter({ has: page.locator('input[formControlName="firstName"]') });
     await form.locator('input[formControlName="firstName"]').fill(identity.firstName);
@@ -24,17 +21,15 @@ test('browser registration, player creation, automatic claim, login and logout',
     await form.locator('mat-select[formControlName="gender"]').click();
     await page.getByRole('option', { name: 'Male', exact: true }).click();
     await dismissNotices(page);
-    const [created, claimed, signedOut] = await Promise.all([
-      page.waitForResponse(r => new URL(r.url()).pathname.endsWith('/AddPlayerWithoutLeague') && r.request().method() === 'POST'),
-      page.waitForResponse(r => new URL(r.url()).pathname === '/api/ScrambleData/claimPlayer' && r.request().method() === 'POST'),
+    const [created, signedOut] = await Promise.all([
+      page.waitForResponse(r => new URL(r.url()).pathname.endsWith('/CreateAndClaimPlayer') && r.request().method() === 'POST'),
       page.waitForResponse(r => new URL(r.url()).pathname === '/api/Login/logout' && r.request().method() === 'POST'),
-      form.getByRole('button', { name: 'Save Player', exact: true }).click()
+      page.getByRole('button', { name: 'Create Player', exact: true }).click()
     ]);
-    expect(created.url()).toBe(BASE_URL + '/api/ScrambleData/AddPlayerWithoutLeague');
+    expect(created.url()).toBe(BASE_URL + '/api/ScrambleData/CreateAndClaimPlayer');
     expect(created.status()).toBe(200);
-    expect(claimed.status()).toBe(200);
     expect(signedOut.status()).toBe(200);
-    const playerId = (await created.json()).id;
+    const playerId = (await created.json()).playerId;
     const snapshot = db('snapshot', identity);
     expect(snapshot.players).toEqual([{ Id: playerId }]);
     expect(snapshot.links).toHaveLength(1);

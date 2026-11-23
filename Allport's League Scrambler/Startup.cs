@@ -21,9 +21,13 @@ namespace Allport_s_League_Scrambler
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, IWebHostEnvironment environment)
         {
-            DotEnv.Load(options: new DotEnvOptions(probeForEnv: true, probeLevelsToSearch: 6));
+            var localSettings = System.IO.Path.Combine(environment.ContentRootPath, ".env");
+            if (System.IO.File.Exists(localSettings))
+                DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { localSettings }, overwriteExistingVars: false));
+            else
+                DotEnv.Load(options: new DotEnvOptions(probeForEnv: true, probeLevelsToSearch: 6, overwriteExistingVars: false));
 
             Configuration = configuration;
         }
@@ -75,23 +79,18 @@ namespace Allport_s_League_Scrambler
             });
 
             services.AddHttpContextAccessor();
-            string smtpServer = Environment.GetEnvironmentVariable("SMTP_SERVER");
-            string smtpPort = Environment.GetEnvironmentVariable("SMTP_PORT");
-            string smtpUsername = Environment.GetEnvironmentVariable("SMTP_USERNAME");
-            string smtpPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
-
-            services.AddSingleton(new SmtpClient(Environment.GetEnvironmentVariable("SMTP_SERVER"),
-                                                 int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587"))
-            {
-                Credentials = new System.Net.NetworkCredential(
-                    Environment.GetEnvironmentVariable("SMTP_USERNAME"),
-                    Environment.GetEnvironmentVariable("SMTP_PASSWORD")),
-                EnableSsl = true
-            });
+            services.AddSingleton(sp => Services.TransactionalMail.ConfigureClient(
+                sp.GetRequiredService<IWebHostEnvironment>().EnvironmentName));
+            services.AddSingleton<Services.TransactionalMail>();
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, SmtpClient mail, Microsoft.Extensions.Logging.ILogger<Startup> logger)
         {
+            var credential = mail.Credentials as System.Net.NetworkCredential;
+            Microsoft.Extensions.Logging.LoggerExtensions.LogInformation(logger,
+                "Transactional mail transport: {Mode}; host configured: {HostConfigured}; port: {Port}; STARTTLS: {StartTls}; authentication configured: {Authenticated}.",
+                mail.DeliveryMethod, !string.IsNullOrWhiteSpace(mail.Host), mail.Port, mail.EnableSsl,
+                !string.IsNullOrWhiteSpace(credential?.UserName) && !string.IsNullOrWhiteSpace(credential.Password));
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -130,12 +129,18 @@ namespace Allport_s_League_Scrambler
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapControllers();
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");
                 endpoints.MapRazorPages();
             });
 
+            app.Map("/api", fallback => fallback.Run(context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status404NotFound;
+                return System.Threading.Tasks.Task.CompletedTask;
+            }));
             app.UseSpa(spa =>
             {
                 spa.Options.SourcePath = System.IO.Path.Combine(env.ContentRootPath, "ClientApp");

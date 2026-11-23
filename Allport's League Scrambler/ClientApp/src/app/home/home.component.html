@@ -60,16 +60,17 @@
         style="font-size: 1rem; padding: 0.25rem 1rem; background-color: var(--hub-surface, white); color: var(--hub-link, blue); border-radius: 4px; cursor: pointer; margin-top: 1rem;">
         Forgot Password
       </button>
+      <p><a routerLink="/account-recovery">Recover an account without access to its email</a></p>
     }
     @if (showRegistrationForm) {
-      <div style="background: #f4f4f4; padding: 20px; border: 1px solid #ccc; border-radius: 4px; width: 100%; max-width: 400px; text-align: center; margin: 10px;">
+      <div class="login-form registration-form">
         <h2>Register</h2>
         <form [formGroup]="registerForm" (ngSubmit)="register()" novalidate>
           <div>
             <label for="registerEmail">Email:</label>
             <input type="email" id="registerEmail" formControlName="registerEmail" placeholder="Enter your email">
             @if (registerForm.get('registerEmail').hasError('email') && registerForm.get('registerEmail').touched) {
-              <div style="color: red">
+              <div class="error-message">
                 Invalid email format
               </div>
             }
@@ -82,7 +83,7 @@
             <label for="confirmPassword">Confirm Password:</label>
             <input type="password" id="confirmPassword" formControlName="confirmPassword" placeholder="Confirm your password">
             @if (registerForm.hasError('passwordMismatch') && registerForm.get('confirmPassword').touched) {
-              <div style="color: red">
+              <div class="error-message">
                 Passwords do not match
               </div>
             }
@@ -96,142 +97,92 @@
             <input type="text" id="registerLastName" formControlName="registerLastName" placeholder="Enter your last name">
           </div>
           <br />
-          <button [disabled]="!registerForm.valid || registerForm.hasError('passwordMismatch')" style="margin-right: 10px;">Submit</button>
-          <button (click)="cancel()">Cancel</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="registrationPending || !registerForm.valid || registerForm.hasError('passwordMismatch')" style="margin-right: 10px;">Submit</button>
+          <button mat-button type="button" [disabled]="registrationPending" (click)="cancel()">Cancel</button>
         </form>
       </div>
     }
 
   </div>
 
-  @if (showPlayerClaimModal) {
-    <div class="modal">
-      <div class="modal-content">
-        <h2>Claim a Player</h2>
-        <!-- Search Player Section -->
-        @if (!showAddPlayerForm) {
-          <div>
-            <mat-form-field appearance="fill" style="width: 100%;">
-              <mat-label>Search for a Player</mat-label>
-              <input matInput
-                placeholder="Start typing to search"
-                [(ngModel)]="searchTerm"
-                (input)="filterPlayers()" />
-                @if (filteredPlayers.length > 0) {
-                  <div class="typeahead-options">
-                    @for (player of filteredPlayers; track player) {
-                      <mat-option
-                        (click)="selectPlayer(player)">
-                        {{ player.firstName }} {{ player.lastName }}
-                      </mat-option>
-                    }
-                  </div>
-                }
-              </mat-form-field>
-              <!-- Action Buttons -->
-              <div class="action-buttons" style="display: flex; justify-content: space-between; margin-top: 16px;">
-                <button mat-button color="primary" (click)="showAddPlayerForm = true">Create New Player</button>
-                <button mat-button color="warn" (click)="closeModal()">Close</button>
-              </div>
-            </div>
-          }
-          <!-- Add New Player Section -->
-          @if (showAddPlayerForm) {
-            <div>
-              <h3>Create a New Player</h3>
-              <form [formGroup]="addPlayerForm" (ngSubmit)="addPlayer()">
-                <!-- First Name -->
-                <mat-form-field appearance="fill" style="width: 100%;">
-                  <mat-label>First Name</mat-label>
-                  <input matInput formControlName="firstName" required />
-                </mat-form-field>
-                <!-- Last Name -->
-                <mat-form-field appearance="fill" style="width: 100%;">
-                  <mat-label>Last Name</mat-label>
-                  <input matInput formControlName="lastName" required />
-                </mat-form-field>
-                <!-- Gender -->
-                <mat-form-field appearance="fill" style="width: 100%;">
-                  <mat-label>Gender</mat-label>
-                  <mat-select formControlName="gender" required>
-                    <mat-option value="Male">Male</mat-option>
-                    <mat-option value="Female">Female</mat-option>
-                  </mat-select>
-                </mat-form-field>
-                <!-- Is Sub -->
-                <div style="margin-top: 16px;">
-                  <mat-checkbox formControlName="isSub">Is Sub</mat-checkbox>
-                </div>
-                <!-- Action Buttons -->
-                <div style="margin-top: 16px; display: flex; justify-content: space-between;">
-                  <button mat-button type="submit" color="primary">Save Player</button>
-                  <button mat-button
-                    type="button"
-                    color="warn"
-                    (click)="showAddPlayerForm = false">
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+<ng-template #claimProfileDialog>
+  <div class="claim-dialog-layout" [style.max-height]="claimViewportLimit()">
+    <header>
+      <h2 mat-dialog-title>{{ claimStep === 'create' ? 'Create a New Player Profile' : claimStep === 'recover' ? 'Account Recovery' : 'Find Your Player Profile' }}</h2>
+      @if (claimStep === 'search') {
+        <div class="claim-dialog-search">
+          <label class="claim-search-label" for="claim-player-name">Player name</label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="claim-search">
+            <input id="claim-player-name" matInput cdkFocusInitial [ngModel]="searchTerm" (ngModelChange)="queueClaimSearch($event)"
+              [disabled]="claimPending" maxlength="200" autocomplete="off">
+          </mat-form-field>
+        </div>
+      }
+    </header>
+    <mat-dialog-content class="claim-profile-content">
+      @if (claimError) { <p class="claim-error" role="alert">{{ claimError }}</p> }
+      @if (claimStep === 'search') {
+        @if (claimedExactMatch) {
+          <section class="claim-recovery">
+            <p>A profile with this name is already linked to an account.</p>
+            @for (profile of claimedProfiles; track profile.id) {
+              <button mat-stroked-button type="button" [disabled]="claimPending" (click)="openRecovery(profile)">
+                Recover Existing Account <span>({{profile.firstName}} {{profile.lastName}}@if (profile.leagues?.length) { · {{profile.leagues.join(', ')}}})</span>
+              </button>
+            } @empty {
+              <button mat-stroked-button type="button" [disabled]="claimPending" (click)="openRecovery(null)">Recover Existing Account</button>
+            }
+          </section>
+        }
+        <div aria-live="polite">
+          @if (searchLoading) {
+            <p class="claim-status">Searching player profiles...</p>
+          } @else if (claimResults.length) {
+            <h3 class="claim-status">Available profiles</h3>
+          } @else if (!claimedExactMatch && !claimError) {
+            <p class="claim-status">No player profiles match your search.</p>
           }
         </div>
-      </div>
+        @if (claimResults.length) {
+          <div class="claim-results" role="group" aria-label="Available player profiles">
+            @for (player of claimResults; track player.id) {
+              <button mat-stroked-button type="button" [attr.aria-pressed]="selectedPlayer?.id === player.id"
+                  [disabled]="claimPending" (click)="selectedPlayer = player">
+                {{player.firstName}} {{player.lastName}}@if (player.leagues?.length) { · {{player.leagues.join(', ')}}}
+              </button>
+            }
+          </div>
+        }
+    } @else if (claimStep === 'create') {
+      <form id="create-profile-form" class="claim-form" [formGroup]="addPlayerForm" (ngSubmit)="addPlayer()">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>First Name</mat-label><input matInput formControlName="firstName" maxlength="100" required></mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>Last Name</mat-label><input matInput formControlName="lastName" maxlength="100" required></mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Gender</mat-label>
+          <mat-select formControlName="gender" aria-describedby="registration-gender-help" required>
+            <mat-option value="Male">Male</mat-option><mat-option value="Female">Female</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <p id="registration-gender-help">Gender classification is used for league rankings and team balancing in the Scrambler.</p>
+      </form>
+    } @else {
+      <p>If you can still access your account email, use Forgot Password to regain access.</p>
+      <p><a routerLink="/account-recovery" [state]="{ recoveryProfile: recoveryProfile }" mat-dialog-close>Request account recovery if you cannot access your previous email</a></p>
     }
-
-
-    @if (showSpecificPlayerClaimModal) {
-      <div class="modal">
-        <div class="modal-content">
-          <h2>We Found Matching Players</h2>
-          @if (filteredReturnedPlayers.length > 0) {
-            <div>
-              <p>Select a player to claim or choose to proceed without claiming:</p>
-              <ul>
-                @for (player of filteredReturnedPlayers; track player) {
-                  <li>
-                    {{ player.firstName }} {{ player.lastName }}
-                    <button style="background-color: lightblue;" mat-button (click)="confirmClaimPlayer(player)">Claim</button>
-                  </li>
-                }
-              </ul>
-            </div>
-          }
-          @if (filteredReturnedPlayers.length === 0) {
-            <div>
-              <p>No matching players were found.</p>
-            </div>
-          }
-          <button mat-button
-            color="warn"
-            (click)="openClaimModal()"
-            style="white-space: normal; text-align: center; word-wrap: break-word; max-width: 100%; padding: 8px; background-color: lightgrey;"
-            >
-            Search or Add New Player To Claim
-          </button>
-        </div>
-      </div>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="claim-dialog-actions">
+    @if (claimStep === 'search') {
+      <button class="claim-create-action" mat-stroked-button type="button" [disabled]="claimPending" (click)="setClaimStep('create')">Create New Player Profile</button>
+      <button mat-button mat-dialog-close type="button" [disabled]="claimPending">Close</button>
+      <button mat-raised-button color="primary" type="button" [disabled]="claimPending || !selectedPlayer" (click)="claimSelectedPlayer()">Claim Selected Player</button>
+    } @else {
+      <button mat-button type="button" [disabled]="claimPending" (click)="setClaimStep('search')">Back</button>
+      @if (claimStep === 'create') {
+        <button mat-raised-button color="primary" type="submit" form="create-profile-form" [disabled]="claimPending || addPlayerForm.invalid">Create Player</button>
+      } @else {
+        <button mat-raised-button color="primary" type="button" (click)="openClaimPasswordReset()">Forgot Password</button>
+      }
     }
-
-    <!-- Inline Confirm Claim Dialog -->
-    <ng-template #confirmClaimDialog let-data>
-      <h2 mat-dialog-title>Confirm Player Claim</h2>
-      <mat-dialog-content>
-        <p>Do you want to claim {{ data.player.firstName }} {{ data.player.lastName }}?</p>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button color="warn" (click)="onCancelClaim()">Cancel</button>
-        <button mat-raised-button color="primary" (click)="onConfirmClaim()">Confirm</button>
-      </mat-dialog-actions>
-    </ng-template>
-
-    <ng-template #confirmationDialog let-data>
-      <h2 mat-dialog-title>Confirm Player Claim</h2>
-      <mat-dialog-content>
-        <p>{{ data.message }}</p>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button color="warn" (click)="onCancel()">Cancel</button>
-        <button mat-raised-button color="primary" (click)="onConfirm()">Confirm</button>
-      </mat-dialog-actions>
-    </ng-template>
+  </mat-dialog-actions>
+  </div>
+</ng-template>

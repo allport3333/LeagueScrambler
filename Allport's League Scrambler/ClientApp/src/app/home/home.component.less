@@ -1,4 +1,4 @@
-﻿.center {
+.center {
     display: block;
     margin-left: auto;
     margin-right: auto;
@@ -134,3 +134,27 @@
     text-decoration: underline;
 }
 .login-form :focus-visible { outline: 2px solid #374994; outline-offset: 2px; }
+
+.registration-form { margin: 10px 0; }
+.registration-form input { background: var(--hub-surface, #fff); color: var(--hub-text, #212529); }
+.registration-form input::placeholder { color: var(--hub-muted, #687687); }
+.claim-search-label { display: block; margin: 2px 0 4px; font-size: 14px; }
+.claim-search { display: block; width: 100%; }
+.claim-status { margin: 8px 0 4px; font-size: 14px; color: var(--hub-muted, #526579); }
+.claim-results { display: grid; gap: 4px; margin-bottom: 8px; }
+.claim-results button { min-height: 40px; height: auto; justify-content: flex-start; text-align: left; white-space: normal; overflow-wrap: anywhere; padding: 5px 10px; }
+.claim-results button[aria-pressed='true'] { background: var(--hub-header, #edf3fa); border-color: var(--hub-link, #315a97); font-weight: 600; }
+.claim-recovery { padding: 8px 10px; margin-top: 6px; border: 1px solid var(--hub-border, #d8e0ed); border-radius: 4px; background: var(--hub-section, #f5f8fc); }
+.claim-recovery p { margin: 0 0 6px; }
+.claim-profile-content button:focus-visible { outline: 2px solid var(--hub-focus, #3f51b5); }
+.claim-form { display: grid; gap: 8px; padding-top: 8px; }
+.claim-form p { color: var(--hub-muted, #526579); }
+.claim-error { color: var(--hub-loss-text, #861d2c); }
+
+.claim-dialog-layout { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: 90dvh; overflow: hidden; }
+.claim-dialog-layout .claim-profile-content { max-height: none; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.claim-dialog-search { padding: 0 24px 8px; }
+.claim-dialog-actions { gap: 6px; border-top: 1px solid var(--hub-border, #d8e0ed); }
+.claim-dialog-actions button { margin: 0; }
+.claim-create-action { flex: 1 0 100%; }
+.claim-recovery button { white-space: normal; height: auto; min-height: 36px; margin-bottom: 4px; }

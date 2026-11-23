@@ -36,11 +36,11 @@ namespace Allport_s_League_Scrambler.Security
                 return;
             }
 
-            string role;
+            AccountSession account;
             try
             {
                 var lookup = validation.HttpContext.RequestServices.GetRequiredService<AccountRoleLookup>();
-                role = await lookup(userId, aborted);
+                account = await lookup(userId, aborted);
             }
             catch (OperationCanceledException) when (aborted.IsCancellationRequested)
             {
@@ -49,7 +49,8 @@ namespace Allport_s_League_Scrambler.Security
                 return;
             }
 
-            if (aborted.IsCancellationRequested || role == null)
+            if (aborted.IsCancellationRequested || account == null ||
+                (validation.Principal.FindFirst("SessionVersion")?.Value ?? "0") != account.Version.ToString(System.Globalization.CultureInfo.InvariantCulture))
             {
                 validation.RejectPrincipal();
                 return;
@@ -57,22 +58,22 @@ namespace Allport_s_League_Scrambler.Security
 
             var identity = (ClaimsIdentity)validation.Principal.Identity;
             var roles = identity.FindAll(identity.RoleClaimType).ToArray();
-            if (roles.Length == 1 && roles[0].Value == role)
+            if (roles.Length == 1 && roles[0].Value == account.Role)
                 return;
 
             var refreshed = identity.Clone();
             foreach (var oldRole in refreshed.FindAll(refreshed.RoleClaimType).ToArray())
                 refreshed.RemoveClaim(oldRole);
-            refreshed.AddClaim(new Claim(refreshed.RoleClaimType, role));
+            refreshed.AddClaim(new Claim(refreshed.RoleClaimType, account.Role));
             validation.ReplacePrincipal(new ClaimsPrincipal(refreshed));
         }
 
-        internal static async Task<string> ReadAccountRole(int userId, CancellationToken cancellation)
+        internal static async Task<AccountSession> ReadAccountRole(int userId, CancellationToken cancellation)
         {
             await using var context = new DataContext();
             var account = await context.Users.AsNoTracking().Where(user => user.UserId == userId)
-                .Select(user => new { user.UserRoleId }).SingleOrDefaultAsync(cancellation);
-            return account == null ? null : AccountRole(account.UserRoleId);
+                .Select(user => new { user.UserRoleId, user.SessionVersion }).SingleOrDefaultAsync(cancellation);
+            return account == null ? null : new AccountSession(AccountRole(account.UserRoleId), account.SessionVersion);
         }
 
         public static bool CanManage(ClaimsPrincipal principal, DataContext context, int leagueId)
@@ -97,5 +98,6 @@ namespace Allport_s_League_Scrambler.Security
         }
     }
 
-    public delegate Task<string> AccountRoleLookup(int userId, CancellationToken cancellation);
+    public sealed record AccountSession(string Role, int Version);
+    public delegate Task<AccountSession> AccountRoleLookup(int userId, CancellationToken cancellation);
 }

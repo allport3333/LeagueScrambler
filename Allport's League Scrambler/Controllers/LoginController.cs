@@ -38,15 +38,17 @@ namespace Allport_s_League_Scrambler.Controllers
     {
         private readonly IConfiguration _config;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly SmtpClient _smtpClient;
+        private readonly TransactionalMail _mail;
         private readonly IMemoryCache _requestCache;
+        private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _environment;
 
-        public LoginController(IConfiguration config, IHttpContextAccessor httpContextAccessor, SmtpClient smtpClient, IMemoryCache requestCache)
+        public LoginController(IConfiguration config, IHttpContextAccessor httpContextAccessor, TransactionalMail mail, IMemoryCache requestCache, Microsoft.AspNetCore.Hosting.IWebHostEnvironment environment = null)
         {
             _config = config;
             _httpContextAccessor = httpContextAccessor;
-            _smtpClient = smtpClient; // Injected SMTP Client
+            _mail = mail;
             _requestCache = requestCache;
+            _environment = environment;
         }
 
         // Simple in-process limits for this legacy single-server application.
@@ -135,17 +137,29 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             if (ModelState.IsValid)
             {
-                var _context = new DataContext();
-
-                // Check if the username or email is already taken
-                if (await _context.Users.AnyAsync(u => u.Email == registrationModel.Email))
-                {
-                    return BadRequest(new { message = "Email already in use." });
-                }
+                await using var context = new DataContext();
                 registrationModel.UserRoleId = 3;
-                var user = registrationModel.ToUser(); // Convert RegistrationModel to User
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync(); // Save changes to generate the UserId
+                var user = registrationModel.ToUser();
+
+                try
+                {
+                    await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                    if (await context.Users.AnyAsync(existing => existing.Email == registrationModel.Email))
+                        return BadRequest(new { message = "Email already in use." });
+
+                    context.Users.Add(user);
+                    await context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch (Microsoft.Data.SqlClient.SqlException error) when (error.Number == 1205)
+                {
+                    return Conflict(new { message = "Registration could not be completed. Please try again." });
+                }
+                catch (DbUpdateException error) when (error.InnerException is Microsoft.Data.SqlClient.SqlException sql &&
+                    (sql.Number == 1205 || sql.Number == 2601 || sql.Number == 2627))
+                {
+                    return Conflict(new { message = "Registration could not be completed. Please try again." });
+                }
 
                 // The registration page immediately offers to claim or create a player.
                 // Give this newly registered user an authenticated Player session so
@@ -486,12 +500,12 @@ namespace Allport_s_League_Scrambler.Controllers
 
 
                 userInfo.LastLogin = DateTime.Now;
-                _context.Users.Update(userInfo);
                 await _context.SaveChangesAsync();
 
                 var claims = new List<Claim>
                  {
                      new Claim(ClaimTypes.NameIdentifier, userInfo.UserId.ToString()), // Unique user identifier
+                     new Claim("SessionVersion", userInfo.SessionVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                      new Claim(ClaimTypes.Email, userInfo.Email), // User's email address
                      new Claim("FirstName", userInfo.FirstName), // User's first name
                      new Claim("LastName", userInfo.LastName), // User's last name
@@ -593,55 +607,28 @@ namespace Allport_s_League_Scrambler.Controllers
                 .FirstOrDefaultAsync();
             if (userData == null)
                 return Unauthorized();
-            var userLeagues = new List<LeagueType>();
-            if (userData.UserRoleId == 1)
+            var leagues = _context.Leagues.AsNoTracking();
+            switch (userData.UserRoleId)
             {
-                userLeagues = _context.Leagues.ToList();
-            }
-            else if (userData.UserRoleId == 3)
-            {
-                var player = await _context.UsersPlayer
-                    .Where(x => x.UserId == userData.UserId)
-                    .FirstOrDefaultAsync();
-
-                if (player == null)
-                {
-                    throw new Exception("Player not found for the given UserId.");
-                }
-
-                var playerLeagues = await _context.PlayersLeagues
-                    .Where(u => u.PlayerID == player.PlayerId)
-                    .ToListAsync();
-
-
-                foreach (var playerLeague in playerLeagues)
-                {
-                    var league = await _context.Leagues
-                        .FirstOrDefaultAsync(l => l.ID == playerLeague.LeagueID);
-
-                    if (league != null)
-                    {
-                        userLeagues.Add(league);
-                    }
-                }
-            }
-            else if (userData.UserRoleId == 2)
-            {
-                userLeagues = await _context.Leagues.Where(league => _context.UserLeagues.Any(
-                    link => link.UserId == userId && link.LeagueTypeId == league.ID)).ToListAsync();
-            }
-            else
-            {
-                return NotFound(new { message = "No linked leagues found for this user." });
+                case 1:
+                    break;
+                case 2:
+                    leagues = leagues.Where(league => _context.UserLeagues.Any(
+                        link => link.UserId == userId && link.LeagueTypeId == league.ID));
+                    break;
+                case 3:
+                    // Registration and claiming are separate. An unlinked account has
+                    // no league memberships until an authorized profile link exists.
+                    leagues = leagues.Where(league => _context.UsersPlayer.Any(link =>
+                        link.UserId == userId && _context.Players.Any(player => player.Id == link.PlayerId) &&
+                        _context.PlayersLeagues.Any(membership =>
+                            membership.PlayerID == link.PlayerId && membership.LeagueID == league.ID)));
+                    break;
+                default:
+                    return NotFound(new { message = "No linked leagues found for this user." });
             }
 
-            if (userData.UserRoleId == 3 && userLeagues.Count == 0)
-            {
-                return NotFound(new { message = "No linked leagues found for this user." });
-            }
-
-            userLeagues = userLeagues.OrderByDescending(x => x.ID).ToList();
-
+            var userLeagues = await leagues.OrderByDescending(league => league.ID).ToListAsync();
             return Ok(userLeagues);
         }
 
@@ -725,7 +712,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 // Consume only the token that was read. Concurrent submissions or
                 // a newly issued recovery link must not overwrite one another.
                 var consumed = await _context.Database.ExecuteSqlRawAsync(
-                    "UPDATE [dbo].[User] SET [PasswordHash] = @hash, [PasswordSalt] = @salt, [ResetToken] = NULL " +
+                    "UPDATE [dbo].[User] SET [PasswordHash] = @hash, [PasswordSalt] = @salt, [ResetToken] = NULL, [SessionVersion] = [SessionVersion] + 1 " +
                     "WHERE [UserId] = @userId AND [ResetToken] = @token",
                     new Microsoft.Data.SqlClient.SqlParameter("@hash", System.Data.SqlDbType.VarBinary, -1) { Value = user.PasswordHash },
                     new Microsoft.Data.SqlClient.SqlParameter("@salt", System.Data.SqlDbType.VarBinary, -1) { Value = user.PasswordSalt },
@@ -835,8 +822,9 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost("forgotpassword")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Email) ||
-                request.Email.Length > 320)
+            var email = request?.Email?.Trim();
+            if (string.IsNullOrWhiteSpace(email) || email.Length > 320 ||
+                !MailAddress.TryCreate(email, out var mailbox) || mailbox.Address != email)
             {
                 return BadRequest("Enter a valid email address.");
             }
@@ -850,7 +838,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             // Limit email flooding to an address without revealing whether
             // that address exists. The response is identical in both cases.
-            var cooldown = GetRecoveryCooldown(request.Email);
+            var cooldown = GetRecoveryCooldown(email);
             var requestedAt = DateTimeOffset.UtcNow;
             lock (cooldown)
             {
@@ -863,29 +851,29 @@ namespace Allport_s_League_Scrambler.Controllers
 
             try
             {
-                var userExists = await CheckEmailExistsAsync(request.Email.Trim());
+                var userExists = await CheckEmailExistsAsync(email);
                 if (userExists != null)
                 {
-                    string resetToken = await GenerateResetTokenAsync(request.Email);
+                    string resetToken = await GenerateResetTokenAsync(email);
                     string previousResetToken = userExists.ResetToken;
-                    userExists.ResetToken = resetToken;
 
                     // A user must never receive a link before it is stored.
                     using (var context = new DataContext())
                     {
-                        context.Users.Update(userExists);
-                        await context.SaveChangesAsync();
+                        var issued = await context.Users.Where(user => user.UserId == userExists.UserId &&
+                            user.SessionVersion == userExists.SessionVersion && user.ResetToken == previousResetToken)
+                            .ExecuteUpdateAsync(update => update.SetProperty(user => user.ResetToken, resetToken));
+                        if (issued == 0) return Ok(new { message = RecoveryAcceptedMessage });
                     }
 
                     try
                     {
                         await SendPasswordResetEmailAsync(userExists.Email, resetToken);
                     }
-                    catch (Exception sendError)
+                    catch (Exception)
                     {
                         // Avoid leaking account existence through delivery
                         // errors, and restore an earlier link if delivery failed.
-                        LogRecoveryFailure("delivery", sendError);
                         try
                         {
                             using (var rollbackContext = new DataContext())
@@ -971,10 +959,9 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             using (var mail = PasswordResetEmail.Create(email, resetToken,
                 Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_PUBLIC_BASE_URL"),
-                Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production", ResetTokenLifetime))
+                _environment?.EnvironmentName ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production", ResetTokenLifetime))
             {
-                await _smtpClient.SendMailAsync(mail);
-                Console.WriteLine("Password reset email accepted by the configured mail transport.");
+                await _mail.Send(mail, "password-reset", _httpContextAccessor.HttpContext?.TraceIdentifier);
             }
         }
     }

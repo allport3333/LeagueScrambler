@@ -1,4 +1,6 @@
-import { Component, OnInit, HostListener, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
+import { signal } from '@angular/core';
+import { ProfileMatch } from '../data-models/profile-match';
+import { Component, OnInit, DestroyRef, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
 import { LoginService } from '../services/login.service';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -10,7 +12,8 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { ForgotPasswordDialogComponent } from '../forgot-password-dialog/forgot-password-dialog.component';
 import { AbstractControl, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
-import { LeagueService } from '../services/league.service';
+import { Subscription } from 'rxjs';
+import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 @Component({
     selector: 'app-home',
@@ -20,8 +23,7 @@ import { PlayerService } from '../services/player.service';
     standalone: false
 })
 export class HomeComponent implements OnInit {
-    @ViewChild('confirmClaimDialog', { static: true }) confirmClaimDialog!: TemplateRef<any>;
-    @ViewChild('confirmationDialog', { static: true }) confirmationDialog!: TemplateRef<any>;
+    @ViewChild('claimProfileDialog', { static: true }) claimProfileDialog: TemplateRef<unknown>;
     loginEmail: string = '';
     loginPassword: string = '';
     loginError = '';
@@ -38,18 +40,25 @@ export class HomeComponent implements OnInit {
     isLoggedIn: boolean = false;
     registerForm: UntypedFormGroup; 
     dialogRef: MatDialogRef<ForgotPasswordDialogComponent>; 
-    claimDialogRef!: MatDialogRef<any>;
-    showPlayerClaimModal = false;
-    showSpecificPlayerClaimModal = false;
-    players = [];
-    filteredReturnedPlayers = [];
-    filteredPlayers = [];
+    readonly claimViewportLimit = signal<string | null>(null);
+    private claimDialogRef: MatDialogRef<unknown>;
+    private claimSearch: Subscription;
+    private claimSearchTimer: ReturnType<typeof setTimeout>;
     searchTerm = '';
-    selectedPlayer: any;
-    showAddPlayerForm = false;
+    claimResults: ProfileMatch[] = [];
+    claimedProfiles: ProfileMatch[] = [];
+    recoveryProfile: ProfileMatch | null = null;
+    selectedPlayer: ProfileMatch;
+    claimStep: 'search' | 'create' | 'recover' = 'search';
+    claimedExactMatch = false;
+    searchLoading = false;
+    claimError = '';
+    claimPending = false;
+    registrationPending = false;
     isEmailValid: boolean = true;
 
-    constructor(private loginService: LoginService, private leagueService: LeagueService, public playerService: PlayerService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: UntypedFormBuilder) {
+    constructor(private loginService: LoginService, public playerService: PlayerService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: UntypedFormBuilder, destroyRef: DestroyRef) {
+        destroyRef.onDestroy(() => { this.cancelClaimSearch(); this.claimDialogRef?.close(); });
         this.route.queryParams.subscribe((queryParams) => {
             if (queryParams.toggleLoginForm === 'true') {
                 this.toggleLoginForm();
@@ -124,40 +133,13 @@ export class HomeComponent implements OnInit {
                 this.loginPending = false;
                 this.authService.setLoggedIn(true);
 
-                // Fetch user's role
-                this.loginService.getUsersRole().subscribe((roleResult) => {
-                    const userRole = roleResult.role; // Assuming the API returns { role: 'Player' | 'Admin' | 'Manager' }
-
-                    // Fetch user's leagues
-                    this.loginService.getUserLeagues().subscribe((leagues) => {
-                        if (leagues && leagues.length > 0) {
-                            // Select the first league
-                            const firstLeague = leagues[0];
-                            this.leagueService.setSelectedLeague(firstLeague.id);
-
-                            // Navigate based on the role
-                            if (userRole === 'Player') {
-                                // Fetch the player's ID for the user
-                                this.loginService.getUsersPlayer().subscribe((playerData) => {
-                                    if (playerData && playerData.playerId) {
-                                        this.router.navigate(['/']);
-                                    } else {
-                                        console.error('Player ID not found for the user.');
-                                        this.showSnackBar('Player ID not found. Please contact support.', true);
-                                    }
-                                }, error => {
-                                    console.error('Error fetching player data:', error);
-                                    this.showSnackBar('Error fetching player data. Please contact support.', true);
-                                });
-                            } else {
-                                // Navigate to scrambler for Admin or Manager
-                                this.router.navigate(['/scrambler']);
-                            }
-                        } else {
-                            console.error('No leagues available for the user.');
-                            this.showSnackBar('No leagues available. Please contact support.', true);
-                        }
-                    });
+                // Home already handles the unlinked Player state. Navigation loads
+                // the authorized league list as part of the account session.
+                this.loginService.getUsersRole().subscribe({
+                    next: ({ role }) => {
+                        if (role === 'Admin' || role === 'Manager') this.router.navigate(['/scrambler']);
+                    },
+                    error: () => this.showSnackBar('Unable to load account permissions. Please try again.', true)
                 });
             },
             (error) => {
@@ -186,6 +168,7 @@ export class HomeComponent implements OnInit {
     }
 
     register() {
+        if (this.registrationPending || this.claimDialogRef) return;
         if (this.registerForm.invalid) {
             // Form is invalid, show an error message and mark invalid fields as touched
             this.showSnackBar('Please fill in all required fields and make sure the email is valid.', true);
@@ -204,6 +187,7 @@ export class HomeComponent implements OnInit {
 
         // If the control reaches here, the form is valid, and passwords match
         // Proceed with registration
+        this.registrationPending = true;
         this.loginService.register(
             this.registerForm.get('registerEmail').value,
             password,
@@ -212,18 +196,17 @@ export class HomeComponent implements OnInit {
         ).subscribe(
             (response) => {
                 // After a successful registration, show the snackbar.
-                const email = this.registerForm.get('registerEmail').value;
-                const snackbarMessage = `Registration successful for ${email}`;
+                this.registrationPending = false;
                 this.userId = response.userId;
                 this.showLoginForm = true;
                 this.showRegistrationForm = false;
-                this.showSnackBar(snackbarMessage, false); // Show success message
 
-                this.openSpecificPlayerClaimModal();
+                this.openClaimModal(true);
             },
             (error) => {
                 // Handle registration error
-                this.showSnackBar('Registration failed, Email is already in use.', true); // Show fail message
+                this.registrationPending = false;
+                this.showSnackBar('Unable to register. Check your details or use Forgot Password.', true); // Show fail message
             }
         );
     }
@@ -239,195 +222,132 @@ export class HomeComponent implements OnInit {
 
 
     addPlayerForm = this.fb.group({
-        firstName: ['', Validators.required],
-        lastName: ['', Validators.required],
-        gender: ['', Validators.required],
-        isSub: [false] // Default value for the checkbox
+        firstName: ['', [Validators.required, Validators.maxLength(100)]],
+        lastName: ['', [Validators.required, Validators.maxLength(100)]],
+        gender: ['', Validators.required]
     });
 
-    openAddPlayerForm() {
-        this.showAddPlayerForm = true;
-    }
-
-    closeAddPlayerForm() {
-        this.showAddPlayerForm = false;
-    }
-
-    addPlayer() {
-        if (this.addPlayerForm.invalid) {
-            this.showSnackBar('Please fill out all required fields.', true);
-            return;
-        }
-
-        const playerData = this.addPlayerForm.value;
-        this.playerService.addPlayerWithoutLeague(playerData).subscribe(
-            (newPlayer) => {
-                this.showSnackBar(`Player ${newPlayer.firstName} ${newPlayer.lastName} created successfully!`, false);
-                this.filteredPlayers.push(newPlayer); // Add the new player to the dropdown
-                this.selectedPlayer = newPlayer; // Auto-select the new player
-                this.claimPlayer(newPlayer); // Claim the newly created player
-                this.closeAddPlayerForm();
-            },
-            () => {
-                this.showSnackBar('Failed to create player. Try again.', true);
-            }
-        );
-    }
-
-    openSpecificPlayerClaimModal() {
-        const firstName = this.registerForm.get('registerFirstName').value;
-        const lastName = this.registerForm.get('registerLastName').value;
-
-        this.playerService.GetPlayerByFirstLastName(firstName, lastName).subscribe(
-            (players) => {
-                this.players = players || []; // Handle null or empty response
-                this.filteredPlayers = this.players;
-                this.filteredReturnedPlayers = this.players;
-                this.showSpecificPlayerClaimModal = true; // Always show the specific claim modal
-            },
-            (error) => {
-                console.error('Error fetching players:', error);
-                this.showSnackBar('Failed to fetch players. Please try again.', true);
-                this.openClaimModal(); // Fallback to generic claim modal on error
-            }
-        );
-    }
-
-
-
-    confirmClaimPlayer(player: any) {
-        this.selectedPlayer = player;
-
-        this.claimDialogRef = this.dialog.open(this.confirmClaimDialog, {
-            width: '700px',
-            panelClass: 'custom-dialog',  // Apply custom styling
-            data: { player: player }
-        });
-
-        this.claimDialogRef.afterClosed().subscribe(result => {
-            if (result === 'confirm') {
-                this.claimPlayer(player);
-            } else {
-                this.openClaimModal();
-            }
-        });
-    }
-
-    onConfirmClaim(): void {
-        this.claimDialogRef.close('confirm');
-    }
-
-    // Cancel button in the dialog
-    onCancelClaim(): void {
-        this.claimDialogRef.close('cancel');
-    }
-
-    onConfirm(): void {
-        this.dialogRef.close('confirm');
-    }
-
-    onCancel(): void {
-        this.dialogRef.close('cancel');
-    }
-
-
-    openClaimModal() {
-        this.showSpecificPlayerClaimModal = false;
-        this.showPlayerClaimModal = true;
-
-        this.playerService.GetPlayers().subscribe(
-            (players) => {
-                this.players = players;
-            },
-            (error) => {
-                console.error('Error fetching players:', error);
-                this.showSnackBar('Unable to fetch players. Please try again later.', true);
-            }
-        );
-    }
-
-    filterPlayers() {
-        if (!this.searchTerm) {
-            this.filteredPlayers = [...this.players];
-            return;
-        }
-
-        const lowerCaseSearch = this.searchTerm.toLowerCase();
-        this.filteredPlayers = this.players.filter(player =>
-            `${player.firstName} ${player.lastName}`.toLowerCase().includes(lowerCaseSearch)
-        );
-    }
-
-    @HostListener('document:click', ['$event'])
-    onClickOutside(event: MouseEvent) {
-        const targetElement = event.target as HTMLElement;
-        const isInsideInput = targetElement.closest('.typeahead-options') || targetElement.closest('mat-form-field');
-        if (!isInsideInput) {
-            this.filteredPlayers = []; // Clear dropdown if clicked outside
-        }
-    }
-
-    closeDropdown() {
-        this.filteredPlayers = []; // Clear the dropdown
-    }
-
-
-
-    claimPlayer(player: any) {
-        this.playerService.claimPlayer({ userId: this.userId, playerId: player.id }).subscribe(
-            () => {
-                // Registration establishes a temporary Player session so claim
-                // requests can be authorized. Restore the original UX after the
-                // claim: sign out that temporary session, then show the login form.
-                this.loginService.logout().subscribe(
-                    () => {
-                        this.authService.setLoggedIn(false);
-                        this.showLoginForm = true;
-                        this.showRegistrationForm = false;
-                        this.closeModal();
-                        this.showSnackBar(`${player.firstName} ${player.lastName} has been claimed successfully! Please log in.`, false);
-                    },
-                    () => this.showSnackBar('Player claimed, but automatic sign-out failed. Please log out and log back in.', true)
-                );
-            },
-            () => {
-                this.showSnackBar('Failed to claim player. Try again.', true);
-            }
-        );
-    }
-
-
-
-    closeModal() {
-        this.showPlayerClaimModal = false;
-        this.showSpecificPlayerClaimModal = false;
+    openClaimModal(onboarding = false): void {
+        if (this.claimDialogRef) return;
+        const first = onboarding ? this.registerForm.get('registerFirstName').value : '';
+        const last = onboarding ? this.registerForm.get('registerLastName').value : '';
+        this.searchTerm = (first + ' ' + last).trim();
+        this.addPlayerForm.reset({ firstName: first, lastName: last, gender: '' });
+        this.claimStep = 'search';
+        this.recoveryProfile = null;
         this.selectedPlayer = null;
-    }
-
-    selectPlayer(player: any) {
-        this.selectedPlayer = player;
-        this.searchTerm = `${player.firstName} ${player.lastName}`; // Display the selected player in the input
-        this.filteredPlayers = []; // Clear the dropdown
-
-        // Open confirmation dialog before claiming the player
-        this.openConfirmationDialog(
-            `Do you want to claim ${player.firstName} ${player.lastName}?`,
-            () => this.claimPlayer(player) // Claim player if confirmed
-        );
-    }
-
-    openConfirmationDialog(message: string, confirmCallback: () => void): void {
-        this.dialogRef = this.dialog.open(this.confirmationDialog, {
-            width: '400px',
-            data: { message: message, confirm: true },
-            panelClass: 'custom-dialog'
-        });
-
-        this.dialogRef.afterClosed().subscribe(result => {
-            if (result === 'confirm') {
-                confirmCallback();  // Execute claim if confirmed
+        const ref = this.dialog.open(this.claimProfileDialog, { width: '470px', maxWidth: '94vw', restoreFocus: true });
+        this.claimDialogRef = ref;
+        const viewport = window.visualViewport;
+        const resize = () => {
+            const reduced = viewport && viewport.height < window.innerHeight - 60;
+            this.claimViewportLimit.set(reduced ? Math.floor(viewport.height * .92) + 'px' : null);
+            ref.updatePosition(reduced ? { top: Math.round(viewport.offsetTop + viewport.height * .04) + 'px' } : {});
+        };
+        viewport?.addEventListener('resize', resize);
+        viewport?.addEventListener('scroll', resize);
+        resize();
+        ref.afterClosed().subscribe(() => {
+            viewport?.removeEventListener('resize', resize);
+            viewport?.removeEventListener('scroll', resize);
+            this.cancelClaimSearch();
+            this.claimDialogRef = null;
+            if (onboarding) {
+                this.userId = undefined;
+                this.loginService.logout().subscribe({
+                    next: () => this.authService.setLoggedIn(false),
+                    error: () => this.showSnackBar('Sign out before signing in to a different account.', true)
+                });
             }
         });
+        this.loadClaimResults();
+    }
+
+    private cancelClaimSearch(): void {
+        clearTimeout(this.claimSearchTimer);
+        this.claimSearch?.unsubscribe();
+    }
+
+    queueClaimSearch(search: string): void {
+        this.searchTerm = search;
+        this.cancelClaimSearch();
+        this.selectedPlayer = null;
+        this.claimResults = [];
+        this.claimedExactMatch = false;
+        this.claimedProfiles = [];
+        this.claimError = '';
+        this.searchLoading = true;
+        this.claimSearchTimer = setTimeout(() => this.loadClaimResults(), 250);
+    }
+
+    loadClaimResults(): void {
+        this.cancelClaimSearch();
+        this.claimError = '';
+        this.selectedPlayer = null;
+        this.claimResults = [];
+        this.claimedExactMatch = false;
+        this.claimedProfiles = [];
+        this.searchLoading = true;
+        this.claimSearch = this.playerService.claimablePlayers(this.searchTerm).subscribe({
+            next: result => {
+                this.claimResults = result.players;
+                this.claimedExactMatch = result.claimedExactMatch;
+                this.claimedProfiles = result.claimedProfiles ?? [];
+                this.searchLoading = false;
+            },
+            error: () => {
+                this.searchLoading = false;
+                this.claimError = 'Unable to load player profiles. Try again.';
+            }
+        });
+    }
+
+    openRecovery(profile: ProfileMatch | null): void {
+        this.recoveryProfile = profile;
+        this.setClaimStep('recover');
+    }
+
+    setClaimStep(step: 'search' | 'create' | 'recover'): void {
+        this.claimStep = step;
+        this.claimError = '';
+    }
+
+    claimSelectedPlayer(): void {
+        if (this.claimPending || !this.selectedPlayer) return;
+        this.finishClaim(this.playerService.claimPlayer({ playerId: this.selectedPlayer.id }));
+    }
+
+    addPlayer(): void {
+        if (this.claimPending || this.addPlayerForm.invalid) return;
+        this.finishClaim(this.playerService.createAndClaimPlayer(this.addPlayerForm.value));
+    }
+
+    private finishClaim(request: import('rxjs').Observable<unknown>): void {
+        this.claimPending = true;
+        this.claimError = '';
+        const ref = this.claimDialogRef;
+        ref.disableClose = true;
+        request.subscribe({
+            next: () => {
+                this.claimPending = false;
+                ref.close();
+                if (!this.userId) this.authService.restoreSession();
+                this.showSnackBar('Player profile linked to your account.');
+            },
+            error: error => {
+                this.claimPending = false;
+                ref.disableClose = false;
+                if (error.status === 409 && this.claimStep === 'search') this.loadClaimResults();
+                this.claimError = error.status === 409 ? 'This profile is no longer available. Search again or use Account Recovery.' :
+                    'Unable to link the profile. Check your details and try again.';
+            }
+        });
+    }
+
+    openClaimPasswordReset(): void {
+        const ref = this.claimDialogRef;
+        ref.afterClosed().subscribe(() => this.openForgotPasswordDialog());
+        ref.close();
     }
 
     cancel() {

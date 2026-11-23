@@ -1,4 +1,4 @@
-﻿using Allport_s_League_Scrambler.Models;
+using Allport_s_League_Scrambler.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
@@ -19,6 +19,7 @@ namespace Allport_s_League_Scrambler.Data
         public virtual DbSet<LeagueTeam> LeagueTeam { get; set; }
         public virtual DbSet<KingQueenTeam> KingQueenTeam { get; set; }
         public virtual DbSet<KingQueenPlayer> KingQueenPlayer { get; set; }
+        public DbSet<AccountRecoveryRequest> AccountRecoveryRequests { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<UserLeague> UserLeagues { get; set; }
         public virtual DbSet<ByeRounds> ByeRounds { get; set; }
@@ -54,6 +55,7 @@ namespace Allport_s_League_Scrambler.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<AccountRecoveryRequest>().HasIndex(request => new { request.UserId, request.CreatedUtc });
             modelBuilder.Entity<Player>().ToTable("Player", "dbo");
             modelBuilder.Entity<LeagueScheduleEvent>().ToTable("LeagueScheduleEvent", "dbo");
             modelBuilder.Entity<PlayersLeague>().ToTable("PlayersLeague", "dbo");

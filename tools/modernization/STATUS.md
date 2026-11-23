@@ -1,5 +1,9 @@
 # Framework modernization checkpoint
 
+## Account recovery
+
+Recovery, verified email changes, and an Application Administrator review queue are implemented in source. The Development schema is required by this build because account session validation now reads a revocation version. The guarded SQL migration and real HTTP integration test must run under the authorized Windows account. See ACCOUNT-RECOVERY.md for exact commands, rollback, and journal-owned fixture diagnostics.
+
 ## Team Management and dark themes
 
 Team Management now uses a division and team selector, a linked roster, a compact New Team dialog, and the shared player browser for immediate assignment of enrolled league members. The existing membership endpoint verifies league enrollment, team ownership and same-team membership before inserting. The team membership model permits assignment to more than one roster. There is no team-only removal endpoint, and no schema change was needed.

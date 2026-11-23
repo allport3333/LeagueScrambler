@@ -21,6 +21,7 @@ internal sealed class AuthenticatedScenario
  readonly string root,output,prefix="LSMod_"+Guid.NewGuid().ToString("N"),playerPrefix="Mod"+Guid.NewGuid().ToString("N").Substring(0,6);
  readonly List<int> users=new(),leagues=new(),players=new(),teams=new();
  readonly List<object> checks=new();
+ readonly List<Guid> recoveryIds = new();
  string phase="fixture preparation",failedCheck,reportName="authorized-results.json";bool cleaned;
  LeagueType main,other;LeagueDivision gold,silver,foreign;List<Player> roster;List<LeagueTeam> seasonTeams;
  string password="É-Modernization-Test-"+Convert.ToBase64String(RandomNumberGenerator.GetBytes(24));
@@ -31,7 +32,7 @@ internal sealed class AuthenticatedScenario
  AuthenticatedScenario(string root,string output,string recoveredPrefix=null,string recoveredPlayerPrefix=null){this.root=root;this.output=output;if(recoveredPrefix!=null)prefix=recoveredPrefix;if(recoveredPlayerPrefix!=null)playerPrefix=recoveredPlayerPrefix;}
  void Need(bool condition,string message){if(!condition){failedCheck=message;throw new InvalidOperationException(message);}}
  void Journal(bool pass=false,Exception error=null)=>File.WriteAllText(Path.Combine(output,reportName),JsonConvert.SerializeObject(new{
-  pass,phase,prefix,playerPrefix,userIds=users,leagueIds=leagues,playerIds=players,teamIds=teams,checks,cleanupCompleted=cleaned,
+  pass,phase,prefix,playerPrefix,userIds=users,leagueIds=leagues,playerIds=players,teamIds=teams,recoveryRequestIds=recoveryIds,checks,cleanupCompleted=cleaned,
   failedCheck,error=error?.GetType().Name,diagnosticStack=error?.StackTrace,sqlError=(error?.GetBaseException() as Microsoft.Data.SqlClient.SqlException)?.Number,authorization=DevelopmentAuthorization.Grant,
   actualHttp=true,authenticationMode="real synthetic account login; see individual check outcomes",database="LeagueScramblerDev",server="localhost",credentialsStored=false
  },Formatting.Indented));
@@ -72,7 +73,7 @@ internal sealed class AuthenticatedScenario
   try{test.Seed();await test.Check(focused);}catch(Exception error){failure=error;}
   finally{try{test.Cleanup();}catch(Exception error){failure=error;}test.Journal(failure==null,failure);}
   if(failure!=null)throw new InvalidOperationException("Authenticated Development check failed; see sanitized artifact.",failure);
-  Console.WriteLine(focused ? "PASS: real Development authorization, team eligibility, concurrent assignment and owned cleanup." : "PASS: actual accounts/login, roles, membership/schedule/Scrambler persistence, reset single use, browser integration and owned cleanup.");
+  Console.WriteLine(focused ? "PASS: real Development authorization, team eligibility, account recovery, email change and owned cleanup." : "PASS: actual accounts/login, roles, membership/schedule/Scrambler persistence, reset single use, browser integration and owned cleanup.");
  }
  public static void RecoverCleanup(string root,string output){
   var saved=JObject.Parse(File.ReadAllText(Path.Combine(output,"authorized-results.json")));
@@ -90,6 +91,21 @@ internal sealed class AuthenticatedScenario
   var playerUser=(int)registration["userId"];users.Add(playerUser);Journal();
   using(var c=new DataContext()){
    Need(c.Users.Single(u=>u.UserId==playerUser).UserRoleId==3,"Registration accepted an elevated role.");
+  }
+  if (focused) {
+   Need(!(await Request(player,"GET","/api/Login/getuserleagues",null)).Any(), "Unclaimed registration must return an empty league collection.");
+   await Request(player,"GET","/api/Login/GetUsersPlayer",null,404);
+   await Request(player,"POST","/api/Login/logout",null);
+   await Request(player,"POST","/api/Login/login",new{email=PlayerEmail,password});
+   Need((string)(await Request(player,"GET","/api/Login/GetUsersRole",null))["role"]=="Player", "An unlinked account must retain the Player role.");
+   Need(!(await Request(player,"GET","/api/Login/getuserleagues",null)).Any(), "An unlinked login must not receive leagues.");
+   await Request(player,"GET","/api/ScheduleManagement/"+main.ID,null,403);
+   await Request(player,"POST","/api/ScrambleData/claimPlayer",new{playerId=roster[0].Id});
+   var linked = await Request(player,"GET","/api/Login/getuserleagues",null);
+   Need(linked.Select(row => (int)row["id"]).OrderBy(id=>id).SequenceEqual(new[]{main.ID,other.ID}.OrderBy(id=>id)),
+    "A linked Player must receive exactly the leagues belonging to that profile.");
+  } else {
+   using var c = new DataContext();
    c.UsersPlayer.Add(new UsersPlayer{UserId=playerUser,PlayerId=roster[0].Id});c.SaveChanges();
   }
   await Request(anonymous,"POST","/api/Login/register",new{email=PlayerEmail,password,firstName=playerPrefix,lastName="Duplicate"},400);
@@ -103,7 +119,7 @@ internal sealed class AuthenticatedScenario
   var role=await Request(admin,"GET","/api/Login/GetUsersRole",null);Need((string)role["role"]=="Admin","Administrator claim lost.");
   var managerLeagues=await Request(manager,"GET","/api/Login/getuserleagues",null);Need(managerLeagues.Count()==1&&(int)managerLeagues[0]["id"]==main.ID,"Manager league scope changed.");
   await Request(player,"GET","/api/Login/getuserleagues",null);
-  if (focused) { await CheckTeamAuthorization(admin, manager, player, anonymous); return; }
+  if (focused) { await CheckTeamAuthorization(admin, manager, player, anonymous); await CheckProfileClaims(admin, manager, player, anonymous, playerUser); await CheckRecovery(admin, manager, player, anonymous, playerUser); return; }
   phase="HTTP role and membership boundaries";Journal();
   foreach(var path in new[]{"/api/ScheduleManagement/"+main.ID,"/api/ScrambleData/AvailableLeaguePlayers/"+main.ID}){
    await Request(admin,"GET",path,null);await Request(manager,"GET",path,null);await Request(player,"GET",path,null,403);await Request(anonymous,"GET",path,null,401);
@@ -305,6 +321,197 @@ internal sealed class AuthenticatedScenario
   Journal();
  }
 
+ async Task CheckProfileClaims(HttpClient admin, HttpClient manager, HttpClient player, HttpClient anonymous, int playerUser) {
+  phase = "real profile search and claim ownership"; Journal();
+  const string search = "/api/ScrambleData/ClaimablePlayers?search=";
+  const string claim = "/api/ScrambleData/ClaimPlayer";
+  const string create = "/api/ScrambleData/CreateAndClaimPlayer";
+  var exact = Uri.EscapeDataString(playerPrefix + "  Player 01");
+  await Request(anonymous, "GET", search + exact, null, 401);
+  var claimed = await Request(admin, "GET", search + exact, null);
+  Need((bool)claimed["claimedExactMatch"] && !claimed["players"].Any(), "Claimed profiles must not be offered.");
+  var available = await Request(admin, "GET", search + Uri.EscapeDataString(playerPrefix.ToLowerInvariant() + "  05"), null);
+  Need(available["players"].Any(row => (int)row["id"] == roster[4].Id), "Partial name search missed an eligible profile.");
+  var none = await Request(admin, "GET", search + prefix, null);
+  Need(!none["players"].Any(), "An unrelated search returned profiles.");
+  await Request(admin, "POST", claim, new { userId = playerUser, playerId = roster[3].Id }, 403);
+  await Request(admin, "POST", claim, new { playerId = roster[0].Id }, 409);
+  await Request(player, "POST", claim, new { playerId = roster[3].Id }, 409);
+  var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+  async Task<int> Compete(HttpClient client) {
+   using var request = new HttpRequestMessage(HttpMethod.Post, claim);
+   request.Headers.Add("Origin", Origin);
+   request.Content = new StringContent(JsonConvert.SerializeObject(new { playerId = roster[4].Id }),Encoding.UTF8,"application/json");
+   await start.Task;
+   using var response = await client.SendAsync(request);
+   return (int)response.StatusCode;
+  }
+  var attempts = new[] { Compete(admin), Compete(manager) };
+  start.SetResult();
+  var outcomes = await Task.WhenAll(attempts);
+  checks.Add(new { phase, outcomes }); Journal();
+  Need(outcomes.OrderBy(code => code).SequenceEqual(new[] { 200, 409 }), "Concurrent profile claim must have one winner.");
+  var freeAccount = outcomes[0] == 409 ? admin : manager;
+  var newProfile = await Request(freeAccount, "POST", create, new { firstName = playerPrefix, lastName = roster[0].LastName, gender = "Female", isSub = true });
+  var newPlayer = (int)newProfile["playerId"];
+  players.Add(newPlayer); Journal();
+  await Request(freeAccount, "POST", create, new { firstName = playerPrefix, lastName = roster[0].LastName, gender = "Female" }, 409);
+  using var c = new DataContext();
+  Need(c.UsersPlayer.Count(link => link.PlayerId == roster[4].Id) == 1, "Concurrent claim produced duplicate links.");
+  var created = c.Players.Single(profile => profile.Id == newPlayer);
+  Need(created.IsSub == null, "Onboarding accepted a permanent substitute flag.");
+  Need(created.Id != roster[0].Id && created.LastName == roster[0].LastName,
+   "A same-name creation must create a distinct profile.");
+  Need(c.UsersPlayer.Count(link => link.PlayerId == newPlayer) == 1 && !c.PlayersLeagues.Any(link => link.PlayerID == newPlayer),
+   "Onboarding did not create one isolated player association.");
+  Journal();
+ }
+
+ async Task CheckRecovery(HttpClient admin, HttpClient manager, HttpClient player, HttpClient anonymous, int playerUser)
+ {
+  const string api = "/api/account-recovery";
+  var contact = prefix + ".recovered@example.invalid";
+  var changed = prefix + ".changed@example.invalid";
+  var rejected = prefix + ".rejected@example.invalid";
+  var addresses = new Dictionary<Guid, string>();
+  phase = "verified recovery and session revocation"; Journal();
+
+  async Task<Guid> Submit(string address)
+  {
+   var id = (Guid)(await Request(anonymous, "POST", api + "/request",
+    new { email = address, playerId = roster[0].Id, information = "help" }, 202))["id"];
+   addresses.Add(id, address);
+   recoveryIds.Add(id); Journal();
+   return id;
+  }
+  string CodeFile(Guid id) => Directory.GetFiles(Path.Combine(output, "smtp-pickup"), "*.eml")
+    .Single(file => File.ReadAllText(file).Contains("To: " + addresses[id], StringComparison.OrdinalIgnoreCase));
+  string ReadCode(Guid id)
+  {
+   var mail = File.ReadAllText(CodeFile(id));
+   var alternatives = System.Text.RegularExpressions.Regex.Matches(mail,
+    @"Content-Transfer-Encoding: base64\r?\n\r?\n([A-Za-z0-9+/=\r\n]+)",
+    System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+    .Select(part => Encoding.UTF8.GetString(Convert.FromBase64String(part.Groups[1].Value))).ToArray();
+   Need(mail.Contains("multipart/alternative") && alternatives.Length == 2 &&
+    alternatives.All(body => !body.Contains(id.ToString(), StringComparison.OrdinalIgnoreCase)),
+    "Verification email is missing MIME alternatives or exposes the internal request ID.");
+   var match = System.Text.RegularExpressions.Regex.Match(alternatives[0], @"Code:\s*([0-9]{8})\b");
+   Need(match.Success, "Verification email did not contain an eight-digit code.");
+   return match.Groups[1].Value;
+  }
+
+  var publicSearch = await Request(anonymous, "GET", api + "/profiles?search=" + Uri.EscapeDataString(playerPrefix.ToUpperInvariant() + " 01"), null);
+  var unclaimedSearch = await Request(anonymous, "GET", api + "/profiles?search=" + Uri.EscapeDataString(playerPrefix + " 09"), null);
+  Need(!unclaimedSearch["players"].Any(row => (int)row["id"] == roster[8].Id), "Recovery exposed an unclaimed league member.");
+  var similarNames = await Request(anonymous, "GET", api + "/profiles?search=" + Uri.EscapeDataString(playerPrefix), null);
+  Need(similarNames["players"].Count() >= 2 &&
+   similarNames["players"].Select(row => (int)row["id"]).Distinct().Count() == similarNames["players"].Count(),
+   "Recovery did not preserve distinct claimed profiles with similar names.");
+  var pickupBefore = Directory.GetFiles(Path.Combine(output, "smtp-pickup"), "*.eml").Length;
+  var unclaimedContact = prefix + ".unclaimed@example.invalid";
+  var unclaimedAttempt = await Request(anonymous, "POST", api + "/request",
+   new { email = unclaimedContact, playerId = roster[8].Id, information = "Synthetic rejected unclaimed request" }, 202);
+  using (var check = new DataContext())
+  {
+   Need(!check.Players.Any(profile => profile.Id == int.MaxValue), "Forged ID test must reference a missing player.");
+   Need(check.AccountRecoveryRequests.Find((Guid)unclaimedAttempt["id"]) == null, "Unclaimed request persisted.");
+  }
+  await Request(anonymous, "POST", api + "/request", new
+  {
+   email = unclaimedContact, playerId = int.MaxValue, information = "Synthetic rejected forged request"
+  }, 404);
+  Need(Directory.GetFiles(Path.Combine(output, "smtp-pickup"), "*.eml").Length == pickupBefore,
+   "An ineligible recovery request sent mail.");
+  var match = publicSearch["players"].Single(row => (int)row["id"] == roster[0].Id);
+  Need(match["leagues"].Any(name => (string)name == main.LeagueName) && match["email"] == null &&
+    match["claimed"] == null, "Recovery lookup is missing public context or revealed account details.");
+  await Request(manager, "GET", api + "/review?status=pending", null, 403);
+
+  var denied = await Submit(rejected);
+  var declinedCode = ReadCode(denied);
+  var oldCodeFile = CodeFile(denied);
+  await Request(anonymous, "POST", api + "/resend", new { id = denied }, 202);
+  Need(File.Exists(oldCodeFile) && ReadCode(denied) == declinedCode, "Resend cooldown did not preserve the previous code.");
+  using (var check = new DataContext())
+  {
+   check.AccountRecoveryRequests.Find(denied).ExpiresUtc = DateTime.UtcNow.AddMinutes(58);
+   check.SaveChanges();
+  }
+  File.Delete(oldCodeFile);
+  await Request(anonymous, "POST", api + "/resend", new { id = denied }, 202);
+  var replacement = ReadCode(denied);
+  Need(replacement != declinedCode, "Resend did not rotate the verification code.");
+  await Request(anonymous, "POST", api + "/verify", new { id = denied, code = declinedCode }, 400);
+  await Request(anonymous, "POST", api + "/verify", new { id = denied, code = (replacement == "00000000" ? "00000001" : "00000000") }, 400);
+  declinedCode = replacement;
+  await Request(anonymous, "POST", api + "/verify", new { id = denied, code = declinedCode });
+  await Request(admin, "POST", api + "/review/" + denied, new { approve = false });
+  Need((await Request(admin, "GET", api + "/review?status=rejected", null))["requests"].Any(row => (Guid)row["id"] == denied),
+    "Rejected request is absent from the review filter.");
+  using (var check = new DataContext())
+   Need(check.Users.Find(playerUser).Email == PlayerEmail, "Rejection changed account ownership.");
+
+  var expired = await Submit(prefix + ".expired@example.invalid");
+  var expiredCode = ReadCode(expired);
+  using (var check = new DataContext())
+  {
+   var entry = check.AccountRecoveryRequests.Find(expired);
+   entry.ExpiresUtc = DateTime.UtcNow.AddSeconds(-1);
+   entry.CreatedUtc = DateTime.UtcNow.AddHours(-2);
+   check.SaveChanges();
+  }
+  await Request(anonymous, "POST", api + "/verify", new { id = expired, code = expiredCode }, 400);
+
+  var id = await Submit(contact);
+  var code = ReadCode(id);
+  var approve = new { approve = true, independentlyVerified = true };
+  await Request(admin, "POST", api + "/review/" + id, approve, 409);
+  await Request(anonymous, "POST", api + "/verify", new { id, code });
+  await Request(anonymous, "POST", api + "/verify", new { id, code }, 400);
+  await Request(anonymous, "POST", api + "/review/" + id, approve, 401);
+  await Request(manager, "POST", api + "/review/" + id, approve, 403);
+  await Request(player, "POST", api + "/review/" + id, approve, 403);
+  await Request(admin, "POST", api + "/review/" + id, approve, 403, "https://attacker.invalid");
+  await Request(admin, "POST", api + "/review/" + id, new { approve = true, decisionNotes = "yes" }, 400);
+  await Request(admin, "POST", api + "/review/" + id, approve);
+  Need((await Request(admin, "GET", api + "/review?status=approved", null))["requests"].Any(row => (Guid)row["id"] == id),
+    "Approved request is absent from the review filter.");
+  await Request(admin, "POST", api + "/review/" + id, approve, 409);
+  Need(!(bool)await Request(player, "GET", "/api/Login/isauthenticated", null), "Recovery left an old session active.");
+  await Request(player, "POST", "/api/Login/login", new { email = PlayerEmail, password }, 400);
+  await Request(player, "POST", "/api/Login/login", new { email = contact, password }, 400);
+  await Request(anonymous, "POST", "/api/Login/forgotpassword", new { email = contact });
+  string resetToken;
+  using (var check = new DataContext())
+  {
+   var account = check.Users.Find(playerUser);
+   Need(account.Email == contact && account.UserRoleId == 3 && account.SessionVersion == 1, "Recovery changed the wrong account fields.");
+   Need(check.UsersPlayer.Single(link => link.UserId == playerUser).PlayerId == roster[0].Id, "Recovery changed the profile relationship.");
+   resetToken = account.ResetToken;
+  }
+  var recoveredPassword = password + "New";
+  await Request(anonymous, "POST", "/api/Login/resetpassword", new { token = resetToken, password = recoveredPassword });
+  await Request(player, "POST", "/api/Login/login", new { email = contact, password = recoveredPassword });
+  await Request(player, "POST", api + "/email-change", new { email = "invalid-address", password = recoveredPassword }, 400);
+  smtp.EnableSsl = true;
+  try
+  {
+   await Request(player, "POST", api + "/email-change", new { email = changed, password = recoveredPassword }, 503);
+   using var check = new DataContext();
+   Need(!check.AccountRecoveryRequests.Any(row => row.ContactEmail == changed), "Undelivered code remained active.");
+  }
+  finally { smtp.EnableSsl = false; }
+  var change = (Guid)(await Request(player, "POST", api + "/email-change", new { email = changed, password = recoveredPassword }, 202))["id"];
+  addresses.Add(change, changed);
+  recoveryIds.Add(change); Journal();
+  var changeCode = ReadCode(change);
+  await Request(anonymous, "POST", api + "/verify", new { id = change, code = changeCode }, 401);
+  await Request(player, "POST", api + "/verify", new { id = change, code = changeCode });
+  Need(!(bool)await Request(player, "GET", "/api/Login/isauthenticated", null), "Email change left the old session active.");
+  await Request(player, "POST", "/api/Login/login", new { email = changed, password = recoveredPassword });
+ }
+
  void Cleanup(){
   phase="owned cleanup";Journal();if(leagues.Count==0&&users.Count==0&&players.Count==0){cleaned=true;return;}
   using var c=new DataContext();using var tx=c.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
@@ -317,6 +524,7 @@ internal sealed class AuthenticatedScenario
   Need(c.Leagues.Count(l=>leagues.Contains(l.ID)&&l.LeagueName.StartsWith(prefix))==leagues.Count,"Cleanup league ownership mismatch.");
   Need(c.LeagueTeam.Count(t=>teams.Contains(t.Id)&&leagues.Contains(t.LeagueID)&&t.TeamName.StartsWith(prefix))==teams.Count,"Cleanup team ownership mismatch.");
   Need(c.Users.Count(u=>users.Contains(u.UserId)&&u.Email.StartsWith(prefix))==users.Count,"Cleanup account ownership mismatch.");
+  players.AddRange(c.Players.Where(p => p.FirstName == playerPrefix && (p.LastName == "Onboarding Profile" || p.LastName == "Player 01")).Select(p => p.Id).ToList().Except(players));
   Need(c.Players.Count(p=>players.Contains(p.Id)&&p.FirstName==playerPrefix)==players.Count,"Cleanup player ownership mismatch.");
   Need(!c.PlayersLeagues.Any(m=>players.Contains(m.PlayerID)&&!leagues.Contains(m.LeagueID)),"Unrelated membership references a fixture player.");
   var kqIds=c.KingQueenTeam.Where(t=>leagues.Contains(t.LeagueID)).Select(t=>t.Id).ToList();var byeIds=c.ByeRounds.Where(b=>leagues.Contains(b.LeagueID)).Select(b=>b.Id).ToList();
@@ -330,11 +538,15 @@ internal sealed class AuthenticatedScenario
   c.LeagueTeamPlayer.RemoveRange(c.LeagueTeamPlayer.Where(p=>teams.Contains(p.LeagueTeamId)));
   c.PlayerSignIn.RemoveRange(c.PlayerSignIn.Where(p=>leagues.Contains(p.LeagueId)));
   c.KingQueenTopPlayer.RemoveRange(c.KingQueenTopPlayer.Where(p=>leagues.Contains(p.LeagueId)));
+  if (c.Database.SqlQueryRaw<int>("SELECT CASE WHEN OBJECT_ID(N'dbo.AccountRecoveryRequest', N'U') IS NULL THEN 0 ELSE 1 END AS Value").Single() == 1)
+   c.AccountRecoveryRequests.RemoveRange(c.AccountRecoveryRequests.Where(r => users.Contains(r.UserId) && r.ContactEmail.StartsWith(prefix)));
   c.UsersPlayer.RemoveRange(c.UsersPlayer.Where(p=>users.Contains(p.UserId)));c.UserLeagues.RemoveRange(c.UserLeagues.Where(u=>users.Contains(u.UserId)));c.SaveChanges();
   c.PlayersLeagues.RemoveRange(c.PlayersLeagues.Where(p=>leagues.Contains(p.LeagueID)));c.LeagueTeam.RemoveRange(c.LeagueTeam.Where(t=>teams.Contains(t.Id)));c.SaveChanges();
   c.LeagueDivision.RemoveRange(c.LeagueDivision.Where(d=>leagues.Contains(d.LeagueID)));c.LeagueSettings.RemoveRange(c.LeagueSettings.Where(s=>leagues.Contains(s.LeagueId)));c.SaveChanges();
   c.Players.RemoveRange(c.Players.Where(p=>players.Contains(p.Id)));c.Users.RemoveRange(c.Users.Where(u=>users.Contains(u.UserId)));c.Leagues.RemoveRange(c.Leagues.Where(l=>leagues.Contains(l.ID)));c.SaveChanges();tx.Commit();
   var pickup=Path.Combine(output,"smtp-pickup");if(Directory.Exists(pickup))foreach(var message in Directory.GetFiles(pickup,"*.eml"))File.Delete(message);
+  Need(!c.AccountRecoveryRequests.Any(r => users.Contains(r.UserId) && r.ContactEmail.StartsWith(prefix)),
+   "Journal-owned recovery requests remain after cleanup.");
   cleaned=true;password=null;
  }
 }
