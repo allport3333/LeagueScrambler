@@ -296,10 +296,10 @@ namespace Allport_s_League_Scrambler.Controllers
                 return context.KingQueenTeam.AsNoTracking()
                     .Where(x => x.LeagueID == selectedLeagueId && x.ScrambleWithScoresToBeSaved == true)
                     // EF 2 grouped these league-filtered rows on the client.
-                    // Retain its representative-row behavior with current EF.
+                    // Select one stable representative using the saved creation timestamp.
                     .ToList()
                     .GroupBy(x => x.ScrambleNumber)
-                    .Select(g => g.First())
+                    .Select(g => g.OrderByDescending(team => team.DateOfTeam).ThenByDescending(team => team.Id).First())
                     .OrderBy(t => t.ScrambleNumber)
                     .ToList();
             }

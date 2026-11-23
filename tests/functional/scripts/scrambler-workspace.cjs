@@ -7,7 +7,7 @@ const teams=()=>Array.from({length:12},(_,i)=>({players:players.slice(i*2,i*2+2)
 const hash=content=>crypto.createHash('sha256').update(content).digest('hex');
 const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.env.LEAGUE_PRINT_BASELINE):path.resolve(__dirname,'../scrambler-workspace-evidence/print-baseline.json');
 (async()=>{
- browser=await chromium.launch();const context=await browser.newContext({serviceWorkers:'block',viewport:{width:1920,height:1080}});const errors=[],writes=[],checks=[];let failNextSave=false,navigationRole='Admin',navigationSignedIn=true;let fixtureScoreFailure=false,fixtureSubFailure=false,fixtureReadFailure=false,fixtureOdd=false,fixtureEmpty=false;const savedScores=new Map(),savedSubs=new Map(),savedAssignments=new Map();let scoreSaveRequests=0;let nextScoreId=9000;
+ browser=await chromium.launch(mode === 'scoring-defaults' ? {channel:'msedge'} : {});const context=await browser.newContext({serviceWorkers:'block',viewport:{width:1920,height:1080}});const errors=[],writes=[],checks=[];let failNextSave=false,navigationRole='Admin',navigationSignedIn=true;let fixtureScoreFailure=false,fixtureSubFailure=false,fixtureReadFailure=false,fixtureOdd=false,fixtureEmpty=false;const savedScores=new Map(),savedSubs=new Map(),savedAssignments=new Map();let scoreSaveRequests=0;let defaultsSaved=false, defaultsSavedTeams=[], defaultsSecondEmpty=false, defaultsSecondDelay=false;let nextScoreId=9000;
  await context.route('**/*',async route=>{
   let u;try{u=assertLocalUrl(route.request().url());}catch{
    const asset=new URL(route.request().url());
@@ -20,6 +20,8 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
    const data=route.request().postDataJSON();writes.push({path:p,mode:'intercepted fixture only'});
    if(mode==='management-layout-after'&&p.includes('/updatesetting')){body={};writes[writes.length-1].data=data;}
    else if(mode==='navigation'&&p==='/api/login/logout'){navigationSignedIn=false;body={};}
+   else if(mode==='scoring-defaults'&&p.includes('/generatescramble/'))body=data.kingQueenTeams.map((_,i)=>({id:5200+i,scrambleNumber:15}));
+   else if(mode==='scoring-defaults'&&p.includes('/savekingqueenteams/')){defaultsSaved=true;defaultsSavedTeams=data.kingQueenTeams.map(t=>({kingQueenTeam:{id:t.kingQueenTeam.id,scrambleNumber:15,kingQueenPlayers:[],kingQueenRoundScores:[]},players:t.players}));body={kingQueenTeams:defaultsSavedTeams,byePlayers:[]};}
    else if(p.includes('/generatescramble/'))body=(data.kingQueenTeams||[]).map((t,i)=>({id:((mode==='matchups-modal'||mode.startsWith('results-refinements'))?5001:201)+i,scrambleNumber:12}));
    else if(p.includes('/savekingqueenteams/')){if(failNextSave){failNextSave=false;await route.fulfill({status:500,body:'Fixture save failure'});return;}if(mode==='matchups-modal'||mode.startsWith('results-refinements')){writes[writes.length-1].data=data;data.kingQueenTeams.forEach(t=>savedAssignments.set(t.kingQueenTeam.id,JSON.parse(JSON.stringify(t.players))));body={kingQueenTeams:data.kingQueenTeams.map(t=>({kingQueenTeam:{id:t.kingQueenTeam.id,scrambleNumber:12},players:t.players})),byePlayers:data.byePlayers||[]};await new Promise(resolve=>setTimeout(resolve,180));}else body={kingQueenTeams:teams().map(t=>({kingQueenTeam:{id:t.kingQueenTeamId,scrambleNumber:12},players:t.players})),byePlayers:[]};}
    else if(p.includes('/savekingqueenroundscores/')){if(useScoringFixtures){scoreSaveRequests++;writes[writes.length-1].data=data;if(fixtureScoreFailure){fixtureScoreFailure=false;await route.fulfill({status:500,body:'Fixture score save failed'});return;}for(const row of data.roundScores){const found=savedScores.get(row.kingQueenTeamId);if(!found)throw Error('Unknown score team');const old=found.find(r=>row.id>0&&r.id===row.id);if(old)Object.assign(old,row);else found.push({...row,id:nextScoreId++});}await new Promise(resolve=>setTimeout(resolve,180));body={success:true,savedScores:data.roundScores};}else body={};}
@@ -39,7 +41,13 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
   else if(p==='/api/login/getuserleagues'||p==='/api/scrambledata/getleagues')body=(mode==='navigation'||useScoringFixtures)?[{id:101,leagueName:'Synthetic League'},{id:102,leagueName:'Second Synthetic League'}]:[{id:101,leagueName:'Synthetic League'}];
   else if(u.searchParams.has('settingName'))body={settingValue:{dropLowest:'0',numberOfSubsAllowed:'100',subScorePercent:'100',standingsType:'round',dayOfLeague:'Monday'}[u.searchParams.get('settingName')]};
   else if(p.includes('/getbyleague'))body={maxRounds:2,playerScores:players.map(x=>({playerId:x.id,playerName:x.firstName+' '+x.lastName,isMale:x.isMale,scores:[{roundId:1,score:21,roundWon:true,isSubScore:false},{roundId:2,score:15,roundWon:false,isSubScore:false}]}))};
+  else if(p.includes('/getmanagementaccess')||p.includes('/leaguemanagementaccess'))body={role:'Admin',canManage:true};
+  else if(mode==='scoring-defaults'&&p.includes('/selectedleaguescrambles/')){
+   if(p.includes('second')){if(defaultsSecondDelay)await new Promise(resolve=>setTimeout(resolve,700));body=defaultsSecondEmpty?[]:[{id:88,scrambleNumber:88,dateOfTeam:'2026-11-14T10:00:00'}];}
+   else body=[{id:211,scrambleNumber:12,dateOfTeam:'2026-11-17T18:00:00'},{id:1211,scrambleNumber:13,dateOfTeam:'2026-11-17T18:00:00'},{id:2211,scrambleNumber:14,dateOfTeam:'2026-11-17T16:00:00'},...(defaultsSaved?[{id:5200,scrambleNumber:15,dateOfTeam:'2026-11-18T18:00:00'}]:[])];
+  }
   else if(useScoringFixtures&&p.includes('/selectedleaguescrambles/'))body=[{id:211,scrambleNumber:12,dateOfTeam:'2026-11-01T18:00:00'},{id:1211,scrambleNumber:13,dateOfTeam:'2026-11-08T18:00:00'},{id:2211,scrambleNumber:14,dateOfTeam:'2026-11-15T18:00:00'}];
+  else if(mode==='scoring-defaults'&&p.includes('/getkingqueenteamsbyscramblenumber/')&&p.endsWith('/15'))body={kingQueenTeams:defaultsSavedTeams,byePlayers:[]};
   else if(useScoringFixtures&&p.includes('/getkingqueenteamsbyscramblenumber/')){if(fixtureReadFailure){fixtureReadFailure=false;await route.fulfill({status:500,body:'Fixture read failed'});return;}const number=Number(p.split('/').pop());const records=teams().slice(0,fixtureEmpty?0:fixtureOdd?11:12).map((t,index)=>{const id=211+index*7+((number-12)*1000);if(!savedScores.has(id))savedScores.set(id,(number===14?[]:[1,2,3]).filter(round=>index===0?round===1:!(index===11&&round===2)).map(round=>({id:id*10+round,kingQueenTeamId:id,roundId:round,roundScore:10+index+round,roundWon:round===1&&index%2===0})));return{kingQueenTeam:{id,scrambleNumber:number,kingQueenPlayers:t.players.map(x=>({playerId:x.id,isSubScore:savedSubs.get(id+':'+x.id)||false})),kingQueenRoundScores:JSON.parse(JSON.stringify(savedScores.get(id)))},players:savedAssignments.get(id)||t.players};});body={kingQueenTeams:records,byePlayers:[{id:1999,firstName:'Synthetic',lastName:'Bye'}]};}
   else if(p.includes('/selectedleaguescrambles/'))body=[{id:201,scrambleNumber:12,dateOfTeam:'2026-11-01T18:00:00'}];
   else if(p.includes('/getkingqueenteamsbyscramblenumber/'))body={kingQueenTeams:teams().map(t=>({kingQueenTeam:{id:t.kingQueenTeamId,scrambleNumber:12,kingQueenPlayers:t.players.map(x=>({playerId:x.id,isSubScore:false})),kingQueenRoundScores:[{id:300+t.sortingId,kingQueenTeamId:t.kingQueenTeamId,roundId:1,roundScore:21,roundWon:true}]},players:t.players})),byePlayers:[]};
@@ -54,6 +62,91 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
  });
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  await page.goto(BASE_URL+'/scrambler');await expect(page.locator('app-scrambler-component')).toBeVisible();
+ if (mode === 'scoring-defaults') {
+  const selector = page.locator('.score-editor-card mat-select').first();
+  const scoreTab = page.getByRole('tab',{name:'Manage Scores',exact:true});
+  const rosterTab = page.getByRole('tab',{name:'Select Players',exact:true});
+  async function league(name) {
+   await page.locator('#leagueDropdown').click();
+   await page.getByRole('menuitem',{name,exact:true}).click();
+  }
+  for (const [theme,width] of [['classic',1280],['navy',390],['charcoal',430]]) {
+   defaultsSaved=false;defaultsSecondEmpty=false;
+   await page.evaluate(value=>localStorage.setItem('league-hub-appearance',value),theme);
+   await page.setViewportSize({width,height:900});
+   await page.reload();
+   await league('Synthetic League');
+   await expect(page.getByText('No scramble has been generated yet.',{exact:false})).toHaveCount(0);
+   await expect(page.locator('.scrambler-results-shell')).toBeHidden();
+   await scoreTab.press('Enter');
+   await expect(selector).toContainText('Scramble 13');
+   await expect(page.locator('.score-editor-card mat-select').nth(1)).toContainText('3 Rounds');
+   await selector.click();
+   await page.getByRole('option',{name:/Scramble 12 /}).click();
+   await expect(selector).toContainText('Scramble 12');
+   const editor=page.locator('.score-editor-card');
+   await editor.getByRole('switch').first().click();
+   await expect(editor).toContainText('Substitute setting saved.');
+   await editor.getByRole('spinbutton').first().fill('19');
+   await editor.getByRole('button',{name:'Save Round Scores',exact:true}).click();
+   await expect(editor).toContainText('Round scores saved successfully.');
+   await expect(selector).toContainText('Scramble 12');
+   await rosterTab.press('Enter');
+   await scoreTab.press('Enter');
+   await expect(selector).toContainText('Scramble 12');
+   await league('Second Synthetic League');
+   await expect(selector).toContainText('Scramble 88');
+   await league('Synthetic League');
+   await expect(selector).toContainText('Scramble 13');
+   await page.locator('.score-editor-card').screenshot({path:path.join(out,theme+'-latest-scores.png')});
+   defaultsSecondDelay=true;
+   await league('Second Synthetic League');
+   await league('Synthetic League');
+   await expect(selector).toContainText('Scramble 13');
+   await page.waitForTimeout(750);
+   await expect(selector).toContainText('Scramble 13');
+   defaultsSecondDelay=false;
+   defaultsSecondEmpty=true;
+   await league('Second Synthetic League');
+   await expect(page.getByText('No saved scrambles for this league.')).toBeVisible();
+   await league('Synthetic League');
+   await expect(selector).toContainText('Scramble 13');
+   await rosterTab.press('Enter');
+   await page.getByRole('button',{name:'Select All',exact:true}).click();
+   const generate=page.getByRole('button',{name:'Scramble Players',exact:true});
+   await generate.click();
+   const results=page.locator('.scrambler-results-shell');
+   await expect(results).toBeVisible();
+   await expect(results.getByRole('button',{name:'View Matchups'})).toBeVisible();
+   await expect(results.getByRole('button',{name:'Modify Teams'})).toBeVisible();
+   await results.getByRole('button',{name:'Save Scramble',exact:true}).click();
+   await expect(results.getByRole('button',{name:'Print Matchups'})).toBeEnabled();
+   await expect(page.getByText('No scramble has been generated yet.',{exact:false})).toHaveCount(0);
+   await results.screenshot({path:path.join(out,theme+'-generated.png')});
+   await results.locator('summary').click();
+   const printRounds=results.locator('.results-print-controls mat-select').nth(1);
+   await printRounds.click();
+   await page.getByRole('option',{name:'2 Rounds',exact:true}).click();
+   await expect(printRounds).toContainText('2 Rounds');
+   await expect(page.locator('.mat-mdc-select-panel')).toHaveCount(0);
+   await scoreTab.click();
+   await expect(scoreTab).toHaveAttribute('aria-selected','true');
+   await expect(selector).toContainText('Scramble 15');
+   if (width < 600) await expect(page.locator('.mobile-score-navigation')).toContainText('Match 1 of 3');
+   else await expect(page.locator('.desktop-matchup-editor')).toHaveCount(3);
+   await expect(printRounds).toContainText('2 Rounds');
+   await expect(results.getByRole('button',{name:'Print Matchups'})).toBeEnabled();
+  }
+  assert.deepEqual(errors,[]);
+  fs.writeFileSync(path.join(out,'scoring-defaults-results.json'), JSON.stringify({
+   passed:true, databaseAccess:false, fixtures:true, viewports:{classic:1280,navy:390,charcoal:430},
+   checks:['creation time and ID ordering','manual selection and save','substitute toggle','tab and league changes',
+    'stale list response','empty list','generated and saved scramble','preserved top results and print rounds']
+  },null,2));
+  await browser.close();
+  console.log('Manage Scores defaults, manual selection, league switch, stale responses, empty and new saved scramble passed in three themes.');
+  return;
+ }
  await page.waitForFunction(()=>{const c=(window.ng.getComponent?window.ng.getComponent(document.querySelector('app-scrambler-component')):window.ng.probe(document.querySelector('app-scrambler-component')).componentInstance);return c.selectedLeague==='Synthetic League'&&c.malePlayers1.length===12;});await page.waitForTimeout(550);
  async function evaluate(fn,arg){return require('./angular-component.cjs')(page,'app-scrambler-component',fn,arg);}
  async function seed(results=true){await evaluate((c,arg)=>{c.selectedList=arg.useRoster?c.malePlayers1.concat(c.femalePlayers1):arg.players;c.teamSize=2;c.numberOfTeams=null;c.teamCount=12;c.isActionAllowed=true;c.selectedRounds=5;c.selectedMatchupsPerPage='2';c.rounds=[1,2,3,4,5];c.listOfTeams=arg.results?arg.teams:[];c.scrambleNumber=arg.results?12:null;c.__workspaceToken='retained';},{players,teams:teams(),results,useRoster:mode==='corrections'});await page.waitForTimeout(100);}
@@ -401,7 +494,7 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
   await shot('league-management');await page.locator('app-nav-menu').getByRole('link',{name:'Scrambler',exact:true}).click();assert.equal(await evaluate(c=>c.__workspaceToken),'retained');
   await expect(page.locator('app-scrambler-component').getByRole('tab',{name:'Standings',exact:true})).toHaveCount(0);checks.push('Management route and return preserve the same live Scrambler state; duplicate standings tab removed');
  }else if(mode==='setup'){
-  await expect(page.locator('.scramble-empty-state')).toBeVisible();await expect(page.locator('.scrambler-results-shell')).toBeHidden();
+  await expect(page.locator('.scramble-empty-state')).toHaveCount(0);await expect(page.locator('.scrambler-results-shell')).toBeHidden();
   await expect(page.locator('.primary-action')).toBeDisabled();
   await shot('after-empty');await page.getByRole('button',{name:'Select All',exact:true}).click();assert.equal(await evaluate(c=>c.selectedList.length),24);
   const roster=await page.locator('.league-roster mat-list-option').evaluateAll(nodes=>nodes.slice(0,5).map(e=>({y:e.getBoundingClientRect().y,width:e.getBoundingClientRect().width})));

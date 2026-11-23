@@ -1,3 +1,4 @@
+import { injectConfirmation, Confirmation } from '../confirmation-dialog';
 import { protectPendingWork } from '../pwa/pending-work.service';
 import {Component, Input, OnChanges, OnDestroy, SimpleChanges, AfterViewChecked, ViewChild, ElementRef, ChangeDetectionStrategy} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
@@ -25,6 +26,13 @@ export class ManageScheduleComponent implements OnChanges,OnDestroy,AfterViewChe
   protectPendingWork(() => this.busy || this.reading || this.dirty ||
    !!this.context && this.workflow === 'create' && this.initialConfiguration !== this.configuration());
  }
+ private readonly confirmAction = injectConfirmation();
+ private async confirmCurrent(data: Confirmation): Promise<boolean> {
+  const version = this.version, workflow = this.workflow, configuration = this.configuration();
+  const draft = JSON.stringify(this.capture());
+  return await this.confirmAction(data) && !this.destroyed && version === this.version &&
+   workflow === this.workflow && configuration === this.configuration() && draft === JSON.stringify(this.capture());
+ }
  private initialConfiguration = '';
  @ViewChild('previewStart') previewStart:ElementRef;
  private views:any={};private fileBuffer:ArrayBuffer=null;fileExtension='';private scrollPreview=false;previewRevision='';validationGames=1;replacementScopes:string[]=[];previewCrossRules:CrossRule[]=[];previewAllowCross=false;previewConfiguration='';customWeekday=false;advancedOpen=false;adjustPreview=false;editingExisting=false;previewWeeks:any[]=[];existingConflictCount=0;
@@ -48,8 +56,8 @@ export class ManageScheduleComponent implements OnChanges,OnDestroy,AfterViewChe
  }
  private savedEntries():ScheduleEntry[]{return this.context.entries.map(value=>{const e={...value,description:value.description||'',eventType:value.eventType||'',divisionKey:value.divisionKey||''};if(e.kind==='game')e.divisionKey=(this.teams.find(t=>t.id===e.team1Id)||{} as any).divisionKey||'';e.original=entrySignature(e);return e;});}
  setWorkflow(value:string):void {if(this.busy||this.reading)return;this.remember();this.restore(value==='edit'?'existing':value);}
- editSaved():void {if(this.workflow!=='existing')this.setWorkflow('existing');if(this.dirty&&!window.confirm('Discard your unsaved edits and load the saved schedule?'))return;Object.assign(this,this.defaults('existing'));this.editingExisting=true;this.refresh();}
- discardEdits():void {if(this.dirty&&!window.confirm('Discard these unsaved schedule edits?'))return;Object.assign(this,this.defaults('existing'));this.refresh();}
+ async editSaved():Promise<void> {if((this.workflow==='existing'?this.dirty:this.views.existing?.dirty)&&!await this.confirmCurrent({title:'Load saved schedule',message:'Your unsaved edits will be discarded.',action:'Load saved schedule',tone:'danger'}))return;if(this.workflow!=='existing')this.setWorkflow('existing');Object.assign(this,this.defaults('existing'));this.editingExisting=true;this.refresh();}
+ async discardEdits():Promise<void> {if(this.dirty&&!await this.confirmCurrent({title:'Discard schedule edits',message:'Restore the last saved schedule?',action:'Discard edits',tone:'danger'}))return;Object.assign(this,this.defaults('existing'));this.refresh();}
  get populatedPlans():any[]{return this.plans.filter(p=>this.divisions.some(d=>d.key===p.key&&d.teams>0));}
  get emptyDivisions():any[]{return this.divisions.filter(d=>!d.teams);}
  teamCount(key:string):number{return (this.divisions.find(d=>d.key===key)||{}).teams||0;}
@@ -72,8 +80,8 @@ export class ManageScheduleComponent implements OnChanges,OnDestroy,AfterViewChe
  get configurationChanged():boolean{return this.workflow==='create'&&this.dirty&&!!this.previewConfiguration&&this.previewConfiguration!==this.configuration();}
  get effectiveCrossRules():CrossRule[]{return this.workflow==='create'&&this.dirty?this.previewAllowCross?this.previewCrossRules:[]:this.allowCross?this.crossRules:[];}
  private preparePreview():void {this.mode=this.context.entries.length?'':'append';this.deletedGames=[];this.deletedEvents=[];this.previewRevision=this.context.revision;this.previewAllowCross=this.allowCross;this.previewCrossRules=JSON.parse(JSON.stringify(this.crossRules));this.previewConfiguration=this.configuration();this.dirty=true;this.uncertain=false;this.divisionFilter='';this.weekFilter=0;this.statusFilter='all';this.adjustPreview=false;}
- createPreview():void {
-  if(this.dirty&&!window.confirm('Replace this unsaved preview?'))return;try{
+ async createPreview():Promise<void> {
+  if(this.dirty&&!await this.confirmCurrent({title:'Replace unsaved preview',message:'Generate a new preview and discard the current unsaved schedule?',action:'Replace preview',tone:'danger'}))return;try{
    if(!isoDay(this.firstDate))throw Error('Choose a valid First Game Date.');if(this.customWeekday&&+this.day!==this.weekday(this.firstDate))throw Error('Weekly game day must match First Game Date. Change the date or weekday so the first games occur on the date shown.');if(this.method==='manual'){this.preparePreview();this.entries=[];this.validationGames=+this.games;this.replacementScopes=this.plans.filter(p=>p.included).map(p=>p.key);this.byes=[];this.error='';this.addManual();return;}
    const excluded=this.excluded.split(/[\s,]+/).filter(Boolean);if(excluded.some(d=>!isoDay(d)))throw Error('Use YYYY-MM-DD for every excluded date.');
    const plans=this.plans.map(p=>p.override?p:{...p,weeks:+this.weeks,firstDate:this.firstDate,day:this.customWeekday?+this.day:this.weekday(this.firstDate),games:+this.games});
@@ -130,10 +138,16 @@ export class ManageScheduleComponent implements OnChanges,OnDestroy,AfterViewChe
  get canSave():boolean{return !this.saveDisabledReason;}
  get conflictMessages():string[]{return Array.from(new Set(this.entries.filter(e=>e.issues&&e.issues.length).map(e=>this.issueText(e))));}
  get attentionCount():number{return this.entries.filter(e=>e.issues&&e.issues.length).length;}
- save():void {
+ async save():Promise<void> {
   if(!this.canSave)return;const updates=this.entries.filter(e=>e.id&&changed(e)).length,adds=this.entries.filter(e=>!e.id).length,removes=this.deletedGames.length+this.deletedEvents.length+this.replacementIds.length,games=this.entries.filter(e=>e.kind==='game'&&!e.id).length;
   const operation=this.mode==='replace-future'?'Replace Future Unplayed Games':this.mode==='edit'?'Edit Existing Schedule':'Add New Games';
-  if(!window.confirm(this.leagueName+' — '+operation+'\nSave '+games+' new games ('+adds+' total additions), '+updates+' edits and '+removes+' removals? Completed games and scores will be protected.'))return;
+  if (!await this.confirmCurrent({
+   title: 'Save Schedule', message: 'Completed games and scores will be protected.', action: 'Save Schedule',
+   tone: removes ? 'danger' : 'success',
+   details: [{label: 'League', value: this.leagueName}, {label: 'Operation', value: operation},
+    {label: 'New games', value: games}, {label: 'Edits', value: updates}, {label: 'Removals', value: removes},
+    ...(adds !== games ? [{label: 'Other additions', value: adds - games}] : [])]
+  }) || !this.canSave) return;
   const leagueId=this.leagueId,version=this.version;this.busy=true;this.error='';
   const payload={revision:this.previewRevision,mode:this.mode,maxGamesPerTeam:this.maxGames,allowCrossDivision:this.effectiveCrossRules.length>0,crossRules:this.effectiveCrossRules,replaceDivisions:this.replacementScopes,deleteGameIds:this.deletedGames,deleteEventIds:this.deletedEvents,entries:this.entries.map(e=>({id:e.id,kind:e.kind,weekNumber:+e.weekNumber,date:e.date,team1Id:e.team1Id,team2Id:e.team2Id,description:e.description,divisionKey:e.divisionKey,eventType:e.eventType}))};
   this.http.post<any>('api/ScheduleManagement/'+leagueId,payload).pipe(timeout(30000)).subscribe(result=>{
@@ -159,9 +173,9 @@ export class ManageScheduleComponent implements OnChanges,OnDestroy,AfterViewChe
  }
  private makeWorker():Worker{this.worker=new Worker(new URL('assets/import/roster-worker.js',document.baseURI).href);this.timer=setTimeout(()=>{this.error='File processing reached its time limit.';this.stopWorker();},12000);this.worker.onmessage=event=>{const r=event.data;if(r.id!==this.request)return;clearTimeout(this.timer);this.reading=false;if(r.error){this.error=r.error;return;}if(r.exported){this.download(new Blob([r.exported],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'schedule.xlsx');this.stopWorker();return;}this.grid=r;this.sheets=r.sheets;this.sheet=r.sheet;this.mapping=detectScheduleMapping(r);this.columns=Array.from({length:Math.max(1,...r.rows.map(row=>row.length))},(_,i)=>i);this.notice='File parsed. Verify the worksheet and mappings, then Analyze Import. Nothing has been saved.';};this.worker.onerror=()=>{this.error='File processing failed.';this.stopWorker();};return this.worker;}
  changeSheet():void {if(!this.fileBuffer){this.error='Reselect the workbook to change worksheets. Your preview is retained.';return;}this.stopWorker();this.reading=true;const buffer=this.fileBuffer.slice(0);this.makeWorker().postMessage({id:++this.request,buffer,extension:this.fileExtension,sheet:this.sheet},[buffer]);}
- analyze():void{if(!this.grid)return;try{const rows=this.grid.kind==='txt'?importScheduleText(this.grid.rows.map(r=>r[0]).join('\n'),this.teams,this.dateFormat):importScheduleGrid(this.grid,this.mapping,this.teams,this.dateFormat);this.replacePreview(rows);}catch(e){this.error=e.message;}}
- analyzeText():void{try{this.replacePreview(importScheduleText(this.text,this.teams,this.dateFormat));}catch(e){this.error=e.message;}}
- private replacePreview(rows:ScheduleEntry[]):void{if(this.dirty&&!window.confirm('Replace the current unsaved preview with this import?'))return;this.preparePreview();this.entries=rows;this.replacementScopes=Array.from(new Set(rows.filter(e=>e.kind==='game').reduce((all:string[],e)=>all.concat([e.team1Id,e.team2Id].map(id=>(this.teams.find(t=>t.id===id)||{} as any).divisionKey).filter(Boolean)),[])));this.validationGames=1;this.byes=[];this.error='';this.notice='Imported preview only. Resolve all attention rows before saving.';this.refresh();this.scrollPreview=true;}
+ async analyze():Promise<void>{if(!this.grid)return;try{const rows=this.grid.kind==='txt'?importScheduleText(this.grid.rows.map(r=>r[0]).join('\n'),this.teams,this.dateFormat):importScheduleGrid(this.grid,this.mapping,this.teams,this.dateFormat);await this.replacePreview(rows);}catch(e){this.error=e.message;}}
+ async analyzeText():Promise<void>{try{await this.replacePreview(importScheduleText(this.text,this.teams,this.dateFormat));}catch(e){this.error=e.message;}}
+ private async replacePreview(rows:ScheduleEntry[]):Promise<void>{if(this.dirty&&!await this.confirmCurrent({title:'Replace unsaved preview',message:'Use the imported schedule and discard the current unsaved preview?',action:'Use import',tone:'danger'}))return;this.preparePreview();this.entries=rows;this.replacementScopes=Array.from(new Set(rows.filter(e=>e.kind==='game').reduce((all:string[],e)=>all.concat([e.team1Id,e.team2Id].map(id=>(this.teams.find(t=>t.id===id)||{} as any).divisionKey).filter(Boolean)),[])));this.validationGames=1;this.byes=[];this.error='';this.notice='Imported preview only. Resolve all attention rows before saving.';this.refresh();this.scrollPreview=true;}
  private download(blob:Blob,name:string):void{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
  export(kind:string):void {
   const rows:any[][]=[['Week','Date','Division','Team 1','Team 2','Notes','Type','Event']];this.printEntries().forEach(e=>rows.push([e.weekNumber,e.date,e.kind==='event'&&!e.divisionKey?'':this.actualDivision(e),e.kind==='game'?this.teamName(e.team1Id):'',e.kind==='game'?this.teamName(e.team2Id):'',e.kind==='game'?e.description:'',e.kind==='game'?'Game':e.eventType,e.kind==='event'?e.description:'']));

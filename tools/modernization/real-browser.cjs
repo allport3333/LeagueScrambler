@@ -45,7 +45,7 @@ async function run(){
    await expect(page.getByRole('listbox')).toHaveCount(0);
    await expect(schedule.getByRole('button',{name:'Save Schedule',exact:true})).toBeEnabled();
    await page.screenshot({path:path.join(out,'actual-generated-preview.png')});
-   page.once('dialog',d=>d.accept());const [saved]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname==='/api/ScheduleManagement/'+fixture.leagueId&&r.request().method()==='POST'),schedule.getByRole('button',{name:'Save Schedule',exact:true}).click()]);assert.equal(saved.status(),200);
+   await schedule.getByRole('button',{name:'Save Schedule',exact:true}).click();const [saved]=await Promise.all([page.waitForResponse(r=>new URL(r.url()).pathname==='/api/ScheduleManagement/'+fixture.leagueId&&r.request().method()==='POST'),page.getByRole('alertdialog').getByRole('button',{name:'Save Schedule',exact:true}).click()]);assert.equal(saved.status(),200);
    await expect(schedule).toContainText(/saved/i);checks.push('Actual browser Configure → Generate Preview → Save appended 16 games on later calendar dates.');
   }
   await page.getByRole('tab',{name:'Add Players',exact:true}).click();

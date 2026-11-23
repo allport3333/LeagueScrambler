@@ -234,3 +234,21 @@ The shared multipart HTML/plain account template covers password reset, recovery
 Approvals require the independent verification checkbox with empty, short or longer notes. Rejection permits empty notes and no checkbox. Review rows retain the request, reviewer, outcome and timestamp. A committed approval records that the required attestation was made and the structured application audit logs the attestation explicitly. The server does not inspect notes as evidence.
 
 Angular and .NET builds passed. The SMTP pickup tests validated actual HTML/plain MIME and code format for recovery and email change, along with attempt exhaustion, rotation and legacy compatibility. Reset preview and token regression checks passed. Browser fixture tests passed across three themes, including optional-note approval variations and empty-note rejection. Guarded SQL-backed end-to-end recovery, delivery of the new templates to an approved external inbox and Gmail/Outlook rendering of the received messages remain unverified. The working SMTP settings were not changed.
+
+## Native browser dialog audit and scheduled team scorecards
+
+Application TypeScript, JavaScript, templates and Razor views were searched for native `alert`, `confirm`, `prompt`, aliases on browser globals and `beforeunload`. The audit found 13 native confirmations and two alerts in application code.
+
+| Workflow | Replacement |
+| --- | --- |
+| Manage Schedule | Shared Material confirmations for editing or discarding a draft, replacing a generated or imported preview, and saving. Save shows the league, operation, game additions, edits, removals and completed-game protection. |
+| Scrambler | Shared Material confirmations for clearing unsaved scores or team and court assignments, resetting player selections and resetting player classifications. |
+| Enter Team Scores | Shared Material confirmations for changing or reloading a date with unsaved scores and reducing the game count when removed rows contain scores. |
+| Player-profile attendance | Shared Material confirmation for removing the user's own sign-in. |
+| Individual Team Scores | Two missing-selection alerts replaced by short Material notifications. |
+
+The remaining source matches are the private `confirm` method in `existing-player-browser.component.ts`, which completes an application dialog, and `event.prompt()` in `pwa.service.ts`, which presents the browser-managed install permission. No native text prompt or `beforeunload` handler was found. Existing application confirmations on other workflows were retained.
+
+The score-entry workspace now uses an adaptive card grid. Each card aligns real team names and scores on shared columns, with matchup and division next to the card's game count. Save and status remain local to each card. Scoring, schedule generation and database contracts were outside these changes.
+
+Angular template compilation and JavaScript syntax checks passed. The final production bundle could not be rebuilt in the Windows sandbox because esbuild was denied directory access during source resolution. The revised schedule and new scorecard browser checks require a current bundle. Browser screenshots and schedule or score API acceptance remain unverified against this revision. No database writes or deployments were performed.

@@ -4,7 +4,7 @@
 
 @if (!loading) {
   <div class="row justify-content-center">
-    <div #workspaceTabs class="col-12 col-lg-10">
+    <div #workspaceTabs class="col-12 scores-workspace">
       <mat-card appearance="outlined" class="mt-2" style="box-shadow: none; padding: 0;">
         <mat-tab-group class="compact-tabs" [(selectedIndex)]="selectedWorkspaceTab" (selectedTabChange)="revealWorkspaceTab(workspaceTabs)" [mat-stretch-tabs]="false" [disablePagination]="true" mat-align-tabs="center">
           <!-- TAB 1: Enter Team Scores -->
@@ -46,18 +46,33 @@
                       <p class="empty-schedule" role="status">No scheduled games for this date. Select two teams below to enter a manual matchup.</p>
                     }
                     @if (scheduledCount) {
-                      <p>{{ scheduledCount }} scheduled matchup(s). Save each matchup separately.</p>
+                      <p class="scheduled-count">{{ scheduledCount }} scheduled {{ scheduledCount === 1 ? 'matchup' : 'matchups' }}</p>
                     }
+                    <div class="scorecard-collection">
                     @for (matchup of matchups; track matchup; let index = $index) {
                       <mat-card appearance="outlined" class="matchup-card" [attr.data-matchup-index]="index">
-                        <h3>{{ matchup.manual ? 'Manual matchup' : 'Scheduled matchup' }} {{ index + 1 }}</h3>
-                        @if (matchup.division || matchup.description) {
-                          <p class="matchup-detail">{{ matchup.division }}@if (matchup.division && matchup.description) {
-                            <span> · </span>
-                          }{{ matchup.description }}</p>
-                        }
+                        <header class="scorecard-header">
+                          <div>
+                            <h3>{{ matchup.manual ? 'Manual matchup' : 'Scheduled matchup' }} {{ index + 1 }}</h3>
+                            @if (matchup.division || matchup.description) {
+                              <p class="matchup-detail">{{ matchup.division }}@if (matchup.division && matchup.description) { <span> · </span> }{{ matchup.description }}</p>
+                            }
+                          </div>
+                          @if (!hasSaved(matchup)) {
+                            <mat-form-field appearance="outline" class="game-count" subscriptSizing="dynamic">
+                              <mat-label>Number of games</mat-label>
+                              <mat-select #countPicker [value]="matchup.games.length"
+                                  (selectionChange)="resizeGames(matchup, $event.value, countPicker)" [disabled]="matchup.saving">
+                                @for (count of [1,2,3,4,5,6,7,8,9,10]; track count) {
+                                  <mat-option [value]="count">{{ count }}</mat-option>
+                                }
+                              </mat-select>
+                            </mat-form-field>
+                          }
+                        </header>
                         @if (matchup.manual && !hasSaved(matchup)) {
-                          <div class="team-pair">
+                          <div class="score-columns team-pair">
+                            <span aria-hidden="true"></span>
                             <mat-form-field appearance="outline" subscriptSizing="dynamic">
                               <mat-label>Team 1</mat-label>
                               <mat-select [(ngModel)]="matchup.team1Id" [disabled]="matchup.saving">
@@ -76,25 +91,16 @@
                             </mat-form-field>
                           </div>
                         }
-                        @if (!matchup.manual || hasSaved(matchup)) {
-                          <div class="team-pair team-names">
-                            <strong>{{ teamName(matchup.team1Id) }}</strong><strong>{{ teamName(matchup.team2Id) }}</strong>
-                          </div>
-                        }
                         @if (!hasSaved(matchup)) {
-                          <mat-form-field appearance="outline" class="game-count" subscriptSizing="dynamic">
-                            <mat-label>Number of games</mat-label>
-                            <mat-select [value]="matchup.games.length" (selectionChange)="resizeGames(matchup, $event.value)" [disabled]="matchup.saving">
-                              @for (count of [1,2,3,4,5,6,7,8,9,10]; track count) {
-                                <mat-option [value]="count">{{ count }}</mat-option>
-                              }
-                            </mat-select>
-                          </mat-form-field>
-                          <div class="score-column-labels" aria-hidden="true">
-                            <span></span><span>Team 1 score</span><span>Team 2 score</span>
-                          </div>
+                          @if (!matchup.manual) {
+                            <div class="score-columns team-names">
+                              <span aria-hidden="true"></span>
+                              <strong>{{ teamName(matchup.team1Id) }}</strong>
+                              <strong>{{ teamName(matchup.team2Id) }}</strong>
+                            </div>
+                          }
                           @for (game of matchup.games; track game; let gameIndex = $index) {
-                            <div class="game-row">
+                            <div class="score-columns game-row">
                               <span class="game-label">Game {{ gameIndex + 1 }}</span>
                               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                                 <input matInput type="number" inputmode="numeric" min="0" max="2147483647" step="1" [(ngModel)]="game.team1Score" [disabled]="matchup.saving"
@@ -133,6 +139,7 @@
                         }
                       </mat-card>
                     }
+                    </div>
                     <button class="add-manual-matchup" mat-stroked-button color="primary" type="button" (click)="addManualMatchup()">Add Manual Matchup</button>
                     <p class="matchup-help">One score series per team pair per date. All game scores are required. To enter the same teams again, use a different date; this data model cannot distinguish multiple series on one day.</p>
                   }

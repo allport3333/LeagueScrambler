@@ -305,8 +305,8 @@ async function updates(browser, first, second, out) {
             if (outcome === 'save') await card.getByRole('button', { name: 'Save matchup scores' }).click();
             else {
                 await editor.getByRole('button', { name: 'Dismiss', exact: true }).click();
-                editor.once('dialog', dialog => dialog.accept());
                 await editor.getByRole('button', { name: 'Reload date' }).click();
+                await editor.getByRole('alertdialog').getByRole('button', { name: /^(?!Cancel$)/ }).click();
             }
             await expect(editor.locator('meta[name="release-fixture"]')).toHaveAttribute('content', 'version-b', { timeout: 25000 });
             assert.equal(editor.url(), editorUrl);

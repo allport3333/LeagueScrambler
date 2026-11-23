@@ -1,3 +1,5 @@
+import { injectConfirmation } from '../confirmation-dialog';
+import { MatSelect } from '@angular/material/select';
 import { onLeagueResume, protectPendingWork } from '../pwa/pending-work.service';
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { combineLatest, forkJoin, of, Subscription, switchMap } from 'rxjs';
@@ -49,6 +51,7 @@ export class TeamScoresComponent implements OnInit, OnDestroy {
     loadError = '';
     scheduledCount = 0;
     private requestVersion = 0;
+    private readonly confirmAction = injectConfirmation();
     private subscriptions = new Subscription();
 
     constructor(public statisticsService: StatisticsService,
@@ -84,18 +87,35 @@ export class TeamScoresComponent implements OnInit, OnDestroy {
         return date.getFullYear() + '-' + ('0' + (date.getMonth() + 1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2);
     }
 
-    changeDate() {
-        if (this.matchups.some(m => !this.hasSaved(m) && m.games.some(g => g.team1Score !== null || g.team2Score !== null))
-            && !window.confirm('Change date and discard unsaved score entries?')) {
-            this.gameDate = new Date(this.loadedDate); return;
+    private hasScoreDrafts(): boolean {
+        return this.matchups.some(m => !this.hasSaved(m) &&
+            m.games.some(g => g.team1Score !== null || g.team2Score !== null));
+    }
+
+    async changeDate() {
+        const version = this.requestVersion;
+        const date = this.gameDate;
+        if (this.hasScoreDrafts()) {
+            const confirmed = await this.confirmAction({
+                title: 'Change game date', message: 'Unsaved score entries will be discarded.',
+                action: 'Change date', tone: 'danger'
+            });
+            if (version !== this.requestVersion || date !== this.gameDate) return;
+            if (!confirmed || this.anySaving()) {
+                this.gameDate = new Date(this.loadedDate);
+                return;
+            }
         }
         this.loadMatchups();
     }
 
-    reloadDate() {
-        if (this.matchups.some(m => !this.hasSaved(m) && m.games.some(g => g.team1Score !== null || g.team2Score !== null))
-            && !window.confirm('Reload and discard unsaved score entries?')) return;
-        this.loadMatchups();
+    async reloadDate() {
+        const version = this.requestVersion;
+        if (this.hasScoreDrafts() && !await this.confirmAction({
+            title: 'Reload game date', message: 'Unsaved score entries will be discarded.',
+            action: 'Reload date', tone: 'danger'
+        })) return;
+        if (version === this.requestVersion && !this.anySaving()) this.loadMatchups();
     }
 
     loadMatchups() {
@@ -147,9 +167,19 @@ export class TeamScoresComponent implements OnInit, OnDestroy {
             games: Array.from({ length: this.numberOfGames }, () => ({ team1Score: null, team2Score: null })) };
     }
     addManualMatchup() { this.matchups.push(this.newEditor(true)); }
-    resizeGames(matchup: MatchupEditor, count: number) {
-        if (count < matchup.games.length && matchup.games.slice(count).some(g => g.team1Score !== null || g.team2Score !== null)
-            && !window.confirm('Remove the extra unsaved game scores?')) return;
+    async resizeGames(matchup: MatchupEditor, count: number, select: MatSelect) {
+        if (count < matchup.games.length && matchup.games.slice(count)
+            .some(g => g.team1Score !== null || g.team2Score !== null)) {
+            const confirmed = await this.confirmAction({
+                title: 'Remove games', message: 'The extra games contain unsaved scores.',
+                action: 'Remove extra games', tone: 'danger'
+            });
+            if (!this.matchups.includes(matchup) || matchup.saving) return;
+            if (!confirmed) {
+                select.writeValue(matchup.games.length);
+                return;
+            }
+        }
         matchup.games = matchup.games.slice(0, count);
         while (matchup.games.length < count) matchup.games.push({ team1Score: null, team2Score: null });
     }

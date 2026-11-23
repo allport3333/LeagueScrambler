@@ -145,8 +145,8 @@ async function run() {
                 await expect.poll(() => generatedTeams.length).toBe(1);
                 await expect(count).toHaveText('6 selected');
                 await page.getByRole('button', { name: 'Reset Players', exact: true }).click();
-                page.once('dialog', dialog => dialog.accept());
                 await page.getByRole('menuitem', { name: 'Reset Top Players' }).click();
+                await page.getByRole('alertdialog').getByRole('button', { name: /^(?!Cancel$)/ }).click();
                 await expect(summary).toHaveCount(0);
                 await page.locator('#leagueDropdown').click();
                 await page.getByRole('menuitem', { name: 'Other Fixture League', exact: true }).click();

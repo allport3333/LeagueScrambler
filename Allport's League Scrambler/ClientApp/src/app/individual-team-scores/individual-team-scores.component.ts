@@ -1,3 +1,4 @@
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { StatisticsService } from '../services/statistics.service';
 import { LeagueService } from '../services/league.service';
@@ -26,7 +27,7 @@ export class IndividualTeamScoresComponent implements OnInit {
     constructor(
         private statisticsService: StatisticsService,
         private leagueService: LeagueService,
-        private loginService: LoginService
+        private loginService: LoginService, private snackBar: MatSnackBar
     ) { }
 
     ngOnInit(): void {
@@ -63,7 +64,7 @@ export class IndividualTeamScoresComponent implements OnInit {
     // Fetch team scores for the selected date and league
     getTeamScores() {
         if (!this.selectedDate || !this.selectedLeague) {
-            alert('Please select a league and a date');
+            this.snackBar.open('Select a league and a date.', 'Close', { duration: 3000 });
             return;
         }
 
@@ -77,7 +78,7 @@ export class IndividualTeamScoresComponent implements OnInit {
 
     loadAvailableDates() {
         if (!this.selectedLeague) {
-            alert('Please select a league');
+            this.snackBar.open('Select a league.', 'Close', { duration: 3000 });
             return;
         }
 

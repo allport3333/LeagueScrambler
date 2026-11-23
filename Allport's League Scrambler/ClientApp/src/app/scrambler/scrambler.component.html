@@ -709,11 +709,19 @@ Apply Top Players (Male Standings)
             @if (selectedLeague) {
               <mat-tab label="Manage Scores">
                 <mat-card appearance="outlined" class="score-editor-card" style="margin-top: 20px; margin-bottom: 20px; background-color: var(--hub-surface, #eeeeee)">
+                  @if (scoreListLoading || scoreEditorLoading) {
+                    <app-page-loading label="Loading saved scramble"></app-page-loading>
+                  } @else if (scoreListError) {
+                    <p class="scoring-feedback" role="alert">{{ scoreListError }}</p>
+                    <button mat-stroked-button (click)="loadLeagueScrambles()">Retry</button>
+                  } @else if (!queriedScrambles.length) {
+                    <p class="scoring-feedback">No saved scrambles for this league.</p>
+                  } @else {
                   <div class="tab-content d-flex flex-column align-items-center">
                     <h5 class="mb-2">Select Scramble to Retrieve</h5>
                     <mat-form-field appearance="outline" style="width: 250px;">
                       <mat-label>Select Scramble</mat-label>
-                      <mat-select #scoreScramblePicker [value]="scoringScramble" [disabled]="scoreSaveBusy || scoreSubBusy || scoreEditorLoading" (selectionChange)="requestScoreScramble($event.value,scoreScramblePicker)">
+                      <mat-select #scoreScramblePicker [value]="scoringScramble" [compareWith]="compareScoreScrambles" [disabled]="scoreSaveBusy || scoreSubBusy || scoreEditorLoading" (selectionChange)="requestScoreScramble($event.value,scoreScramblePicker)">
                         @for (scramble of queriedScrambles; track scramble) {
                           <mat-option [value]="scramble">
                             Scramble {{ scramble.scrambleNumber }} - {{ scramble.dateOfTeam | date: 'shortDate' }}
@@ -721,10 +729,10 @@ Apply Top Players (Male Standings)
                         }
                       </mat-select>
                     </mat-form-field>
-                    @if (scrambleSelected) {
+                    @if (scoringScramble) {
                       <mat-form-field appearance="fill" style="display: inline-block; width: auto;">
                         <mat-label>Number of Rounds</mat-label>
-                        <mat-select [disabled]="scoreSaveBusy || scoreRefreshRequired || scoreEditorLoading" [(value)]="selectedRounds" (selectionChange)="onRoundsChange($event.value)">
+                        <mat-select [disabled]="scoreSaveBusy || scoreRefreshRequired || scoreEditorLoading" [value]="scoreRoundCount" (selectionChange)="onScoreRoundsChange($event.value)">
                           @for (round of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; track round) {
                             <mat-option [value]="round">
                               {{ round }} Rounds
@@ -736,14 +744,12 @@ Apply Top Players (Male Standings)
                   </div>
                   @if (scoringScramble && scoreHiddenRounds) {
                     <p class="scoring-feedback">Scores in hidden rounds are retained and saved. Increase Number of Rounds to inspect them.</p>
-                    }@if (scoreEditorLoading) {
-                    <p class="scoring-feedback" role="status">Loading saved scramble...</p>
                     }@if (scoreEditorFeedback) {
                     <p class="scoring-feedback" role="status">{{ scoreEditorFeedback }}</p>
                     }@if (scoreRefreshRequired) {
                     <button mat-stroked-button (click)="refreshSavedScoreIds()" [disabled]="scoreSaveBusy">Refresh Saved Records</button>
                   }
-                  @if (scrambleSelected && !scoreEditorLoading) {
+                  @if (scoringScramble && !scoreEditorLoading) {
                     <div class="d-flex flex-column align-items-center desktop-score-save">
                       <p class="desktop-save-context">Save round scores for every matchup in this scramble.</p>
                       @if (showSaveRoundScores) {
@@ -751,7 +757,7 @@ Apply Top Players (Male Standings)
                       }
                     </div>
                   }
-                  @if (scrambleSelected && scoringScramble && !scoreEditorLoading) {
+                  @if (scoringScramble && !scoreEditorLoading) {
                     <section class="desktop-score-editor" aria-label="Desktop matchup score editors">
                       <h5>Update Team Scores</h5>
                       <p class="desktop-sub-note">Sub Score switches save immediately. Save Round Scores saves the entire scramble.</p>
@@ -791,14 +797,14 @@ Apply Top Players (Male Standings)
                 @if (!mobileScorePairs.length) {
                   <p class="desktop-sub-note">No teams were returned for this saved scramble.</p>
                 }
-                @if (byePlayers.length) {
-                  <p class="desktop-sub-note">Bye players: @for (player of byePlayers; track player; let last = $last) {
+                @if (scoreByePlayers.length) {
+                  <p class="desktop-sub-note">Bye players: @for (player of scoreByePlayers; track player; let last = $last) {
                     <span>{{ player.firstName }} {{ player.lastName }}{{ last ? '' : ', ' }}</span>
                   }</p>
                 }
               </section>
             }
-            @if (scrambleSelected && scoringScramble && !scoreEditorLoading) {
+            @if (scoringScramble && !scoreEditorLoading) {
               <section class="mobile-score-editor" aria-label="Mobile round score editor">
                 @if (mobileScorePairs.length) {
                   <nav class="mobile-score-navigation" aria-label="Scoring matchups"><button mat-icon-button type="button" aria-label="Previous Match" [disabled]="mobileScoreMatchIndex===0" (click)="selectScoreMatch(mobileScoreMatchIndex-1)"><mat-icon>chevron_left</mat-icon></button><strong>Match {{ mobileScoreMatchIndex+1 }} of {{ mobileScorePairs.length }}</strong><button mat-icon-button type="button" aria-label="Next Match" [disabled]="mobileScoreMatchIndex>=mobileScorePairs.length-1" (click)="selectScoreMatch(mobileScoreMatchIndex+1)"><mat-icon>chevron_right</mat-icon></button></nav>
@@ -815,7 +821,7 @@ Apply Top Players (Male Standings)
                     }</span><mat-slide-toggle [attr.data-player-id]="player.id" [attr.aria-label]="'Team '+team.sortingId+' '+player.firstName+' '+player.lastName+' Sub Score'" [checked]="player.isSubScore" [disabled]="scoreSaveBusy || scoreSubPending[team.kingQueenTeamId+':'+player.id]" (change)="updateIsSubScore(team.kingQueenTeamId,player.id,$event.checked)">Sub Score</mat-slide-toggle></div>
                   }</section>
                 }</details>
-                <table class="mobile-score-grid"><thead><tr><th scope="col">Round</th><th scope="col">Team {{ mobileScorePair[0].sortingId }}</th><th scope="col">{{ mobileScorePair[1] ? 'Team '+mobileScorePair[1].sortingId : 'Unavailable' }}</th></tr></thead><tbody>@for (round of rounds; track round) {
+                <table class="mobile-score-grid"><thead><tr><th scope="col">Round</th><th scope="col">Team {{ mobileScorePair[0].sortingId }}</th><th scope="col">{{ mobileScorePair[1] ? 'Team '+mobileScorePair[1].sortingId : 'Unavailable' }}</th></tr></thead><tbody>@for (round of scoreRounds; track round) {
                 <tr><th scope="row">{{ round }}</th>@for (team of mobileScorePair; track team) {
                 <td [attr.data-team-id]="team.kingQueenTeamId"><input type="number" inputmode="numeric" class="mobile-round-input" [class.round-score-winner]="getScore(team.kingQueenTeamId,round)?.roundWon" [attr.aria-label]="'Team '+team.sortingId+' Round '+round+' score'" [value]="getScore(team.kingQueenTeamId,round) ? getScore(team.kingQueenTeamId,round).roundScore : ''" [disabled]="scoreSaveBusy" (input)="updateRoundScore(team.kingQueenTeamId,round,$event.target.value)"></td>
                 }@if (mobileScorePair.length<2) {
@@ -828,8 +834,8 @@ Apply Top Players (Male Standings)
           } @else {
             <p>No teams were returned for this saved scramble.</p>
           }
-          @if (byePlayers.length) {
-            <p class="score-editor-note">Bye players: @for (player of byePlayers; track player; let last = $last) {
+          @if (scoreByePlayers.length) {
+            <p class="score-editor-note">Bye players: @for (player of scoreByePlayers; track player; let last = $last) {
               <span>{{ player.firstName }} {{ player.lastName }}{{ last ? '' : ', ' }}</span>
             }</p>
           }
@@ -840,7 +846,8 @@ Apply Top Players (Male Standings)
             }
           </section>
         }
-      </mat-card>
+      }
+                </mat-card>
     </mat-tab>
   }
   @if (selectedLeague) {
@@ -879,9 +886,7 @@ Apply Top Players (Male Standings)
 </div>
 </div>
 </div>
-@if (workspaceSection === 'scrambler' && !initialRosterLoading && !initialRosterError && !listOfTeams.length) {
-  <p class="scramble-empty-state">No scramble has been generated yet. Select players and configure teams above.</p>
-  }@if (workspaceSection === 'league-management') {
+@if (workspaceSection === 'league-management') {
 <section #managementWorkspace class="league-management-page consolidated-management">
 @if (managementAccessLoading || leagueCreationPending) {
   <app-page-loading [label]="leagueCreationPending ? 'Creating and selecting league' : 'Loading league management'"></app-page-loading>
