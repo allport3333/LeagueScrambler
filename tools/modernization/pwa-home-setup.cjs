@@ -282,14 +282,17 @@ async function updates(browser, first, second, out) {
             const editorUrl = host.base + '/team-scores?fixture=draft';
             await openInstalledPage(editor, editorUrl);
             const card = editor.locator('.matchup-card').first();
-            const enterTeam = async (label, name) => {
-                await card.getByRole('combobox', { name: label, exact: true }).click();
-                await editor.getByRole('option', { name, exact: true }).click();
+            const selectCardOption = async (label, name) => {
+                const select = card.getByRole('combobox', { name: label, exact: true });
+                await select.press('Enter');
+                await expect(select).toHaveAttribute('aria-expanded', 'true');
+                const panel = editor.locator('#' + await select.getAttribute('aria-controls'));
+                await panel.getByRole('option', { name, exact: true }).click();
+                await expect(panel).toHaveCount(0);
             };
-            await enterTeam('Team 1', teams[0].teamName);
-            await enterTeam('Team 2', teams[1].teamName);
-            await card.getByRole('combobox', { name: 'Number of games' }).click();
-            await editor.getByRole('option', { name: '1', exact: true }).click();
+            await selectCardOption('Team 1', teams[0].teamName);
+            await selectCardOption('Team 2', teams[1].teamName);
+            await selectCardOption('Number of games', '1');
             await card.getByRole('spinbutton').first().fill('21');
             await card.getByRole('spinbutton').nth(1).fill('16');
 
