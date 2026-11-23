@@ -76,6 +76,7 @@ async function run() {
 
         const { page: scorePage, context: scoreContext } = await open('Manager', [assigned]);
         await scorePage.goto(BASE_URL + '/team-scores');
+        if (!before) await scorePage.getByRole('tab', { name: 'Enter Team Scores', exact: true }).click();
         await expect(scorePage.getByRole('heading', { name: 'Enter Team Scores' })).toBeVisible();
         const card = scorePage.locator('.matchup-card').first();
         await expect(card).toBeVisible();
@@ -125,8 +126,9 @@ async function run() {
             scheduled = true;
             await scorePage.getByRole('button', { name: 'Reload date' }).click();
             await expect(scorePage.getByRole('heading', { name: 'Scheduled matchup 1' })).toBeVisible();
-            await expect(scorePage.locator('.team-names')).toContainText('Harbor Aces');
-            await expect(scorePage.locator('.team-names')).toContainText('Court Rockets');
+            const savedResults = scorePage.getByRole('region', { name: 'Saved Matchup Results' });
+            await expect(savedResults).toContainText('Harbor Aces');
+            await expect(savedResults).toContainText('Court Rockets');
             await expect(scorePage.locator('.empty-schedule')).toHaveCount(0);
             await scorePage.setViewportSize({ width: 390, height: 900 });
             await scorePage.screenshot({ path: path.join(output, 'team-scores-scheduled-390.png') });
