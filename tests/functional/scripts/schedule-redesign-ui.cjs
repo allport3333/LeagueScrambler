@@ -2,7 +2,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert/strict'),{exp
 module.exports=async({page,checks,layouts,calls,out,scheduleFixture})=>{
  await page.getByRole('tab',{name:'Manage Schedule',exact:true}).click();const m=()=>page.locator('app-manage-schedule'),save=()=>m().getByRole('button',{name:'Save Schedule',exact:true}),reason=()=>m().locator('#schedule-save-reason');
  const dialog=()=>page.getByRole('alertdialog');
- const accept=async(button)=>{await button.click(); const message=await dialog().innerText(); await dialog().getByRole('button',{name:/^(?!Cancel$)/}).click(); return message;};
+ const accept=async(button)=>{await button.click(); const message=await dialog().innerText(); await dialog().getByRole('button',{name:/^(?!Cancel$)/}).click(); await expect(dialog()).toHaveCount(0); return message;};
  const state=(fn,arg)=>require('./angular-component.cjs')(page,'app-manage-schedule',fn,arg);
  const select=async(label,name,container=m())=>{await container.getByRole('combobox',{name:label,exact:true}).click();await page.getByRole('option',{name,exact:true}).click();};
  const configure=async()=>{await m().getByLabel('First Game Date',{exact:true}).fill('2027-01-05');if(!await state(c=>c.advancedOpen))await m().locator('.advanced > summary').click();await m().getByLabel('Excluded dates (YYYY-MM-DD)',{exact:true}).fill('2027-01-12');await m().locator('.advanced > summary').click();};

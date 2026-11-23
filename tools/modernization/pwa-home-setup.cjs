@@ -245,6 +245,14 @@ async function visual(browser, release, out, before) {
     }
 }
 
+async function openInstalledPage(page, url) {
+    await page.goto(url);
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+    // A first visit can acquire a controller after its initial document request.
+    // Request the app shell through that controller to assign this page to the installed version.
+    assert(await page.evaluate(() => fetch('/index.html').then(response => response.ok)));
+}
+
 async function updates(browser, first, second, out) {
     assert.notEqual(first.hash, second.hash);
     const host = await startHost(first, first);
@@ -258,8 +266,7 @@ async function updates(browser, first, second, out) {
             await context.addInitScript(() => Object.defineProperty(navigator, 'standalone', { value: true }));
             const home = await context.newPage();
             const homeUrl = host.base + '/?fixture=resume#top';
-            await home.goto(homeUrl);
-            await home.waitForFunction(() => !!navigator.serviceWorker.controller);
+            await openInstalledPage(home, homeUrl);
             await expect(home.locator('.recent-scores-table .score-value').first()).toHaveText(String(score));
             await home.evaluate(() => { window.resumeFixture = true; });
             host.setReachable(false);
@@ -273,8 +280,7 @@ async function updates(browser, first, second, out) {
             assert.equal(await home.evaluate(() => window.resumeFixture), true);
             const editor = await context.newPage();
             const editorUrl = host.base + '/team-scores?fixture=draft';
-            await editor.goto(editorUrl);
-            await editor.waitForFunction(() => !!navigator.serviceWorker.controller);
+            await openInstalledPage(editor, editorUrl);
             const card = editor.locator('.matchup-card').first();
             const enterTeam = async (label, name) => {
                 await card.getByRole('combobox', { name: label, exact: true }).click();
@@ -363,8 +369,7 @@ async function installationFailure(browser, first, second, out) {
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     try {
         const page = await context.newPage();
-        await page.goto(host.base + '/install-locally');
-        await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+        await openInstalledPage(page, host.base + '/install-locally');
         const rejected = page.waitForEvent('console', {
             predicate: message => message.text().includes('League Hub update verification failed'),
             timeout: 25000
