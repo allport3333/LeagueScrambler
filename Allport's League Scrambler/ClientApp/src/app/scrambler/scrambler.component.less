@@ -253,10 +253,13 @@ button[disabled].apply-top-button {
   font-size: 14px;
   cursor: pointer;
 }
-.team-configuration-modes label:has(:checked) { border-color: #526f9f; background: var(--hub-header, #eaf1fb); font-weight: 600; }
-.team-configuration-modes input { width: auto; accent-color: #405e8d; }
-.team-configuration-modes label:focus-within { outline: 2px solid #405e8d; outline-offset: 2px; }
+.team-configuration-modes label:has(:checked) { border-color: var(--hub-link, #526f9f); background: var(--hub-header, #eaf1fb); font-weight: 600; }
+.team-configuration-modes input { width: auto; accent-color: var(--hub-link, #405e8d); }
+.team-configuration-modes label:focus-within { outline: 2px solid var(--hub-focus, #405e8d); outline-offset: 2px; }
 .active-team-configuration, .team-formation { text-align: center; }
+.team-configuration-title { position: relative; display: table; margin-inline: auto; }
+.team-configuration-title button { position: absolute; inset-inline-start: 100%; top: 50%; transform: translateY(-50%); color: var(--hub-link, #344e74); }
+.team-configuration-hint { margin: 4px 0 8px; color: var(--hub-muted, #394655); font-size: 14px; }
 .team-formation { margin-top: 6px; }
 .scramble-setup { width: min(100%, 580px); }
 .scramble-setup ::ng-deep .mat-mdc-form-field-infix { width: auto; min-width: 0; }
@@ -407,8 +410,6 @@ button[disabled].apply-top-button {
  .generated-matchups > div > .row > .col-6, .generated-matchups .row.mb-4 > .col-6 { flex: 0 0 100%; max-width: 100%; margin-bottom: 12px; }
 }
 @media (max-width: 600px) {
- .no-duplicate-action { width: 100% !important; max-width: 360px !important; min-height: 56px; padding: 12px 16px !important; font-size: 18px; line-height: 24px; white-space: normal; }
- .no-duplicate-action.enabled:hover { transform: none; }
  .container-fluid button { max-width: 100%; white-space: normal; }
  .scramble-results-toolbar { margin: 12px 4px; padding: 10px; }
  .results-print-controls { border-left: 0; padding-left: 0; }
@@ -790,34 +791,88 @@ button[disabled].apply-top-button {
 .roster-panel[hidden] { display: none; }
 .player-icon-action.low-player-active { background: var(--hub-heading, #293d69); color: #fff; border-radius: 50%; }
 .scramble-roster-grid .desktop-player-name, .scramble-roster-grid .mobile-player-name { font-weight: 500; letter-spacing: normal; }
-.retrieve-scramble-selection { width: min(100%, 680px); }
-.retrieved-scramble-list { display: flex; flex-wrap: wrap; justify-content: space-between; row-gap: 4px; }
+.teammate-history {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: 840px;
+  margin: 12px auto;
+  padding: 12px 8px;
+  background: var(--hub-surface, #fff);
+  color: var(--hub-text, #262c35);
+  text-align: center;
+}
+.teammate-history h3, .teammate-history p { margin: 0; }
+.teammate-history h3 { color: var(--hub-heading, #29446c); font-size: 18px; }
+.retrieved-scramble-list {
+  width: min(100%, 680px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.retrieved-scramble-list:empty { display: none; }
+.retrieve-scramble-row:only-child { grid-column: 1 / -1; }
 .retrieve-scramble-row {
-  --mat-list-list-item-label-text-color: var(--hub-text, #262c35);
-  --mat-list-list-item-hover-label-text-color: var(--hub-text, #262c35);
-  --mat-list-list-item-focus-label-text-color: var(--hub-text, #262c35);
-  --mat-checkbox-unselected-icon-color: var(--hub-link, #435575);
-  --mat-checkbox-unselected-hover-icon-color: var(--hub-link, #435575);
-  --mat-checkbox-unselected-focus-icon-color: var(--hub-focus, #3f51b5);
-  --mat-checkbox-selected-icon-color: var(--hub-link, #3f51b5);
-  --mat-checkbox-selected-hover-icon-color: var(--hub-link, #3f51b5);
-  --mat-checkbox-selected-focus-icon-color: var(--hub-focus, #3f51b5);
-  --mat-checkbox-selected-checkmark-color: var(--hub-page, #fff);
-  background: var(--hub-section, #d3d3d3);
+  display: flex;
+  align-items: center;
+  background: var(--hub-section, #e9edf2);
   border: 1px solid var(--hub-border, #bcc6d2);
   border-radius: 4px;
   text-align: center;
 }
 .retrieve-scramble-row:hover { background: var(--hub-row-alt, #e1e5ec); }
-.retrieve-scramble-row[aria-selected='true'] {
+.retrieve-scramble-row:has(input:checked) {
   background: var(--hub-header, #e2e9f7);
   border-color: var(--hub-link, #526e9f);
 }
-.retrieve-scramble-row:focus-visible {
+.retrieve-scramble-row:has(input:focus-visible) {
   outline: 2px solid var(--hub-focus, #3f51b5);
   outline-offset: -2px;
 }
-.retrieve-scramble-row-content { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.retrieve-scramble-row-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  gap: 10px;
+  padding-inline: 10px;
+  margin: 0;
+  cursor: pointer;
+}
+.retrieve-scramble-row-content input {
+  appearance: none;
+  display: grid;
+  place-content: center;
+  width: 17px;
+  height: 17px;
+  flex: none;
+  border: 1px solid var(--hub-link, #405e8d);
+  border-radius: 3px;
+  accent-color: var(--hub-link, #405e8d);
+}
+.retrieve-scramble-row-content input:checked { background: var(--hub-link, #405e8d); }
+.retrieve-scramble-row-content input:checked::before {
+  content: '';
+  width: 5px;
+  height: 9px;
+  border: solid var(--hub-page, #fff);
+  border-width: 0 2px 2px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+.retrieve-scramble-row-content input:disabled { opacity: 0.55; }
+@media (forced-colors: active) {
+  .retrieve-scramble-row-content input { appearance: auto; }
+  .retrieve-scramble-row-content input:checked::before { display: none; }
+}
+.retrieve-scramble-row-content:has(input:disabled) { cursor: default; }
+.history-secondary-actions { display: flex; flex-wrap: wrap; justify-content: center; }
+.history-primary-action button, .history-fallback button { min-height: 40px; white-space: normal; }
+.history-fallback { display: grid; justify-items: center; gap: 6px; max-width: 52ch; }
+.history-selection-summary { font-weight: 600; }
 .retrieve-scramble-details {
   display: flex;
   min-width: 0;
@@ -828,6 +883,9 @@ button[disabled].apply-top-button {
 }
 .retrieve-scramble-date { color: var(--hub-muted, #394655); }
 .retrieve-scramble-action { color: var(--hub-link, #344e74); }
+@media (max-width: 600px) {
+  .retrieved-scramble-list { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 400px) {
   .retrieve-scramble-details { font-size: 13px; }
 }

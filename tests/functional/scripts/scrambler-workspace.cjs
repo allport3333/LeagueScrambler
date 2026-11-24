@@ -416,9 +416,9 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
   assert.notEqual(await print.evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(152, 208, 167)');
   await page.getByRole('button',{name:'Save Teams',exact:true}).click();await expect(print).toBeEnabled();await expect.poll(()=>print.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe('rgb(152, 208, 167)');
   const savedNotice=page.locator('snack-bar-container').getByRole('button',{name:'Close',exact:true});if(await savedNotice.isVisible())await savedNotice.click();await expect(page.locator('snack-bar-container')).toHaveCount(0);
-  await page.getByRole('tab',{name:'Retrieve Scramble',exact:true}).click();
+  await page.getByRole('tab',{name:'Avoid Repeat Teammates',exact:true}).click();
   for(const width of [375,390]){
-   await page.setViewportSize({width,height:844});const b=page.locator('.no-duplicate-action');await b.scrollIntoViewIfNeeded();
+   await page.setViewportSize({width,height:844});const b=page.getByRole('button',{name:'Generate Teams Without Repeat Teammates'});await b.scrollIntoViewIfNeeded();
    const box=await b.boundingBox();assert(box.width>=230&&box.height<=90,'Mobile button uses available width without a tall text stack');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await b.screenshot({path:path.join(out,'no-duplicate-mobile-'+width+'.png')});
@@ -436,7 +436,7 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
   await page.getByRole('button',{name:'Cancel Changes',exact:true}).click();await expect(print).toBeEnabled();
   await page.locator('.scramble-results-toolbar').screenshot({path:path.join(out,'results-saved-1920.png')});
   checks.push('Unsaved and failed-save print blocked in UI and method; successful Save enables; staged edits disable and Cancel restores');
-  await page.getByRole('tab',{name:'Retrieve Scramble',exact:true}).click();await page.locator('button[mattooltip="Retrieve Scramble"]').first().click();await expect(print).toBeEnabled();await page.getByRole('tab',{name:'Select Players',exact:true}).click();
+  await page.getByRole('tab',{name:'Avoid Repeat Teammates',exact:true}).click();await page.locator('button[mattooltip="View saved teams"]').first().click();await expect(print).toBeEnabled();await page.getByRole('tab',{name:'Select Players',exact:true}).click();
   checks.push('Saved scramble retrieval restores print eligibility');
   await evaluate(c=>{c.addPlayerToTopPlayerList(c.malePlayers1[0]);c.addPlayerToByeList(c.malePlayers1[0]);c.addPlayerToLowPlayerList(c.femalePlayers1[0]);c.swapGender(c.malePlayers1[0]);});
   const closeNotice=page.locator('snack-bar-container').getByRole('button',{name:'Close',exact:true});if(await closeNotice.last().isVisible())await closeNotice.last().click();await expect(page.locator('snack-bar-container')).toHaveCount(0);
@@ -501,7 +501,7 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
   assert(roster.slice(0,4).every(r=>Math.abs(r.y-roster[0].y)<1)&&roster[4].y>roster[0].y,'Desktop roster remains four columns');
   await page.locator('.scramble-setup mat-select').nth(0).click();await page.getByRole('option',{name:'2',exact:true}).click();assert.equal(await evaluate(c=>c.numberOfTeams),null);
   await page.locator('.scramble-setup mat-select').nth(1).click();await page.getByRole('option',{name:'6',exact:true}).click();assert.equal(await evaluate(c=>c.teamSize),null);
-  await page.getByRole('tab',{name:'Retrieve Scramble',exact:true}).click();await page.getByRole('tab',{name:'Select Players',exact:true}).click();assert.equal(await evaluate(c=>c.selectedList.length),24);
+  await page.getByRole('tab',{name:'Avoid Repeat Teammates',exact:true}).click();await page.getByRole('tab',{name:'Select Players',exact:true}).click();assert.equal(await evaluate(c=>c.selectedList.length),24);
   await shot('after-configured');await page.getByRole('button',{name:'Deselect All',exact:true}).click();assert.equal(await evaluate(c=>c.selectedList.length),0);
   await expect(page.locator('.primary-action')).toBeDisabled();checks.push('Setup: select/deselect, four-column roster, size/count exclusivity, tab state, disabled empty scramble and compact empty results');
  }else if(mode==='followup'){
@@ -511,7 +511,7 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
   checks.push('Existing Number of Rounds and Matchups Per Page selectors update their original state');
   await page.getByRole('button',{name:'Hide Setup',exact:true}).click();await expect(page.locator('.scramble-setup')).toBeHidden();
   await page.getByRole('button',{name:'Show Setup',exact:true}).click();await expect(page.locator('.scramble-setup')).toBeVisible();assert.equal(await evaluate(c=>c.selectedList.length),24);
-  await page.getByRole('tab',{name:'Retrieve Scramble',exact:true}).click();await page.locator('button[mattooltip="Retrieve Scramble"]').first().click();
+  await page.getByRole('tab',{name:'Avoid Repeat Teammates',exact:true}).click();await page.locator('button[mattooltip="View saved teams"]').first().click();
   await page.waitForFunction(()=>(window.ng.getComponent?window.ng.getComponent(document.querySelector('app-scrambler-component')):window.ng.probe(document.querySelector('app-scrambler-component')).componentInstance).retrievedListOfTeams.length===12);
   assert.deepEqual(await evaluate(c=>c.listOfRetrievedScrambleNumbers),[12]);assert.equal(await evaluate(c=>c.listOfTeams[0].kingQueenRoundScores[0].roundScore),21);
   await expect(page.locator('.results-heading')).toContainText('Retrieved Scramble: 12');

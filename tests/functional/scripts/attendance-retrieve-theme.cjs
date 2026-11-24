@@ -8,6 +8,10 @@ const origin = 'https://localhost:5001';
 const out = process.env.LEAGUE_TEST_OUT;
 const league = { id: 101, leagueName: 'Harbor League' };
 const player = { id: 7, firstName: 'Avery', lastName: 'Harbor', isMale: true };
+const players = [player, ...[8, 9, 10].map(id => ({
+    id, firstName: 'Player', lastName: String(id), isMale: id < 9
+}))];
+const savedPairs = { 12: [[7, 8], [9, 10]], 13: [[7, 9], [8, 10]], 14: [[7, 10], [8, 9]] };
 const scrambles = [12, 13, 14, 15, 16, 17].map(number => ({
     id: 200 + number, scrambleNumber: number, dateOfTeam: '2026-11-18T12:00:00'
 }));
@@ -47,7 +51,8 @@ async function checkText(locator, surface, label, minimum = 4.5) {
                 const context = await browser.newContext({ serviceWorkers: 'block', viewport: { width, height: 920 } });
                 await context.addInitScript(value => localStorage.setItem('league-hub-appearance', value), theme);
                 const page = await context.newPage();
-                let upcoming = true, signedIn = false, attendanceWrites = 0, retrieved = null;
+                let upcoming = true, signedIn = false, attendanceWrites = 0, retrieved = null, historyRequests = 0;
+                const generated = [], historySelections = [];
                 await context.route('**/*', async route => {
                     const url = new URL(route.request().url());
                     if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') return route.continue();
@@ -58,13 +63,30 @@ async function checkText(locator, surface, label, minimum = 4.5) {
                     if (endpoint.includes('/playerattendance/')) {
                         if (route.request().method() !== 'GET') { attendanceWrites++; signedIn = true; }
                         body = { visible: true, isOwnProfile: true, canSignIn: !signedIn, signedIn, canRemove: signedIn };
+                    } else if (endpoint.includes('/getkingqueenteamsbyscramblenumbers/')) {
+                        const selected = route.request().postDataJSON();
+                        historySelections.push(selected);
+                        body = { kingQueenTeams: selected.flatMap(number => savedPairs[number].map((pair, index) => ({
+                            kingQueenTeam: { id: number * 10 + index, leagueID: league.id, scrambleNumber: number, scrambleWithScoresToBeSaved: true },
+                            players: pair.map(id => players.find(player => player.id === id))
+                        }))), byePlayers: [] };
+                    } else if (endpoint.includes('/generatescramble/')) {
+                        generated.push(route.request().postDataJSON().kingQueenTeams.map(team => team.players.map(player => player.id).sort((a, b) => a - b)));
+                        body = generated.at(-1).map((_, index) => ({ id: 301 + index, scrambleNumber: 18 }));
                     } else if (route.request().method() !== 'GET') {
                         return route.abort();
                     } else if (endpoint.endsWith('/isauthenticated')) body = true;
                     else if (endpoint.endsWith('/getusersrole')) body = { role: 'Admin' };
                     else if (endpoint.endsWith('/getusersplayer')) body = { playerId: player.id };
                     else if (endpoint.endsWith('/getuserleagues') || endpoint.endsWith('/getleagues')) body = [league];
+                    else if (endpoint.includes('/getmanagementaccess') || endpoint.includes('/leaguemanagementaccess')) body = { role: 'Admin', canManage: true };
                     else if (endpoint.includes('/selectedleaguescrambles/')) body = scrambles;
+                    else if (endpoint.includes('/teammatehistory/')) {
+                        historyRequests++;
+                        body = { leagueId: league.id, pairs: [{ player1Id: 7, player2Id: 10, count: 3 }] };
+                    } else if (endpoint.includes('allmale')) body = players.filter(p => p.isMale);
+                    else if (endpoint.includes('allfemale')) body = players.filter(p => !p.isMale);
+                    else if (/getplayers|selectleague|getallplayers/.test(endpoint)) body = players;
                     else if (endpoint.includes('/getkingqueenteamsbyscramblenumber/')) {
                         retrieved = Number(endpoint.split('/').at(-1));
                         body = { kingQueenTeams: [{ kingQueenTeam: { id: 212 }, players: [player] }], byePlayers: [] };
@@ -99,39 +121,55 @@ async function checkText(locator, surface, label, minimum = 4.5) {
                 assert.equal(attendanceWrites, 1);
 
                 await page.goto(origin + '/scrambler');
-                await page.getByRole('tab', { name: 'Retrieve Scramble', exact: true }).click();
-                const list = page.getByRole('listbox', { name: 'Previous scrambles' });
-                const rows = list.getByRole('option');
+                const help = page.getByRole('button', { name: 'About team configuration' });
+                await expect(help).toBeVisible();
+                await page.locator('.scramble-setup').screenshot({ path: path.join(out, tag + '-team-configuration.png'), animations: 'disabled' });
+                await help.focus();
+                await page.keyboard.press('Enter');
+                const dialog = page.getByRole('dialog', { name: 'Team Configuration' });
+                await expect(dialog).toContainText('With 20 players and 5 teams');
+                await dialog.screenshot({ path: path.join(out, tag + '-team-help.png'), animations: 'disabled' });
+                await page.keyboard.press('Escape');
+                await expect(help).toBeFocused();
+                const historyTab = page.getByRole('tab', { name: 'Avoid Repeat Teammates', exact: true });
+                await historyTab.click();
+                const list = page.getByRole('list', { name: 'Previous scrambles' });
+                const rows = list.getByRole('listitem');
                 await expect(rows).toHaveCount(scrambles.length);
                 const row = rows.first(), second = rows.nth(1);
-                await expect(row).toHaveAttribute('aria-selected', 'false');
+                const firstCheckbox = row.getByRole('checkbox'), secondCheckbox = second.getByRole('checkbox');
+                const generate = page.getByRole('button', { name: 'Generate Teams Without Repeat Teammates' });
+                const selection = page.locator('.history-selection-summary');
+                await expect(generate).toBeDisabled();
+                await expect(selection).toContainText('No specific historical teammate restrictions selected');
+                await expect(firstCheckbox).not.toBeChecked();
                 const dateRatio = await checkText(row.locator('.retrieve-scramble-date'), row, tag + ' date');
                 await checkText(row.locator('b'), row, tag + ' number');
                 await checkText(row.getByRole('button'), row, tag + ' retrieve icon', 3);
                 const beforeHover = await row.evaluate(el => getComputedStyle(el).backgroundColor);
                 await row.hover();
                 await expect.poll(() => row.evaluate(el => getComputedStyle(el).backgroundColor)).not.toBe(beforeHover);
-                await row.focus();
-                await page.keyboard.press('ArrowDown');
-                await expect(second).toBeFocused();
+                await row.getByRole('button').focus();
+                await page.keyboard.press('Tab');
+                await expect(secondCheckbox).toBeFocused();
                 await expect(second).toHaveCSS('outline-width', '2px');
                 await page.keyboard.press('Space');
-                await expect(second).toHaveAttribute('aria-selected', 'true');
-                await expect(row).toHaveAttribute('aria-selected', 'false');
+                await expect(secondCheckbox).toBeChecked();
+                await expect(firstCheckbox).not.toBeChecked();
+                await expect(selection).toContainText('1 previous scramble selected');
                 const selectedRatio = await checkText(second.locator('.retrieve-scramble-date'), second, tag + ' selected date');
                 const measureControls = () => list.evaluate(element => {
-                    const colors = selected => {
-                        const item = element.querySelector(`[role=option][aria-selected="${selected}"]`);
-                        const checkbox = item.querySelector('.mdc-checkbox__background');
+                    return ['input:not(:checked)', 'input:checked'].map(selector => {
+                        const checkbox = element.querySelector(selector);
                         const styles = getComputedStyle(checkbox);
-                        return [selected ? styles.backgroundColor : styles.borderTopColor, getComputedStyle(item).backgroundColor];
-                    };
-                    return [colors(false), colors(true)];
+                        return [checkbox.checked ? styles.backgroundColor : styles.borderTopColor,
+                            getComputedStyle(checkbox.closest('li')).backgroundColor];
+                    });
                 });
                 await expect.poll(async () => Math.min(...(await measureControls()).map(([control, surface]) =>
                     contrast(control, surface))), { message: tag + ' checkbox contrast' }).toBeGreaterThanOrEqual(3);
                 assert(await row.evaluate(element => {
-                    const boundary = element.querySelector('.mdc-list-item__primary-text').getBoundingClientRect();
+                    const boundary = element.querySelector('label').getBoundingClientRect();
                     return [...element.querySelector('.retrieve-scramble-details').children].every(label => {
                         const range = document.createRange();
                         range.selectNodeContents(label);
@@ -145,19 +183,72 @@ async function checkText(locator, surface, label, minimum = 4.5) {
                 assert.equal(Math.abs(boxes[0].y - boxes[1].y) < 1, width === 1440, tag + ' column layout');
                 assert(boxes[0].height <= 75, tag + ' row density');
                 assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), tag + ' horizontal overflow');
-                await list.screenshot({ path: path.join(out, tag + '-retrieve.png'), animations: 'disabled' });
+                await page.locator('.teammate-history').screenshot({ path: path.join(out, tag + '-retrieve.png'), animations: 'disabled' });
                 await row.getByRole('button').click();
                 await expect.poll(() => retrieved).toBe(scrambles[0].scrambleNumber);
-                await page.getByRole('tab', { name: 'Retrieve Scramble', exact: true }).click();
+                await historyTab.click();
                 const summary = page.locator('.retrieved-scramble-summary');
                 await expect(summary).toContainText(String(scrambles[0].scrambleNumber));
                 await checkText(summary, summary, tag + ' retrieved summary');
                 await summary.screenshot({ path: path.join(out, tag + '-retrieve-summary.png'), animations: 'disabled' });
+                await expect(secondCheckbox).toBeChecked();
+                await expect(firstCheckbox).not.toBeChecked();
+                if (theme === 'classic' && width === 1440) {
+                    await page.getByRole('tab', { name: 'Select Players', exact: true }).click();
+                    await page.getByRole('button', { name: 'Select All', exact: true }).click();
+                    await expect(page.locator('#team-configuration-hint')).toContainText('most players allowed');
+                    await page.getByRole('radio', { name: 'Number of Teams' }).check();
+                    await expect(page.locator('#team-configuration-hint')).toContainText('how many teams');
+                    await page.getByRole('combobox', { name: 'Number of Teams' }).click();
+                    await page.getByRole('option', { name: '2', exact: true }).click();
+                    await page.getByRole('button', { name: /Scramble Rules/ }).click();
+                    await page.getByRole('checkbox', { name: 'Prioritize fewer previous teammates' }).check();
+                    await page.getByRole('checkbox', { name: /Allow minimum repeats/ }).check();
+                    await historyTab.click();
+                    await expect(secondCheckbox).toBeChecked();
+                    await secondCheckbox.uncheck();
+                    await firstCheckbox.check();
+                    await page.locator('.teammate-history').screenshot({ path: path.join(out, tag + '-generate-ready.png'), animations: 'disabled' });
+                    await generate.click();
+                    await expect(page.getByText('New scramble generated', { exact: true })).toBeVisible().catch(async error => {
+                        const diagnostics = await page.locator('.generation-report, .generation-feedback').allTextContents();
+                        throw new Error(diagnostics.join(' ') || String(error));
+                    });
+                    await expect.poll(() => generated.length).toBe(1);
+                    assert.deepEqual(historySelections[0], [12]);
+                    assert.equal(historyRequests, 1);
+                    assert.equal(generated[0].length, 2);
+                    assert.deepEqual(generated[0].map(pair => pair.join()).sort(), ['7,9', '8,10'].sort());
+                    await historyTab.click();
+                    await secondCheckbox.check();
+                    await rows.nth(2).getByRole('checkbox').check();
+                    await expect(selection).toContainText('3 previous scrambles selected');
+                    const retry = page.getByRole('button', { name: 'Retry with Minimum Repeats' });
+                    await expect(retry).toHaveCount(0);
+                    await generate.click();
+                    await expect(retry).toBeVisible();
+                    assert.equal(generated.length, 1);
+                    await expect(page.locator('.history-fallback')).toContainText('every valid arrangement repeats');
+                    await page.locator('.teammate-history').screenshot({ path: path.join(out, tag + '-strict-impossible.png'), animations: 'disabled' });
+                    await retry.click();
+                    await expect.poll(() => generated.length).toBe(2);
+                    assert.deepEqual(historySelections.slice(1), [[12, 13, 14], [12, 13, 14]]);
+                    await historyTab.click();
+                    await page.getByRole('button', { name: 'Clear Selection' }).click();
+                    await expect(generate).toBeDisabled();
+                    await page.getByRole('radio', { name: 'Maximum Team Size' }).check();
+                    await page.getByRole('combobox', { name: 'Maximum Team Size' }).click();
+                    await page.getByRole('option', { name: '2', exact: true }).click();
+                    await page.getByRole('button', { name: 'Scramble Players', exact: true }).click();
+                    await expect.poll(() => generated.length).toBe(3);
+                    assert.equal(historySelections.length, 3);
+                    assert.deepEqual(generated[2].map(team => team.length), [2, 2]);
+                }
                 report.push({ theme, width, headingRatio, buttonRatio, dateRatio, selectedRatio, rowHeight: boxes[0].height });
                 await context.close();
             }
         }
         fs.writeFileSync(path.join(out, 'results.json'), JSON.stringify(report, null, 2));
-        console.log('Attendance and Retrieve Scramble checks passed in all three themes.');
+        console.log('Attendance, team configuration, and strict and minimum-repeat generation passed. History layout and contrast passed in all three themes at desktop and mobile widths.');
     } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

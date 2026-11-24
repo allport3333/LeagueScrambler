@@ -12,7 +12,13 @@
     <div class="row">
       <div class="col-12">
         <mat-card appearance="outlined" class="scramble-setup">
-          <h2 id="team-configuration-heading">Team Configuration</h2>
+          <div class="team-configuration-title">
+            <h2 id="team-configuration-heading">Team Configuration</h2>
+            <button mat-icon-button type="button" aria-label="About team configuration" aria-haspopup="dialog"
+              (click)="openTeamConfigurationHelp(teamConfigurationHelp)">
+              <mat-icon>info_outline</mat-icon>
+            </button>
+          </div>
           <fieldset class="team-configuration-modes">
             <legend class="sr-only">Configure teams by</legend>
             <label>
@@ -29,13 +35,25 @@
               <mat-label>{{ teamConfigurationMode === 'size' ? 'Maximum Team Size' : 'Number of Teams' }}</mat-label>
               <mat-select [ngModel]="teamConfigurationMode === 'size' ? teamSize : numberOfTeams"
                 (ngModelChange)="teamConfigurationMode === 'size' ? updateNumberOfTeams($event) : updateTeamSize($event)"
-                placeholder="Choose a number">
+                aria-describedby="team-configuration-hint" placeholder="Choose a number">
                 @for (value of (teamConfigurationMode === 'size' ? teamSizePossible : maxNumberOfTeams); track value) {
                   <mat-option [value]="value">{{ value }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>
+            <p id="team-configuration-hint" class="team-configuration-hint">
+              {{ teamConfigurationMode === 'size' ? 'Set the most players allowed on each team.' : 'Set how many teams to divide the selected players into.' }}
+            </p>
           </div>
+          <ng-template #teamConfigurationHelp>
+            <h2 mat-dialog-title id="team-configuration-help-title">Team Configuration</h2>
+            <mat-dialog-content>
+              <p><strong>Maximum Team Size.</strong> Choose the most players allowed on each team. The Scrambler determines how many teams are needed. With 20 players and a maximum of 4 per team, it generally creates 5 teams.</p>
+              <p><strong>Number of Teams.</strong> Choose how many teams to create. The Scrambler distributes the selected players across them. With 20 players and 5 teams, that generally means 4 players per team.</p>
+              <p>Actual results depend on the selected players and balancing constraints.</p>
+            </mat-dialog-content>
+            <mat-dialog-actions align="end"><button mat-button mat-dialog-close type="button">Close</button></mat-dialog-actions>
+          </ng-template>
             <!-- Teams Needed Section -->
             <div class="team-formation">
               <button mat-stroked-button type="button" color="primary" (click)="toggleTeamFormationVisibility()" [attr.aria-expanded]="showTeamFormation">
@@ -194,7 +212,7 @@
   <div class="scramble-rule"><mat-checkbox [(ngModel)]="completeRandom" aria-describedby="random-rule-help">Completely Random</mat-checkbox><p id="random-rule-help">Use fully random team assignments.</p></div>
   <div class="scramble-rule"><mat-checkbox [(ngModel)]="lockedResults" aria-describedby="locked-rule-help">Lock Results</mat-checkbox><p id="locked-rule-help">Prevent rescrambling while results are locked.</p></div>
   <div class="scramble-rule"><mat-checkbox [(ngModel)]="prioritizePreviousTeammates" [disabled]="generationBusy" aria-describedby="history-rule-help">Prioritize fewer previous teammates</mat-checkbox><p id="history-rule-help">Prefer players who have been teammates less often across this league's history.</p></div>
-  <div class="scramble-rule"><mat-checkbox [(ngModel)]="allowMinimumRepeats" [disabled]="generationBusy" aria-describedby="minimum-rule-help">Allow minimum repeats if strict scrambling is impossible</mat-checkbox><p id="minimum-rule-help">Selected previous scrambles prohibit all repeated teammates. Optional fallback applies only after strict impossibility is proven.</p></div>
+  <div class="scramble-rule"><mat-checkbox [(ngModel)]="allowMinimumRepeats" [disabled]="generationBusy" aria-describedby="minimum-rule-help">Allow minimum repeats if strict scrambling is impossible</mat-checkbox><p id="minimum-rule-help">For Scramble Players, allow a fallback only after the Scrambler proves it cannot avoid every selected teammate pair. The Avoid Repeat Teammates tab asks before retrying with this fallback.</p></div>
 </div></details>
 
 <section class="scramble-workflow-actions">
@@ -637,71 +655,65 @@ Apply Top Players (Male Standings)
         </mat-tab>
       }
       @if (selectedLeague) {
-        <mat-tab label="Retrieve Scramble">
-          <mat-card appearance="outlined" style="margin-top: 20px; margin-bottom: 20px; background-color: var(--hub-surface, #eeeeee)">
-            <div class="tab-content d-flex flex-column align-items-center">
-              <h5 class="mb-2">Retrieve Previous Scramble</h5>
-              <mat-selection-list class="retrieve-scramble-selection" aria-label="Previous scrambles" dense [(ngModel)]="selectedRetrieveScrambleList" (ngModelChange)="updateScrambleNumbers($event)">
-                <div>
-                  <!-- Male Players -->
-                  <div style="display: flex; flex-direction: column;">
-                    <mat-list class="retrieved-scramble-list">
-                      @for (scramble of queriedScrambles; track scramble; let i = $index) {
-                        <mat-list-option class="retrieve-scramble-row" [style.width.%]="getListItemWidth(queriedScrambles.length)" [value]="scramble">
-                          <div class="retrieve-scramble-row-content">
-                            <div class="retrieve-scramble-details">
-                              <span>Scramble Number: <b>{{ scramble.scrambleNumber }}</b></span>
-                                <span class="retrieve-scramble-date">Date: {{ scramble.dateOfTeam | date:'shortDate' }}</span>
-                              </div>
-                              <button mat-icon-button class="retrieve-scramble-action" aria-label="Retrieve scramble {{ scramble.scrambleNumber }}" (click)="requestRetrieveScramble(scramble); $event.stopPropagation()" matTooltip="Retrieve Scramble">
-                                <mat-icon>sync</mat-icon>
-                              </button>
-                            </div>
-                          </mat-list-option>
-                        }
-                      </mat-list>
-                    </div>
-                  </div>
-                </mat-selection-list>
-                @if (!isSmallScreen) {
-                  <br>
-                  }
-                  <button mat-raised-button color="primary" (click)="requestRetrieveMultipleScrambles()">Retrieve All Selected Scrambles</button>
-                  @if (listOfRetrievedScrambleNumbers.length > 0) {
-                    <br />
-                  }
-                  <!-- Display selected scramble numbers at the bottom -->
-                  @if (listOfRetrievedScrambleNumbers.length > 0) {
-                    <div class="retrieved-scramble-summary">
-                      <span>Retrieved Scramble Numbers To Use:</span>
-                      <br>
-                        <div style="margin: 0 auto; display: inline-block;">
-                          @for (scrambleNumber of listOfRetrievedScrambleNumbers; track scrambleNumber; let last = $last; let i = $index) {
-                            <span>Scramble Number: </span> <b>{{ scrambleNumber }}</b>
-                            @if (!last) {
-                              <span>, </span>
-                            }
-                            @if (i % 3 === 2 && !last) {
-                              <span><br></span>
-                            }
-                          }
-                        </div>
-                      </div>
-                    }
-                    <br />
-                    <button [disabled]="generationBusy" (click)="scramblePlayers(true)"
-                      mat-raised-button
-                      class="w-50 py-3 scramble-button no-duplicate-action"
-                      matTooltip="Scramble With No Duplicate Teams"
-                      [matTooltipDisabled]="allowScrambleWithNoDuplicates"
-                      [disabled]="!allowScrambleWithNoDuplicates && (!selectedList || selectedList.length === 0)"
-                                        [ngClass]="{'enabled' : allowScrambleWithNoDuplicates && selectedList && selectedList.length > 0,
-                        'disabled': !allowScrambleWithNoDuplicates || !selectedList || selectedList.length === 0}">
-                      Scramble With No Duplicate Teams
-                    </button>
-                  </div>
-                </mat-card>
-              </mat-tab>
+        <mat-tab label="Avoid Repeat Teammates">
+          <mat-card appearance="outlined" class="teammate-history">
+            <h3>Avoid Repeat Teammates</h3>
+            <p>Select previous scrambles. Players who were teammates in those scrambles will not be placed together again.</p>
+            @if (scoreListLoading) {
+              <p role="status">Loading previous scrambles…</p>
+            } @else if (scoreListError) {
+              <p role="alert">{{ scoreListError }}</p>
+            } @else if (!queriedScrambles.length) {
+              <p>No saved scrambles are available for this league.</p>
+            }
+            <ul class="retrieved-scramble-list" role="list" aria-label="Previous scrambles">
+              @for (scramble of queriedScrambles; track scramble.scrambleNumber) {
+                <li class="retrieve-scramble-row">
+                  <label class="retrieve-scramble-row-content">
+                    <input type="checkbox" [checked]="listOfScrambleNumbers.includes(scramble.scrambleNumber)"
+                      [disabled]="generationBusy" (change)="setHistoricalScrambleSelected(scramble.scrambleNumber, $any($event.target).checked)">
+                    <span class="retrieve-scramble-details">
+                      <span>Scramble <b>{{ scramble.scrambleNumber }}</b></span>
+                      <span class="retrieve-scramble-date">{{ scramble.dateOfTeam | date:'shortDate' }}</span>
+                    </span>
+                  </label>
+                  <button mat-icon-button type="button" class="retrieve-scramble-action" aria-label="View saved teams for scramble {{ scramble.scrambleNumber }}"
+                    [disabled]="generationBusy" (click)="requestRetrieveScramble(scramble)" matTooltip="View saved teams">
+                    <mat-icon>visibility</mat-icon>
+                  </button>
+                </li>
+              }
+            </ul>
+            <p class="history-selection-summary" role="status">
+              @switch (listOfScrambleNumbers.length) {
+                @case (0) { No specific historical teammate restrictions selected. }
+                @case (1) { 1 previous scramble selected to prevent repeat teammates. }
+                @default { {{ listOfScrambleNumbers.length }} previous scrambles selected to prevent repeat teammates. }
+              }
+            </p>
+            <div class="history-primary-action">
+              <button mat-flat-button color="primary" type="button" [disabled]="!canGenerateWithSelectedHistory" (click)="scramblePlayers(true, false)">
+                Generate Teams Without Repeat Teammates
+              </button>
+            </div>
+            @if (canRetryWithMinimumRepeats) {
+              <div class="history-fallback">
+                <p role="status">With these players, team settings, and selected scrambles, every valid arrangement repeats at least one teammate pair.</p>
+                <button mat-stroked-button type="button" (click)="scramblePlayers(true, true)">Retry with Minimum Repeats</button>
+              </div>
+            }
+            @if (listOfScrambleNumbers.length && (!selectedList.length || (!teamSize && !numberOfTeams))) {
+              <p>Select players and set the team configuration to generate teams.</p>
+            }
+            <div class="history-secondary-actions">
+              <button mat-button type="button" [disabled]="generationBusy || !listOfScrambleNumbers.length" (click)="clearSelectedHistory()">Clear Selection</button>
+              <button mat-button type="button" [disabled]="generationBusy || !listOfScrambleNumbers.length" (click)="requestRetrieveMultipleScrambles()">View Selected Saved Teams</button>
+            </div>
+            @if (scrambleSelected && listOfRetrievedScrambleNumbers.length) {
+              <p class="retrieved-scramble-summary">Saved teams displayed for {{ listOfRetrievedScrambleNumbers.length === 1 ? 'scramble' : 'scrambles' }} <strong>{{ listOfRetrievedScrambleNumbers.join(', ') }}</strong>.</p>
+            }
+          </mat-card>
+        </mat-tab>
             }
             <!-- New Dropdown Retrieve Scramble Tab -->
             @if (selectedLeague) {
