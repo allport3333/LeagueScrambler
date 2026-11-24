@@ -1,0 +1,57 @@
+<h2 mat-dialog-title id="historical-preview-title">
+  @if (multiple) { Saved Scrambles } @else { Saved Scramble {{ data.scrambles[0].scrambleNumber }} }
+</h2>
+<mat-dialog-content>
+  @if (preview | async; as result) {
+    @if (result.error) {
+      <p role="alert">Saved teams could not be loaded. Close the preview and try again.</p>
+    } @else {
+      @for (group of result.groups; track group.scramble.scrambleNumber; let first = $first) {
+        @if (multiple) {
+          <details class="history-group" [open]="first || result.groups.length <= 3">
+            <summary>Scramble {{ group.scramble.scrambleNumber }} · {{ group.scramble.dateOfTeam | date:'mediumDate' }}</summary>
+            <ng-container [ngTemplateOutlet]="teams" [ngTemplateOutletContext]="{ $implicit: group.teams }"></ng-container>
+          </details>
+        } @else {
+          <p class="preview-date">{{ group.scramble.dateOfTeam | date:'mediumDate' }}</p>
+          <ng-container [ngTemplateOutlet]="teams" [ngTemplateOutletContext]="{ $implicit: group.teams }"></ng-container>
+        }
+      }
+      @if (result.byes.length) {
+        <p class="preview-byes"><strong>Bye players</strong> ·
+          @for (player of result.byes; track player.id; let last = $last) {
+            {{ player.firstName }} {{ player.lastName }}{{ last ? '' : ', ' }}
+          }
+        </p>
+      }
+    }
+  } @else {
+    <p role="status">Loading saved teams…</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close type="button" cdkFocusInitial>Close</button>
+</mat-dialog-actions>
+
+<ng-template #teams let-entries>
+  @if (entries.length) {
+    <div class="saved-team-grid">
+      @for (entry of entries; track entry.id; let index = $index) {
+        <section class="saved-team">
+          <h3>Team {{ index + 1 }}</h3>
+          <ul>
+            @for (player of entry.players; track $index) {
+              <li>{{ player.firstName }} {{ player.lastName }}
+                @if (entry.substitutes.has(player.id)) { <small>Sub</small> }
+              </li>
+            } @empty {
+              <li>No players assigned.</li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  } @else {
+    <p>No saved teams were found for this scramble.</p>
+  }
+</ng-template>

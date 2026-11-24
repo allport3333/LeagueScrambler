@@ -84,6 +84,7 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
    await selector.click();
    await page.getByRole('option',{name:/Scramble 12 /}).click();
    await expect(selector).toContainText('Scramble 12');
+   await expect(page.locator('.scrambler-results-shell')).toBeHidden();
    const editor=page.locator('.score-editor-card');
    await editor.getByRole('switch').first().click();
    await expect(editor).toContainText('Substitute setting saved.');
@@ -436,8 +437,10 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
   await page.getByRole('button',{name:'Cancel Changes',exact:true}).click();await expect(print).toBeEnabled();
   await page.locator('.scramble-results-toolbar').screenshot({path:path.join(out,'results-saved-1920.png')});
   checks.push('Unsaved and failed-save print blocked in UI and method; successful Save enables; staged edits disable and Cancel restores');
-  await page.getByRole('tab',{name:'Avoid Repeat Teammates',exact:true}).click();await page.locator('button[mattooltip="View saved teams"]').first().click();await expect(print).toBeEnabled();await page.getByRole('tab',{name:'Select Players',exact:true}).click();
-  checks.push('Saved scramble retrieval restores print eligibility');
+  await page.getByRole('tab',{name:'Avoid Repeat Teammates',exact:true}).click();await page.locator('button[mattooltip="View saved teams"]').first().click();
+  await expect(page.getByRole('dialog',{name:'Saved Scramble 12'})).toContainText('Team 12');
+  await page.getByRole('button',{name:'Close',exact:true}).click();await expect(print).toBeEnabled();await page.getByRole('tab',{name:'Select Players',exact:true}).click();
+  checks.push('Saved scramble preview preserves generated print eligibility');
   await evaluate(c=>{c.addPlayerToTopPlayerList(c.malePlayers1[0]);c.addPlayerToByeList(c.malePlayers1[0]);c.addPlayerToLowPlayerList(c.femalePlayers1[0]);c.swapGender(c.malePlayers1[0]);});
   const closeNotice=page.locator('snack-bar-container').getByRole('button',{name:'Close',exact:true});if(await closeNotice.last().isVisible())await closeNotice.last().click();await expect(page.locator('snack-bar-container')).toHaveCount(0);
   for(const [width,height] of [[1920,1080],[1366,768],[390,844],[375,667]]){
@@ -512,12 +515,13 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
   await page.getByRole('button',{name:'Hide Setup',exact:true}).click();await expect(page.locator('.scramble-setup')).toBeHidden();
   await page.getByRole('button',{name:'Show Setup',exact:true}).click();await expect(page.locator('.scramble-setup')).toBeVisible();assert.equal(await evaluate(c=>c.selectedList.length),24);
   await page.getByRole('tab',{name:'Avoid Repeat Teammates',exact:true}).click();await page.locator('button[mattooltip="View saved teams"]').first().click();
-  await page.waitForFunction(()=>(window.ng.getComponent?window.ng.getComponent(document.querySelector('app-scrambler-component')):window.ng.probe(document.querySelector('app-scrambler-component')).componentInstance).retrievedListOfTeams.length===12);
-  assert.deepEqual(await evaluate(c=>c.listOfRetrievedScrambleNumbers),[12]);assert.equal(await evaluate(c=>c.listOfTeams[0].kingQueenRoundScores[0].roundScore),21);
-  await expect(page.locator('.results-heading')).toContainText('Retrieved Scramble: 12');
+  const preview=page.getByRole('dialog',{name:'Saved Scramble 12'});
+  await expect(preview.locator('.saved-team')).toHaveCount(12);
+  await preview.getByRole('button',{name:'Close',exact:true}).click();
+  assert.deepEqual(await evaluate(c=>c.listOfRetrievedScrambleNumbers),[]);
   await page.locator('.scrambler-results-shell').screenshot({path:path.join(out,'results-controls-and-matchups.png')});
   await page.getByRole('tab',{name:'Manage Scores',exact:true}).click();await expect(page.getByRole('tab',{name:'Manage Scores',exact:true})).toHaveAttribute('aria-selected','true');
-  checks.push('Hide/Show Setup retains selection; saved scramble retrieval restores teams, score and scramble number; Manage Scores remains available');
+  checks.push('Hide/Show Setup retains selection; saved scramble preview displays teams without replacing results; Manage Scores remains available');
   await page.goto(BASE_URL+'/league-management');await expect(page.locator('.league-management-page')).toBeVisible();
   await evaluate(c=>{c.isActionAllowed=false;});await expect(page.getByRole('textbox',{name:'Administration Password',exact:true})).toBeVisible();
   await shot('league-management-unlock');assert.equal(writes.length,0,JSON.stringify(writes));

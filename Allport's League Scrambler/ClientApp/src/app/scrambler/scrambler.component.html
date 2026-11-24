@@ -677,8 +677,8 @@ Apply Top Players (Male Standings)
                       <span class="retrieve-scramble-date">{{ scramble.dateOfTeam | date:'shortDate' }}</span>
                     </span>
                   </label>
-                  <button mat-icon-button type="button" class="retrieve-scramble-action" aria-label="View saved teams for scramble {{ scramble.scrambleNumber }}"
-                    [disabled]="generationBusy" (click)="requestRetrieveScramble(scramble)" matTooltip="View saved teams">
+                  <button #previewScramble mat-icon-button type="button" class="retrieve-scramble-action" aria-label="View saved teams for scramble {{ scramble.scrambleNumber }}"
+                    aria-haspopup="dialog" (click)="previewSavedScrambles([scramble], previewScramble)" matTooltip="View saved teams">
                     <mat-icon>visibility</mat-icon>
                   </button>
                 </li>
@@ -707,11 +707,9 @@ Apply Top Players (Male Standings)
             }
             <div class="history-secondary-actions">
               <button mat-button type="button" [disabled]="generationBusy || !listOfScrambleNumbers.length" (click)="clearSelectedHistory()">Clear Selection</button>
-              <button mat-button type="button" [disabled]="generationBusy || !listOfScrambleNumbers.length" (click)="requestRetrieveMultipleScrambles()">View Selected Saved Teams</button>
+              <button #previewSelected mat-button type="button" aria-haspopup="dialog" [disabled]="!listOfScrambleNumbers.length"
+                (click)="previewSelectedScrambles(previewSelected)">View Selected Saved Teams</button>
             </div>
-            @if (scrambleSelected && listOfRetrievedScrambleNumbers.length) {
-              <p class="retrieved-scramble-summary">Saved teams displayed for {{ listOfRetrievedScrambleNumbers.length === 1 ? 'scramble' : 'scrambles' }} <strong>{{ listOfRetrievedScrambleNumbers.join(', ') }}</strong>.</p>
-            }
           </mat-card>
         </mat-tab>
             }
