@@ -11,9 +11,9 @@
     }
   } @else if (wizardStep() === 7 && view !== 'complete') {
     <nav aria-label="Run Tournament" class="step-actions">
-    <button type="button" [attr.aria-pressed]="step === 'rounds'" (click)="clearScoreFeedback(); step = 'rounds'">Matchups & Printing</button>
+    <button type="button" [attr.aria-pressed]="step === 'rounds'" (click)="changeRunView('rounds')">Matchups & Printing</button>
     @if (tournamentComplete) {
-      <button type="button" [attr.aria-pressed]="step === 'complete'" (click)="clearScoreFeedback(); step = 'complete'">Final Standings</button>
+      <button type="button" [attr.aria-pressed]="step === 'complete'" (click)="changeRunView('complete')">Final Standings</button>
     }
     <button type="button" [attr.aria-pressed]="step === 'scores'" [disabled]="!rounds.length" (click)="openRememberedScores()">Scores</button>
   </nav>
@@ -109,7 +109,7 @@
         <h2>Player Priorities & Byes</h2>
         <div class="step-actions" aria-label="Roster settings">
           <button type="button" [attr.aria-pressed]="priorityView === 'priorities'" (click)="priorityView = 'priorities'">Player Priorities</button>
-          <button type="button" [attr.aria-pressed]="priorityView === 'byes'" (click)="priorityView = 'byes'">Manual Byes</button>
+          <button type="button" [attr.aria-pressed]="priorityView === 'byes'" (click)="priorityView = 'byes'">Round Byes</button>
         </div>
         <section class="settings-card">
           @if (priorityView === 'priorities') {
@@ -126,28 +126,50 @@
               }
             </div>
           } @else {
-            <label class="choice"><input type="checkbox" [(ngModel)]="data.settings.automaticByes" (ngModelChange)="markEdited()"> Rotate automatic byes when capacity is limited</label>
-            <label class="compact-control">Manual Byes for Round
-              <select class="form-control" [(ngModel)]="byeRound">
-                @for (number of sequence(data.settings.numberOfRounds); track number) { <option [ngValue]="number">{{ number }}</option> }
+            <h3>Round {{ byeRound }} Byes</h3>
+            <label class="compact-control">Select Round
+              <select aria-label="Select Round" class="form-control" [(ngModel)]="byeRound">
+                @for (number of sequence(data.settings.numberOfRounds); track number) { <option [ngValue]="number">Round {{ number }}</option> }
               </select>
             </label>
-            <p>{{ manualByeCount }} manual {{ manualByeCount === 1 ? 'bye' : 'byes' }}
-            @if (data.mode && expectedByeCount !== null) { · {{ expectedByeCount }} total expected with the current eligible roster }</p>
+            <p>Choose which players must sit out this round. Everyone else remains eligible to play.</p>
+            <div class="section-heading">
+              <label class="choice"><input type="checkbox" [(ngModel)]="data.settings.automaticByes" (ngModelChange)="markEdited()"> Automatically rotate byes fairly when there are not enough playing spots.</label>
+              <details class="help-tip"><summary aria-label="About automatic bye rotation">ⓘ</summary>
+                <p>Manual assignments are applied first. If there are still too few playing spots, Scrambler prefers eligible players with fewer prior byes and rotates the remaining rests across rounds.</p>
+              </details>
+            </div>
+            <p><strong>{{ manualByeCount }}</strong> manual {{ manualByeCount === 1 ? 'bye' : 'byes' }} selected for Round {{ byeRound }}</p>
+            @if (savedByeSummary; as summary) {
+              <div class="saved-bye-summary">
+                <strong>Saved Round {{ byeRound }}</strong>
+                @if (summary.manual !== null) { <span>{{ summary.manual }} manual byes</span><span>{{ summary.automatic }} automatic byes</span> }
+                @else { <span>{{ summary.totalByes }} saved byes</span> }
+                <span>{{ summary.playing }} playing participants</span>
+              </div>
+              <p>Changes apply to the next generation. The saved round stays as it is.</p>
+              @if (selectedByeRound?.status === 'unplayed') {
+                <button type="button" (click)="previewByeReplacement()">Preview Replacement for Round {{ byeRound }}</button>
+              }
+            }
           }
           <label class="compact-control">Filter Participants <input class="form-control" type="search" [(ngModel)]="filter"></label>
           <ul class="compact-roster">
             @for (player of filteredPlayers; track player.id) {
               <li class="priority-player" [class.male]="player.isMale">
-                <span [title]="playerName(player)">{{ playerName(player) }}</span>
                 @if (priorityView === 'priorities') {
+                  <span [title]="playerName(player)">{{ playerName(player) }}</span>
                   <select class="form-control" [attr.aria-label]="'Priority for ' + playerName(player)"
                     [ngModel]="priorityFor(player.id)" (ngModelChange)="setPriority(player.id, $event)">
                     <option value="regular">Regular</option><option value="top">Top Player</option><option value="low">Low Player</option>
                   </select>
                 } @else {
-                  <label class="choice"><input type="checkbox" [attr.aria-label]="'Manual bye for ' + playerName(player)" [ngModel]="manualBye(player.id)" (ngModelChange)="setBye(player.id, $event)"> Sit out</label>
-                  @if (byeCount(player.id); as count) { <small>{{ count }} saved</small> }
+                  <button type="button" class="bye-player" [attr.aria-pressed]="manualBye(player.id)"
+                    [attr.aria-label]="(manualBye(player.id) ? 'Remove bye for ' : 'Assign bye to ') + playerName(player)"
+                    (click)="setBye(player.id, !manualBye(player.id))">
+                    <span>{{ playerName(player) }}</span>
+                    <strong>{{ manualBye(player.id) ? 'Bye Assigned' : 'Assign Bye' }}</strong>
+                  </button>
                 }
               </li>
             } @empty { <li>No matching participants.</li> }
@@ -174,7 +196,7 @@
 @if (tournamentComplete) {
           <section class="completion-banner">
             <strong>Tournament complete</strong>
-            <button type="button" class="primary" (click)="step = 'complete'">View Final Standings</button>
+            <button type="button" class="primary" (click)="standingsRequested.emit()">View Final Standings</button>
           </section>
         }
         <div class="step-actions">

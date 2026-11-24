@@ -76,3 +76,9 @@ button:disabled { opacity: .6; }
     .section-heading .help-tip[open] { flex: 0 0 100%; }
     .print-check { margin-inline-start: 0; }
 }
+.compact-roster .bye-player { display: flex; align-items: center; justify-content: space-between; flex: 1; min-width: 0; gap: .45rem; text-align: start; background: transparent; border-color: transparent; }
+.bye-player span { min-width: 0; overflow-wrap: anywhere; }
+.bye-player strong { white-space: nowrap; font-size: .84rem; }
+.compact-roster .bye-player[aria-pressed=true] { border-color: var(--hub-focus, #1c5d9b); background: var(--hub-surface, #fff); color: var(--hub-text, #24374b); }
+.saved-bye-summary { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem .7rem; margin-block: .6rem; }
+.saved-bye-summary span { border: 1px solid var(--hub-border, #bcc6d2); border-radius: 1rem; padding: .16rem .5rem; }

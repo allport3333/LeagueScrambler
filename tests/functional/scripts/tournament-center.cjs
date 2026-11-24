@@ -128,10 +128,11 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             await priority.selectOption('top');
             await page.getByRole('button', { name: 'Top', exact: true }).click();
             await expect(priority).toBeVisible();
-            await page.getByRole('button', { name: 'Manual Byes', exact: true }).click();
-            await page.getByRole('checkbox', { name: 'Manual bye for Player 1', exact: true }).check();
+            await page.getByRole('button', { name: 'Round Byes', exact: true }).click();
+            await page.getByRole('button', { name: 'Assign bye to Player 1', exact: true }).click();
             await expect(page.getByText(/1 manual bye/)).toBeVisible();
             await page.locator('app-tournament-rounds').screenshot({ path: path.join(out, theme + '-priorities.png') });
+            page.once('dialog', dialog => dialog.accept());
             await page.getByRole('button', { name: 'Return to Run Tournament' }).click();
             await page.locator('.saved-round').first().locator('summary').click();
             await expect(page.locator('.saved-round[open]').getByRole('heading', {name: 'Matchup 1', exact: true})).toBeVisible();
@@ -184,7 +185,8 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
             await page.goto(origin + '/tournament/133/check-in');
             await expect(page.getByRole('heading', { name: 'Tournament Check In' })).toBeVisible();
-            await expect(page.getByText(/1 registered.*1 checked in/)).toBeVisible();
+            await expect(page.getByText('1 registered', {exact: true})).toBeVisible();
+            await expect(page.getByText('1 checked in', {exact: true})).toBeVisible();
             await page.evaluate(() => document.fonts.ready);
             await page.locator('app-tournament-check-in').screenshot({ path: path.join(out, theme + '-check-in-mobile.png') });
             role = 'Player';

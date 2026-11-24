@@ -50,6 +50,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     return new
                     {
                         round.RoundNumber, round.ScrambleNumber, round.GamesPerMatchup,
+                        manualByeIds = SavedManualByeIds(round),
                         status = Services.TournamentMatchupResults.RoundStatus(roundTeams, round.GamesPerMatchup),
                         teams = roundTeams.Select(team => new
                         {
@@ -65,6 +66,16 @@ namespace Allport_s_League_Scrambler.Controllers
                     };
                 })
             });
+        }
+
+        private static int[] SavedManualByeIds(TournamentRound round)
+        {
+            if (string.IsNullOrEmpty(round.GenerationJson)) return null;
+            using var generation = JsonDocument.Parse(round.GenerationJson);
+            if (generation.RootElement.ValueKind != JsonValueKind.Object ||
+                !generation.RootElement.TryGetProperty("settings", out var settings) || settings.ValueKind != JsonValueKind.Object) return null;
+            var assignments = settings.Deserialize<TournamentRoundSettings>()?.ManualByes;
+            return assignments?.Where(bye => bye.RoundNumber == round.RoundNumber).Select(bye => bye.PlayerId).ToArray();
         }
 
         [Authorize(Policy = "LeagueManagement")]

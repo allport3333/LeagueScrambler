@@ -162,7 +162,7 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
             { path: 'recovery-review', data: { mode: 'review' }, loadComponent: () => import('./account-recovery.component').then(m => m.AccountRecoveryComponent) },
             { path: 'access-denied', component: LeagueManagementDeniedComponent },
             { path: 'tournament', canActivate: [LeagueManagementGuard], loadComponent: () => import('./tournament-landing.component').then(m => m.TournamentLandingComponent) },
-            { path: 'tournament/:leagueId', data: { tournamentContext: true }, canActivate: [LeagueManagementGuard], loadComponent: () => import('./tournament-center.component').then(m => m.TournamentCenterComponent) },
+            { path: 'tournament/:leagueId', data: { tournamentContext: true }, canDeactivate: [(component: { canLeave(): boolean }) => component.canLeave()], canActivate: [LeagueManagementGuard], loadComponent: () => import('./tournament-center.component').then(m => m.TournamentCenterComponent) },
             { path: 'tournament/:leagueId/rounds', data: { tournamentContext: true }, loadComponent: () => import('./tournament-matchups.component').then(m => m.TournamentMatchupsComponent) },
             { path: 'tournament/:leagueId/check-in', data: { tournamentContext: true }, loadComponent: () => import('./tournament-check-in.component').then(m => m.TournamentCheckInComponent) },
             { path: '', component: HomeComponent, pathMatch: 'full' },

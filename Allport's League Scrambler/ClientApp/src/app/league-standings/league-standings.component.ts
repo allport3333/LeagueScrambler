@@ -14,6 +14,7 @@ import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { PlayerScoresResponse, PlayerScoreGroup } from '../data-models/playerScoresResponse';
 import { PlayerService } from '../services/player.service';
+import { Leagues } from '../data-models/leagues.model';
 import { LeagueService } from '../services/league.service';
 import { LoginService } from '../services/login.service';
 import { ActivatedRoute } from '@angular/router';
@@ -49,15 +50,20 @@ export class LeagueStandingsComponent implements OnInit {
         return [selected, ...this.mobileStatistics.filter(column => column.key !== selected.key)];
     }
 
+    private authorizedTournament?: Leagues;
+
     get returnTournament() {
         if (this.fixedLeagueId) return null;
-        const event = this.leagueService.leaguesAvailable.find(item => item.id === this.selectedLeagueId && item.eventTypeId === 2);
+        const event = this.authorizedTournament ?? this.leagueService.leaguesAvailable.find(item => item.id === this.selectedLeagueId && item.eventTypeId === 2);
         if (!event) return null;
         const manager = event.canManageTournament || this.userRole === 'Admin';
         if (!manager && !event.canViewTournamentRounds && this.userRole !== 'Player') return null;
         const name = /\btournament\b/i.test(event.leagueName) ? event.leagueName : event.leagueName + ' Tournament';
         const scoreRound = Number(this.route.snapshot.queryParamMap.get('returnRound'));
-        return { query: manager && scoreRound > 0 ? { scoreRound } : undefined, label: 'Back to ' + name + (manager ? '' : ' Matchups'),
+        const step = Number(this.route.snapshot.queryParamMap.get('returnStep'));
+        const runView = this.route.snapshot.queryParamMap.get('returnView');
+        return { query: manager ? { scoreRound: scoreRound > 0 ? scoreRound : undefined,
+            step: step > 0 ? step : undefined, runView: runView === 'rounds' ? runView : undefined } : undefined, label: 'Back to ' + name + (manager ? '' : ' Matchups'),
             route: manager ? ['/tournament', event.id] : ['/tournament', event.id, 'rounds'] };
     }
     sortDirection: 'asc' | 'desc' = 'asc';
@@ -141,10 +147,19 @@ export class LeagueStandingsComponent implements OnInit {
 
     ngOnInit(): void {
         const requestedLeague = this.fixedLeagueId ?? Number(this.route.snapshot.queryParamMap.get('leagueId'));
+        const tournamentContext = this.route.snapshot.queryParamMap.get('tournament') === '1';
+        if (tournamentContext && !this.fixedLeagueId && requestedLeague > 0) {
+            this.navigationSubscriptions.add(this.loginService.getUserLeagues().subscribe({
+                next: leagues => {
+                    this.authorizedTournament = leagues.find(event => event.id === requestedLeague && event.eventTypeId === 2);
+                },
+                error: () => { /* Anonymous standings retain their public context. */ }
+            }));
+        }
         this.mobileFullTable = this.route.snapshot.queryParamMap.get('mobileFullTable') === '1';
         this.returnGenderIndex = this.route.snapshot.queryParamMap.get('gender') === 'women' ? 1 : 0;
         if (Number.isInteger(requestedLeague) && requestedLeague > 0) {
-            this.navigationSubscriptions.add(this.leagueService.selectNavigationLeague(requestedLeague).subscribe());
+            this.navigationSubscriptions.add(this.leagueService.selectNavigationLeague(requestedLeague).subscribe(found => { if (!found) this.showStandingsError(); }));
         }
         this.loginService.getUsersRole().subscribe(
             (role) => {
@@ -156,7 +171,8 @@ export class LeagueStandingsComponent implements OnInit {
         );
 
         this.navigationSubscriptions.add(this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
-            if ((this.fixedLeagueId || !this.navigationLeagueResolved) && requestedLeague > 0 && selectedLeague.leagueId !== requestedLeague) { return; }
+            const requestedTournament = this.leagueService.leaguesAvailable.some(event => event.id === requestedLeague && event.eventTypeId === 2);
+            if ((this.fixedLeagueId || tournamentContext || requestedTournament || !this.navigationLeagueResolved) && requestedLeague > 0 && selectedLeague.leagueId !== requestedLeague) { return; }
             if (selectedLeague.leagueId) { this.navigationLeagueResolved = true; }
             this.settingsRequest?.unsubscribe();
             this.standingsRequest?.unsubscribe();

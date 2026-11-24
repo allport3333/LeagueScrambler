@@ -101,6 +101,7 @@ export class TournamentParticipantsComponent implements OnInit {
     busy = false;
     error = '';
     notice = '';
+    get hasUnsavedChanges() { return !!(this.firstName.trim() || this.lastName.trim() || this.gender); }
     get checkedIn() { return this.roster.filter(player => player.present).length; }
     get eligible() { return this.mode === 3 ? this.roster.length : this.mode ? this.checkedIn : 0; }
 

@@ -185,6 +185,12 @@ try
         "Random rounds with manual and automatic byes persist");
     Assert(await db.ByePlayer.CountAsync(bye => db.ByeRounds.Any(round => round.Id == bye.ByeRoundId &&
         round.LeagueID == randomTournament.ID)) == 15, "All fair byes persisted on existing bye records");
+    var generatedAttendance = (OkObjectResult)await center.ReadRounds(randomTournament.ID);
+    var savedByeDetails = JsonSerializer.SerializeToElement(generatedAttendance.Value, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+        .GetProperty("rounds")[0];
+    Assert(savedByeDetails.GetProperty("manualByeIds")[0].GetInt32() == eligible[0].Id &&
+        savedByeDetails.GetProperty("manualByeIds").GetArrayLength() == 1 &&
+        savedByeDetails.GetProperty("byes").GetArrayLength() == 3, "Saved round distinguishes one manual bye and two automatic byes");
     reopenedCenter.ControllerContext = Identity(participant.UserId, "Player");
     Assert(await reopenedCenter.ReadRounds(tournament.ID) is OkObjectResult, "Linked participant can view saved rounds");
     reopenedCenter.ControllerContext = Identity(int.MaxValue, "Player");

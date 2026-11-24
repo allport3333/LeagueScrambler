@@ -69,7 +69,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         if (tournament && this.loggedIn) {
             const standings = items.findIndex(item => item.route === '/standings');
             if (standings >= 0) items[standings] = {
-                label: 'Standings', icon: 'emoji_events', route: '/standings', queryParams: { leagueId: this.selectedLeagueId }
+                label: 'Standings', icon: 'emoji_events', route: '/standings', queryParams: { leagueId: this.selectedLeagueId, tournament: 1 }
             };
             const organizer = this.userRole === 'Admin' || this.userRole === 'Manager';
             if (!organizer) items.splice(1, 0, {

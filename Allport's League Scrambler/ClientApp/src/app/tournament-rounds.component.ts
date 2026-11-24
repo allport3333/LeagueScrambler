@@ -20,6 +20,7 @@ interface SavedRound {
     roundNumber: number; status: 'unplayed' | 'partial' | 'completed'; gamesPerMatchup: number;
     teams: {id: number; players: Player[]; scores: {game: number; points: number}[]}[];
     byes: Player[];
+    manualByeIds?: number[] | null;
 }
 interface ScoreEdit {
     teamId: number; opponentId: number; game: number; points: number | null; opponentPoints: number | null;
@@ -39,6 +40,8 @@ export class TournamentRoundsComponent implements OnInit {
     readonly readOnly = input(false);
     readonly wizardStep = input(0);
     readonly initialScoreRound = input<number>();
+    readonly initialRunView = input<string>();
+    readonly standingsRequested = output<void>();
     readonly roundsSaved = output<void>();
     readonly runRequested = output<void>();
     readonly completionChanged = output<boolean>();
@@ -53,6 +56,7 @@ export class TournamentRoundsComponent implements OnInit {
     rounds: SavedRound[] = [];
     preview: TournamentAllocation[] = [];
     notice = '';
+    private savedSettings?: TournamentSettings;
     noticeView = '';
     error = '';
     busy = false;
@@ -86,11 +90,51 @@ export class TournamentRoundsComponent implements OnInit {
     }
 
     get manualByeCount() { return this.state?.settings.manualByes.filter(item => item.roundNumber === this.byeRound).length ?? 0; }
-    get expectedByeCount(): number | null {
-        const settings = this.state?.settings;
-        if (!settings?.automaticByes || settings.activeTeamLimit == null || settings.maximumTeamSize == null) return null;
-        const manual = this.eligible.filter(player => this.manualBye(player.id)).length;
-        return Math.max(manual, this.eligible.length - settings.activeTeamLimit * settings.maximumTeamSize);
+    get selectedByeRound() { return this.rounds.find(round => round.roundNumber === this.byeRound); }
+    get savedByeSummary() {
+        const round = this.selectedByeRound;
+        if (!round) return null;
+        const manual = round.manualByeIds == null ? null : round.byes.filter(player => round.manualByeIds.includes(player.id)).length;
+        return { manual, automatic: manual === null ? null : round.byes.length - manual,
+            playing: round.teams.reduce((count, team) => count + team.players.length, 0), totalByes: round.byes.length };
+    }
+
+    async previewByeReplacement() {
+        const round = this.selectedByeRound;
+        if (round?.status !== 'unplayed' || this.busy) return;
+        if (this.dirty && !(await this.saveSettings())) return;
+        await this.propose(round.roundNumber);
+        if (this.preview.length) {
+            this.step = 'rounds';
+            this.runRequested.emit();
+        }
+    }
+
+    get hasUnsavedChanges() {
+        return this.dirty || this.preview.length > 0 || this.hasUnsavedScores;
+    }
+
+    private get hasUnsavedScores() {
+        return this.scoreEdits.some(edit => {
+            const first = this.scoreRound?.teams.find(team => team.id === edit.teamId);
+            const second = this.scoreRound?.teams.find(team => team.id === edit.opponentId);
+            return edit.points !== (first?.scores.find(score => score.game === edit.game)?.points ?? null) ||
+                edit.opponentPoints !== (second?.scores.find(score => score.game === edit.game)?.points ?? null);
+        });
+    }
+
+    discardUnsavedChanges() {
+        if (this.dirty && this.savedSettings && this.state) {
+            this.state.settings = structuredClone(this.savedSettings);
+            this.teamBySize = this.state.settings.maximumTeamSize !== null;
+        }
+        if (this.scoreRound) {
+            const view = this.step;
+            this.initializeScores(this.scoreRound);
+            this.step = view;
+        }
+        this.dirty = false;
+        this.preview = [];
     }
 
     roundStatus(round: SavedRound) {
@@ -158,7 +202,8 @@ export class TournamentRoundsComponent implements OnInit {
                 this.rounds = result.rounds;
             } else {
                 await this.reload();
-                if (this.rounds.length) this.step = this.tournamentComplete ? 'complete' : 'rounds';
+                if (this.rounds.length) this.step = this.initialRunView() === 'rounds' ? 'rounds' :
+                    this.tournamentComplete ? 'complete' : 'rounds';
                 const requestedRound = this.rounds.find(round => round.roundNumber === this.initialScoreRound());
                 if (requestedRound && this.wizardStep() === 7) this.openScores(requestedRound);
             }
@@ -176,6 +221,7 @@ export class TournamentRoundsComponent implements OnInit {
         ]);
         if (state.version !== result.version) throw new Error('Tournament state changed while loading. Refresh and try again.');
         this.state = state;
+        this.savedSettings = structuredClone(state.settings);
         this.teamBySize = state.settings.maximumTeamSize !== null;
         this.rounds = result.rounds;
         this.settingsSaved = result.settingsSaved;
@@ -241,6 +287,7 @@ export class TournamentRoundsComponent implements OnInit {
             state.version = saved.version;
             this.versionChanged.emit(saved.version);
             this.settingsSaved = true;
+            this.savedSettings = structuredClone(state.settings);
             this.dirty = false;
             this.notice = 'Tournament settings saved.';
             this.noticeView = this.view;
@@ -289,8 +336,20 @@ export class TournamentRoundsComponent implements OnInit {
         return round.status === 'completed' ? 'Edit Scores' : round.status === 'partial' ? 'Continue Scoring' : 'Enter Scores';
     }
 
+    changeRunView(view: 'rounds' | 'complete') {
+        if (this.busy || (this.hasUnsavedScores && !window.confirm('Discard unsaved score changes?'))) return;
+        if (this.hasUnsavedScores && this.scoreRound) this.initializeScores(this.scoreRound);
+        this.clearScoreFeedback();
+        this.step = view;
+    }
+
     openScores(round: SavedRound): void {
+        if (this.hasUnsavedScores && !window.confirm('Discard unsaved score changes?')) return;
         if (this.wizardStep() === 6) this.runRequested.emit();
+        this.initializeScores(round);
+    }
+
+    private initializeScores(round: SavedRound): void {
         this.clearScoreFeedback();
         this.step = 'scores';
         try { sessionStorage.setItem(this.activeRoundKey, String(round.roundNumber)); } catch {}
@@ -322,7 +381,7 @@ export class TournamentRoundsComponent implements OnInit {
             await this.reload();
             this.versionChanged.emit(this.state!.version);
             const saved = this.rounds.find(round => round.roundNumber === number)!;
-            this.openScores(saved);
+            this.initializeScores(saved);
             if (wasCompleted) {
                 this.scoreFeedback = { title: 'Score corrections saved.', message: 'Standings now reflect the corrected result.' };
                 return;
