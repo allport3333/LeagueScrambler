@@ -77,11 +77,14 @@ try
     await db.SaveChangesAsync();
     var attendance = new TournamentAttendanceController { ControllerContext = Identity(ownerId, "Manager") };
     var present = new TournamentAttendanceController.AttendanceInput(true);
+    attendance.ControllerContext = Identity(participant.UserId, "Player");
+    Assert(await attendance.SavePresence(tournament.ID, participant.PlayerId, present) is NoContentResult, "Self check-in before eligibility is set");
+    attendance.ControllerContext = Identity(ownerId, "Manager");
     Assert(await attendance.SaveMode(tournament.ID, new(TournamentCheckInMode.Manual, reopened.Version)) is NoContentResult, "Manual mode saved");
     Assert(await attendance.SavePresence(tournament.ID, participant.PlayerId, present) is NoContentResult, "Manual check-in");
     attendance.ControllerContext = Identity(participant.UserId, "Player");
     Assert(await attendance.Read(tournament.ID) is OkObjectResult, "Participant sees check-in");
-    Assert(await attendance.SavePresence(tournament.ID, participant.PlayerId, present) is ObjectResult { StatusCode: 423 }, "Manual mode blocks self check-in");
+    Assert(await attendance.SavePresence(tournament.ID, participant.PlayerId, present) is NoContentResult, "Legacy checked-in mode permits self check-in");
     Assert(await attendance.SavePresence(tournament.ID, int.MaxValue, present) is ForbidResult, "Cannot edit another player");
     attendance.ControllerContext = Identity(ownerId, "Manager");
     var manual = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
@@ -112,6 +115,10 @@ try
         .Select(row => new PlayersLeague { LeagueID = tournament.ID, PlayerID = row.Id }));
     await db.SaveChangesAsync();
 
+    attendance.ControllerContext = Identity(participant.UserId, "Player");
+    Assert(await attendance.SavePresence(tournament.ID, fixturePlayers[0].Id, present) is ForbidResult,
+        "A participant cannot check in another registered player.");
+    attendance.ControllerContext = Identity(ownerId, "Manager");
     var current = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
     Assert(await attendance.SaveMode(tournament.ID, new(TournamentCheckInMode.Manual, current.Version)) is NoContentResult, "Resume manual check-in");
     var eligible = fixturePlayers.Take(19).Append(fixturePlayers.Last()).ToArray();

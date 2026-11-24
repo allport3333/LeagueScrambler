@@ -49,6 +49,7 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             let generatedWrites = 0;
             let savedScores = 0;
             let present = true;
+            let attendanceMode = 1;
             const page = await context.newPage();
             const errors = [];
             page.on('pageerror', error => errors.push(error.message));
@@ -93,7 +94,7 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                 };
                 else if (endpoint === '/api/tournaments/133/rounds') data = { name, version: details.version, settingsSaved: true, rounds };
                 else if (endpoint === '/api/tournaments/133/check-in' || endpoint === '/api/tournament-attendance/133') data = {
-                    name, ...details, mode: 1, organizers: role !== 'Player', ownPlayerId: 1,
+                    name, ...details, mode: attendanceMode, organizers: role !== 'Player', ownPlayerId: 1,
                     roster: [{ ...roster[0], present }]
                 };
                 return route.fulfill({ json: data });
@@ -228,11 +229,14 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                 await page.getByRole('button', {name: 'Cancel', exact: true}).click();
             }
             role = 'Player';
-            present = false;
-            await page.goto(origin + '/tournament/133/check-in');
-            await expect(page).toHaveURL(/leagueId=133#attendance$/);
-            await page.getByRole('button', {name: 'Check In for Tournament'}).click();
-            await expect(page.locator('.attendance-success')).toContainText('Checked In for Tournament');
+            for (const mode of [3, 1, 0, 2]) {
+                attendanceMode = mode;
+                present = false;
+                await page.goto(origin + '/tournament/133/check-in');
+                await expect(page).toHaveURL(/leagueId=133#attendance$/);
+                await page.getByRole('button', {name: 'Check In for Tournament'}).click();
+                await expect(page.locator('.attendance-success')).toContainText('Checked In for Tournament');
+            }
             await page.goto(origin + '/tournament/133/rounds');
             await expect(page.getByRole('heading', { name })).toBeVisible().catch(async error => {
                 console.error(page.url(), await page.locator('body').innerText(), errors);

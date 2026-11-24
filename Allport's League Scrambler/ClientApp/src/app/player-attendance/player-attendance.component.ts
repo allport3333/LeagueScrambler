@@ -42,12 +42,11 @@ export class PlayerAttendanceComponent implements OnInit,OnChanges,OnDestroy {
  private get tournamentAttendanceUrl() { return '/api/tournament-attendance/' + this.leagueId; }
  private attendanceStatus() {
   if (!this.tournament) return this.players.getSelfAttendance(this.leagueId, this.playerId);
-  return this.http.get<{ mode: number; ownPlayerId: number | null; roster: { id: number; present: boolean }[] }>(this.tournamentAttendanceUrl).pipe(map(data => {
+  return this.http.get<{ ownPlayerId: number | null; roster: { id: number; present: boolean }[] }>(this.tournamentAttendanceUrl).pipe(map(data => {
    const player = data.ownPlayerId === this.playerId ? data.roster.find(row => row.id === this.playerId) : undefined;
-   const open = data.mode === 1 || data.mode === 3;
    return { visible: !!player, isOwnProfile: !!player, signedIn: !!player?.present,
-    canSignIn: !!player && open && !player.present, canRemove: !!player && open && player.present,
-    reason: open ? null : 'Tournament check-in is not open yet.' };
+    canSignIn: !!player && !player.present, canRemove: !!player && player.present,
+    reason: null };
   }));
  }
  private changeAttendance(remove: boolean) {

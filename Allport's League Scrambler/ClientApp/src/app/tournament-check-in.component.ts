@@ -58,7 +58,7 @@ interface AttendanceState {
                                 <small>Only checked-in players are eligible for future round generation.</small></span>
                         </label>
                     </div>
-                    <p>Directors can record attendance with either option. Players check themselves in from Home once eligibility is set.</p>
+                    <p>Directors can record attendance with either option. Players can check themselves in from Home.</p>
                     @if (hasRounds()) { <p>Changes affect future generation or confirmed replacements. Saved teams and scores stay in place.</p> }
                     <div class="counts" aria-label="Attendance totals">
                         <span>{{ state.roster.length }} registered</span>
@@ -142,10 +142,9 @@ export class TournamentCheckInComponent implements OnInit {
         finally { this.loading = false; }
     }
 
-    async saveEligibility(): Promise<boolean> {
+    saveEligibility(): boolean {
         if (!this.state?.organizers || this.busy || this.loading) return false;
-        if (this.state.mode === 2) return this.setMode(1);
-        if (this.state.mode === 1 || this.state.mode === 3) return true;
+        if (this.checkedInOnly || this.state.mode === 3) return true;
         this.error = 'Choose who can play before continuing.';
         return false;
     }
