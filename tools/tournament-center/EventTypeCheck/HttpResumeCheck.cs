@@ -31,11 +31,13 @@ internal static class HttpResumeCheck
         }.ToUser();
         manager.LastLogin = DateTime.Now;
         await using var db = new DataContext();
+        var selectedLeague = await db.Leagues.AsNoTracking().SingleAsync(row => row.ID == 37 && row.LeagueName == "WW Winter 2026" && row.EventTypeId == 1);
         db.Users.Add(manager);
         await db.SaveChangesAsync();
         try
         {
             db.UserLeagues.Add(new UserLeague { UserId = manager.UserId, LeagueTypeId = leagueId });
+            db.UserLeagues.Add(new UserLeague { UserId = manager.UserId, LeagueTypeId = selectedLeague.ID });
             await db.SaveChangesAsync();
             Environment.SetEnvironmentVariable("SMTP_MODE", "smtp");
             for (var boot = 0; boot < 2; boot++)
@@ -72,11 +74,15 @@ internal static class HttpResumeCheck
                 }
                 finally { await host.StopAsync(); }
             }
+            var unchanged = await db.Leagues.AsNoTracking().SingleAsync(row => row.ID == selectedLeague.ID);
+            if (unchanged.LeagueName != selectedLeague.LeagueName || unchanged.EventTypeId != selectedLeague.EventTypeId ||
+                await db.TournamentConfigurations.AnyAsync(row => row.LeagueId == selectedLeague.ID))
+                throw new InvalidOperationException("Creating a tournament changed WW Winter 2026.");
             Console.WriteLine("Authenticated HTTPS restart verification passed against the Development database.");
         }
         finally
         {
-            await db.UserLeagues.Where(link => link.UserId == manager.UserId && link.LeagueTypeId == leagueId).ExecuteDeleteAsync();
+            await db.UserLeagues.Where(link => link.UserId == manager.UserId).ExecuteDeleteAsync();
             await db.Users.Where(user => user.UserId == manager.UserId && user.Email == manager.Email).ExecuteDeleteAsync();
         }
     }

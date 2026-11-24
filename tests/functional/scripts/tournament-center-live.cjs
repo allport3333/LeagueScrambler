@@ -15,7 +15,24 @@ assert(Number.isSafeInteger(leagueId) && leagueId > 0);
             data: { email, password }, headers: { Origin: origin }, maxRedirects: 0
         });
         assert.equal(login.status(), 200, 'Fixture manager login');
+        await context.addInitScript(() => {
+            if (!sessionStorage.getItem('league-hub-selected-league'))
+                sessionStorage.setItem('league-hub-selected-league', '37');
+        });
         const page = await context.newPage();
+        await page.setViewportSize({ width: 1920, height: 900 });
+        await page.goto(origin + '/');
+        await expect(page.getByRole('button', { name: /WW Winter 2026/ })).toBeVisible();
+        await page.getByRole('link', { name: 'Tournament Center', exact: true }).click();
+        await expect(page.getByRole('heading', { name: 'Tournament Center', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: /WW Winter 2026/ })).toBeVisible();
+        await expect(page.getByRole('link', { name: 'WW Winter 2026' })).toHaveCount(0);
+        const newName = email.split('@')[0] + '-UI';
+        await page.getByLabel('Tournament Name').fill(newName);
+        await page.getByLabel('Tournament Date').fill('2026-12-12');
+        await page.getByRole('button', { name: 'Create Tournament' }).click();
+        await expect(page.getByRole('heading', { name: newName, exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: new RegExp(newName) })).toBeVisible();
         await page.goto(origin + '/tournament/' + leagueId);
         await expect(page.getByText(/24 registered.*20 eligible.*5 saved rounds/)).toBeVisible();
         const firstRound = page.locator('.saved-round').filter({ hasText: 'Round 1' });

@@ -37,6 +37,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     // Presentation metadata only: these are the existing routes and visibility rules.
     readonly destinations: NavItem[] = [
         { route: '/', label: 'Home', icon: 'home' },
+        { route: '/tournament', label: 'Tournament Center', icon: 'emoji_events', roles: ['Admin', 'Manager'], signedInOnly: true },
         { route: '/scrambler', label: 'Scrambler', icon: 'shuffle', roles: ['Admin', 'Manager'] },
         { route: '/team-scores', label: 'Teams & Scores', icon: 'group', roles: ['Admin', 'Manager'] },
         { route: '/league-dashboard', label: 'League Dashboard', icon: 'dashboard', roles: ['Admin', 'Manager', 'Player'] },
@@ -69,9 +70,9 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
                 label: 'Standings', icon: 'emoji_events', route: '/standings', queryParams: { leagueId: this.selectedLeagueId }
             };
             const organizer = this.userRole === 'Admin' || this.userRole === 'Manager';
-            items.splice(1, 0, organizer
-                ? { label: 'Tournament Center', icon: 'emoji_events', route: ['/tournament', this.selectedLeagueId] }
-                : { label: 'Tournament Check In', icon: 'how_to_reg', route: ['/tournament', this.selectedLeagueId, 'check-in'] });
+            if (!organizer) items.splice(1, 0, {
+                label: 'Tournament Check In', icon: 'how_to_reg', route: ['/tournament', this.selectedLeagueId, 'check-in']
+            });
             if (!organizer) items.splice(2, 0, {
                 label: 'Matchups', icon: 'view_list', route: ['/tournament', this.selectedLeagueId, 'rounds']
             });
@@ -140,6 +141,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         const path = this.router.url.split(/[?#]/)[0];
         const route = Array.isArray(item.route) ? item.route.join('/') : item.route;
         if (path === '/schedule') return route === '/league-dashboard';
+        if (route === '/tournament' && path.startsWith('/tournament/')) return true;
         if (path !== route) return false;
         return true;
     }

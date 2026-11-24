@@ -35,11 +35,15 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             const context = await browser.newContext({
                 serviceWorkers: 'block', viewport: { width: 1440, height: 960 }
             });
-            await context.addInitScript(value => localStorage.setItem('league-hub-appearance', value), theme);
+            await context.addInitScript(value => {
+                localStorage.setItem('league-hub-appearance', value);
+                if (!sessionStorage.getItem('league-hub-selected-league'))
+                    sessionStorage.setItem('league-hub-selected-league', '37');
+            }, theme);
             await context.addInitScript(() => {
                 window.print = () => { document.body.dataset.printInvoked = 'true'; };
             });
-            let role = 'Manager';
+            let role = theme === 'classic' ? 'Admin' : 'Manager';
             let rounds = structuredClone(defaultRounds);
             let roundSettings = structuredClone(settings);
             let generatedWrites = 0;
@@ -77,21 +81,34 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                 if (endpoint.endsWith('/isauthenticated')) data = true;
                 else if (endpoint.endsWith('/getusersrole')) data = { role };
                 else if (endpoint.endsWith('/getusersplayer')) data = { playerId: 1 };
-                else if (endpoint.endsWith('/getuserleagues') || endpoint.endsWith('/getleagues')) data = [{id: 133, leagueName: name, eventTypeId: 2}];
-                else if (endpoint.includes('managementaccess')) data = { role, canManage: role === 'Manager' };
+                else if (endpoint.endsWith('/getuserleagues') || endpoint.endsWith('/getleagues')) data = [{id: 37, leagueName: 'WW Winter 2026', eventTypeId: 1}, {id: 133, leagueName: name, eventTypeId: 2}];
+                else if (endpoint.includes('managementaccess')) data = { role, canManage: role !== 'Player' };
                 else if (endpoint === '/api/tournaments/133') data = { name, details, participants: 20 };
                 else if (endpoint === '/api/tournaments/133/round-settings') data = {
                     version: details.version, mode: 1, roster, presentIds: roster.map(player => player.id), history: [], settings: roundSettings
                 };
                 else if (endpoint === '/api/tournaments/133/rounds') data = { name, version: details.version, settingsSaved: true, rounds };
                 else if (endpoint === '/api/tournaments/133/check-in' || endpoint === '/api/tournament-attendance/133') data = {
-                    name, ...details, mode: 1, organizers: role === 'Manager', ownPlayerId: 1,
+                    name, ...details, mode: 1, organizers: role !== 'Player', ownPlayerId: 1,
                     roster: [{ ...roster[0], present: true }]
                 };
                 return route.fulfill({ json: data });
             });
 
-            await page.goto(origin + '/tournament/133');
+            await page.setViewportSize({ width: theme === 'classic' ? 1920 : 390, height: 900 });
+            await page.goto(origin + '/');
+            await expect(page.getByRole('button', { name: /WW Winter 2026/ })).toBeVisible();
+            if (theme !== 'classic') await page.getByRole('button', { name: 'Open navigation' }).click();
+            await page.getByRole('link', { name: 'Tournament Center', exact: true }).click();
+            await expect(page.getByRole('heading', { name: 'Tournament Center', exact: true })).toBeVisible();
+            await expect(page.getByRole('button', { name: /WW Winter 2026/ })).toBeVisible();
+            await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
+            await expect(page.getByRole('link', { name: 'WW Winter 2026' })).toHaveCount(0);
+            await expect(page.getByRole('button', { name: 'Create Tournament' })).toBeDisabled();
+            await page.locator('app-tournament-landing').screenshot({ path: path.join(out, theme + '-landing.png') });
+            await page.getByRole('link', { name, exact: true }).click();
+            await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+            await page.setViewportSize({ width: 1440, height: 960 });
             await page.getByText('Tournament Details', { exact: true }).click();
             await expect(page.getByRole('button', { name: 'Save Details' })).toBeVisible();
             await expect(page.getByText(/1 of 5 rounds completed/)).toHaveCount(0);
@@ -150,6 +167,10 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                 throw error;
             });
             await expect(page.getByRole('button', { name: 'Save Round Scores' })).toHaveCount(0);
+            await page.getByRole('button', { name: 'Open navigation' }).click();
+            await expect(page.getByRole('link', { name: 'Tournament Center', exact: true })).toHaveCount(0);
+            await page.goto(origin + '/tournament');
+            await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
             assert.deepEqual(errors, []);
             await context.close();
         }
