@@ -1,4 +1,4 @@
-<nav class="league-navigation" aria-label="Main navigation">
+<nav #navigationBar class="league-navigation" [class.inline-navigation]="!compact" aria-label="Main navigation">
   @if (!authenticationChecked) {
     <span class="session-status" role="status">Checking session...</span>
   }
@@ -8,79 +8,121 @@
     </button>
   }
   <mat-menu #leagueMenu="matMenu">
-    @for (league of leagues; track league) {
+    @for (league of leagues; track league.id) {
       <button mat-menu-item [class.selected-league]="league.id === selectedLeagueId" (click)="onLeagueChange(league.id)">
         <mat-icon aria-hidden="true">{{ league.id === selectedLeagueId ? 'check' : 'chevron_right' }}</mat-icon>{{ league.leagueName }}
       </button>
     }
   </mat-menu>
 
-  <div class="desktop-navigation" #desktopLinks [class.navigation-measuring]="!layoutReady">
-    @for (item of primaryLinks; track trackDestination($index, item)) {
-      <a [routerLink]="item.route" [queryParams]="item.queryParams" [class.active]="destinationActive(item)" [attr.aria-current]="destinationActive(item) ? 'page' : null" class="navigation-link" (click)="collapse()">
-        <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span>
-      </a>
-    }
-    @if (secondaryLinks.length) {
-      <button type="button" mat-button class="menu-trigger more-trigger" [class.active]="secondaryPageActive" [matMenuTriggerFor]="moreMenu">More<mat-icon aria-hidden="true">arrow_drop_down</mat-icon></button>
-    }
-    <mat-menu #moreMenu="matMenu">
-      @for (item of secondaryLinks; track trackDestination($index, item)) {
-        <a mat-menu-item [routerLink]="item.route" [queryParams]="item.queryParams" [class.selected-destination]="destinationActive(item)" [attr.aria-current]="destinationActive(item) ? 'page' : null" (click)="collapse()"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>{{ item.label }}</a>
-      }
-    </mat-menu>
-  </div>
-  @if (authenticationChecked) {
-    <div class="desktop-account">
-      <button type="button" mat-button class="menu-trigger" [class.active]="profilePageActive" [matMenuTriggerFor]="accountMenu"><mat-icon aria-hidden="true">account_circle</mat-icon> {{ loggedIn ? 'Account' : 'Appearance' }}<mat-icon aria-hidden="true">arrow_drop_down</mat-icon></button>
-      <mat-menu #accountMenu="matMenu">
-        @if (playerId) {
-          <a mat-menu-item [routerLink]="['/player-stats-tabs', playerId]" [queryParams]="{leagueId:selectedLeagueId,tab:'kq'}" routerLinkActive="selected-destination" #accountActive="routerLinkActive" [attr.aria-current]="accountActive.isActive ? 'page' : null" (click)="collapse()"><mat-icon aria-hidden="true">person</mat-icon>Profile</a>
+  @if (!compact) {
+    <div class="desktop-navigation">
+      @for (item of primaryDestinations; track item.label) {
+        @if (item.route) {
+          <a [routerLink]="item.route" [queryParams]="item.queryParams" [class.active]="itemActive(item)" [class.featured-link]="item.featured"
+            [attr.aria-current]="itemActive(item) ? 'page' : null" class="navigation-link">
+            <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span>
+          </a>
+        } @else if (item.children?.length) {
+          <button type="button" mat-button class="menu-trigger"
+            [class.active]="itemActive(item)" [matMenuTriggerFor]="groupMenu">
+            <ng-container *ngTemplateOutlet="groupLabel; context: {$implicit: item}"></ng-container>
+          </button>
+          <mat-menu #groupMenu="matMenu">
+            @for (entry of item.children; track entry.label) {
+              @if (entry.route) {
+                <a mat-menu-item [routerLink]="entry.route" [queryParams]="entry.queryParams" [class.selected-destination]="destinationActive(entry)"
+                  [attr.aria-current]="destinationActive(entry) ? 'page' : null"><mat-icon aria-hidden="true">{{ entry.icon }}</mat-icon>{{ entry.label }}</a>
+              } @else {
+                <button mat-menu-item type="button" (click)="runAction(entry.action)"><mat-icon aria-hidden="true">{{ entry.icon }}</mat-icon>{{ entry.label }}</button>
+              }
+            }
+          </mat-menu>
         }
-        <button type="button" mat-menu-item (click)="openAppearance()"><mat-icon aria-hidden="true">palette</mat-icon>Appearance</button>
-        @if (loggedIn) {<a mat-menu-item routerLink="/change-email" routerLinkActive="selected-destination"><mat-icon aria-hidden="true">alternate_email</mat-icon>Change Email</a>}
-        @if (userRole === 'Admin') {<a mat-menu-item routerLink="/recovery-review" routerLinkActive="selected-destination"><mat-icon aria-hidden="true">fact_check</mat-icon>Recovery Review</a>}
-        @if (loggedIn) {<button type="button" mat-menu-item (click)="collapse(); logoutAndNavigate()"><mat-icon aria-hidden="true">exit_to_app</mat-icon>Logout</button>}
-      </mat-menu>
+      }
     </div>
+    @if (accountDestination; as account) {
+      <div class="desktop-account">
+        @if (account.children?.length) {
+          <button type="button" mat-button class="menu-trigger"
+            [class.active]="itemActive(account)" [matMenuTriggerFor]="accountMenu">
+            <ng-container *ngTemplateOutlet="groupLabel; context: {$implicit: account}"></ng-container>
+          </button>
+          <mat-menu #accountMenu="matMenu" xPosition="before">
+            @for (entry of account.children; track entry.label) {
+              @if (entry.route) {
+                <a mat-menu-item [routerLink]="entry.route" [queryParams]="entry.queryParams" [class.selected-destination]="destinationActive(entry)"
+                  [attr.aria-current]="destinationActive(entry) ? 'page' : null"><mat-icon aria-hidden="true">{{ entry.icon }}</mat-icon>{{ entry.label }}</a>
+              } @else {
+                <button mat-menu-item type="button" (click)="runAction(entry.action)"><mat-icon aria-hidden="true">{{ entry.icon }}</mat-icon>{{ entry.label }}</button>
+              }
+            }
+          </mat-menu>
+        } @else {
+          <button type="button" mat-button class="menu-trigger" (click)="runAction(account.action)">
+            <mat-icon aria-hidden="true">{{ account.icon }}</mat-icon>{{ account.label }}
+          </button>
+        }
+      </div>
+    }
+  } @else {
+    <button #drawerToggle type="button" mat-icon-button class="drawer-toggle" aria-label="Open navigation"
+      aria-controls="navigation-drawer" [attr.aria-expanded]="isExpanded" (click)="toggle(drawerToggle)"><mat-icon aria-hidden="true">menu</mat-icon></button>
   }
-  <button type="button" mat-icon-button class="drawer-toggle" aria-label="Open navigation" aria-controls="navigation-drawer" [attr.aria-expanded]="isExpanded" (click)="toggle()"><mat-icon aria-hidden="true">menu</mat-icon></button>
 </nav>
 
 <mat-sidenav-container class="navigation-drawer-container" [class.drawer-open]="isExpanded" [hasBackdrop]="true" (backdropClick)="collapse()">
-  <mat-sidenav id="navigation-drawer" class="navigation-drawer" mode="over" position="end" [fixedInViewport]="true" [opened]="isExpanded" (closedStart)="collapse()" role="dialog" aria-modal="true" aria-label="Navigation menu">
-    <header class="drawer-header"><strong>Navigation</strong><button type="button" mat-icon-button aria-label="Close navigation" (click)="collapse()"><mat-icon aria-hidden="true">close</mat-icon></button></header>
-    <nav aria-label="Mobile navigation">
-      @if (drawerLinks('night').length) {
-        <section><h2>League Night</h2>@for (item of drawerLinks('night'); track trackDestination($index, item)) {
-        <ng-container *ngTemplateOutlet="drawerLink; context: {$implicit: item}"></ng-container>
-      }</section>
-    }
-    @if (drawerLinks('results').length) {
-      <section><h2>Standings and Results</h2>@for (item of drawerLinks('results'); track trackDestination($index, item)) {
-      <ng-container *ngTemplateOutlet="drawerLink; context: {$implicit: item}"></ng-container>
-    }</section>
-  }
-  <section><h2>Account and Management</h2>@for (item of drawerLinks('management'); track trackDestination($index, item)) {
-  <ng-container *ngTemplateOutlet="drawerLink; context: {$implicit: item}"></ng-container>
-}
-<button type="button" class="drawer-link" (click)="openAppearance()"><mat-icon aria-hidden="true">palette</mat-icon>Appearance</button>
-@if (authenticationChecked && loggedIn) {<a class="drawer-link" routerLink="/change-email" routerLinkActive="active" (click)="collapse()"><mat-icon aria-hidden="true">alternate_email</mat-icon>Change Email</a>}
-@if (userRole === 'Admin') {<a class="drawer-link" routerLink="/recovery-review" routerLinkActive="active" (click)="collapse()"><mat-icon aria-hidden="true">fact_check</mat-icon>Recovery Review</a>}
-@if (authenticationChecked && loggedIn && playerId) {
-  <a [routerLink]="['/player-stats-tabs', playerId]" routerLinkActive="active" #profileActive="routerLinkActive" [attr.aria-current]="profileActive.isActive ? 'page' : null" class="drawer-link" (click)="collapse()"><mat-icon aria-hidden="true">person</mat-icon>Profile</a>
-}
-@if (authenticationChecked && loggedIn) {
-  <button type="button" class="drawer-link" (click)="collapse(); logoutAndNavigate()"><mat-icon aria-hidden="true">exit_to_app</mat-icon>Logout</button>
-}
-</section>
-</nav>
-</mat-sidenav>
+  <mat-sidenav id="navigation-drawer" class="navigation-drawer" mode="over" position="end" [fixedInViewport]="true" [opened]="isExpanded"
+    (closedStart)="collapse()" (closed)="restoreDrawerFocus()" role="dialog" aria-modal="true" aria-label="Navigation menu">
+    <header class="drawer-header"><strong>Navigation</strong><button type="button" mat-icon-button cdkFocusInitial aria-label="Close navigation" (click)="collapse()"><mat-icon aria-hidden="true">close</mat-icon></button></header>
+    <nav class="drawer-destinations" aria-label="Mobile navigation">
+      @for (item of visibleDestinations; track item.label) {
+        @if (item.children?.length) {
+          <details class="drawer-group" [open]="itemActive(item)">
+            <summary class="drawer-link" [class.active]="itemActive(item)">
+              <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span>
+              <mat-icon class="drawer-disclosure" aria-hidden="true">expand_more</mat-icon>
+            </summary>
+            <div class="drawer-child-links">
+              @for (entry of item.children; track entry.label) {
+                <ng-container *ngTemplateOutlet="drawerLink; context: {$implicit: entry}"></ng-container>
+              }
+            </div>
+          </details>
+        } @else {
+          <ng-container *ngTemplateOutlet="drawerLink; context: {$implicit: item}"></ng-container>
+        }
+      }
+    </nav>
+  </mat-sidenav>
 </mat-sidenav-container>
+
 <ng-template #drawerLink let-item>
-  <a [routerLink]="item.route" [queryParams]="item.queryParams" [class.active]="destinationActive(item)" [attr.aria-current]="destinationActive(item) ? 'page' : null" class="drawer-link" (click)="collapse()"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span></a>
+  @if (item.route) {
+    <a [routerLink]="item.route" [queryParams]="item.queryParams" [class.active]="destinationActive(item)" [class.featured-link]="item.featured"
+      [attr.aria-current]="destinationActive(item) ? 'page' : null" class="drawer-link" (click)="collapse()">
+      <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span>
+    </a>
+  } @else {
+    <button type="button" class="drawer-link" (click)="runAction(item.action)"><mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>{{ item.label }}</button>
+  }
 </ng-template>
 
-<div class="nav-width-probe" #widthProbe aria-hidden="true">@for (item of visibleDestinations; track trackDestination($index, item)) {
-  <span class="navigation-link" data-measure-route><mat-icon>{{ item.icon }}</mat-icon><span>{{ item.label }}</span></span>
-  }<button mat-button class="menu-trigger" data-measure-more tabindex="-1">More<mat-icon>arrow_drop_down</mat-icon></button></div>
+<ng-template #groupLabel let-item>
+  <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon><span>{{ item.label }}</span><mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
+</ng-template>
+
+
+<div class="nav-width-probe" #widthProbe aria-hidden="true" inert>
+  @for (item of visibleDestinations; track item.label) {
+    @if (item.route) {
+      <span class="navigation-link" [class.featured-link]="item.featured"><mat-icon>{{ item.icon }}</mat-icon><span>{{ item.label }}</span></span>
+    } @else if (item.children?.length) {
+      <button type="button" mat-button class="menu-trigger" tabindex="-1">
+        <ng-container *ngTemplateOutlet="groupLabel; context: {$implicit: item}"></ng-container>
+      </button>
+    } @else {
+      <button type="button" mat-button class="menu-trigger" tabindex="-1"><mat-icon>{{ item.icon }}</mat-icon>{{ item.label }}</button>
+    }
+  }
+</div>

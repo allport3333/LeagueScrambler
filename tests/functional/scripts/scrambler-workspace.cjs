@@ -7,7 +7,7 @@ const teams=()=>Array.from({length:12},(_,i)=>({players:players.slice(i*2,i*2+2)
 const hash=content=>crypto.createHash('sha256').update(content).digest('hex');
 const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.env.LEAGUE_PRINT_BASELINE):path.resolve(__dirname,'../scrambler-workspace-evidence/print-baseline.json');
 (async()=>{
- browser=await chromium.launch(mode === 'scoring-defaults' ? {channel:'msedge'} : {});const context=await browser.newContext({serviceWorkers:'block',viewport:{width:1920,height:1080}});const errors=[],writes=[],checks=[];let failNextSave=false,navigationRole='Admin',navigationSignedIn=true;let fixtureScoreFailure=false,fixtureSubFailure=false,fixtureReadFailure=false,fixtureOdd=false,fixtureEmpty=false;const savedScores=new Map(),savedSubs=new Map(),savedAssignments=new Map();let scoreSaveRequests=0;let defaultsSaved=false, defaultsSavedTeams=[], defaultsSecondEmpty=false, defaultsSecondDelay=false;let nextScoreId=9000;
+ browser=await chromium.launch(['scoring-defaults','navigation'].includes(mode) ? {channel:'msedge'} : {});const context=await browser.newContext({serviceWorkers:'block',hasTouch:mode==='navigation',viewport:{width:1920,height:1080}});const errors=[],writes=[],checks=[];let failNextSave=false,navigationRole='Admin',navigationSignedIn=true;let fixtureScoreFailure=false,fixtureSubFailure=false,fixtureReadFailure=false,fixtureOdd=false,fixtureEmpty=false;const savedScores=new Map(),savedSubs=new Map(),savedAssignments=new Map();let scoreSaveRequests=0;let defaultsSaved=false, defaultsSavedTeams=[], defaultsSecondEmpty=false, defaultsSecondDelay=false;let nextScoreId=9000;
  await context.route('**/*',async route=>{
   let u;try{u=assertLocalUrl(route.request().url());}catch{
    const asset=new URL(route.request().url());
@@ -148,7 +148,7 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
   console.log('Manage Scores defaults, manual selection, league switch, stale responses, empty and new saved scramble passed in three themes.');
   return;
  }
- await page.waitForFunction(()=>{const c=(window.ng.getComponent?window.ng.getComponent(document.querySelector('app-scrambler-component')):window.ng.probe(document.querySelector('app-scrambler-component')).componentInstance);return c.selectedLeague==='Synthetic League'&&c.malePlayers1.length===12;});await page.waitForTimeout(550);
+ if(mode!=='navigation'){await page.waitForFunction(()=>{const c=(window.ng.getComponent?window.ng.getComponent(document.querySelector('app-scrambler-component')):window.ng.probe(document.querySelector('app-scrambler-component')).componentInstance);return c.selectedLeague==='Synthetic League'&&c.malePlayers1.length===12;});await page.waitForTimeout(550);}
  async function evaluate(fn,arg){return require('./angular-component.cjs')(page,'app-scrambler-component',fn,arg);}
  async function seed(results=true){await evaluate((c,arg)=>{c.selectedList=arg.useRoster?c.malePlayers1.concat(c.femalePlayers1):arg.players;c.teamSize=2;c.numberOfTeams=null;c.teamCount=12;c.isActionAllowed=true;c.selectedRounds=5;c.selectedMatchupsPerPage='2';c.rounds=[1,2,3,4,5];c.listOfTeams=arg.results?arg.teams:[];c.scrambleNumber=arg.results?12:null;c.__workspaceToken='retained';},{players,teams:teams(),results,useRoster:mode==='corrections'});await page.waitForTimeout(100);}
  async function shot(name){await page.screenshot({path:path.join(out,name+'.png'),fullPage:true});}
@@ -347,44 +347,169 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
    navigationRole=role;navigationSignedIn=role!=='Anonymous';await page.goto(BASE_URL+'/league-management');
    const allowed=role==='Admin'||role==='Manager';
    if(allowed){await expect(page.locator('.league-management-page')).toBeVisible();await expect(page).toHaveURL(/\/league-management$/);}
-   else{await expect(page).toHaveURL(BASE_URL+'/');await expect(page.locator('.league-management-page')).toHaveCount(0);}
-   await page.getByRole('button',{name:'More',exact:true}).click();await expect(page.getByRole('menuitem',{name:'League Management',exact:true})).toHaveCount(allowed?1:0);await page.keyboard.press('Escape');
+   else{await expect(page).toHaveURL(BASE_URL+'/access-denied');await expect(page.locator('.league-management-page')).toHaveCount(0);}
+   await expect(page.getByRole('navigation',{name:'Main navigation',exact:true}).getByRole('link',{name:'League Management',exact:true})).toHaveCount(allowed?1:0);
    await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'Open navigation',exact:true}).click();await expect(page.locator('#navigation-drawer').getByRole('link',{name:'League Management',exact:true})).toHaveCount(allowed?1:0);await page.getByRole('button',{name:'Close navigation',exact:true}).click();await page.setViewportSize({width:1920,height:1080});
    checks.push(role+': desktop/mobile management visibility and direct route '+(allowed?'allowed':'blocked'));
   }
   assert.equal(writes.length,0);
  }else if(mode==='navigation'){
-  const nav=page.locator('app-nav-menu'),drawer=page.locator('#navigation-drawer');
-  const secondary=['/league-management','/faq','/fetch-data','/sign-in'],primary=['/scrambler','/team-scores','/league-dashboard','/standings','/kqmatchups'];
-  async function openDrawer(){await page.getByRole('button',{name:'Open navigation',exact:true}).click();await expect(drawer).toBeVisible();await expect(drawer.getByRole('button',{name:'Close navigation',exact:true})).toBeFocused();}
-  async function waitRole(role){await page.waitForFunction(r=>{const c=(window.ng.getComponent?window.ng.getComponent(document.querySelector('app-nav-menu')):window.ng.probe(document.querySelector('app-nav-menu')).componentInstance);return c.authenticationChecked&&c.userRole===r;},role);}
-  async function menuReady(){await expect(page.locator(':is(.mat-menu-panel,.mat-mdc-menu-panel)')).toHaveCount(1);await expect.poll(()=>page.locator(':is(.mat-menu-panel,.mat-mdc-menu-panel)').evaluate(e=>getComputedStyle(e).opacity)).toBe('1');}
+  const nav=page.getByRole('navigation',{name:'Main navigation',exact:true});
+  const drawer=page.locator('#navigation-drawer');
+  const desktop=nav.locator('.desktop-navigation');
+  const groups=drawer.locator('summary');
+  const direct=['Home','League Dashboard','Schedule','Players','Sign In Sheet'];
+  const senior=['Home','Scrambler','Teams & Scores','League Dashboard','Schedule','King & Queen','Players','Sign In Sheet','League Management','Install Locally','F.A.Q'];
+  const regular=['Home','League Dashboard','Schedule','King & Queen','Players','Sign In Sheet','Install Locally','F.A.Q'];
+  const group=name=>groups.filter({has:page.getByText(name,{exact:true})});
+  async function expandGroup(name){const summary=group(name);if(!await summary.evaluate(el=>el.parentElement.open))await summary.tap();}
+  const link=(scope,name)=>scope.getByRole('link',{name,exact:true});
+  const button=(scope,name)=>scope.getByRole('button',{name,exact:true});
+  const tab=(scope,name)=>scope.getByRole('tab',{name,exact:true});
+  async function openDrawer(){
+   const toggle=button(nav,'Open navigation');await toggle.tap();
+   await expect(drawer).toBeVisible();await expect(button(drawer,'Close navigation')).toBeFocused();
+  }
+  async function testDesktop(role,theme,width) {
+   await expect(desktop).toBeVisible();
+   const labels=await desktop.locator(':scope > a, :scope > button').allTextContents();
+   const withoutIcons=labels.map(label=>label.replace(/^(?:home|shuffle|group|dashboard|event|emoji_events|people|how_to_reg|settings|get_app|help_outline)/,'').trim());
+   assert.deepEqual(withoutIcons,role==='Player'?regular:senior);
+   assert(await desktop.evaluate(e=>[...e.querySelectorAll(':scope > a, :scope > button')].every((item,i,items)=>!i||item.getBoundingClientRect().left>=items[i-1].getBoundingClientRect().right-1)));
+   const [bar,league,center,account]=await Promise.all([nav.boundingBox(),nav.locator('#leagueDropdown').boundingBox(),desktop.boundingBox(),button(nav,'Account').boundingBox()]);
+   assert(league.x-bar.x<=13 && bar.x+bar.width-account.x-account.width<=13);
+   assert(league.x+league.width<=center.x && center.x+center.width<=account.x);
+   if(width>=1920)assert(Math.abs(center.x+center.width/2-bar.x-bar.width/2)<2,'desktop primary links centered');
+   await nav.screenshot({path:path.join(out,role+'-'+theme+'-desktop-'+width+'.png')});
+   if(width===1920){
+    await expect(link(nav,'Install Locally')).toHaveClass(/featured-link/);
+    await expect(link(nav,'F.A.Q')).toBeVisible();
+    await expect(button(nav,'More')).toHaveCount(0);
+    await expect(button(nav,'Manage')).toHaveCount(0);
+    await expect(link(nav,'League Management')).toHaveCount(role==='Player'?0:1);
+    const accountButton=button(nav,'Account');await accountButton.focus();await page.keyboard.press('Enter');
+    await expect(page.getByRole('menuitem',{name:'Profile'})).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.getByRole('menuitem',{name:'Appearance'})).toBeFocused();
+    for(const name of ['Profile','Appearance','Change Email','Logout'])await expect(page.getByRole('menuitem',{name,exact:true})).toBeVisible();
+    await expect(page.getByRole('menuitem',{name:'Recovery Review',exact:true})).toHaveCount(role==='Admin'?1:0);
+    await page.locator('.mat-mdc-menu-panel').screenshot({path:path.join(out,role+'-'+theme+'-account.png')});
+    await page.keyboard.press('Escape');await expect(accountButton).toBeFocused();
+   }
+  }
+  async function testDrawer(role,theme,width){
+   const toggle=button(nav,'Open navigation');await expect(toggle).toBeVisible();
+   const before=await page.evaluate(()=>scrollY);
+   await openDrawer();
+   await expect.poll(async()=>{const box=await drawer.boundingBox();return box.x>=-1 && box.x+box.width<=width+1;}).toBe(true);
+   const labels=await drawer.locator('.drawer-destinations > a, .drawer-destinations > details > summary').evaluateAll(items=>items.map(i=>i.querySelector('span').textContent.trim()));
+   assert.deepEqual(labels,[...(role==='Player'?regular:senior),'Account']);
+   for(const name of direct)await expect(link(drawer,name)).toBeVisible();
+   await expandGroup('King & Queen');
+   await expect(link(drawer,'Standings')).toBeVisible();await expect(link(drawer,'Matchups')).toBeVisible();
+   await expect(link(drawer,'Install Locally')).toHaveClass(/featured-link/);
+   await expect(link(drawer,'F.A.Q')).toBeVisible();
+   await expandGroup('Account');
+   for(const name of ['Profile','Change Email','Appearance','Logout']){
+    const entry=name==='Profile'||name==='Change Email'?link(drawer,name):button(drawer,name);
+    await expect(entry).toBeVisible();
+    assert((await entry.boundingBox()).height>=44);
+   }
+   await expect(link(drawer,'Recovery Review')).toHaveCount(role==='Admin'?1:0);
+   await expect(link(drawer,'League Management')).toHaveCount(role==='Player'?0:1);
+   if([320,375,390,768,1024,1280].includes(width)){
+    const scroller=drawer.locator('.mat-drawer-inner-container');
+    await scroller.evaluate(e=>e.scrollTop=0);
+    await page.screenshot({path:path.join(out,role+'-'+theme+'-mobile-'+width+'.png'),animations:'disabled'});
+    if(width<=430){
+     assert(await scroller.evaluate(e=>e.scrollHeight>e.clientHeight));
+     await button(drawer,'Logout').scrollIntoViewIfNeeded();
+     assert(await scroller.evaluate(e=>e.scrollTop>0));
+     if(width===390)await page.screenshot({path:path.join(out,role+'-'+theme+'-mobile-account.png'),animations:'disabled'});
+    }
+   }
+   await page.keyboard.press('Escape');
+   await expect(drawer).toBeHidden();await expect(toggle).toBeFocused();
+   assert.equal(await page.evaluate(()=>scrollY),before);
+  }
   for(const role of ['Admin','Manager','Player']){
-   navigationRole=role;await page.setViewportSize({width:1920,height:1080});await page.goto(BASE_URL+'/scrambler');await waitRole(role);await page.evaluate(()=>document.fonts.ready);
-   const expected=role==='Player'?primary.slice(2):primary,allowedSecondary=role==='Player'?secondary.filter(r=>r!=='/league-management'):secondary;
-   assert.deepEqual((await nav.locator('.desktop-navigation > a').evaluateAll(ns=>ns.map(n=>new URL(n.href).pathname))).sort(),expected.slice().sort());
-   await page.getByRole('button',{name:'More',exact:true}).click();assert.deepEqual((await page.locator('.cdk-overlay-pane a[mat-menu-item]').evaluateAll(ns=>ns.map(n=>new URL(n.href).pathname))).sort(),allowedSecondary.slice().sort());await page.keyboard.press('Escape');
-   await page.getByRole('button',{name:'Account',exact:true}).click();await expect(page.getByRole('menuitem',{name:'Profile',exact:true})).toHaveAttribute('href','/player-stats-tabs/1001');await expect(page.getByRole('menuitem',{name:'Logout',exact:true})).toBeVisible();await page.keyboard.press('Escape');
-   await page.setViewportSize({width:390,height:844});const y=(await page.locator('.scramble-setup').boundingBox()).y;await openDrawer();
-   assert.deepEqual((await drawer.locator('a').evaluateAll(ns=>ns.map(n=>new URL(n.href).pathname))).sort(),expected.concat(allowedSecondary,'/player-stats-tabs/1001').sort());assert.equal((await page.locator('.scramble-setup').boundingBox()).y,y);
-   await page.screenshot({path:path.join(out,'drawer-'+role+'-390.png')});
-   await page.keyboard.press('Shift+Tab');assert(await drawer.evaluate(e=>e.contains(document.activeElement)));await page.keyboard.press('Escape');await expect(drawer).toBeHidden();
-   await openDrawer();await drawer.getByRole('link',{name:'F.A.Q',exact:true}).click();await expect(drawer).toBeHidden();await expect(page).toHaveURL(/\/faq$/);await openDrawer();await expect(drawer.getByRole('link',{name:'F.A.Q',exact:true})).toHaveAttribute('aria-current','page');await drawer.getByRole('button',{name:'Close navigation',exact:true}).click();
-   checks.push(role+': all original permitted routes/account actions; drawer link closes, keyboard focus/Escape and active state');
+   navigationRole=role;
+   for(const theme of ['classic','navy','charcoal']){
+    await page.setViewportSize({width:1920,height:1000});
+    await page.evaluate(value=>localStorage.setItem('league-hub-appearance',value),theme);
+    await page.goto(BASE_URL+'/');
+    await expect(nav.locator('#leagueDropdown')).toHaveText(/Synthetic League/);
+    for(const width of [1920,2560,3440,1440,1280,1024,768,430,390,375,320]){
+     await page.setViewportSize({width,height:width<=430?667:900});
+     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+     if(width<=430)await expect(desktop).toHaveCount(0);
+     if(width>=1920)await expect(desktop).toBeVisible();
+     if(await desktop.isVisible())await testDesktop(role,theme,width);
+     else await testDrawer(role,theme,width);
+     assert(await nav.evaluate(el=>el.scrollWidth<=el.clientWidth),role+' '+theme+' navbar overflow '+width);
+     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    }
+    if(role==='Admin'){
+     await page.setViewportSize({width:1920,height:900});
+     await link(nav,'King & Queen').click();
+     const tabs=page.getByRole('tablist',{name:'King & Queen'});
+     await tab(tabs,'Matchups').click();
+     await expect(tab(tabs,'Matchups')).toHaveAttribute('aria-selected','true');
+     await tabs.screenshot({path:path.join(out,theme+'-king-queen-tabs.png')});
+     await link(nav,'Home').click();
+    }
+   }
+   await page.setViewportSize({width:1920,height:900});
+   await link(nav,'King & Queen').click();
+   const tabs=page.getByRole('tablist',{name:'King & Queen'});
+   await expect(page).toHaveURL(/\/standings$/);
+   await expect(tab(tabs,'Standings')).toHaveAttribute('aria-selected','true');
+   await tab(tabs,'Matchups').click();
+   await expect(page).toHaveURL(/\/kqmatchups$/);
+   await expect(tab(tabs,'Matchups')).toHaveAttribute('aria-selected','true');
+   await expect(link(nav,'King & Queen')).toHaveAttribute('aria-current','page');
+   await page.goBack();await expect(tab(tabs,'Standings')).toHaveAttribute('aria-selected','true');
+   await page.goForward();await expect(tab(tabs,'Matchups')).toHaveAttribute('aria-selected','true');
+   await page.reload();await expect(tab(tabs,'Matchups')).toHaveAttribute('aria-selected','true');
+   await page.goto(BASE_URL+'/standings?leagueId=101');await expect(tab(tabs,'Standings')).toHaveAttribute('aria-selected','true');
+   await expect(page).toHaveURL(/\/standings\?leagueId=101$/);
+   await page.goto(BASE_URL+'/kqmatchups?leagueId=101&scrambleNumber=12');
+   await expect(tab(tabs,'Matchups')).toHaveAttribute('aria-selected','true');
+   await expect(page).toHaveURL(/\/kqmatchups\?leagueId=101&scrambleNumber=12$/);
+   await expect(page.locator('app-kqmatchups')).toBeVisible();
+   if(role!=='Player'){
+    await link(nav,'Teams & Scores').click();
+    await expect(link(nav,'Teams & Scores')).toHaveAttribute('aria-current','page');
+    for(const name of ['Enter Team Scores','League Teams','Team Management']){
+     const entry=page.getByRole('tab',{name,exact:true});await entry.click();await expect(entry).toHaveAttribute('aria-selected','true');
+    }
+    await link(nav,'League Management').click();
+    await expect(page).toHaveURL(/\/league-management$/);
+    await expect(link(nav,'League Management')).toHaveAttribute('aria-current','page');
+   }else{
+    await page.goto(BASE_URL+'/league-management');
+    await expect(page).toHaveURL(/\/access-denied$/);
+   }
+   await page.setViewportSize({width:390,height:740});
+   await nav.locator('#leagueDropdown').tap();
+   await page.getByRole('menuitem',{name:'Second Synthetic League'}).tap();
+   await expect(button(nav,'Second Synthetic League')).toBeVisible();
+   await openDrawer();await expandGroup('King & Queen');await link(drawer,'Matchups').tap();
+   await expect(drawer).toBeHidden();await expect(tab(tabs,'Matchups')).toHaveAttribute('aria-selected','true');
+   await expect(button(nav,'Second Synthetic League')).toBeVisible();
+   await openDrawer();await expect(link(drawer,'Matchups')).toHaveAttribute('aria-current','page');
+   await button(drawer,'Close navigation').tap();
+   await page.reload();await expect(tab(tabs,'Matchups')).toHaveAttribute('aria-selected','true');
+   await expect(button(nav,'Second Synthetic League')).toBeVisible();
+   await openDrawer();await link(drawer,'F.A.Q').tap();
+   await expect(drawer).toBeHidden();await expect(page).toHaveURL(/\/faq$/);
+   await openDrawer();
+   await page.setViewportSize({width:2560,height:900});await expect(drawer).toBeHidden();
+   await expect(page).toHaveURL(/\/faq$/);
+   await page.setViewportSize({width:1920,height:900});await expect(link(nav,'F.A.Q')).toHaveAttribute('aria-current','page');
+   checks.push(role+': shared routes and groups in three themes; tablet and touch layouts; deep links, keyboard, history, refresh and league retention');
   }
-  navigationRole='Admin';await page.setViewportSize({width:1920,height:1080});await page.goto(BASE_URL+'/scrambler');await waitRole('Admin');await seed();
-  const preserved=await evaluate(c=>JSON.stringify({players:c.selectedList,teams:c.listOfTeams,rounds:c.selectedRounds,print:c.selectedMatchupsPerPage}));await page.getByRole('button',{name:'More',exact:true}).click();await page.getByRole('menuitem',{name:'League Management',exact:true}).click();await expect(page.locator('.league-management-page')).toBeVisible();await expect(page.getByRole('button',{name:'More',exact:true})).toHaveClass(/active/);
-  await nav.getByRole('link',{name:'Scrambler',exact:true}).click();assert.equal(await evaluate(c=>JSON.stringify({players:c.selectedList,teams:c.listOfTeams,rounds:c.selectedRounds,print:c.selectedMatchupsPerPage})),preserved);checks.push('Scrambler/Management retains same live selections, teams, rounds and print settings');
-  for(const [width,height] of [[1920,1080],[1366,768],[1024,768],[390,844],[375,667]]){
-   await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo(0,0));await nav.locator('.league-navigation').screenshot({path:path.join(out,'navigation-closed-'+width+'.png')});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert((await nav.locator('.league-navigation').boundingBox()).height<=64);
-   if(width>=1280){const rows=await nav.locator('.desktop-navigation > a').evaluateAll(ns=>ns.map(n=>Math.round(n.getBoundingClientRect().top)));assert.equal(new Set(rows).size,1);await expect(nav.getByRole('link',{name:'Scrambler',exact:true})).toHaveAttribute('aria-current','page');await page.getByRole('button',{name:'More',exact:true}).click();await menuReady();await page.screenshot({path:path.join(out,'more-open-'+width+'.png')});await page.keyboard.press('Escape');await page.getByRole('button',{name:'Account',exact:true}).click();await menuReady();await page.screenshot({path:path.join(out,'account-open-'+width+'.png')});await page.keyboard.press('Escape');}
-   else{const y=(await page.locator('.scramble-setup').boundingBox()).y;await openDrawer();await page.screenshot({path:path.join(out,'drawer-open-'+width+'.png')});assert.equal((await page.locator('.scramble-setup').boundingBox()).y,y);if(width===375){assert(await drawer.locator('.mat-drawer-inner-container').evaluate(e=>e.scrollHeight>e.clientHeight));await drawer.getByRole('button',{name:'Logout',exact:true}).scrollIntoViewIfNeeded();await expect(drawer.getByRole('button',{name:'Logout',exact:true})).toBeVisible();}await page.mouse.click(5,200);await expect(drawer).toBeHidden();await openDrawer();await drawer.getByRole('button',{name:'Close navigation',exact:true}).click();await expect(drawer).toBeHidden();}
-  }
-  checks.push('Five sizes: compact single-row desktop, overlay without page movement, scrolling/dismissal and no overflow');
-  await page.setViewportSize({width:1366,height:768});await page.getByRole('button',{name:'Synthetic League',exact:true}).click();await page.getByRole('menuitem',{name:'Second Synthetic League',exact:true}).click();assert.equal(await evaluate(c=>c.selectedLeague),'Second Synthetic League');await expect(page.getByRole('button',{name:'Second Synthetic League',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'More',exact:true}).click();await page.getByRole('menuitem',{name:'League Management',exact:true}).click();await page.reload();await waitRole('Admin');await expect(page).toHaveURL(/\/league-management$/);await expect(page.getByRole('button',{name:'More',exact:true})).toHaveClass(/active/);checks.push('Existing league selection updates without route change; direct management refresh restores role and route');
-  await page.setViewportSize({width:390,height:844});await openDrawer();await page.setViewportSize({width:1920,height:1080});await expect(drawer).toBeHidden();navigationSignedIn=false;await page.reload();await page.waitForFunction(()=>{const c=(window.ng.getComponent?window.ng.getComponent(document.querySelector('app-nav-menu')):window.ng.probe(document.querySelector('app-nav-menu')).componentInstance);return c.authenticationChecked&&!c.loggedIn;});await expect(page.getByRole('button',{name:'Account',exact:true})).toBeHidden();await expect(nav.getByRole('link',{name:'Home',exact:true})).toBeVisible();await page.getByRole('button',{name:'More',exact:true}).click();await expect(page.getByRole('menuitem',{name:'League Management',exact:true})).toHaveCount(0);assert.equal(await page.getByRole('menuitem',{name:'Players',exact:true}).count(),0);await page.keyboard.press('Escape');checks.push('Resize closes drawer; anonymous public/legacy-management entry preserved without private links');assert.equal(writes.length,0);
-  navigationSignedIn=true;await page.reload();await waitRole('Admin');await page.getByRole('button',{name:'Account',exact:true}).click();await page.getByRole('menuitem',{name:'Logout',exact:true}).click();await expect(nav.getByRole('link',{name:'Home',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Account',exact:true})).toBeHidden();await page.reload();await expect(nav.getByRole('link',{name:'Home',exact:true})).toBeVisible();assert.equal(writes.length,1);assert.equal(writes[0].path,'/api/login/logout');checks.push('Account Logout invokes unchanged handler/endpoint through intercepted transport; logged-out state remains after refresh');
+  assert.equal(writes.length,0);
  }else if(mode==='fetch'){
   await seed(false);await evaluate(c=>{c.calculateTeamsNeeded();c.hasSignedInPlayersAvailable=true;c.fetchClicked=false;});
   const fetch=page.getByRole('button',{name:'Fetch Signed In Players',exact:true});await expect(fetch).toBeEnabled();await expect.poll(()=>fetch.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe('rgb(152, 208, 167)');

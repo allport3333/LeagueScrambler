@@ -67,7 +67,6 @@ const updated={...config,timestamp:config.timestamp+1,hashTable:{...config.hashT
  const popupPromise=page.waitForEvent('popup');await page.getByRole('button',{name:'Print Full Schedule'}).click();const printed=await popupPromise;await expect(printed.locator('.season-week td.season-versus')).toHaveCount(1);await expect(printed.locator('button,app-team-roster-button')).toHaveCount(0);await printed.pdf({path:path.join(out,'schedule-print.pdf'),preferCSSPageSize:true,printBackground:true});await printed.close();checks.push('Production schedule and shared roster load through worker; existing Full Schedule popup output retains matchup, excludes controls and generates PDF. Native installed printing still needs device testing.');
  await page.setViewportSize({width:1366,height:900});await page.goto(base+'/');await page.getByRole('button',{name:'Login',exact:true}).click();await page.locator('#loginEmail').fill('unfinished@example.invalid');
  await page.getByRole('button',{name:'Appearance',exact:true}).click();
- await page.getByRole('menuitem',{name:'Appearance',exact:true}).click();
  await page.getByRole('radio',{name:'Dark Navy',exact:true}).check();
  await page.getByRole('button',{name:'Done',exact:true}).click();
  await expect(page.locator('html')).toHaveAttribute('data-theme','navy');

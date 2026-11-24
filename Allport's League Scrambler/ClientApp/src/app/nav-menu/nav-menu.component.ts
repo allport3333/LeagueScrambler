@@ -1,7 +1,8 @@
 import { MatDialog } from '@angular/material/dialog';
+import { Overlay } from '@angular/cdk/overlay';
 import { AppearanceComponent } from '../appearance.component';
 import { onLeagueResume } from '../pwa/pending-work.service';
-import { Component, HostListener, OnInit, OnDestroy, AfterViewInit, DoCheck, ViewChild, ElementRef, NgZone, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, DoCheck, ViewChild, ElementRef, NgZone, ChangeDetectionStrategy } from '@angular/core';
 import { LoginService } from '../services/login.service';
 import { NavigationStart, Router } from '@angular/router';
 import { AuthService } from '../auth.service';
@@ -9,6 +10,21 @@ import { LeagueService } from '../services/league.service';
 import { Leagues } from '../data-models/leagues.model';
 import { forkJoin, of, throwError, Subscription } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+
+interface NavLink {
+    label: string;
+    icon: string;
+    route?: string | (string | number)[];
+    queryParams?: Record<string, string | number>;
+    action?: 'appearance' | 'logout';
+}
+
+interface NavItem extends NavLink {
+    children?: NavLink[];
+    roles?: string[];
+    signedInOnly?: boolean;
+    featured?: boolean;
+}
 
 @Component({
     selector: 'app-nav-menu',
@@ -19,78 +35,109 @@ import { catchError } from 'rxjs/operators';
 })
 export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoCheck {
     // Presentation metadata only: these are the existing routes and visibility rules.
-    readonly destinations = [
-        { route: '/', label: 'Home', icon: 'home', group: 'night', anonymousOnly: false },
-        { route: '/scrambler', label: 'Scrambler', icon: 'shuffle', group: 'night', roles: ['Admin', 'Manager'] },
-        { route: '/team-scores', label: 'Team Management', icon: 'group', group: 'night', roles: ['Admin', 'Manager'] },
-        { route: '/league-dashboard', label: 'League Dashboard', icon: 'dashboard', group: 'night', roles: ['Admin', 'Manager', 'Player'] },
-        { route: '/league-dashboard', queryParams: {tab:'schedule'}, label: 'Schedule', icon: 'event', group: 'night', roles: ['Admin','Manager','Player'] },
-        { route: '/standings', label: 'K/Q Standings', icon: 'emoji_events', group: 'results', roles: ['Admin', 'Manager', 'Player'] },
-        { route: '/kqmatchups', label: 'K/Q Matchups', icon: 'view_list', group: 'results', roles: ['Admin', 'Manager', 'Player'] },
-        { route: '/fetch-data', label: 'Players', icon: 'people', group: 'night', signedInOnly: true },
-        { route: '/sign-in', label: 'Sign In Sheet', icon: 'how_to_reg', group: 'night', signedInOnly: true },
-        { route: '/league-management', label: 'League Management', icon: 'settings', group: 'management', roles: ['Admin', 'Manager'] },
-        { route: '/install-locally', label: 'Install Locally', icon: 'get_app', group: 'management' },
-        { route: '/faq', label: 'F.A.Q', icon: 'help_outline', group: 'management', primary: false }
+    readonly destinations: NavItem[] = [
+        { route: '/', label: 'Home', icon: 'home' },
+        { route: '/scrambler', label: 'Scrambler', icon: 'shuffle', roles: ['Admin', 'Manager'] },
+        { route: '/team-scores', label: 'Teams & Scores', icon: 'group', roles: ['Admin', 'Manager'] },
+        { route: '/league-dashboard', label: 'League Dashboard', icon: 'dashboard', roles: ['Admin', 'Manager', 'Player'] },
+        { route: '/league-dashboard', queryParams: { tab: 'schedule' }, label: 'Schedule', icon: 'event', roles: ['Admin', 'Manager', 'Player'] },
+        { route: '/standings', label: 'King & Queen', icon: 'emoji_events', roles: ['Admin', 'Manager', 'Player'], children: [
+            { route: '/standings', label: 'Standings', icon: 'emoji_events' },
+            { route: '/kqmatchups', label: 'Matchups', icon: 'view_list' }
+        ] },
+        { route: '/fetch-data', label: 'Players', icon: 'people', signedInOnly: true },
+        { route: '/sign-in', label: 'Sign In Sheet', icon: 'how_to_reg', signedInOnly: true },
+        { label: 'Manage', icon: 'settings', roles: ['Admin', 'Manager'], children: [
+            { route: '/league-management', label: 'League Management', icon: 'settings' }
+        ] },
+        { route: '/install-locally', label: 'Install Locally', icon: 'get_app', featured: true },
+        { label: 'More', icon: 'more_horiz', children: [
+            { route: '/faq', label: 'F.A.Q', icon: 'help_outline' }
+        ] }
     ];
-    get visibleDestinations() {
+
+    get primaryDestinations(): NavItem[] {
         return this.destinations.filter(item =>
-            (!item.anonymousOnly || (this.authenticationChecked && !this.loggedIn)) &&
             (!item.signedInOnly || (this.authenticationChecked && this.loggedIn)) &&
-            (!item.roles || item.roles.indexOf(this.userRole) >= 0));
+            (!item.roles || item.roles.includes(this.userRole)))
+            .filter(item => !item.children || item.children.length)
+            .map(item => item.children?.length === 1 ? item.children[0] : item);
     }
-    primaryLinks: any[] = [];
-    secondaryLinks: any[] = [];
-    layoutReady = false;
-    @ViewChild('desktopLinks', { static: true }) desktopLinks: ElementRef;
-    @ViewChild('widthProbe', { static: true }) widthProbe: ElementRef;
+
+    get accountDestination(): NavItem | null {
+        if (!this.authenticationChecked) return null;
+        const children: NavLink[] = [];
+        if (this.loggedIn && this.playerId) {
+            children.push({ label: 'Profile', icon: 'person', route: ['/player-stats-tabs', this.playerId], queryParams: { leagueId: this.selectedLeagueId, tab: 'kq' } });
+        }
+        children.push({ label: 'Appearance', icon: 'palette', action: 'appearance' });
+        if (this.loggedIn) {
+            children.push({ label: 'Change Email', icon: 'alternate_email', route: '/change-email' });
+            if (this.userRole === 'Admin') children.push({ label: 'Recovery Review', icon: 'fact_check', route: '/recovery-review' });
+            children.push({ label: 'Logout', icon: 'exit_to_app', action: 'logout' });
+        }
+        return this.loggedIn ? { label: 'Account', icon: 'account_circle', children } : children[0];
+    }
+
+    get visibleDestinations(): NavItem[] {
+        const account = this.accountDestination;
+        return account ? [...this.primaryDestinations, account] : this.primaryDestinations;
+    }
+
+    compact = true;
+    @ViewChild('navigationBar', { static: true }) navigationBar: ElementRef<HTMLElement>;
+    @ViewChild('widthProbe', { static: true }) widthProbe: ElementRef<HTMLElement>;
     private layoutFingerprint = '';
     private layoutFrame: number = null;
-    private widthObserver: any;
+    private widthObserver: ResizeObserver;
+    private readonly drawerScroll = this.overlay.scrollStrategies.block();
     ngAfterViewInit() {
         this.queueLayout();
-        const Observer=(window as any).ResizeObserver;
-        if(Observer){this.widthObserver=new Observer(()=>this.queueLayout());this.widthObserver.observe(this.desktopLinks.nativeElement);}
-        const fonts=(document as any).fonts;
-        if(fonts)fonts.ready.then(()=>{if(this.desktopLinks)this.queueLayout();});
+        this.widthObserver = new ResizeObserver(() => this.queueLayout());
+        this.widthObserver.observe(this.navigationBar.nativeElement);
+        this.widthObserver.observe(this.widthProbe.nativeElement);
     }
     ngDoCheck() {
-        const fingerprint=this.visibleDestinations.map(item=>item.route+item.label+item.icon).join('|')+':'+this.authenticationChecked+':'+this.loggedIn+':'+this.selectedLeagueName;
-        if(fingerprint!==this.layoutFingerprint){this.layoutFingerprint=fingerprint;this.layoutReady=false;this.queueLayout();}
+        const fingerprint = this.visibleDestinations.map(item => item.label).join('|') + this.selectedLeagueName;
+        if (fingerprint !== this.layoutFingerprint) {
+            this.layoutFingerprint = fingerprint;
+            this.queueLayout();
+        }
     }
     private queueLayout() {
         if(this.layoutFrame!==null)return;
         this.layoutFrame=window.requestAnimationFrame(()=>this.zone.run(()=>{this.layoutFrame=null;this.measureLayout();}));
     }
     private measureLayout() {
-        if(!this.desktopLinks||!this.widthProbe)return;
-        const entries=this.visibleDestinations;
-        const available=this.desktopLinks.nativeElement.getBoundingClientRect().width;
-        if(!available)return;
-        const probe=this.widthProbe.nativeElement;
-        const widths=Array.from(probe.querySelectorAll('[data-measure-route]')).map((node:HTMLElement)=>node.getBoundingClientRect().width);
-        if(widths.length!==entries.length){this.queueLayout();return;}
-        const style=window.getComputedStyle(this.desktopLinks.nativeElement);
-        const gap=parseFloat((style as any).columnGap)||2;
-        const all=widths.reduce((sum,width)=>sum+width,0)+gap*Math.max(0,widths.length-1);
-        let count=entries.length;
-        if(all>available-4){
-            const more=probe.querySelector('[data-measure-more]').getBoundingClientRect().width;
-            const budget=available-more-gap-4;let used=0;count=0;
-            for(const width of widths){const next=used+(count?gap:0)+width;if(next>budget)break;used=next;count++;}
-        }
-        this.primaryLinks=entries.slice(0,count);this.secondaryLinks=entries.slice(count);this.layoutReady=true;
+        const bar = this.navigationBar.nativeElement;
+        const style = getComputedStyle(bar);
+        const leading = bar.querySelector('.league-selector, .session-status');
+        const reserved = (leading?.getBoundingClientRect().width || 0) + 2 * parseFloat(style.columnGap);
+        const available = bar.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - reserved;
+        // Keep a compact phone header even when the signed-out links happen to fit.
+        const phoneHeaderWidth = 30 * parseFloat(getComputedStyle(document.documentElement).fontSize);
+        this.compact = bar.clientWidth < phoneHeaderWidth ||
+            this.widthProbe.nativeElement.getBoundingClientRect().width + 4 > available;
+        if (!this.compact) this.collapse();
     }
-    drawerLinks(group: string) { return this.visibleDestinations.filter(item => item.group === group); }
-    trackDestination(index: number, item: { route: string; queryParams?: any }) { return item.route + (item.queryParams ? JSON.stringify(item.queryParams) : ''); }
-    destinationActive(item:any):boolean { const url=this.router.parseUrl(this.router.url),path=this.router.url.split(/[?#]/)[0];if(item.route==='/league-dashboard')return path===item.route && (item.queryParams ? url.queryParams.tab==='schedule' : url.queryParams.tab!=='schedule');return path===item.route; }
-    get secondaryPageActive(): boolean {
-        return this.secondaryLinks.some(item => this.destinationActive(item));
+
+    destinationActive(item: NavLink): boolean {
+        const path = this.router.url.split(/[?#]/)[0];
+        const route = Array.isArray(item.route) ? item.route.join('/') : item.route;
+        if (path === '/schedule') return route === '/league-dashboard' && item.queryParams?.tab === 'schedule';
+        if (path !== route) return false;
+        return route !== '/league-dashboard' ||
+            (this.router.parseUrl(this.router.url).queryParams.tab === 'schedule') === !!item.queryParams?.tab;
     }
-    get profilePageActive(): boolean { return this.router.url.indexOf('/player-stats-tabs/') === 0; }
-    @HostListener('window:resize') onNavigationResize() {
-        if (window.innerWidth >= 1024) { this.collapse(); }
-        this.queueLayout();
+
+    itemActive(item: NavItem): boolean {
+        return item.children ? item.children.some(child => this.destinationActive(child)) : this.destinationActive(item);
+    }
+
+    runAction(action: NavLink['action']): void {
+        this.collapse();
+        if (action === 'appearance') this.openAppearance();
+        if (action === 'logout') this.logoutAndNavigate();
     }
     authenticationChecked = false;
     private sessionVersion = 0;
@@ -109,6 +156,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         private authService: AuthService,
         private zone: NgZone,
         private leagueService: LeagueService,
+        private overlay: Overlay,
         private dialog: MatDialog
     ) {
         onLeagueResume(() => {
@@ -122,11 +170,25 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     }
 
     collapse() {
+        if (!this.isExpanded) return;
         this.isExpanded = false;
+        this.drawerScroll.disable();
     }
 
-    toggle() {
-        this.isExpanded = !this.isExpanded;
+    toggle(trigger: HTMLElement) {
+        if (this.isExpanded) this.collapse();
+        else {
+            // Touch activation does not consistently focus the trigger before Material records it.
+            trigger.focus({ preventScroll: true });
+            this.isExpanded = true;
+            this.drawerScroll.enable();
+        }
+    }
+
+    restoreDrawerFocus(): void {
+        if (!this.isExpanded && !this.dialog.openDialogs.length) {
+            this.navigationBar.nativeElement.querySelector<HTMLElement>('.drawer-toggle')?.focus({ preventScroll: true });
+        }
     }
 
     ngOnInit() {
@@ -178,7 +240,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     ngOnDestroy() {
         if(this.layoutFrame!==null)window.cancelAnimationFrame(this.layoutFrame);
         if(this.widthObserver)this.widthObserver.disconnect();
-        this.desktopLinks=null;
+        this.collapse();
         this.sessionVersion++;
         this.subscriptions.unsubscribe();
     }

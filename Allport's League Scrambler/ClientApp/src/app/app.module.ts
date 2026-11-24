@@ -75,6 +75,7 @@ import { LeagueTeamStandingsComponent } from './league-team-standings/league-tea
 import { IndividualTeamScoresComponent } from './individual-team-scores/individual-team-scores.component';
 import { FaqComponent } from './faq/faq.component';
 import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
+import { KingQueenNavigationComponent } from './king-queen-navigation.component';
 
 @NgModule({ declarations: [
         AppearanceComponent,
@@ -168,12 +169,14 @@ import { KqmatchupsComponent } from './kqmatchups/kqmatchups.component';
             { path: 'resetpassword', component: ResetPasswordComponent },
             { path: 'player-stats/:playerId', redirectTo: 'player-stats-tabs/:playerId', pathMatch: 'full' },
             { path: 'sign-in', component: SignInComponent },
-            { path: 'standings', component: LeagueStandingsComponent },
             { path: 'player-stats-tabs/:playerId', component: PlayerStatsTabsComponent },
             { path: 'league-dashboard', component: LeagueDashboardComponent },
             { path: 'faq', component: FaqComponent },
             { path: 'install-locally', component: InstallLocallyComponent },
-            { path: 'kqmatchups', component: KqmatchupsComponent }
+            { path: '', component: KingQueenNavigationComponent, children: [
+                { path: 'standings', component: LeagueStandingsComponent },
+                { path: 'kqmatchups', component: KqmatchupsComponent }
+            ] }
         ], {}),
         ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production }),
         BrowserAnimationsModule], providers: [{ provide: APP_ID, useValue: 'ng-cli-universal' }, MatSnackBar, AuthService, provideHttpClient(withXhr(), withInterceptorsFromDi())] })

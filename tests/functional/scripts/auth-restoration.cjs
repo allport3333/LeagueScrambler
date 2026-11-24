@@ -65,7 +65,7 @@ const checks=[],errors=[],writes=[];let browser;
   await expect(page.getByRole('button',{name:'Account',exact:true})).toHaveCount(0);
   await ready(page);assert.deepEqual(await navState(page),{loggedIn:true,role,player:-801,league:-501,checked:true});
   assert.equal(new URL(page.url()).pathname,route);
-  const management=page.locator('app-nav-menu').getByRole('link',{name:'Team Management',exact:true});
+  const management=page.locator('app-nav-menu').getByRole('link',{name:'Teams & Scores',exact:true});
   if(role==='Player')await expect(management).toHaveCount(0);else await expect(management).toBeVisible();
   await page.reload();await ready(page);assert.equal(new URL(page.url()).pathname,route);assert.equal((await navState(page)).role,role);
   assert(state.checks>=2);checks.push(role+': startup and refresh restore role/player/navigation and preserve '+route);

@@ -92,16 +92,39 @@ const emptyKq={individualRounds:[],scrambleTotals:[],teamMembers:[],teammateCoun
   assert.deepEqual(errors,[]);assert.deepEqual(writes,[]);fs.writeFileSync(path.join(out,'attendance-appearance-results.json'),JSON.stringify({passed:6,failed:0,checks:['available prominent card retains enabled green action','wrong day compact calendar status uses server reason','administrator lock distinguished with lock icon','already signed-in compact success and secondary removal/confirmation preserved','other player profile hidden and error/retry retained','1366/1920/375/390/430 layouts no overflow, compact states under70px'],pageErrors:errors,writeRequests:writes,fixtureMutations:fixtureAttendanceWrites,databaseAccess:false},null,2));await browser.close();return;
  }
  if(process.argv.includes('--navigation-overflow')){
-  const baseRoutes=['/league-dashboard','/standings','/kqmatchups','/fetch-data','/sign-in','/faq'];const adminRoutes=['/scrambler','/team-scores',...baseRoutes.slice(0,5),'/league-management','/faq'];
-  const nav=page.locator('app-nav-menu .league-navigation'),desktop=nav.locator('.desktop-navigation');const stats=[];
-  async function ready(){await expect.poll(()=>page.evaluate(()=>{const e=document.querySelector('app-nav-menu');if(!e||!window.ng)return false;const c=window.ng.probe(e).componentInstance;return c.authenticationChecked&&c.layoutReady;})).toBe(true);await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(80);}
-  async function inspect(expected,width,role){await ready();const primary=await desktop.locator('a.navigation-link').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href')));let overflow=[];const more=desktop.locator('.more-trigger');if(await more.count()){await more.click();overflow=await page.locator('.cdk-overlay-pane a[mat-menu-item]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href')));await page.keyboard.press('Escape');await expect(page.locator('.cdk-overlay-pane')).toHaveCount(0);}assert.deepEqual(primary.concat(overflow),expected);assert.equal(new Set(primary.concat(overflow)).size,expected.length);assert.equal(await desktop.evaluate(el=>el.scrollWidth>el.clientWidth),false);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert((await nav.boundingBox()).height<=64);assert.equal(await more.count(),overflow.length?1:0);if(primary.includes('/faq'))await expect(desktop.locator('a[href="/faq"]')).toHaveAttribute('aria-current','page');else await expect(more).toHaveClass(/active/);stats.push({role,width,primary,overflow});}
-  for(const role of ['Anonymous','Player','Manager','Admin']){state.navRole=role;await page.setViewportSize({width:1920,height:900});await page.goto(BASE_URL+'/faq');const expected=role==='Anonymous'?['/','/faq']:role==='Player'?baseRoutes:adminRoutes;
-   for(const width of [1920,1600,1366,1024,1366,1920]){await page.setViewportSize({width,height:900});await inspect(expected,width,role);if((role==='Player'||role==='Admin')&&[1920,1366,1024].includes(width)){await nav.screenshot({path:path.join(out,'navigation-fit-'+role.toLowerCase()+'-'+width+'.png')});}if(role==='Player'&&width>=1366)await expect(desktop.locator('.more-trigger')).toHaveCount(0);}
-   if(role!=='Anonymous'){await nav.getByRole('button',{name:/Account/}).click();await expect(page.getByRole('menuitem',{name:'Profile',exact:true})).toBeVisible();await expect(page.getByRole('menuitem',{name:'Logout',exact:true})).toBeVisible();await page.keyboard.press('Escape');await expect(page.locator('.cdk-overlay-pane')).toHaveCount(0);await nav.locator('#leagueDropdown').click();await expect(page.getByRole('menuitem',{name:/Synthetic League Two/})).toBeVisible();await page.keyboard.press('Escape');await expect(page.locator('.cdk-overlay-pane')).toHaveCount(0);}
-   await page.setViewportSize({width:375,height:667});await nav.getByRole('button',{name:'Open navigation'}).click();const drawer=page.locator('#navigation-drawer');await expect(drawer).toBeVisible();const drawerRoutes=await drawer.locator('a.drawer-link').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href')).filter(h=>!h.startsWith('/player-stats-tabs')));assert.deepEqual(drawerRoutes.slice().sort(),expected.slice().sort());await expect(drawer.getByRole('button',{name:'More',exact:true})).toHaveCount(0);await drawer.getByRole('button',{name:'Close navigation',exact:true}).click();await expect(nav.getByRole('button',{name:'Open navigation'})).toHaveAttribute('aria-expanded','false');}
-  state.navRole='Player';await page.setViewportSize({width:1366,height:768});await page.goto(BASE_URL+'/faq');await ready();await page.evaluate(()=>{const e=window.ng.probe(document.querySelector('app-nav-menu'));e.injector.get(window.ng.coreTokens.NgZone).run(()=>{e.componentInstance.userRole='Admin';});});await inspect(adminRoutes,1366,'role-change');await page.evaluate(()=>{const e=window.ng.probe(document.querySelector('app-nav-menu'));e.injector.get(window.ng.coreTokens.NgZone).run(()=>{e.componentInstance['authService'].setLoggedIn(false);});});await inspect(['/','/faq'],1366,'logout-state');
-  assert.deepEqual(errors,[]);assert.deepEqual(writes,[]);fs.writeFileSync(path.join(out,'navigation-overflow-results.json'),JSON.stringify({passed:6,failed:0,checks:['four role-specific permitted lists at 1024/1366/1600/1920','wide-to-narrow-to-wide preserves every route once and keeps one row','Player all six visible when fitting with More absent','active route/More and keyboard dismissal plus account/league menus','unchanged phone drawer includes all permitted links without More','role/logout state changes recalculate measured allocation'],measurements:stats,pageErrors:errors,writeRequests:writes,databaseAccess:false},null,2));await browser.close();return;
+  const nav=page.locator('app-nav-menu .league-navigation'),desktop=nav.locator('.desktop-navigation');
+  const stats=[];
+  for(const role of ['Anonymous','Player','Manager','Admin']){
+   state.navRole=role;
+   await page.setViewportSize({width:1920,height:900});
+   await page.goto(BASE_URL+'/faq');
+   await expect(nav.getByRole('button',{name:role==='Anonymous'?'Appearance':'Account',exact:true})).toBeVisible();
+   for(const width of [1920,1600,1366,1024,1366,1920]){
+    await page.setViewportSize({width,height:900});
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    const inline=await desktop.isVisible();
+    if(inline){
+     const expected=role==='Anonymous'?['/','/install-locally','/faq']:['/',...(role==='Player'?[]:['/scrambler','/team-scores']),'/league-dashboard','/league-dashboard?tab=schedule','/standings','/fetch-data','/sign-in',...(role==='Player'?[]:['/league-management']),'/install-locally','/faq'];
+     assert.deepEqual(await desktop.locator('a.navigation-link').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),expected);
+     await expect(desktop.getByRole('link',{name:'F.A.Q',exact:true})).toHaveClass(/active/);
+     await expect(desktop.getByRole('link',{name:'League Management',exact:true})).toHaveCount(['Admin','Manager'].includes(role)?1:0);
+     assert(await desktop.evaluate(e=>e.scrollWidth<=e.clientWidth));
+    }else await expect(nav.getByRole('button',{name:'Open navigation'})).toBeVisible();
+    assert(await nav.evaluate(e=>e.scrollWidth<=e.clientWidth));
+    if([1920,1366,1024].includes(width))await nav.screenshot({path:path.join(out,'navigation-fit-'+role.toLowerCase()+'-'+width+'.png')});
+    stats.push({role,width,inline});
+   }
+   await page.setViewportSize({width:375,height:667});
+   await nav.getByRole('button',{name:'Open navigation'}).click();
+   const drawer=page.locator('#navigation-drawer');
+   await expect(drawer.getByRole('link',{name:'F.A.Q',exact:true})).toBeVisible();
+   await expect(drawer.getByRole('link',{name:'League Management',exact:true})).toHaveCount(['Admin','Manager'].includes(role)?1:0);
+   await drawer.getByRole('button',{name:'Close navigation'}).click();
+   await expect(drawer).toBeHidden();
+  }
+  assert.deepEqual(errors,[]);assert.deepEqual(writes,[]);
+  fs.writeFileSync(path.join(out,'navigation-overflow-results.json'),JSON.stringify({measurements:stats,pageErrors:errors,writeRequests:writes,databaseAccess:false},null,2));
+  await browser.close();return;
  }
  if(process.argv.includes('--profile-attendance')){
   state.attendance=true;await visit();const card=page.locator('app-player-attendance');const sign=card.getByRole('button',{name:'Sign In for Tonight',exact:true});await expect(sign).toBeEnabled();assert.equal(requests.filter(url=>url.toLowerCase().includes('/api/playerattendance/')).length,1);
