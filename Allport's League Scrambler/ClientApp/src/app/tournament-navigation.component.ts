@@ -30,8 +30,8 @@ import { LeagueService } from './services/league.service';
             </nav>
         </details>
         <ng-template #links>
-            @if (currentTournamentId; as id) { <a [routerLink]="['/tournament', id]">Current Tournament</a> }
-            @else { <span aria-disabled="true">Current Tournament</span> }
+            @if (!leagueId() && currentTournamentId; as id) { <a [routerLink]="['/tournament', id]">Current Tournament</a> }
+            @else if (!leagueId()) { <span aria-disabled="true">Current Tournament</span> }
             <a routerLink="/tournament">Manage Tournaments</a>
             <a routerLink="/tournament" [queryParams]="{view: 'create'}">Create Tournament</a>
         </ng-template>

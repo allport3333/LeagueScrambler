@@ -83,7 +83,8 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                 else if (endpoint.endsWith('/getusersplayer')) data = { playerId: 1 };
                 else if (endpoint.endsWith('/getuserleagues') || endpoint.endsWith('/getleagues')) data = [{id: 37, leagueName: 'WW Winter 2026', eventTypeId: 1}, {id: 133, leagueName: name, eventTypeId: 2}];
                 else if (endpoint.includes('managementaccess')) data = { role, canManage: role !== 'Player' };
-                else if (endpoint === '/api/tournaments') data = [{id: 133, leagueName: name, eventTypeId: 2}];
+                else if (endpoint.includes('/availableleagueplayers/')) data = {players: roster, divisions: []};
+                else if (endpoint === '/api/tournaments/managed') data = [{id: 133, leagueName: name, eventTypeId: 2, eventDate: '2026-12-12', participants: 20, status: 'In Progress', total: 5, completed: 0}];
                 else if (endpoint === '/api/tournaments/133') data = { name, details, participants: 20, hasRounds: rounds.length > 0 };
                 else if (endpoint === '/api/tournaments/133/round-settings') data = {
                     version: details.version, mode: 1, roster, presentIds: roster.map(player => player.id), history: [], settings: roundSettings
@@ -103,12 +104,12 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             await page.getByRole('link', { name: 'Tournament Center', exact: true }).click();
             await expect(page.getByRole('heading', { name: 'Tournament Center', exact: true })).toBeVisible();
             await expect(page.getByRole('button', { name: /WW Winter 2026/ })).toBeVisible();
-            await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
+            await expect(page.getByRole('link', { name: 'Open Tournament: ' + name, exact: true })).toBeVisible();
             await expect(page.getByRole('link', { name: 'WW Winter 2026' })).toHaveCount(0);
             if (theme !== 'classic') await page.getByText('Tournament menu', { exact: true }).click();
             await expect(page.getByRole('link', { name: 'Create Tournament', exact: true })).toBeVisible();
             await page.locator('app-tournament-landing').screenshot({ path: path.join(out, theme + '-landing.png') });
-            await page.getByRole('link', { name, exact: true }).click();
+            await page.getByRole('link', { name: 'Open Tournament: ' + name, exact: true }).click();
             await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
             await page.setViewportSize({ width: 1440, height: 960 });
             await page.getByRole('button', { name: 'Manage Tournament Setup' }).click();
@@ -116,17 +117,28 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             await expect(page.getByText(/1 of 5 rounds completed/)).toHaveCount(0);
             await page.getByRole('button', { name: /Team & Round Setup/ }).click();
             await expect(page.getByRole('heading', { name: 'Team & Round Setup' })).toBeVisible();
+            await page.getByText('ⓘ', {exact: true}).nth(1).click();
+            await expect(page.getByText(/four teams of at most four/)).toBeVisible();
+            await page.getByText('ⓘ', {exact: true}).nth(1).click();
             await page.evaluate(() => document.fonts.ready);
             await page.locator('app-tournament-center').screenshot({ path: path.join(out, theme + '-desktop.png') });
             await page.getByRole('button', { name: /Player Priorities & Byes/ }).click();
-            await expect(page.getByRole('combobox', { name: 'Priority for Player 1', exact: true })).toBeVisible();
+            const priority = page.getByRole('combobox', { name: 'Priority for Player 1', exact: true });
+            await expect(priority).toBeVisible();
+            await priority.selectOption('top');
+            await page.getByRole('button', { name: 'Top', exact: true }).click();
+            await expect(priority).toBeVisible();
+            await page.getByRole('button', { name: 'Manual Byes', exact: true }).click();
+            await page.getByRole('checkbox', { name: 'Manual bye for Player 1', exact: true }).check();
+            await expect(page.getByText(/1 manual bye/)).toBeVisible();
             await page.locator('app-tournament-rounds').screenshot({ path: path.join(out, theme + '-priorities.png') });
             await page.getByRole('button', { name: 'Return to Run Tournament' }).click();
-            await page.getByText(/Round 1.*Partially scored/).click();
-            await expect(page.locator('.saved-round[open]').getByText(/Team 1.*Matchup 1/)).toBeVisible();
+            await page.locator('.saved-round').first().locator('summary').click();
+            await expect(page.locator('.saved-round[open]').getByRole('heading', {name: 'Matchup 1', exact: true})).toBeVisible();
             if (theme === 'classic') {
                 const popupPending = page.waitForEvent('popup');
-                await page.getByRole('button', { name: 'Print Round 1', exact: true }).click();
+                await page.locator('.print-options summary').click();
+                await page.getByRole('button', { name: 'Print Current Round', exact: true }).click();
                 const popup = await popupPending;
                 await expect(popup.getByRole('heading', { name, exact: true })).toBeVisible();
                 await expect(popup.locator('.print-team').first().getByRole('row').nth(1).getByRole('cell', { name: 'Player 1', exact: true })).toBeVisible();
@@ -160,8 +172,14 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             await page.getByLabel('Tournament setup step', { exact: true }).selectOption({ label: 'Team & Round Setup' });
             await expect(page.getByRole('heading', {name: 'Team & Round Setup'})).toBeVisible();
             await page.locator('app-tournament-center').screenshot({path: path.join(out, theme + '-wizard-mobile.png')});
-            await page.getByLabel('Tournament setup step', { exact: true }).selectOption({ label: 'Run Tournament' });
-            await page.getByText(/Round 1.*Unplayed/).click();
+            const mobileStep = page.getByLabel('Tournament setup step', { exact: true });
+            for (const label of ['Tournament Details', 'Manage Participants', 'Player Priorities & Byes', 'Player Check In',
+                'Generate & Preview Tournament', 'Run Tournament']) {
+                await mobileStep.selectOption({ label });
+                await expect(page.getByRole('heading', { name: label, exact: true })).toBeVisible();
+                assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+            }
+            await page.locator('.saved-round').first().locator('summary').click();
             await page.locator('app-tournament-rounds').screenshot({ path: path.join(out, theme + '-rounds-mobile.png') });
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
             await page.goto(origin + '/tournament/133/check-in');

@@ -19,10 +19,10 @@
   </nav>
   }
   @if (error) { <p role="alert">{{ error }}</p> }
-  @if (notice) { <p role="status">{{ notice }}</p> }
+  @if (notice && noticeView === view) { <p role="status">{{ notice }}</p> }
   @if (busy) { <p role="status">Working…</p> }
   @if (state; as data) {
-@if (view !== 'complete') {
+@if (wizardStep() === 7 && view !== 'complete') {
       @if (rounds.length) { <p class="summary">{{ completed }} of {{ data.settings.numberOfRounds }} rounds completed</p> }
       <details class="roster-summary">
         <summary>Participants and saved rounds</summary>
@@ -32,91 +32,137 @@
     <fieldset [disabled]="busy">
       @if (view === 'configuration') {
         <h2>Team & Round Setup</h2>
-        <div class="form-grid">
-          <label>Team Configuration
-            <select class="form-control" [ngModel]="teamBySize" (ngModelChange)="setTeamMode($event)">
-              <option [ngValue]="true">Maximum Team Size</option><option [ngValue]="false">Number of Teams</option>
-            </select>
-          </label>
-          @if (teamBySize) {
-            <label>Maximum Team Size <input class="form-control" type="number" min="2" max="5" [(ngModel)]="data.settings.maximumTeamSize" (ngModelChange)="markEdited()"></label>
-            <label>Maximum Teams Playing Per Round (optional) <input class="form-control" type="number" min="2" max="128" step="2" [(ngModel)]="data.settings.activeTeamLimit" (ngModelChange)="markEdited()">
-              <small>Use an even limit with Maximum Team Size. For example, 20 eligible players, a maximum team size of 4, and a limit of 4 teams means 16 play and 4 sit out when automatic byes are enabled. Leave blank to let all eligible players play except for manual byes. Number of Teams already sets the team count.</small>
-            </label>
-          } @else {
-            <label>Number of Teams <input class="form-control" type="number" min="2" max="128" step="2" [(ngModel)]="data.settings.numberOfTeams" (ngModelChange)="markEdited()"></label>
-          }
-          <label>Number of Rounds <input class="form-control" type="number" min="1" max="30" [(ngModel)]="data.settings.numberOfRounds" (ngModelChange)="markEdited()"></label>
-          <label>Games per Matchup <input class="form-control" type="number" min="1" max="9" [(ngModel)]="data.settings.gamesPerMatchup" (ngModelChange)="markEdited()"></label>
-          <label>Team Composition
-            <select class="form-control" [(ngModel)]="data.settings.balanceGenders" (ngModelChange)="markEdited()">
-              <option [ngValue]="false">Completely Random</option><option [ngValue]="true">Balanced Teams</option>
-            </select>
-          </label>
-          <label>Teammate Repetition
-            <select class="form-control" [(ngModel)]="data.settings.minimizeRepeats" (ngModelChange)="markEdited()">
-              <option [ngValue]="false">Allow Repeat Teammates</option><option [ngValue]="true">Minimize Repeat Teammates</option>
-            </select>
-          </label>
-        </div>
-        <p>Maximum Team Size lets Scrambler choose enough teams for the active roster. Number of Teams distributes players among the specified number of teams. Teams are paired for matchups, so team counts are even.</p>
-        <p>Completely Random ignores gender. Repeat minimization, strict history, and player priorities affect the assignments when enabled.</p>
-        @if (history.length) {
-          <details>
-            <summary>Strict historical exclusions ({{ data.settings.historicalScrambleNumbers.length }} selected)</summary>
-            <div class="form-grid">
-              @for (item of history; track item.scrambleNumber) {
-                <label class="choice"><input type="checkbox" [ngModel]="data.settings.historicalScrambleNumbers.includes(item.scrambleNumber)" (ngModelChange)="toggleHistory(item.scrambleNumber, $event)">
-                  Scramble {{ item.scrambleNumber }} · {{ item.dateOfTeam.slice(0, 10) }}
-                </label>
+        <div class="settings-grid">
+          <section class="settings-card">
+            <div class="section-heading">
+              <h3>Team Structure</h3>
+              <details class="help-tip"><summary aria-label="About team structure">ⓘ</summary>
+                <p>Maximum Team Size lets Scrambler choose the number of teams. Number of Teams sets the count directly. Teams play in pairs, so an explicit team count or limit must be even.</p>
+              </details>
+            </div>
+            <div class="form-grid compact-fields">
+              <label>Team Configuration
+                <select class="form-control" [ngModel]="teamBySize" (ngModelChange)="setTeamMode($event)">
+                  <option [ngValue]="true">Maximum Team Size</option><option [ngValue]="false">Number of Teams</option>
+                </select>
+              </label>
+              @if (teamBySize) {
+                <label>Maximum Team Size <input class="form-control" type="number" min="2" max="5" [(ngModel)]="data.settings.maximumTeamSize" (ngModelChange)="markEdited()"></label>
+                <div class="capacity-field">
+                  <div class="section-heading">
+                    <label for="active-team-limit">Maximum Active Teams Per Round</label>
+                    <details class="help-tip"><summary aria-label="About maximum active teams">ⓘ</summary>
+                      <p>This limits how many teams can play in one round. Players who do not fit may sit out when automatic byes are enabled. For example, four teams of at most four give 20 eligible players 16 places and four byes. Enter an even limit so every team can have an opponent.</p>
+                    </details>
+                  </div>
+                  <input id="active-team-limit" class="form-control" type="number" min="2" max="128" step="2"
+                    [(ngModel)]="data.settings.activeTeamLimit" (ngModelChange)="markEdited()">
+                  <small>Optional. Leave blank for Scrambler to choose the team count.</small>
+                </div>
+              } @else {
+                <label>Number of Teams <input class="form-control" type="number" min="2" max="128" step="2" [(ngModel)]="data.settings.numberOfTeams" (ngModelChange)="markEdited()"></label>
               }
             </div>
-          </details>
-        }
+          </section>
+          <section class="settings-card">
+            <h3>Tournament Format</h3>
+            <div class="form-grid compact-fields">
+              <label>Number of Rounds <input class="form-control" type="number" min="1" max="30" [(ngModel)]="data.settings.numberOfRounds" (ngModelChange)="markEdited()"></label>
+              <label>Games per Matchup <input class="form-control" type="number" min="1" max="9" [(ngModel)]="data.settings.gamesPerMatchup" (ngModelChange)="markEdited()"></label>
+            </div>
+          </section>
+          <section class="settings-card preferences">
+            <div class="section-heading">
+              <h3>Generation Preferences</h3>
+              <details class="help-tip"><summary aria-label="About generation preferences">ⓘ</summary>
+                <p>Completely Random disables gender balancing. Balanced Teams spreads genders across teams where possible. Allow Repeat Teammates does not optimize for new pairings. Minimize Repeat Teammates prefers new pairings while allowing repeats if needed. Strict historical exclusions forbid the selected prior pairings unless you explicitly allow fallback. Enabled priorities and history can still influence random teams.</p>
+              </details>
+            </div>
+            <div class="form-grid compact-fields">
+              <label>Team Composition
+                <select class="form-control" [(ngModel)]="data.settings.balanceGenders" (ngModelChange)="markEdited()">
+                  <option [ngValue]="false">Completely Random</option><option [ngValue]="true">Balanced Teams</option>
+                </select>
+              </label>
+              <label>Teammate Repetition
+                <select class="form-control" [(ngModel)]="data.settings.minimizeRepeats" (ngModelChange)="markEdited()">
+                  <option [ngValue]="false">Allow Repeat Teammates</option><option [ngValue]="true">Minimize Repeat Teammates</option>
+                </select>
+              </label>
+            </div>
+            @if (history.length) {
+              <details>
+                <summary>Strict historical exclusions ({{ data.settings.historicalScrambleNumbers.length }} selected)</summary>
+                <div class="form-grid compact-fields">
+                  @for (item of history; track item.scrambleNumber) {
+                    <label class="choice"><input type="checkbox" [ngModel]="data.settings.historicalScrambleNumbers.includes(item.scrambleNumber)" (ngModelChange)="toggleHistory(item.scrambleNumber, $event)">
+                      Scramble {{ item.scrambleNumber }} · {{ item.dateOfTeam.slice(0, 10) }}
+                    </label>
+                  }
+                </div>
+              </details>
+            }
+          </section>
+        </div>
       }
       @if (view === 'priorities') {
         <h2>Player Priorities & Byes</h2>
-        <p>Top players are prioritized in the order selected. Automatic byes are assigned when an active team limit leaves too few places.</p>
-        <div class="step-actions">
-          <label class="choice"><input type="checkbox" [(ngModel)]="data.settings.balancePriorities" (ngModelChange)="markEdited()"> Balance Top and Low Players</label>
-          <label class="choice"><input type="checkbox" [(ngModel)]="data.settings.automaticByes" (ngModelChange)="markEdited()"> Allow Automatic Byes</label>
+        <div class="step-actions" aria-label="Roster settings">
+          <button type="button" [attr.aria-pressed]="priorityView === 'priorities'" (click)="priorityView = 'priorities'">Player Priorities</button>
+          <button type="button" [attr.aria-pressed]="priorityView === 'byes'" (click)="priorityView = 'byes'">Manual Byes</button>
         </div>
-        <div class="form-grid">
-          <label>Filter Participants <input class="form-control" type="search" [(ngModel)]="filter"></label>
-          <label>Manual Byes for Round
-            <select class="form-control" [(ngModel)]="byeRound">
-              @for (number of sequence(data.settings.numberOfRounds); track number) { <option [ngValue]="number">{{ number }}</option> }
-            </select>
-          </label>
-        </div>
-        <div class="player-grid">
-          @for (player of filteredPlayers; track player.id) {
-            <article class="team priority-player" [class.male]="player.isMale">
-              <strong>{{ playerName(player) }}</strong>
-              <select class="form-control" [attr.aria-label]="'Priority for ' + playerName(player)"
-                [ngModel]="data.settings.topPlayerIds.includes(player.id) ? 'top' : data.settings.lowPlayerIds.includes(player.id) ? 'low' : 'regular'"
-                (ngModelChange)="setPriority(player.id, $event)">
-                <option value="regular">Regular</option><option value="top">Top Player</option><option value="low">Low Player</option>
+        <section class="settings-card">
+          @if (priorityView === 'priorities') {
+            <div class="section-heading">
+              <label class="choice"><input type="checkbox" [(ngModel)]="data.settings.balancePriorities" (ngModelChange)="markEdited()"> Balance Teams by Player Priority</label>
+              <details class="help-tip"><summary aria-label="About player priority balancing">ⓘ</summary>
+                <p>Retained Top players go on separate teams. If more Top players are selected than there are teams, the earliest selections keep priority and the rest are assigned as regular players. In Balanced Teams, teams with retained Top players are paired against each other where possible. Scrambler tries to spread Low players across teams. Turning this off ignores both lists. When enabled with Completely Random, priorities still apply without gender balancing.</p>
+              </details>
+            </div>
+            <p>{{ data.settings.topPlayerIds.length }} Top · {{ data.settings.lowPlayerIds.length }} Low</p>
+            <div class="priority-filters" aria-label="Filter by priority">
+              @for (option of priorityFilters; track option) {
+                <button type="button" [attr.aria-pressed]="priorityFilter === option" (click)="priorityFilter = option">{{ option }}</button>
+              }
+            </div>
+          } @else {
+            <label class="choice"><input type="checkbox" [(ngModel)]="data.settings.automaticByes" (ngModelChange)="markEdited()"> Rotate automatic byes when capacity is limited</label>
+            <label class="compact-control">Manual Byes for Round
+              <select class="form-control" [(ngModel)]="byeRound">
+                @for (number of sequence(data.settings.numberOfRounds); track number) { <option [ngValue]="number">{{ number }}</option> }
               </select>
-              <label class="choice"><input type="checkbox" [ngModel]="manualBye(player.id)" (ngModelChange)="setBye(player.id, $event)"> Manual bye</label>
-              <small>{{ byeCount(player.id) }} saved byes</small>
-            </article>
-          } @empty { <p>No matching participants.</p> }
-        </div>
-      }
-      @if (view === 'configuration' || view === 'priorities') {
-        @if (rounds.length) { <p>Saved settings apply to future generation. Existing rounds stay as saved until an unplayed round is explicitly replaced.</p> }
-
+            </label>
+            <p>{{ manualByeCount }} manual {{ manualByeCount === 1 ? 'bye' : 'byes' }}
+            @if (data.mode && expectedByeCount !== null) { · {{ expectedByeCount }} total expected with the current eligible roster }</p>
+          }
+          <label class="compact-control">Filter Participants <input class="form-control" type="search" [(ngModel)]="filter"></label>
+          <ul class="compact-roster">
+            @for (player of filteredPlayers; track player.id) {
+              <li class="priority-player" [class.male]="player.isMale">
+                <span [title]="playerName(player)">{{ playerName(player) }}</span>
+                @if (priorityView === 'priorities') {
+                  <select class="form-control" [attr.aria-label]="'Priority for ' + playerName(player)"
+                    [ngModel]="priorityFor(player.id)" (ngModelChange)="setPriority(player.id, $event)">
+                    <option value="regular">Regular</option><option value="top">Top Player</option><option value="low">Low Player</option>
+                  </select>
+                } @else {
+                  <label class="choice"><input type="checkbox" [attr.aria-label]="'Manual bye for ' + playerName(player)" [ngModel]="manualBye(player.id)" (ngModelChange)="setBye(player.id, $event)"> Sit out</label>
+                  @if (byeCount(player.id); as count) { <small>{{ count }} saved</small> }
+                }
+              </li>
+            } @empty { <li>No matching participants.</li> }
+          </ul>
+        </section>
       }
       @if (view === 'rounds') {
                 <h2>{{ wizardStep() === 6 ? 'Generate & Preview Tournament' : 'Run Tournament' }}</h2>
         @if (wizardStep() === 6) {
-          <p>{{ data.settings.numberOfRounds }} rounds · {{ data.settings.gamesPerMatchup }} games per matchup ·
-            {{ data.settings.maximumTeamSize ? 'Maximum ' + data.settings.maximumTeamSize + ' players per team' : data.settings.numberOfTeams + ' teams' }} ·
-            {{ data.settings.balanceGenders ? 'Balanced teams' : 'Random gender composition' }} ·
-            {{ data.settings.minimizeRepeats ? 'Minimize repeats' : 'Allow repeats' }}</p>
-          <p>{{ data.settings.topPlayerIds.length }} top · {{ data.settings.lowPlayerIds.length }} low ·
-            {{ data.settings.manualByes.length }} manual byes · {{ data.settings.historicalScrambleNumbers.length }} historical scrambles excluded</p>
+          <dl class="overview">
+            <div><dt>Participants</dt><dd>{{ data.roster.length }} registered · {{ eligible.length }} eligible</dd></div>
+            <div><dt>Rounds</dt><dd>{{ completed }} of {{ data.settings.numberOfRounds }} completed</dd></div>
+            <div><dt>Generation mode</dt><dd>{{ data.settings.balanceGenders ? 'Balanced teams' : 'Completely random' }} · {{ data.settings.minimizeRepeats ? 'Minimize repeats' : 'Allow repeats' }}</dd></div>
+            <div><dt>Format</dt><dd>{{ data.settings.gamesPerMatchup }} games per matchup · {{ data.settings.maximumTeamSize ? 'Up to ' + data.settings.maximumTeamSize + ' per team' : data.settings.numberOfTeams + ' teams' }}</dd></div>
+          </dl>
         }
         @if (!data.mode) { <p>Open, manually configure, or skip check-in before generating rounds.</p> }
         @if (!settingsSaved || dirty) { <p>Save team and round settings before generating.</p> }
@@ -132,23 +178,30 @@
           </section>
         }
         <div class="step-actions">
-          @if (!rounds.length || hasUnplayed || rounds.length < data.settings.numberOfRounds) {
-            <button type="button" class="primary" [disabled]="!settingsSaved || dirty || !data.mode || eligible.length < 2" (click)="propose()">
+          @if (!preview.length && (!rounds.length || hasUnplayed || rounds.length < data.settings.numberOfRounds)) {
+            <button type="button" [class.primary]="wizardStep() === 6 || !rounds.length" [disabled]="!settingsSaved || dirty || !data.mode || eligible.length < 2" (click)="propose()">
               {{ rounds.length ? 'Preview All Unplayed Rounds' : 'Generate Tournament Rounds' }}
             </button>
           }
           @if (nextRound; as round) { @if (wizardStep() === 7) {
-            <button type="button" (click)="openScores(round)">Continue: Enter Round {{ round.roundNumber }} Scores</button>
+            <button type="button" class="primary" (click)="openScores(round)">Continue: Enter Round {{ round.roundNumber }} Scores</button>
           } }
         </div>
-        @if (rounds.length) {
+        @if (rounds.length && wizardStep() === 7) {
           <details class="print-options">
             <summary>Printing options</summary>
-            <ng-container *ngTemplateOutlet="printLayout"></ng-container>
-            <div class="step-actions">
+            <div class="print-toolbar">
+              <ng-container *ngTemplateOutlet="printLayout"></ng-container>
+              <label>Current round
+                <select class="form-control" [ngModel]="currentPrintRound?.roundNumber" (ngModelChange)="printRoundNumber = $event">
+                  @for (round of rounds; track round.roundNumber) { <option [ngValue]="round.roundNumber">Round {{ round.roundNumber }}</option> }
+                </select>
+              </label>
+              <button type="button" [disabled]="!currentPrintRound" (click)="currentPrintRound && print([currentPrintRound])">Print Current Round</button>
               <button type="button" (click)="print(rounds)">Print All Rounds</button>
-              <button type="button" [disabled]="!printSelection.size" (click)="print(roundsForPrinting)">Print Selected Rounds</button>
+              <button type="button" [disabled]="!printSelection.size" aria-describedby="print-selection" (click)="print(roundsForPrinting)">Print Selected Rounds</button>
             </div>
+            <small id="print-selection">{{ printSelection.size }} selected. Select rounds in the list to print a subset.</small>
           </details>
         }
         @if (preview.length) {
@@ -160,11 +213,23 @@
             @for (round of preview; track round.roundNumber) {
               <details>
                 <summary>Round {{ round.roundNumber }}</summary>
-                <div class="player-grid">
-                  @for (team of round.teams; track $index) {
-                    <article class="team"><strong>Team {{ $index + 1 }} · Matchup {{ matchupFor($index) }}</strong>
-                      <ul>@for (id of team; track id) { <li>{{ previewName(id) }}</li> }</ul>
-                    </article>
+                <div class="matchup-grid">
+                  @for (team of round.teams; track $index; let index = $index) {
+                    @if (index % 2 === 0 && round.teams[index + 1]; as opponent) {
+                      <article class="team matchup">
+                        <h3>Matchup {{ matchupFor(index) }}</h3>
+                        <div class="opponents">
+                          <div class="team-roster">
+                            <strong>Team {{ index + 1 }}</strong>
+                            <ul>@for (id of team; track id) { <li>{{ previewName(id) }}</li> }</ul>
+                          </div>
+                          <div class="team-roster">
+                            <strong>Team {{ index + 2 }}</strong>
+                            <ul>@for (id of opponent; track id) { <li>{{ previewName(id) }}</li> }</ul>
+                          </div>
+                        </div>
+                      </article>
+                    }
                   }
                 </div>
                 @if (round.byes.length) {
@@ -178,14 +243,22 @@
         }
         @for (round of rounds; track round.roundNumber) {
           <details class="saved-round">
-            <summary>Round {{ round.roundNumber }} · {{ round.status === 'partial' ? 'Partially scored' : round.status === 'completed' ? 'Completed' : 'Unplayed' }}</summary>
+            <summary class="round-header">
+              <span class="round-title">Round {{ round.roundNumber }}</span>
+              <span class="round-state" [attr.data-status]="round.status">{{ roundStatus(round) }}</span>
+              <span class="round-count">{{ matchupCount(round.teams.length) }} matchups · {{ round.teams.length }} teams</span>
+              @if (wizardStep() === 7) {
+                <label class="choice print-check" (click)="$event.stopPropagation()">
+                  <input type="checkbox" [checked]="printSelection.has(round.roundNumber)"
+                    (change)="$any($event.target).checked ? printSelection.add(round.roundNumber) : printSelection.delete(round.roundNumber)"> Select for Printing
+                </label>
+              }
+            </summary>
             <ng-container *ngTemplateOutlet="roundTeams; context: {$implicit: round}"></ng-container>
             <div class="step-actions">
-              <button type="button" (click)="openScores(round)">Enter Scores</button>
-              <button type="button" (click)="print([round])">Print Round {{ round.roundNumber }}</button>
+              <button type="button" class="primary" (click)="openScores(round)">{{ roundAction(round) }}</button>
+              @if (wizardStep() === 7) { <button type="button" (click)="print([round])">Print Round {{ round.roundNumber }}</button> }
               @if (round.status === 'unplayed' && !dirty) { <button type="button" (click)="propose(round.roundNumber)">Preview Replacement</button> }
-              <label class="choice"><input type="checkbox" [checked]="printSelection.has(round.roundNumber)"
-                  (change)="$any($event.target).checked ? printSelection.add(round.roundNumber) : printSelection.delete(round.roundNumber)"> Select for Printing</label>
             </div>
           </details>
         }
@@ -236,16 +309,31 @@
 </section>
 
 <ng-template #roundTeams let-round>
-  <div class="player-grid">
-    @for (team of round.teams; track team.id) {
-      <article class="team"><strong>Team {{ $index + 1 }} · Matchup {{ matchupFor($index) }}</strong>
-        <ul>@for (player of team.players; track player.id) { <li>{{ playerName(player) }}</li> }</ul>
-      </article>
+  <div class="matchup-grid">
+    @for (team of round.teams; track team.id; let index = $index) {
+      @if (index % 2 === 0 && round.teams[index + 1]; as opponent) {
+        <article class="team matchup">
+          <h3>Matchup {{ matchupFor(index) }}</h3>
+          <div class="opponents">
+            <ng-container *ngTemplateOutlet="teamRoster; context: {$implicit: team, number: index + 1}"></ng-container>
+            <ng-container *ngTemplateOutlet="teamRoster; context: {$implicit: opponent, number: index + 2}"></ng-container>
+          </div>
+        </article>
+      } @else if (index === round.teams.length - 1 && index % 2 === 0) {
+        <article class="team"><ng-container *ngTemplateOutlet="teamRoster; context: {$implicit: team, number: index + 1}"></ng-container></article>
+      }
     }
   </div>
   @if (round.byes.length) {
     <strong>Byes</strong><ul>@for (player of round.byes; track player.id) { <li>{{ playerName(player) }}</li> }</ul>
   }
+</ng-template>
+
+<ng-template #teamRoster let-team let-number="number">
+  <div class="team-roster">
+    <strong>Team {{ number }}</strong>
+    <ul>@for (player of team.players; track player.id) { <li>{{ playerName(player) }}</li> }</ul>
+  </div>
 </ng-template>
 
 <ng-template #printLayout>

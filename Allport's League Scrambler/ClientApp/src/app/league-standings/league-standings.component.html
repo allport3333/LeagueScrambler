@@ -1,7 +1,11 @@
 @if (returnTournament; as tournament) {
     <div class="tournament-return">
-        <a mat-stroked-button [routerLink]="tournament.route">{{ tournament.label }}</a>
+        <a mat-stroked-button [routerLink]="tournament.route" [queryParams]="tournament.query">{{ tournament.label }}</a>
     </div>
+}
+
+@if (!fixedLeagueId && lastResult?.tournamentProgress; as progress) {
+    <p class="text-center">{{ progress.status }}@if (progress.total) { · {{ progress.completed }} of {{ progress.total }} rounds completed }</p>
 }
 
 @if (playerLoading) {

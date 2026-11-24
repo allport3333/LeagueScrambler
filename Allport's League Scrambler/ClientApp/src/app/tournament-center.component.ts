@@ -1,3 +1,4 @@
+import { TournamentDatePipe } from './tournament-date.pipe';
 import { TournamentNavigationComponent } from './tournament-navigation.component';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, viewChild } from '@angular/core';
@@ -21,11 +22,16 @@ interface TournamentDetails {
 @Component({
     selector: 'app-tournament-center',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, RouterLink, TournamentParticipantsComponent, TournamentCheckInComponent, TournamentRoundsComponent, TournamentNavigationComponent],
+    imports: [FormsModule, RouterLink, TournamentParticipantsComponent, TournamentCheckInComponent, TournamentRoundsComponent, TournamentNavigationComponent, TournamentDatePipe],
     styles: [`
         main { padding: 16px; max-width: 100rem; margin: auto; }
         header { text-align: center; margin-bottom: 16px; overflow-wrap: anywhere; }
-        .workflow { display: grid; grid-template-columns: minmax(170px, 220px) minmax(0, 1fr); gap: 20px; }
+        .workflow { display: grid; grid-template-columns: minmax(145px, 178px) minmax(0, 1fr); gap: 16px; }
+        .workflow > section { min-width: 0; }
+        .header-meta { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: .5rem .75rem; }
+        .tournament-status { border-radius: 1rem; padding: .15rem .55rem; border: 1px solid var(--hub-border, #bcc6d2); font-size: .9rem; }
+        .step-label { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: .4rem; align-items: start; }
+        .step-mark { font-size: .9rem; }
         ol { list-style: none; margin: 0; padding: 0; }
         ol button { width: 100%; text-align: start; margin-bottom: 6px; }
         button { min-height: 44px; padding: 8px 12px; border-radius: 5px; color: inherit; background: var(--hub-surface, #fff); border: 1px solid var(--hub-border, #bcc6d2); }
@@ -48,10 +54,13 @@ interface TournamentDetails {
         <main>
             <header>
                 <h1>{{ name || 'Tournament Center' }}</h1>
-                @if (details.eventDate) { <p>{{ details.eventDate }}</p> }
-                @if (name && !(step === 7 && completed)) { <a routerLink="/standings" [queryParams]="{leagueId}">View Standings</a> }
+                <div class="header-meta">
+                @if (details.eventDate) { <time [attr.datetime]="details.eventDate">{{ details.eventDate | tournamentDate }}</time> }
+                @if (status) { <span class="tournament-status">{{ completed ? 'Completed' : status }}</span> }
+                @if (name && !(step === 7 && completed)) { <a routerLink="/standings" [queryParams]="standingsQuery">View Standings</a> }
+                </div>
+                <app-tournament-navigation [leagueId]="name ? leagueId : undefined" />
             </header>
-            <app-tournament-navigation [leagueId]="name ? leagueId : undefined" />
             @if (loading) { <p role="status">Loading tournament…</p> }
             @if (error) { <p role="alert">{{ error }}</p> }
             @if (name) {
@@ -61,8 +70,10 @@ interface TournamentDetails {
                             @for (label of labels; track label; let index = $index) {
                                 <li><button type="button" [attr.aria-current]="step === index + 1 ? 'step' : null"
                                     [disabled]="index + 1 > reached || saving" (click)="goTo(index + 1)">
-                                    {{ index + 1 }}. {{ label }}
-                                    <small>{{ step === index + 1 ? 'Current step' : index + 1 < reached ? 'Completed' : index + 1 === reached ? 'Ready' : 'Upcoming' }}</small>
+                                    <span class="step-label">
+                                        <span class="step-mark" aria-hidden="true">{{ index + 1 < reached && step !== index + 1 ? '✓' : index + 1 }}</span>
+                                        <span>{{ label }}<span class="sr-only">{{ index + 1 < reached ? ', completed' : '' }}</span></span>
+                                    </span>
                                 </button></li>
                             }
                         </ol>
@@ -76,8 +87,8 @@ interface TournamentDetails {
                                 }
                             </select>
                         </label>
-                        @if (hasRounds && step < 7) {
-                            <p>Setup changes apply to future generation. Saved assignments and scores stay in place. Use a replacement preview to change an unscored round.</p>
+                        @if (hasRounds && (step === 3 || step === 4 || step === 5)) {
+                            <p>Changes apply to future generation. Saved rounds and scores stay in place.</p>
                         }
                         @if (step === 1) {
                             <h2>Tournament Details</h2>
@@ -98,8 +109,8 @@ interface TournamentDetails {
                             <app-tournament-check-in [embedded]="true" />
                         }
                         @if (step === 3 || step === 4 || step >= 6) {
-                            <app-tournament-rounds [leagueId]="leagueId" [tournamentName]="name" [wizardStep]="step"
-                                (versionChanged)="details.version = $event" (roundsSaved)="runTournament()" (completionChanged)="completed = $event" />
+                            <app-tournament-rounds [leagueId]="leagueId" [tournamentName]="name" [wizardStep]="step" [initialScoreRound]="initialScoreRound"
+                                (versionChanged)="details.version = $event" (roundsSaved)="runTournament()" (runRequested)="runTournament()" (completionChanged)="completed = $event" />
                         }
                         <div class="actions">
                             @if (step > 1 && step < 7) { <button type="button" [disabled]="saving" (click)="goTo(step - 1)">Back</button> }
@@ -123,7 +134,9 @@ export class TournamentCenterComponent {
     private readonly destroy = inject(DestroyRef);
     private readonly leagueService = inject(LeagueService);
     private readonly rounds = viewChild(TournamentRoundsComponent);
-    readonly leagueId = Number(inject(ActivatedRoute).snapshot.paramMap.get('leagueId'));
+    private readonly route = inject(ActivatedRoute);
+    readonly leagueId = Number(this.route.snapshot.paramMap.get('leagueId'));
+    readonly initialScoreRound = Number(this.route.snapshot.queryParamMap.get('scoreRound')) || undefined;
     private readonly url = '/api/tournaments/' + this.leagueId;
     readonly labels = ['Tournament Details', 'Manage Participants', 'Team & Round Setup', 'Player Priorities & Byes',
         'Player Check In', 'Generate & Preview Tournament', 'Run Tournament'];
@@ -133,16 +146,24 @@ export class TournamentCenterComponent {
     loading = true;
     saving = false;
     hasRounds = false;
+    status = '';
     completed = false;
     reached = 1;
     step = 1;
     error = '';
 
+    get standingsQuery() {
+        const rounds = this.rounds();
+        const round = rounds?.view === 'scores' ? rounds.scoreRound?.roundNumber : undefined;
+        return { leagueId: this.leagueId, returnRound: round };
+    }
+
     constructor() {
-        this.request(this.http.get<{ name: string; details: TournamentDetails; hasRounds: boolean }>(this.url)).then(response => {
+        this.request(this.http.get<{ name: string; details: TournamentDetails; hasRounds: boolean; status: string }>(this.url)).then(response => {
             this.name = this.draftName = response.name;
             if (response.details) this.details = response.details;
             this.hasRounds = response.hasRounds;
+            this.status = response.status;
             this.step = this.reached = this.hasRounds ? 7 : (this.details.workflowStep || 1);
             this.leagueService.selectNavigationLeague(this.leagueId).pipe(takeUntilDestroyed(this.destroy)).subscribe();
         }).catch(() => this.error = 'This tournament is unavailable to your account.')
@@ -161,6 +182,7 @@ export class TournamentCenterComponent {
 
     runTournament() {
         this.hasRounds = true;
+        this.status = 'In Progress';
         this.reached = this.step = 7;
     }
 
@@ -183,6 +205,7 @@ export class TournamentCenterComponent {
             const result = await this.request(this.http.put<{step: number}>(this.url + '/workflow', { step: this.step }));
             this.reached = Math.max(this.reached, result.step);
             this.step++;
+            if (!this.hasRounds && this.step === 6) this.status = 'Ready';
         } catch (error) {
             this.error = error.error?.message || (error.status ? 'Could not save this step. Reload the tournament and try again.' : error.message);
         } finally { this.saving = false; }

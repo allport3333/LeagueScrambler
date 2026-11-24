@@ -31,6 +31,14 @@ namespace Allport_s_League_Scrambler.Services
             return list.Length >= 2 && list.Length % 2 == 0 && list.All(team => HasAllGames(team, games));
         }
 
+        public static string RoundStatus(IReadOnlyList<KingQueenTeam> teams, int games) =>
+            IsComplete(teams, games) ? "completed" :
+                teams.Any(team => team.KingQueenRoundScores.Count > 0) ? "partial" : "unplayed";
+
+        public static string TournamentStatus(int total, int generated, int completed, int step) =>
+            total > 0 && completed == total ? "Completed" :
+                generated > 0 ? "In Progress" : step == 6 ? "Ready" : "Setup In Progress";
+
         private static bool HasAllGames(KingQueenTeam team, int games) =>
             team.KingQueenRoundScores.Count == games &&
             team.KingQueenRoundScores.Select(score => score.RoundId).ToHashSet().SetEquals(Enumerable.Range(1, games));

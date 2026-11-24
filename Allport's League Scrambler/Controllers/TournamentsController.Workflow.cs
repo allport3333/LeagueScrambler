@@ -18,6 +18,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [Authorize(Policy = "LeagueManagement")]
         [HttpGet("~/api/tournaments")]
+        [HttpGet("~/api/tournaments/managed")]
         public async Task<IActionResult> ListManaged()
         {
             if (!LeagueAccess.TryGetAccountId(User, out var account)) return Forbid();
@@ -44,9 +45,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 var generated = rounds[row.ID].Count();
                 var completed = rounds[row.ID].Count(round => Services.TournamentMatchupResults.IsComplete(
                     teams[(row.ID, round.ScrambleNumber)], round.GamesPerMatchup));
-                var status = total > 0 && completed == total ? "Completed" :
-                    generated > 0 ? "In Progress" : config?.WorkflowStep == 6 ? "Ready" : "Setup In Progress";
-                return new { row.ID, row.LeagueName, row.EventTypeId, eventDate = config?.EventDate,
+                var status = Services.TournamentMatchupResults.TournamentStatus(total, generated, completed, config?.WorkflowStep ?? 1);
+                return new { row.ID, row.LeagueName, row.EventTypeId, eventDate = config?.EventDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
                     participants = rosterSizes.GetValueOrDefault(row.ID), total, generated, completed, status };
             }));
         }

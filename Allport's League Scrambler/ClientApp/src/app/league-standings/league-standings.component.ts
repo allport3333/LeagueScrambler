@@ -56,7 +56,8 @@ export class LeagueStandingsComponent implements OnInit {
         const manager = event.canManageTournament || this.userRole === 'Admin';
         if (!manager && !event.canViewTournamentRounds && this.userRole !== 'Player') return null;
         const name = /\btournament\b/i.test(event.leagueName) ? event.leagueName : event.leagueName + ' Tournament';
-        return { label: 'Back to ' + name + (manager ? '' : ' Matchups'),
+        const scoreRound = Number(this.route.snapshot.queryParamMap.get('returnRound'));
+        return { query: manager && scoreRound > 0 ? { scoreRound } : undefined, label: 'Back to ' + name + (manager ? '' : ' Matchups'),
             route: manager ? ['/tournament', event.id] : ['/tournament', event.id, 'rounds'] };
     }
     sortDirection: 'asc' | 'desc' = 'asc';

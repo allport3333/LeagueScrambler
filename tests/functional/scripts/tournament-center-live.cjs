@@ -29,11 +29,17 @@ assert(Number.isSafeInteger(leagueId) && leagueId > 0);
         await expect(page.getByRole('button', { name: /WW Winter 2026/ })).toBeVisible();
         await expect(page.getByRole('link', { name: 'WW Winter 2026' })).toHaveCount(0);
         if (administrator) {
-            await expect(page.getByRole('link', { name: '419 Tournament', exact: true })).toBeVisible();
-            await expect(page.getByRole('link', { name: 'Wallyball Unicorn Tournament', exact: true })).toBeVisible();
-            const testTournament = page.getByRole('link', { name: 'Manage Test 1', exact: true });
+            await expect(page.getByRole('link', { name: 'Open Tournament: 419 Tournament', exact: true })).toBeVisible();
+            await expect(page.getByRole('link', { name: 'Open Tournament: Wallyball Unicorn Tournament', exact: true })).toBeVisible();
+            const testTournament = page.getByRole('link', { name: 'Open Tournament: Test 1', exact: true });
             if (await testTournament.count()) {
+                const listed = await (await context.request.get(origin + '/api/tournaments/managed')).json();
+                const testInfo = listed.find(item => item.leagueName === 'Test 1');
+                assert.equal(testInfo.eventDate, '2026-11-26');
+                assert.equal(testInfo.status, 'Completed');
+                await expect(testTournament.locator('..').getByText('November 26, 2026', {exact: true})).toBeVisible();
                 await testTournament.click();
+                await expect(page.locator('app-tournament-center time')).toHaveText('November 26, 2026');
                 await expect(page.getByRole('heading', { name: 'Test 1', exact: true })).toBeVisible();
                 await page.getByRole('link', { name: 'Tournament Center', exact: true }).click();
                 await expect(page.getByRole('heading', { name: 'Test 1', exact: true })).toBeVisible();
@@ -43,8 +49,8 @@ assert(Number.isSafeInteger(leagueId) && leagueId > 0);
                 await expect(page.getByRole('heading', { name: 'Tournament Center', exact: true })).toBeVisible();
             }
         } else {
-            await expect(page.getByRole('link', { name: '419 Tournament', exact: true })).toHaveCount(0);
-            await expect(page.getByRole('link', { name: 'Wallyball Unicorn Tournament', exact: true })).toHaveCount(0);
+            await expect(page.getByRole('link', { name: 'Open Tournament: 419 Tournament', exact: true })).toHaveCount(0);
+            await expect(page.getByRole('link', { name: 'Open Tournament: Wallyball Unicorn Tournament', exact: true })).toHaveCount(0);
         }
         const newName = email.split('@')[0] + (administrator ? '-ADMIN' : '-UI');
         await page.getByRole('link', { name: 'Create Tournament', exact: true }).click();
@@ -58,12 +64,19 @@ assert(Number.isSafeInteger(leagueId) && leagueId > 0);
             return;
         }
         const createdUrl = page.url();
+        await page.getByLabel('Tournament Date').fill('2026-12-13');
         const next = () => page.getByRole('button', { name: 'Save & Continue', exact: true }).click();
         await next();
         await expect(page.getByRole('heading', { name: 'Manage Participants' })).toBeVisible();
         await expect(page.locator('.available-player').first()).toBeVisible();
         await next();
         await expect(page.getByText('Add at least two participants before continuing.')).toBeVisible();
+        await expect(page.locator('app-tournament-center time')).toHaveText('December 13, 2026');
+        await page.getByRole('link', { name: 'Manage Tournaments', exact: true }).click();
+        const ownCard = page.getByRole('link', { name: 'Open Tournament: ' + newName, exact: true });
+        await expect(ownCard.locator('..').getByText('December 13, 2026', {exact: true})).toBeVisible();
+        await ownCard.click();
+        await expect(page.locator('app-tournament-center time')).toHaveText('December 13, 2026');
         await page.getByText('Register a New Player', { exact: true }).click();
         const fixtureLastName = email.split('@')[0];
         for (const first of ['WizardOne', 'WizardTwo']) {
@@ -124,11 +137,24 @@ assert(Number.isSafeInteger(leagueId) && leagueId > 0);
         await expect(page.getByText('Tournament Complete!')).toBeVisible();
         await expect(page.getByRole('heading', { name: 'Tournament Complete', exact: true })).toBeVisible();
         await expect(page.getByText('Player Standings', { exact: true })).toBeVisible();
-        await page.getByRole('link', { name: 'Tournament Center', exact: true }).click();
+        await page.getByRole('button', {name: 'Manage Tournament Setup'}).click();
+        await page.getByRole('button', {name: /Generate & Preview Tournament/}).click();
+        const scoredRound = page.locator('.saved-round').filter({hasText: 'Round 1'});
+        await scoredRound.locator('summary').click();
+        await scoredRound.getByRole('button', {name: 'Edit Scores', exact: true}).click();
+        await expect(page.getByRole('heading', {name: 'Round 1 Scores'})).toBeVisible();
+        await expect(scoreFields.first()).toHaveValue('12');
+        await scoreFields.first().fill('17');
+        await page.getByRole('button', {name: 'Save Round Scores'}).click();
+        await expect(page.getByText('Score corrections saved.')).toBeVisible();
+        await page.reload();
         await expect(page.getByRole('heading', { name: 'Tournament Complete', exact: true })).toBeVisible();
+        await page.locator('.completed-actions summary').click();
+        await page.getByRole('button', {name: 'Review or Correct Scores'}).click();
+        await expect(scoreFields.first()).toHaveValue('17');
         await page.getByRole('link', { name: 'Manage Tournaments', exact: true }).click();
         const setup = await (await context.request.get(origin + '/api/tournaments/' + leagueId)).json();
-        await page.getByRole('link', { name: 'Manage ' + setup.name, exact: true }).click();
+        await page.getByRole('link', { name: 'Open Tournament: ' + setup.name, exact: true }).click();
         await page.locator('.roster-summary summary').click();
         await expect(page.getByText(/24 registered.*20 eligible.*5 saved rounds/)).toBeVisible();
         await page.getByRole('button', { name: 'Manage Tournament Setup' }).click();

@@ -38,7 +38,9 @@ export class TournamentRoundsComponent implements OnInit {
     readonly tournamentName = input('');
     readonly readOnly = input(false);
     readonly wizardStep = input(0);
+    readonly initialScoreRound = input<number>();
     readonly roundsSaved = output<void>();
+    readonly runRequested = output<void>();
     readonly completionChanged = output<boolean>();
     matchupPrintLayout: 2 | 6 = 6;
     publicName = '';
@@ -51,6 +53,7 @@ export class TournamentRoundsComponent implements OnInit {
     rounds: SavedRound[] = [];
     preview: TournamentAllocation[] = [];
     notice = '';
+    noticeView = '';
     error = '';
     busy = false;
     dirty = false;
@@ -69,6 +72,30 @@ export class TournamentRoundsComponent implements OnInit {
         }
     }
     filter = '';
+    priorityView: 'priorities' | 'byes' = 'priorities';
+    priorityFilters = ['All', 'Top', 'Regular', 'Low'];
+    priorityFilter = 'All';
+    printRoundNumber?: number;
+    get currentPrintRound() {
+        return this.rounds.find(round => round.roundNumber === this.printRoundNumber) ?? this.scoreRound ?? this.nextRound ?? this.rounds[0];
+    }
+
+    priorityFor(id: number) {
+        const settings = this.state?.settings;
+        return settings?.topPlayerIds.includes(id) ? 'top' : settings?.lowPlayerIds.includes(id) ? 'low' : 'regular';
+    }
+
+    get manualByeCount() { return this.state?.settings.manualByes.filter(item => item.roundNumber === this.byeRound).length ?? 0; }
+    get expectedByeCount(): number | null {
+        const settings = this.state?.settings;
+        if (!settings?.automaticByes || settings.activeTeamLimit == null || settings.maximumTeamSize == null) return null;
+        const manual = this.eligible.filter(player => this.manualBye(player.id)).length;
+        return Math.max(manual, this.eligible.length - settings.activeTeamLimit * settings.maximumTeamSize);
+    }
+
+    roundStatus(round: SavedRound) {
+        return round.status === 'completed' ? 'Completed' : round.status === 'partial' ? 'Partially Scored' : 'Not Started';
+    }
     byeRound = 1;
     scoreRound?: SavedRound;
     scoreEdits: ScoreEdit[] = [];
@@ -106,7 +133,8 @@ export class TournamentRoundsComponent implements OnInit {
 
     get filteredPlayers(): (Player & ScramblePlayer)[] {
         const query = this.filter.trim().toLowerCase();
-        return (this.state?.roster ?? []).filter(player => this.playerName(player).toLowerCase().includes(query));
+        return (this.state?.roster ?? []).filter(player => this.playerName(player).toLowerCase().includes(query) &&
+            (this.priorityView === 'byes' || this.priorityFilter === 'All' || this.priorityFor(player.id) === this.priorityFilter.toLowerCase()));
     }
 
     get history() {
@@ -115,6 +143,7 @@ export class TournamentRoundsComponent implements OnInit {
     }
 
     get roundsForPrinting(): SavedRound[] { return this.rounds.filter(round => this.printSelection.has(round.roundNumber)); }
+    matchupCount(teamCount: number): number { return Math.floor(teamCount / 2); }
     matchupFor(index: number): number { return Math.floor(index / 2) + 1; }
 
     get completed(): number { return this.rounds.filter(round => round.status === 'completed').length; }
@@ -130,6 +159,8 @@ export class TournamentRoundsComponent implements OnInit {
             } else {
                 await this.reload();
                 if (this.rounds.length) this.step = this.tournamentComplete ? 'complete' : 'rounds';
+                const requestedRound = this.rounds.find(round => round.roundNumber === this.initialScoreRound());
+                if (requestedRound && this.wizardStep() === 7) this.openScores(requestedRound);
             }
         });
     }
@@ -212,6 +243,7 @@ export class TournamentRoundsComponent implements OnInit {
             this.settingsSaved = true;
             this.dirty = false;
             this.notice = 'Tournament settings saved.';
+            this.noticeView = this.view;
             success = true;
         });
         return success;
@@ -248,11 +280,17 @@ export class TournamentRoundsComponent implements OnInit {
             await this.reload();
             this.versionChanged.emit(this.state!.version);
             this.notice = 'Tournament rounds saved.';
+            this.noticeView = 'rounds';
             this.roundsSaved.emit();
         });
     }
 
+    roundAction(round: SavedRound): string {
+        return round.status === 'completed' ? 'Edit Scores' : round.status === 'partial' ? 'Continue Scoring' : 'Enter Scores';
+    }
+
     openScores(round: SavedRound): void {
+        if (this.wizardStep() === 6) this.runRequested.emit();
         this.clearScoreFeedback();
         this.step = 'scores';
         try { sessionStorage.setItem(this.activeRoundKey, String(round.roundNumber)); } catch {}
@@ -278,12 +316,17 @@ export class TournamentRoundsComponent implements OnInit {
                 score.points! < 0 || score.opponentPoints! < 0))
                 throw new Error('Enter a nonnegative whole-number score for both teams in each game you started.');
             const number = this.scoreRound!.roundNumber;
+            const wasCompleted = this.scoreRound!.status === 'completed';
             await this.request(this.http.put(this.url + '/rounds/' + number + '/scores',
                 { version: this.state!.version, scores: started }));
             await this.reload();
             this.versionChanged.emit(this.state!.version);
             const saved = this.rounds.find(round => round.roundNumber === number)!;
             this.openScores(saved);
+            if (wasCompleted) {
+                this.scoreFeedback = { title: 'Score corrections saved.', message: 'Standings now reflect the corrected result.' };
+                return;
+            }
             if (saved.status !== 'completed') {
                 this.scoreFeedback = { title: 'Round scores saved.', message: 'You can enter the remaining scores when they are ready.' };
                 return;

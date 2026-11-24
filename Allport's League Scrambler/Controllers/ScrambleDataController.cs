@@ -1636,10 +1636,11 @@ namespace Allport_s_League_Scrambler.Controllers
                 ? await context.TournamentRounds.AsNoTracking().Where(round => round.LeagueId == leagueId).ToListAsync()
                 : new List<TournamentRound>();
             var wins = guidedRounds.Count == 0 ? null : Services.TournamentMatchupResults.WinsByPlayer(guidedRounds, kingQueenTeams);
+            var tournamentProgress = isTournament ? await TournamentProgress(context, leagueId, guidedRounds, kingQueenTeams) : null;
             if (isTournament) kingQueenTeams = kingQueenTeams.Where(team => team.KingQueenRoundScores.Count != 0).ToList();
             if (!kingQueenTeams.Any())
             {
-                if (isTournament) return Ok(new { playerScores = Array.Empty<object>(), maxRounds = 0 });
+                if (isTournament) return Ok(new { playerScores = Array.Empty<object>(), maxRounds = 0, tournamentProgress });
                 return Ok(new { message = "No teams found in the league." });
             }
 
@@ -1656,6 +1657,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             if (!validRounds.Any())
             {
+                if (isTournament) return Ok(new { playerScores = Array.Empty<object>(), maxRounds = 0, tournamentProgress });
                 return Ok(new { message = "No valid rounds found in the league." });
             }
 
@@ -1775,7 +1777,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             var maxRounds = validRounds.Count;
 
-            return Ok(new { playerScores, maxRounds, matchupWins = wins });
+            return Ok(new { playerScores, maxRounds, matchupWins = wins, tournamentProgress });
         }
 
 
@@ -1807,10 +1809,11 @@ namespace Allport_s_League_Scrambler.Controllers
                 ? await context.TournamentRounds.AsNoTracking().Where(round => round.LeagueId == leagueId).ToListAsync()
                 : new List<TournamentRound>();
             var wins = guidedRounds.Count == 0 ? null : Services.TournamentMatchupResults.WinsByPlayer(guidedRounds, kingQueenTeams);
+            var tournamentProgress = isTournament ? await TournamentProgress(context, leagueId, guidedRounds, kingQueenTeams) : null;
             if (isTournament) kingQueenTeams = kingQueenTeams.Where(team => team.KingQueenRoundScores.Count != 0).ToList();
             if (!kingQueenTeams.Any())
             {
-                if (isTournament) return Ok(new { playerScores = Array.Empty<object>(), maxRounds = 0 });
+                if (isTournament) return Ok(new { playerScores = Array.Empty<object>(), maxRounds = 0, tournamentProgress });
                 return Ok(new { message = "No teams found in the league." });
             }
 
@@ -1827,6 +1830,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             if (!validRounds.Any())
             {
+                if (isTournament) return Ok(new { playerScores = Array.Empty<object>(), maxRounds = 0, tournamentProgress });
                 return Ok(new { message = "No valid rounds found in the league." });
             }
 
@@ -2006,9 +2010,23 @@ namespace Allport_s_League_Scrambler.Controllers
 
             var maxRounds = allScrambleNumbers.Count;
 
-            return Ok(new { playerScores, maxRounds, matchupWins = wins });
+            return Ok(new { playerScores, maxRounds, matchupWins = wins, tournamentProgress });
         }
 
+
+        private sealed record SavedTournamentProgress(int Completed, int Total, string Status);
+
+        private static async Task<SavedTournamentProgress> TournamentProgress(DataContext db, int leagueId,
+            IReadOnlyList<TournamentRound> rounds, IReadOnlyList<KingQueenTeam> teams)
+        {
+            var config = await db.TournamentConfigurations.AsNoTracking().SingleOrDefaultAsync(row => row.LeagueId == leagueId);
+            var total = config?.RoundSettingsJson != null
+                ? System.Text.Json.JsonSerializer.Deserialize<TournamentRoundSettings>(config.RoundSettingsJson).NumberOfRounds : 0;
+            var matched = teams.ToLookup(team => team.ScrambleNumber);
+            var completed = rounds.Count(round => Services.TournamentMatchupResults.IsComplete(matched[round.ScrambleNumber], round.GamesPerMatchup));
+            return new SavedTournamentProgress(completed, total,
+                Services.TournamentMatchupResults.TournamentStatus(total, rounds.Count, completed, config?.WorkflowStep ?? 1));
+        }
 
         [HttpGet("[action]/{leagueID}")]
         public List<Player> GetPlayers(int leagueID)

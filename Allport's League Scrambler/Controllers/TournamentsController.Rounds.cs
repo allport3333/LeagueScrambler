@@ -47,11 +47,10 @@ namespace Allport_s_League_Scrambler.Controllers
                 rounds = rounds.Select(round =>
                 {
                     var roundTeams = teams.Where(team => team.ScrambleNumber == round.ScrambleNumber).ToArray();
-                    var scored = roundTeams.Sum(team => team.KingQueenRoundScores.Count);
                     return new
                     {
                         round.RoundNumber, round.ScrambleNumber, round.GamesPerMatchup,
-                        status = scored == 0 ? "unplayed" : Services.TournamentMatchupResults.IsComplete(roundTeams, round.GamesPerMatchup) ? "completed" : "partial",
+                        status = Services.TournamentMatchupResults.RoundStatus(roundTeams, round.GamesPerMatchup),
                         teams = roundTeams.Select(team => new
                         {
                             team.Id,

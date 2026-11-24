@@ -29,3 +29,50 @@ button:disabled { opacity: .6; }
 .completion-banner { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; padding: .75rem; border: 1px solid var(--hub-border, #b8c2ce); border-radius: .4rem; }
 .matchup-print-layout { display: grid; gap: .25rem; max-width: 17rem; margin: .5rem; }
 .form-grid label { align-content: start; }
+
+.settings-grid, .matchup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 23rem), 1fr)); gap: .8rem; }
+.settings-grid { align-items: start; }
+.settings-card { min-width: 0; padding: .85rem; border: 1px solid var(--hub-border, #bcc6d2); border-radius: .55rem; background: var(--hub-surface, #fff); }
+.settings-card h3, .matchup h3 { margin: 0; font-size: 1.05rem; }
+.section-heading { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; }
+.section-heading :is(label, h3) { margin: 0; }
+.form-grid.compact-fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); }
+.settings-card:first-child .compact-fields > label:first-child { grid-column: 1 / -1; }
+.preferences .compact-fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
+.capacity-field { grid-column: 1 / -1; max-width: 23rem; }
+.capacity-field small { display: block; margin-top: .3rem; }
+.compact-control { display: grid; gap: .25rem; max-width: 23rem; margin-top: .6rem; }
+.help-tip { position: relative; border: 0; background: transparent; padding: 0; margin: 0; }
+.help-tip summary { display: grid; place-items: center; border-radius: 50%; width: 38px; height: 38px; padding: 0; color: var(--hub-link, #245587); list-style: none; }
+.help-tip summary::-webkit-details-marker { display: none; }
+.help-tip p { position: absolute; z-index: 3; inset: 100% auto auto 0; width: min(75vw, 24rem); padding: .8rem; border: 1px solid var(--hub-border, #bcc6d2); border-radius: .45rem; background: var(--hub-section, #f3f6fa); color: var(--hub-text, #23394e); }
+.capacity-field .help-tip p, .preferences .help-tip p { inset: 100% 0 auto auto; }
+.priority-filters { display: flex; flex-wrap: wrap; gap: .35rem; }
+.compact-roster { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: .35rem; margin: .65rem 0 0; padding: 0; list-style: none; }
+.compact-roster li { display: flex; align-items: center; justify-content: space-between; gap: .45rem; min-width: 0; padding: .3rem .45rem; border-radius: .35rem; overflow-wrap: anywhere; }
+.compact-roster li select { flex: 0 1 7.5rem; min-width: 6rem; height: 42px; }
+.compact-roster li small { flex-shrink: 0; }
+.compact-roster li .choice { flex-shrink: 0; margin: 0; }
+.overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: .5rem; }
+.overview div { border: 1px solid var(--hub-border, #bcc6d2); border-radius: .35rem; padding: .6rem; }
+.overview dd { margin: 0; }
+.round-header { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem .7rem; list-style: none; }
+.round-header::before { content: '▸'; }
+.saved-round[open] > .round-header::before { content: '▾'; }
+.round-title { font-weight: 650; }
+.round-state { border: 1px solid var(--hub-border, #bcc6d2); border-radius: 1rem; padding: .15rem .5rem; font-size: .84rem; }
+.round-state[data-status="completed"] { color: var(--hub-win-text, #20543e); background: var(--hub-win-surface, #e6f5ec); }
+.round-state[data-status="partial"] { color: var(--hub-warning-text, #624613); background: var(--hub-warning-surface, #fff3ce); }
+.round-count { font-size: .9rem; color: var(--hub-muted, #536478); }
+.print-check { margin: 0 0 0 auto; }
+.matchup-grid { margin-block: .6rem; }
+.opponents { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+.team-roster { overflow-wrap: anywhere; }
+.team-roster + .team-roster { border-inline-start: 1px solid var(--hub-border, #bcc6d2); padding-inline-start: .55rem; }
+.print-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: .55rem; margin-block: .4rem; }
+.print-toolbar label { display: grid; gap: .25rem; margin: 0; }
+@media (max-width: 720px) {
+    .help-tip p, .capacity-field .help-tip p, .preferences .help-tip p { position: static; width: auto; margin: .25rem 0; }
+    .section-heading .help-tip[open] { flex: 0 0 100%; }
+    .print-check { margin-inline-start: 0; }
+}

@@ -2,6 +2,7 @@ export interface PlayerScoresResponse {
     playerScores: PlayerScoreGroup[];
     maxRounds: number;
     matchupWins?: Record<number, number>;
+    tournamentProgress?: { completed: number; total: number; status: string };
 }
 
 export interface PlayerScoreGroup {
