@@ -27,7 +27,10 @@ interface TournamentDetails {
         main { padding: 16px; max-width: 100rem; margin: auto; }
         header { text-align: center; margin-bottom: 16px; overflow-wrap: anywhere; }
         .workflow { display: grid; grid-template-columns: minmax(145px, 178px) minmax(0, 1fr); gap: 16px; }
-        .workflow > section { min-width: 0; }
+        .step-content { min-width: 0; width: 100%; margin-inline: auto; }
+        .step-content.compact { max-width: 50rem; }
+        .step-content.configuration { max-width: 65rem; }
+        .step-content > h2, .generation-note { text-align: center; }
         .header-meta { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: .5rem .75rem; }
         .tournament-status { border-radius: 1rem; padding: .15rem .55rem; border: 1px solid var(--hub-border, #bcc6d2); font-size: .9rem; }
         .step-label { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: .4rem; align-items: start; }
@@ -41,7 +44,6 @@ interface TournamentDetails {
 
         form, label { display: grid; gap: 8px; }
         .mobile-step { display: none; margin-bottom: 12px; }
-        form { max-width: 44rem; }
         .actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr); align-items: center; gap: 12px; margin-top: 18px; }
         .actions .back { grid-column: 1; justify-self: start; }
         .actions .save { grid-column: 2; justify-self: center; }
@@ -86,7 +88,7 @@ interface TournamentDetails {
                             }
                         </ol>
                     </nav>
-                    <section>
+                    <section class="step-content" [class.compact]="step === 1" [class.configuration]="step === 3">
                         <label class="mobile-step">Step {{ step }} of {{ labels.length }}
                             <select class="form-control" aria-label="Tournament setup step" #stepPicker="ngModel" [ngModel]="step" [disabled]="saving"
                                 (ngModelChange)="goTo($event); stepPicker.control.setValue(step, {emitEvent: false})">
@@ -96,7 +98,7 @@ interface TournamentDetails {
                             </select>
                         </label>
                         @if (hasRounds && step === 3) {
-                            <p>Changes apply to future generation. Saved rounds and scores stay in place.</p>
+                            <p class="generation-note">Changes apply to future generation. Saved rounds and scores stay in place.</p>
                         }
                         @if (step === 1) {
                             <h2>Tournament Details</h2>
@@ -110,11 +112,9 @@ interface TournamentDetails {
                         }
                         @if (step === 2) {
                             <app-tournament-participants [leagueId]="leagueId" [tournamentName]="name" />
-                            @if (reached >= 5) { <button type="button" (click)="goTo(5)">Manage Check In</button> }
                         }
                         @if (step === 5) {
-                            <p>You can prepare this tournament in advance and return here on tournament day to establish the eligible roster.</p>
-                            <app-tournament-check-in [embedded]="true" [hasRounds]="hasRounds" (versionChanged)="details.version = $event" />
+                            <app-tournament-check-in [leagueId]="leagueId" [hasRounds]="hasRounds" (versionChanged)="details.version = $event" />
                         }
                         @if (step === 3 || step === 4 || step >= 6) {
                             <app-tournament-rounds [leagueId]="leagueId" [tournamentName]="name" [wizardStep]="step" [initialScoreRound]="initialScoreRound" [initialRunView]="initialRunView"
@@ -126,7 +126,7 @@ interface TournamentDetails {
                                 <button class="primary save" type="submit" form="tournament-details"
                                     [disabled]="saving || !draftName.trim() || !details.eventDate">Save & Continue</button>
                             } @else if (step <= 5) {
-                                <button type="button" class="primary save" [disabled]="saving" (click)="advance()">Save & Continue</button>
+                                <button type="button" class="primary save" [disabled]="navigationBusy" (click)="advance()">Save & Continue</button>
                             }
                             @if (step === 7) {
                                 <button type="button" class="run" (click)="goTo(1)">Manage Tournament Setup</button>
@@ -155,7 +155,7 @@ export class TournamentCenterComponent {
     readonly initialScoreRound = Number(this.route.snapshot.queryParamMap.get('scoreRound')) || undefined;
     private readonly url = '/api/tournaments/' + this.leagueId;
     readonly labels = ['Tournament Details', 'Manage Participants', 'Team & Round Setup', 'Player Priorities & Byes',
-        'Player Check In', 'Generate & Preview Tournament', 'Run Tournament'];
+        'Confirm Participants', 'Generate & Preview Tournament', 'Run Tournament'];
     name = '';
     draftName = '';
     details: TournamentDetails = { eventDate: '', description: '', location: '', version: null, workflowStep: 1 };
@@ -183,9 +183,10 @@ export class TournamentCenterComponent {
             this.hasRounds = response.hasRounds;
             this.status = response.status;
             this.reached = this.hasRounds ? 7 : (this.details.workflowStep || 1);
-            const requestedStep = Number(this.route.snapshot.queryParamMap.get('step'));
+            const requestedStep = Number(this.route.snapshot.queryParamMap.get('step') ?? this.rememberedStep());
             this.step = Number.isInteger(requestedStep) && requestedStep >= 1 && requestedStep <= this.reached
                 ? requestedStep : this.reached;
+            this.rememberStep();
             this.leagueService.selectNavigationLeague(this.leagueId).pipe(takeUntilDestroyed(this.destroy)).subscribe();
         }).catch(() => this.error = 'This tournament is unavailable to your account.')
             .finally(() => this.loading = false);
@@ -200,15 +201,17 @@ export class TournamentCenterComponent {
     }
 
     get navigationBusy() {
-        return this.saving || this.rounds()?.busy || this.checkIn()?.busy || this.participants()?.busy;
+        return this.saving || this.rounds()?.busy || this.checkIn()?.busy || this.checkIn()?.loading || this.participants()?.busy;
     }
 
     private get hasUnsavedChanges() {
+        return !!((this.step === 1 && this.detailsChanged) || this.rounds()?.hasUnsavedChanges || this.participants()?.hasUnsavedChanges);
+    }
+
+    private get detailsChanged() {
         const original = this.savedDetails;
-        const detailsChanged = this.step === 1 && (this.draftName !== this.name || (original &&
-            (original.eventDate !== this.details.eventDate || original.location !== this.details.location ||
-             original.description !== this.details.description)));
-        return !!(detailsChanged || this.rounds()?.hasUnsavedChanges || this.participants()?.hasUnsavedChanges);
+        return this.draftName !== this.name || original?.eventDate !== this.details.eventDate ||
+            original?.location !== this.details.location || original?.description !== this.details.description;
     }
 
     @HostListener('window:beforeunload', ['$event'])
@@ -224,6 +227,16 @@ export class TournamentCenterComponent {
             (!this.hasUnsavedChanges || window.confirm('Discard unsaved tournament changes?'));
     }
 
+    private get stepStorageKey() { return 'league-hub-tournament-step:' + this.leagueId; }
+    private rememberedStep(): string | null {
+        try { return sessionStorage.getItem(this.stepStorageKey); }
+        catch { return null; }
+    }
+    private rememberStep() {
+        try { sessionStorage.setItem(this.stepStorageKey, String(this.step)); }
+        catch { /* Session storage is optional. */ }
+    }
+
     goTo(step: number) {
         if (step === this.step || step < 1 || step > this.reached || !this.canLeave()) return;
         if (this.step === 1 && this.savedDetails) {
@@ -233,6 +246,7 @@ export class TournamentCenterComponent {
         this.rounds()?.discardUnsavedChanges();
         this.error = '';
         this.step = step;
+        this.rememberStep();
         this.clearReturnContext();
     }
 
@@ -248,6 +262,7 @@ export class TournamentCenterComponent {
         this.hasRounds = true;
         this.status = 'In Progress';
         this.reached = this.step = 7;
+        this.rememberStep();
         this.clearReturnContext();
     }
 
@@ -267,8 +282,10 @@ export class TournamentCenterComponent {
         this.saving = true;
         this.error = '';
         try {
-            if (this.step === 1) {
-                if (!this.details.eventDate || !this.draftName.trim()) throw new Error('Enter a tournament name and date.');
+            if (this.step === 1 && (!this.details.eventDate || !this.draftName.trim())) {
+                throw new Error('Enter a tournament name and date.');
+            }
+            if (this.step === 1 && (this.detailsChanged || !this.details.version)) {
                 const saved = await this.request(this.http.put<{name: string; details: TournamentDetails}>(this.url + '/details',
                     { ...this.details, name: this.draftName }));
                 const renamed = this.name !== saved.name;
@@ -283,6 +300,7 @@ export class TournamentCenterComponent {
             const result = await this.request(this.http.put<{step: number}>(this.url + '/workflow', { step: this.step }));
             this.reached = Math.max(this.reached, result.step);
             this.step++;
+            this.rememberStep();
             this.clearReturnContext();
             if (!this.hasRounds && this.step === 6) this.status = 'Ready';
         } catch (error) {

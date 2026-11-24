@@ -73,9 +73,6 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             };
             const organizer = this.userRole === 'Admin' || this.userRole === 'Manager';
             if (!organizer) items.splice(1, 0, {
-                label: 'Tournament Check In', icon: 'how_to_reg', route: ['/tournament', this.selectedLeagueId, 'check-in']
-            });
-            if (!organizer) items.splice(2, 0, {
                 label: 'Matchups', icon: 'view_list', route: ['/tournament', this.selectedLeagueId, 'rounds']
             });
         }

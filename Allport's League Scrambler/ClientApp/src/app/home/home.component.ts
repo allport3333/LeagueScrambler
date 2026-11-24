@@ -1,6 +1,8 @@
 import { signal } from '@angular/core';
 import { ProfileMatch } from '../data-models/profile-match';
 import { Component, OnInit, DestroyRef, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
+import { LeagueService } from '../services/league.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LoginService } from '../services/login.service';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -57,9 +59,13 @@ export class HomeComponent implements OnInit {
     registrationPending = false;
     isEmailValid: boolean = true;
 
-    constructor(private loginService: LoginService, public playerService: PlayerService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: UntypedFormBuilder, destroyRef: DestroyRef) {
+    constructor(private loginService: LoginService, public playerService: PlayerService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: UntypedFormBuilder, destroyRef: DestroyRef, leagues: LeagueService) {
         destroyRef.onDestroy(() => { this.cancelClaimSearch(); this.claimDialogRef?.close(); });
-        this.route.queryParams.subscribe((queryParams) => {
+        this.route.queryParams.pipe(takeUntilDestroyed(destroyRef)).subscribe((queryParams) => {
+            const leagueId = Number(queryParams.leagueId);
+            if (this.route.snapshot.fragment === 'attendance' && Number.isSafeInteger(leagueId) && leagueId > 0) {
+                leagues.selectNavigationLeague(leagueId).pipe(takeUntilDestroyed(destroyRef)).subscribe();
+            }
             if (queryParams.toggleLoginForm === 'true') {
                 this.toggleLoginForm();
             }

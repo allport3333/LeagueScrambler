@@ -75,7 +75,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 var date = config.EventDate.ToDateTime(TimeOnly.MinValue);
                 var eligibility = Roster(db, leagueId);
                 if (config.CheckInMode is TournamentCheckInMode.NotConfigured)
-                    return BadRequest(new { message = "Open check-in, choose manual check-in, or skip it to use the entire roster." });
+                    return BadRequest(new { message = "Choose who can play before continuing." });
                 if (config.CheckInMode != TournamentCheckInMode.Skipped)
                     eligibility = eligibility.Where(player => db.PlayerSignIn.Any(row =>
                         row.LeagueId == leagueId && row.PlayerId == player.Id && row.DateTime.Date == date));

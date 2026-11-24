@@ -84,8 +84,7 @@ namespace Allport_s_League_Scrambler.Controllers
             if (!await db.PlayersLeagues.AnyAsync(row => row.LeagueID == leagueId && row.PlayerID == playerId) ||
                 (!organizers && !await db.UsersPlayer.AnyAsync(
                     row => row.UserId == userId && row.PlayerId == playerId))) return Forbid();
-            if (details.CheckInMode != TournamentCheckInMode.Open &&
-                !(organizers && details.CheckInMode == TournamentCheckInMode.Manual))
+            if (!organizers && details.CheckInMode is not (TournamentCheckInMode.Open or TournamentCheckInMode.Skipped))
                 return StatusCode(423, new { message = "Tournament check-in is closed." });
             var rows = await db.PlayerSignIn.Where(row => row.LeagueId == leagueId && row.PlayerId == playerId &&
                 row.DateTime >= start && row.DateTime < end).Take(2).ToListAsync();

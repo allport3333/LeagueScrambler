@@ -96,6 +96,14 @@ try
     var open = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
     Assert(await attendance.SaveMode(tournament.ID, new(TournamentCheckInMode.Skipped, open.Version)) is NoContentResult, "Skipped mode saved");
     Assert(await db.PlayerSignIn.CountAsync(row => row.LeagueId == tournament.ID) == 1, "Skipping preserves attendance");
+    Assert(await attendance.SavePresence(tournament.ID, participant.PlayerId, new(false)) is NoContentResult,
+        "Director can undo attendance while all registered players are eligible");
+    attendance.ControllerContext = Identity(participant.UserId, "Player");
+    Assert(await attendance.SavePresence(tournament.ID, participant.PlayerId, present) is NoContentResult,
+        "Player can check in while all registered players are eligible");
+    Assert(await attendance.SavePresence(tournament.ID, int.MaxValue, present) is ForbidResult,
+        "All-registered mode still protects other players");
+    attendance.ControllerContext = Identity(ownerId, "Manager");
     var fixturePlayers = await db.Players.Where(row => row.Id != participant.PlayerId)
         .OrderBy(row => row.Id).Take(23).ToListAsync();
     fixturePlayers.Add(await db.Players.SingleAsync(row => row.Id == participant.PlayerId));

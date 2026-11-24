@@ -12,7 +12,7 @@
   <div class="home-panel"><p>Link your player record to see your next game and personal attendance.</p><button mat-raised-button color="primary" (click)="claimPlayer.emit()">Find or claim my player</button></div>
 }
 @if (playerId && leagueId) {
-  <app-player-next-game [playerId]="playerId" [leagueId]="leagueId" (gamesLoaded)="acceptGames($event)" (gamesSettled)="nextGameSettled = true"></app-player-next-game><app-player-attendance [playerId]="playerId" [leagueId]="leagueId"></app-player-attendance>
+  <app-player-next-game [playerId]="playerId" [leagueId]="leagueId" (gamesLoaded)="acceptGames($event)" (gamesSettled)="nextGameSettled = true"></app-player-next-game><app-player-attendance [playerId]="playerId" [leagueId]="leagueId" [tournament]="isTournament"></app-player-attendance>
   <section class="home-panel recent-kq" aria-label="King/Queen results"><h2>Latest King/Queen Score</h2>@if (overviewLoading) {
   <p role="status">Loading King/Queen results...</p>
   }@if (kqError) {

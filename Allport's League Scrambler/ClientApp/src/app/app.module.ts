@@ -15,10 +15,10 @@ import { PlayerHomeDashboardComponent } from './player-home-dashboard/player-hom
 import { PlayerAttendanceComponent } from './player-attendance/player-attendance.component';
 import { PlayerNextGameComponent } from './player-next-game/player-next-game.component';
 import { BrowserModule } from '@angular/platform-browser';
-import { APP_ID, NgModule } from '@angular/core';
+import { APP_ID, NgModule, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
-import { RouteReuseStrategy, RouterModule } from '@angular/router';
+import { RouteReuseStrategy, RouterModule, Router } from '@angular/router';
 
 import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
@@ -164,7 +164,7 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
             { path: 'tournament', canActivate: [LeagueManagementGuard], loadComponent: () => import('./tournament-landing.component').then(m => m.TournamentLandingComponent) },
             { path: 'tournament/:leagueId', data: { tournamentContext: true }, canDeactivate: [(component: { canLeave(): boolean }) => component.canLeave()], canActivate: [LeagueManagementGuard], loadComponent: () => import('./tournament-center.component').then(m => m.TournamentCenterComponent) },
             { path: 'tournament/:leagueId/rounds', data: { tournamentContext: true }, loadComponent: () => import('./tournament-matchups.component').then(m => m.TournamentMatchupsComponent) },
-            { path: 'tournament/:leagueId/check-in', data: { tournamentContext: true }, loadComponent: () => import('./tournament-check-in.component').then(m => m.TournamentCheckInComponent) },
+            { path: 'tournament/:leagueId/check-in', redirectTo: ({ params }) => inject(Router).createUrlTree(['/'], { queryParams: { leagueId: params['leagueId'] }, fragment: 'attendance' }), pathMatch: 'full' },
             { path: '', component: HomeComponent, pathMatch: 'full' },
             { path: '', component: ScramblerWorkspaceComponent, children: [
                     { path: 'scrambler', component: WorkspaceRouteComponent },

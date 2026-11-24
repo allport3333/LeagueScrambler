@@ -32,13 +32,14 @@ button:disabled { opacity: .6; }
 
 .settings-grid, .matchup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 23rem), 1fr)); gap: .8rem; }
 .settings-grid { align-items: start; }
+.format-column { display: grid; gap: .8rem; min-width: 0; }
 .settings-card { min-width: 0; padding: .85rem; border: 1px solid var(--hub-border, #bcc6d2); border-radius: .55rem; background: var(--hub-surface, #fff); }
 .settings-card h3, .matchup h3 { margin: 0; font-size: 1.05rem; }
 .section-heading { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; }
 .section-heading :is(label, h3) { margin: 0; }
 .form-grid.compact-fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); }
-.settings-card:first-child .compact-fields > label:first-child { grid-column: 1 / -1; }
-.preferences .compact-fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
+.settings-grid > .settings-card .compact-fields > label:first-child { grid-column: 1 / -1; }
+.preferences .compact-fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr)); }
 .capacity-field { grid-column: 1 / -1; max-width: 23rem; }
 .capacity-field small { display: block; margin-top: .3rem; }
 .compact-control { display: grid; gap: .25rem; max-width: 23rem; margin-top: .6rem; }

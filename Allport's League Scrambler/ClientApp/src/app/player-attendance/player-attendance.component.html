@@ -1,7 +1,7 @@
 @if (authenticated && (loading || error || state && state.visible && state.isOwnProfile)) {
-  <section class="attendance-card" [class.attendance-compact]="loading || error || !state || !state.canSignIn" aria-label="League night attendance">
+  <section id="attendance" class="attendance-card" [class.attendance-compact]="loading || error || !state || !state.canSignIn" [attr.aria-label]="tournament ? 'Tournament attendance' : 'League night attendance'">
     @if (state && state.isOwnProfile && state.canSignIn && !loading && !error) {
-      <h2>League Night Sign In</h2>
+      <h2>{{ tournament ? 'Tournament Check In' : 'League Night Sign In' }}</h2>
     }
     @if (loading) {
       <p role="status">Checking attendance...</p>
@@ -11,7 +11,7 @@
     }
     @if (state && state.visible && state.isOwnProfile && !loading && !error) {
       @if (state.signedIn) {
-        <div class="signed-in-row"><p class="attendance-success" role="status"><mat-icon aria-hidden="true">check_circle</mat-icon> Signed In for Tonight</p>@if (state.canRemove) {
+        <div class="signed-in-row"><p class="attendance-success" role="status"><mat-icon aria-hidden="true">check_circle</mat-icon> {{ tournament ? 'Checked In for Tournament' : 'Signed In for Tonight' }}</p>@if (state.canRemove) {
         <button mat-button class="attendance-remove" [disabled]="busy" (click)="change(true)">{{ busy ? 'Updating...' : 'Remove Sign In' }}</button>
       }</div>
     }
@@ -19,7 +19,7 @@
       <p class="attendance-reason"><mat-icon aria-hidden="true">{{ unavailableIcon }}</mat-icon><span>{{ unavailableText }}</span></p>
     }
     @if (state.canSignIn) {
-      <button mat-raised-button class="attendance-sign-in" [disabled]="busy" (click)="change()">{{ busy ? 'Signing In...' : 'Sign In for Tonight' }}</button>
+      <button mat-raised-button class="attendance-sign-in" [disabled]="busy" (click)="change()">{{ busy ? 'Signing In...' : (tournament ? 'Check In for Tournament' : 'Sign In for Tonight') }}</button>
     }
   }
 </section>

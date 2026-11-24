@@ -48,6 +48,7 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             let roundSettings = structuredClone(settings);
             let generatedWrites = 0;
             let savedScores = 0;
+            let present = true;
             const page = await context.newPage();
             const errors = [];
             page.on('pageerror', error => errors.push(error.message));
@@ -61,7 +62,8 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                 const method = route.request().method();
                 if (method === 'PUT') {
                     const body = route.request().postDataJSON();
-                    if (endpoint.endsWith('/round-settings')) roundSettings = body.settings;
+                    if (endpoint === '/api/tournament-attendance/133/players/1') present = body.present;
+                    else if (endpoint.endsWith('/round-settings')) roundSettings = body.settings;
                     else if (endpoint.endsWith('/rounds')) {
                         generatedWrites++;
                         rounds = body.rounds.map(round => ({
@@ -92,7 +94,7 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                 else if (endpoint === '/api/tournaments/133/rounds') data = { name, version: details.version, settingsSaved: true, rounds };
                 else if (endpoint === '/api/tournaments/133/check-in' || endpoint === '/api/tournament-attendance/133') data = {
                     name, ...details, mode: 1, organizers: role !== 'Player', ownPlayerId: 1,
-                    roster: [{ ...roster[0], present: true }]
+                    roster: [{ ...roster[0], present }]
                 };
                 return route.fulfill({ json: data });
             });
@@ -174,7 +176,7 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             await expect(page.getByRole('heading', {name: 'Team & Round Setup'})).toBeVisible();
             await page.locator('app-tournament-center').screenshot({path: path.join(out, theme + '-wizard-mobile.png')});
             const mobileStep = page.getByLabel('Tournament setup step', { exact: true });
-            for (const label of ['Tournament Details', 'Manage Participants', 'Player Priorities & Byes', 'Player Check In',
+            for (const label of ['Tournament Details', 'Manage Participants', 'Player Priorities & Byes', 'Confirm Participants',
                 'Generate & Preview Tournament', 'Run Tournament']) {
                 await mobileStep.selectOption({ label });
                 await expect(page.getByRole('heading', { name: label, exact: true })).toBeVisible();
@@ -183,13 +185,41 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             await page.locator('.saved-round').first().locator('summary').click();
             await page.locator('app-tournament-rounds').screenshot({ path: path.join(out, theme + '-rounds-mobile.png') });
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-            await page.goto(origin + '/tournament/133/check-in');
-            await expect(page.getByRole('heading', { name: 'Tournament Check In' })).toBeVisible();
+            await mobileStep.selectOption({ label: 'Confirm Participants' });
+            await expect(page.getByRole('heading', { name: 'Confirm Participants' })).toBeVisible();
             await expect(page.getByText('1 registered', {exact: true})).toBeVisible();
             await expect(page.getByText('1 checked in', {exact: true})).toBeVisible();
             await page.evaluate(() => document.fonts.ready);
             await page.locator('app-tournament-check-in').screenshot({ path: path.join(out, theme + '-check-in-mobile.png') });
+            {
+                await page.setViewportSize({ width: 1920, height: 900 });
+                await page.getByRole('button', {name: /Tournament Details/}).click();
+                const form = await page.locator('#tournament-details').boundingBox();
+                const sidebar = await page.locator('.wizard-steps').boundingBox();
+                const wizard = await page.locator('.workflow').boundingBox();
+                assert(form.width >= 750 && form.width <= 850);
+                assert(Math.abs(form.x + form.width / 2 - (sidebar.x + sidebar.width + wizard.x + wizard.width + 16) / 2) < 2);
+                await page.screenshot({path: path.join(out, theme + '-details-desktop.png')});
+                await page.getByRole('button', {name: /Team & Round Setup/}).click();
+                const structure = page.locator('.settings-grid > .settings-card');
+                const format = page.locator('.format-column > .settings-card').first();
+                const preferences = page.locator('.format-column > .settings-card').last();
+                await expect(preferences.getByRole('heading', {name: 'Generation Preferences'})).toBeVisible();
+                const [left, top, bottom] = await Promise.all([structure.boundingBox(), format.boundingBox(), preferences.boundingBox()]);
+                assert(left.x < top.x && Math.abs(left.y - top.y) < 2);
+                assert(Math.abs(top.x - bottom.x) < 2 && top.y + top.height < bottom.y);
+                await page.screenshot({path: path.join(out, theme + '-setup-desktop.png')});
+                await page.setViewportSize({ width: 390, height: 844 });
+                const [mobileLeft, mobileTop, mobileBottom] = await Promise.all([structure.boundingBox(), format.boundingBox(), preferences.boundingBox()]);
+                assert(Math.abs(mobileLeft.x - mobileTop.x) < 2 && mobileLeft.y + mobileLeft.height < mobileTop.y && mobileTop.y + mobileTop.height < mobileBottom.y);
+                await page.screenshot({path: path.join(out, theme + '-setup-mobile.png')});
+            }
             role = 'Player';
+            present = false;
+            await page.goto(origin + '/tournament/133/check-in');
+            await expect(page).toHaveURL(/leagueId=133#attendance$/);
+            await page.getByRole('button', {name: 'Check In for Tournament'}).click();
+            await expect(page.locator('.attendance-success')).toContainText('Checked In for Tournament');
             await page.goto(origin + '/tournament/133/rounds');
             await expect(page.getByRole('heading', { name })).toBeVisible().catch(async error => {
                 console.error(page.url(), await page.locator('body').innerText(), errors);

@@ -28,6 +28,7 @@ export class PlayerHomeDashboardComponent implements OnInit,OnDestroy {
   this.subscriptions.add(this.login.getUsersRole().subscribe(value=>this.role=value.role,()=>{}));
   this.subscriptions.add(this.login.getUsersPlayer().subscribe(value=>{this.playerId=value&&value.playerId||null;this.accountReady=true;this.loadOverview();},error=>{this.accountReady=true;if(error.status!==404)this.accountError='Unable to load your player association. Please refresh or sign in again.';}));
  }
+ get isTournament(): boolean { return this.leagues.leaguesAvailable.some(event => event.id === this.leagueId && event.eventTypeId === 2); }
  get ownStandings():any[]{return this.standings.filter(row=>this.ownTeamIds.indexOf(row.teamId)>=0);}
  acceptGames(event:any){if(event.playerId!==this.playerId||event.leagueId!==this.leagueId)return;this.teamsReady=true;this.ownTeamIds=event.result.ownTeamIds||[];this.upcoming=event.result.upcoming||[];}
  loadOverview(force=false){const key=this.playerId+':'+this.leagueId;if(!force&&key===this.key)return;this.key=key;const version=++this.version;if(this.request)this.request.unsubscribe();if(this.standingRequest)this.standingRequest.unsubscribe();if(!force){

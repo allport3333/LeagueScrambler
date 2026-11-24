@@ -64,45 +64,47 @@
               }
             </div>
           </section>
-          <section class="settings-card">
-            <h3>Tournament Format</h3>
-            <div class="form-grid compact-fields">
-              <label>Number of Rounds <input class="form-control" type="number" min="1" max="30" [(ngModel)]="data.settings.numberOfRounds" (ngModelChange)="markEdited()"></label>
-              <label>Games per Matchup <input class="form-control" type="number" min="1" max="9" [(ngModel)]="data.settings.gamesPerMatchup" (ngModelChange)="markEdited()"></label>
-            </div>
-          </section>
-          <section class="settings-card preferences">
-            <div class="section-heading">
-              <h3>Generation Preferences</h3>
-              <details class="help-tip"><summary aria-label="About generation preferences">ⓘ</summary>
-                <p>Completely Random disables gender balancing. Balanced Teams spreads genders across teams where possible. Allow Repeat Teammates does not optimize for new pairings. Minimize Repeat Teammates prefers new pairings while allowing repeats if needed. Strict historical exclusions forbid the selected prior pairings unless you explicitly allow fallback. Enabled priorities and history can still influence random teams.</p>
-              </details>
-            </div>
-            <div class="form-grid compact-fields">
-              <label>Team Composition
-                <select class="form-control" [(ngModel)]="data.settings.balanceGenders" (ngModelChange)="markEdited()">
-                  <option [ngValue]="false">Completely Random</option><option [ngValue]="true">Balanced Teams</option>
-                </select>
-              </label>
-              <label>Teammate Repetition
-                <select class="form-control" [(ngModel)]="data.settings.minimizeRepeats" (ngModelChange)="markEdited()">
-                  <option [ngValue]="false">Allow Repeat Teammates</option><option [ngValue]="true">Minimize Repeat Teammates</option>
-                </select>
-              </label>
-            </div>
-            @if (history.length) {
-              <details>
-                <summary>Strict historical exclusions ({{ data.settings.historicalScrambleNumbers.length }} selected)</summary>
-                <div class="form-grid compact-fields">
-                  @for (item of history; track item.scrambleNumber) {
-                    <label class="choice"><input type="checkbox" [ngModel]="data.settings.historicalScrambleNumbers.includes(item.scrambleNumber)" (ngModelChange)="toggleHistory(item.scrambleNumber, $event)">
-                      Scramble {{ item.scrambleNumber }} · {{ item.dateOfTeam.slice(0, 10) }}
-                    </label>
-                  }
-                </div>
-              </details>
-            }
-          </section>
+          <div class="format-column">
+            <section class="settings-card">
+              <h3>Tournament Format</h3>
+              <div class="form-grid compact-fields">
+                <label>Number of Rounds <input class="form-control" type="number" min="1" max="30" [(ngModel)]="data.settings.numberOfRounds" (ngModelChange)="markEdited()"></label>
+                <label>Games per Matchup <input class="form-control" type="number" min="1" max="9" [(ngModel)]="data.settings.gamesPerMatchup" (ngModelChange)="markEdited()"></label>
+              </div>
+            </section>
+            <section class="settings-card preferences">
+              <div class="section-heading">
+                <h3>Generation Preferences</h3>
+                <details class="help-tip"><summary aria-label="About generation preferences">ⓘ</summary>
+                  <p>Completely Random disables gender balancing. Balanced Teams spreads genders across teams where possible. Allow Repeat Teammates does not optimize for new pairings. Minimize Repeat Teammates prefers new pairings while allowing repeats if needed. Strict historical exclusions forbid the selected prior pairings unless you explicitly allow fallback. Enabled priorities and history can still influence random teams.</p>
+                </details>
+              </div>
+              <div class="form-grid compact-fields">
+                <label>Team Composition
+                  <select class="form-control" [(ngModel)]="data.settings.balanceGenders" (ngModelChange)="markEdited()">
+                    <option [ngValue]="false">Completely Random</option><option [ngValue]="true">Balanced Teams</option>
+                  </select>
+                </label>
+                <label>Teammate Repetition
+                  <select class="form-control" [(ngModel)]="data.settings.minimizeRepeats" (ngModelChange)="markEdited()">
+                    <option [ngValue]="false">Allow Repeat Teammates</option><option [ngValue]="true">Minimize Repeat Teammates</option>
+                  </select>
+                </label>
+              </div>
+              @if (history.length) {
+                <details>
+                  <summary>Strict historical exclusions ({{ data.settings.historicalScrambleNumbers.length }} selected)</summary>
+                  <div class="form-grid compact-fields">
+                    @for (item of history; track item.scrambleNumber) {
+                      <label class="choice"><input type="checkbox" [ngModel]="data.settings.historicalScrambleNumbers.includes(item.scrambleNumber)" (ngModelChange)="toggleHistory(item.scrambleNumber, $event)">
+                        Scramble {{ item.scrambleNumber }} · {{ item.dateOfTeam.slice(0, 10) }}
+                      </label>
+                    }
+                  </div>
+                </details>
+              }
+            </section>
+          </div>
         </div>
       }
       @if (view === 'priorities') {
