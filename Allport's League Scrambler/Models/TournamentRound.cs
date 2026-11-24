@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,8 @@ namespace Allport_s_League_Scrambler.Models
         public int RoundNumber { get; set; }
         public int ScrambleNumber { get; set; }
         public int GamesPerMatchup { get; set; }
+        public DateTime? VoidedAtUtc { get; set; }
+        public int? VoidedByUserId { get; set; }
         public string GenerationJson { get; set; }
     }
 }

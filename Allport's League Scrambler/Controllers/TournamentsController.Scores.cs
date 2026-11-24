@@ -36,6 +36,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 return Conflict(new { message = "Results changed. Reload the round before saving." });
             var round = await db.Set<TournamentRound>().FindAsync(leagueId, roundNumber);
             if (round == null) return NotFound();
+            if (round.VoidedAtUtc != null) return Conflict(new { message = "Voided rounds cannot be scored." });
             var teams = await db.KingQueenTeam.Where(team => team.LeagueID == leagueId && team.ScrambleNumber == round.ScrambleNumber)
                 .OrderBy(team => team.Id).Include(team => team.KingQueenRoundScores).ToListAsync();
             var matches = teams.Chunk(2).Where(pair => pair.Length == 2).ToDictionary(pair => pair[0].Id);

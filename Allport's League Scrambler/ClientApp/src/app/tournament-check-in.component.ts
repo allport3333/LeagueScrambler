@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 
 interface AttendancePlayer { id: number; firstName: string; lastName: string; present: boolean; }
 interface AttendanceState {
-    mode: number; version: string;
+    mode: number; version: string; unavailableIds?: number[];
     organizers: boolean; roster: AttendancePlayer[];
 }
 
@@ -64,7 +64,7 @@ interface AttendanceState {
                         <span>{{ state.roster.length }} registered</span>
                         <span class="present">{{ presentCount }} checked in</span>
                         <span>{{ state.roster.length - presentCount }} not checked in</span>
-                        @if (state.mode) { <span>{{ checkedInOnly ? presentCount : state.roster.length }} eligible</span> }
+                        @if (state.mode) { <span>{{ eligibleCount }} eligible</span> }
                         @else { <span>Eligible roster pending</span> }
                     </div>
                     <div class="actions">
@@ -114,6 +114,10 @@ export class TournamentCheckInComponent implements OnInit {
     ngOnInit() { void this.load(); }
 
     get checkedInOnly() { return this.state?.mode === 1 || this.state?.mode === 2; }
+    get eligibleCount() {
+        return this.state?.roster.filter(player => (this.state.mode === 3 || player.present) &&
+            !this.state.unavailableIds?.includes(player.id)).length ?? 0;
+    }
     get presentCount() { return this.state?.roster.filter(player => player.present).length ?? 0; }
     get shownPlayers() {
         const name = this.filter.trim().toLowerCase();

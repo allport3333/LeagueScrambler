@@ -29,13 +29,14 @@ namespace Allport_s_League_Scrambler.Controllers
             var participants = await db.PlayersLeagues.Where(row => row.LeagueID == leagueId)
                 .Select(row => row.PlayerID).Distinct().CountAsync();
             var rounds = await db.TournamentRounds.AsNoTracking().Where(round => round.LeagueId == leagueId).ToListAsync();
-            var numbers = rounds.Select(round => round.ScrambleNumber).ToArray();
+            var active = rounds.Where(round => round.VoidedAtUtc == null).ToArray();
+            var numbers = active.Select(round => round.ScrambleNumber).ToArray();
             var teams = (await db.KingQueenTeam.AsNoTracking().Where(team => team.LeagueID == leagueId && numbers.Contains(team.ScrambleNumber))
                 .Include(team => team.KingQueenRoundScores).ToListAsync()).ToLookup(team => team.ScrambleNumber);
-            var completed = rounds.Count(round => Services.TournamentMatchupResults.IsComplete(
+            var completed = active.Count(round => Services.TournamentMatchupResults.IsComplete(
                 teams[round.ScrambleNumber], round.GamesPerMatchup));
             var total = details?.RoundSettingsJson != null ? DecodeSettings(details).NumberOfRounds : 0;
-            var status = Services.TournamentMatchupResults.TournamentStatus(total, rounds.Count, completed, details?.WorkflowStep ?? 1);
+            var status = Services.TournamentMatchupResults.TournamentStatus(total, active.Length, completed, details?.WorkflowStep ?? 1);
             var hasRounds = rounds.Count != 0;
             return Ok(new { name, details, participants, hasRounds, status });
         }

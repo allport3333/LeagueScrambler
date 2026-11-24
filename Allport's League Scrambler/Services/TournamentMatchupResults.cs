@@ -37,7 +37,7 @@ namespace Allport_s_League_Scrambler.Services
 
         public static string TournamentStatus(int total, int generated, int completed, int step) =>
             total > 0 && completed == total ? "Completed" :
-                generated > 0 ? "In Progress" : step == 6 ? "Ready" : "Setup In Progress";
+                generated > 0 ? "In Progress" : step >= 6 ? "Ready" : "Setup In Progress";
 
         private static bool HasAllGames(KingQueenTeam team, int games) =>
             team.KingQueenRoundScores.Count == games &&

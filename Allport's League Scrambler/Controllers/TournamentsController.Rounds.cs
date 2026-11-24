@@ -16,7 +16,9 @@ namespace Allport_s_League_Scrambler.Controllers
     public partial class TournamentsController
     {
         public sealed record Allocation(int RoundNumber, int[][] Teams, int[] Byes);
-        public sealed record SaveRoundsInput(Guid Version, bool AllowHistoricalFallback, Allocation[] Rounds);
+        public sealed record SaveRoundsInput(Guid Version, bool AllowHistoricalFallback, Allocation[] Rounds,
+            TournamentRoundSettings AdditionalSettings = null, int[] UnavailablePlayerIds = null,
+            bool PreserveSavedByes = false);
 
         [HttpGet("rounds")]
         public async Task<IActionResult> ReadRounds(int leagueId)
@@ -29,7 +31,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 return Forbid();
             var details = await db.TournamentConfigurations.AsNoTracking().SingleOrDefaultAsync(row => row.LeagueId == leagueId);
             if (details == null) return NotFound();
-            var rounds = await db.Set<TournamentRound>().AsNoTracking().Where(row => row.LeagueId == leagueId)
+            var manage = LeagueAccess.CanManage(User, db, leagueId);
+            var rounds = await db.Set<TournamentRound>().AsNoTracking().Where(row => row.LeagueId == leagueId && (manage || row.VoidedAtUtc == null))
                 .OrderBy(row => row.RoundNumber).ToListAsync();
             var numbers = rounds.Select(row => row.ScrambleNumber).ToArray();
             var teams = await db.KingQueenTeam.AsNoTracking()
@@ -44,6 +47,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 details.Version,
                 name = await db.Leagues.Where(row => row.ID == leagueId).Select(row => row.LeagueName).SingleAsync(),
                 settingsSaved = details.RoundSettingsJson != null,
+                canVoid = manage && User.IsInRole("Admin"),
                 rounds = rounds.Select(round =>
                 {
                     var roundTeams = teams.Where(team => team.ScrambleNumber == round.ScrambleNumber).ToArray();
@@ -51,7 +55,8 @@ namespace Allport_s_League_Scrambler.Controllers
                     {
                         round.RoundNumber, round.ScrambleNumber, round.GamesPerMatchup,
                         manualByeIds = SavedManualByeIds(round),
-                        status = Services.TournamentMatchupResults.RoundStatus(roundTeams, round.GamesPerMatchup),
+                        round.VoidedAtUtc, round.VoidedByUserId,
+                        status = round.VoidedAtUtc != null ? "voided" : Services.TournamentMatchupResults.RoundStatus(roundTeams, round.GamesPerMatchup),
                         teams = roundTeams.Select(team => new
                         {
                             team.Id,
@@ -68,15 +73,17 @@ namespace Allport_s_League_Scrambler.Controllers
             });
         }
 
-        private static int[] SavedManualByeIds(TournamentRound round)
+        private static TournamentRoundSettings SavedGenerationSettings(TournamentRound round)
         {
             if (string.IsNullOrEmpty(round.GenerationJson)) return null;
             using var generation = JsonDocument.Parse(round.GenerationJson);
             if (generation.RootElement.ValueKind != JsonValueKind.Object ||
                 !generation.RootElement.TryGetProperty("settings", out var settings) || settings.ValueKind != JsonValueKind.Object) return null;
-            var assignments = settings.Deserialize<TournamentRoundSettings>()?.ManualByes;
-            return assignments?.Where(bye => bye.RoundNumber == round.RoundNumber).Select(bye => bye.PlayerId).ToArray();
+            return settings.Deserialize<TournamentRoundSettings>();
         }
+
+        private static int[] SavedManualByeIds(TournamentRound round) =>
+            SavedGenerationSettings(round)?.ManualByes?.Where(bye => bye.RoundNumber == round.RoundNumber).Select(bye => bye.PlayerId).ToArray();
 
         [Authorize(Policy = "LeagueManagement")]
         [HttpPut("rounds")]
@@ -84,7 +91,7 @@ namespace Allport_s_League_Scrambler.Controllers
         [RequestSizeLimit(262144)]
         public async Task<IActionResult> SaveRounds(int leagueId, [FromBody] SaveRoundsInput input)
         {
-            if (!ModelState.IsValid || input?.Rounds == null || input.Rounds.Length is < 1 or > 30 ||
+            if (!ModelState.IsValid || input?.Rounds == null || input.Rounds.Length > 30 || (input.Rounds.Length == 0 && (input.UnavailablePlayerIds == null || input.AdditionalSettings != null)) ||
                 input.Rounds.Any(round => round == null) ||
                 input.Rounds.Select(round => round.RoundNumber).Distinct().Count() != input.Rounds.Length)
                 return BadRequest(new { message = "Provide one allocation per tournament round." });
@@ -98,25 +105,51 @@ namespace Allport_s_League_Scrambler.Controllers
             if (details.Version != input.Version || details.RoundSettingsJson == null)
                 return Conflict(new { message = "Save the tournament settings and reload before generating." });
             if (details.CheckInMode == TournamentCheckInMode.NotConfigured)
-                return Conflict(new { message = "Configure check-in or choose Skip Check In before generating." });
+                return Conflict(new { message = "Choose who can play before generating rounds." });
 
-            var settings = DecodeSettings(details);
+            var originalSettings = DecodeSettings(details);
             var roster = (await Roster(db, leagueId).Select(row => row.Id).ToListAsync()).ToHashSet();
             var date = details.EventDate.ToDateTime(TimeOnly.MinValue);
             var eligible = details.CheckInMode == TournamentCheckInMode.Skipped ? roster :
                 (await db.PlayerSignIn.Where(row => row.LeagueId == leagueId && row.DateTime.Date == date)
                     .Select(row => row.PlayerId).Distinct().ToListAsync()).Where(roster.Contains).ToHashSet();
-            if (eligible.Count is < 2 or > 256)
+            var unavailable = input.UnavailablePlayerIds ?? originalSettings.UnavailablePlayerIds.Intersect(roster).ToArray();
+            if (unavailable.Distinct().Count() != unavailable.Length || unavailable.Any(id => !roster.Contains(id)))
+                return BadRequest(new { message = "Availability must reference distinct registered players." });
+            eligible.ExceptWith(unavailable);
+            if (input.Rounds.Length > 0 && (eligible.Count is < 2 or > 256))
                 return BadRequest(new { message = "Generation requires 2 to 256 eligible participants." });
 
             var roundSet = db.Set<TournamentRound>();
             var current = await roundSet.Where(row => row.LeagueId == leagueId).ToDictionaryAsync(row => row.RoundNumber);
             var requested = input.Rounds.Select(row => row.RoundNumber).ToHashSet();
-            if (requested.Any(number => number < 1 || number > settings.NumberOfRounds) ||
-                (current.Count == 0 && requested.Count != settings.NumberOfRounds))
-                return BadRequest(new { message = "First generation must include every configured round." });
+            var additional = input.AdditionalSettings;
+            var lastRound = current.Keys.DefaultIfEmpty(0).Max();
+            var settings = originalSettings;
+            if (additional != null)
+            {
+                if (lastRound == 0 || additional.NumberOfRounds is < 1 or > 30 ||
+                    lastRound + additional.NumberOfRounds > 30 ||
+                    !requested.SetEquals(Enumerable.Range(lastRound + 1, additional.NumberOfRounds)))
+                    return BadRequest(new { message = "Additional rounds must continue after the last saved round, up to 30 total rounds." });
+                if (additional.ManualByes == null || additional.ManualByes.Any(bye => bye == null || !requested.Contains(bye.RoundNumber)))
+                    return BadRequest(new { message = "Manual byes for an extension must apply only to the additional rounds." });
+                settings = additional with { NumberOfRounds = current.Values.Count(round => round.VoidedAtUtc == null) + additional.NumberOfRounds };
+            }
+            else if (current.Count == 0
+                ? !requested.SetEquals(Enumerable.Range(1, settings.NumberOfRounds))
+                : requested.Any(number => !current.ContainsKey(number)))
+                return BadRequest(new { message = "Generate all initial rounds together. Use Add Additional Rounds to extend a saved tournament." });
 
             var replacements = current.Values.Where(round => requested.Contains(round.RoundNumber)).ToArray();
+            if (replacements.Any(round => round.VoidedAtUtc != null))
+                return Conflict(new { message = "Voided rounds cannot be replaced." });
+            if ((input.PreserveSavedByes || input.UnavailablePlayerIds != null) && additional == null)
+                settings = settings with { ManualByes = settings.ManualByes.Where(bye => requested.Contains(bye.RoundNumber))
+                    .Concat(replacements.SelectMany(round => (SavedManualByeIds(round) ?? Array.Empty<int>())
+                        .Select(id => new TournamentBye(round.RoundNumber, id))))
+                    .Where(bye => eligible.Contains(bye.PlayerId)).Distinct().ToArray() };
+            settings = settings with { UnavailablePlayerIds = unavailable };
             var replacedNumbers = replacements.Select(round => round.ScrambleNumber).ToArray();
             if (settings.HistoricalScrambleNumbers.Intersect(replacedNumbers).Any())
                 return Conflict(new { message = "Remove the round you are replacing from strict historical exclusions first." });
@@ -130,7 +163,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 settings.HistoricalScrambleNumbers.Contains(team.ScrambleNumber) && team.KingQueenPlayers.Any())
                 .Select(team => new { team.ScrambleNumber, players = team.KingQueenPlayers.Select(p => p.PlayerId).ToArray() })
                 .ToListAsync();
-            var error = settings.Validate(roster, historical.Select(team => team.ScrambleNumber).ToHashSet());
+            var error = settings.Validate(roster, historical.Select(team => team.ScrambleNumber).ToHashSet(), Math.Max(lastRound, requested.DefaultIfEmpty(0).Max()));
             if (error != null) return BadRequest(new { message = error });
             var prohibited = historical.SelectMany(team => TeamPairs(team.players)).ToHashSet();
             foreach (var round in input.Rounds)
@@ -139,14 +172,10 @@ namespace Allport_s_League_Scrambler.Controllers
                 if (error != null) return BadRequest(new { message = $"Round {round.RoundNumber}: {error}" });
             }
 
-            var oldByes = await db.ByeRounds.Where(row => row.LeagueID == leagueId && replacedNumbers.Contains(row.ScrambleNumber))
-                .Include(row => row.ByePlayers).ToListAsync();
-            db.ByePlayer.RemoveRange(oldByes.SelectMany(row => row.ByePlayers));
-            db.ByeRounds.RemoveRange(oldByes);
-            db.KingQueenPlayer.RemoveRange(existingTeams.SelectMany(row => row.KingQueenPlayers));
-            db.KingQueenTeam.RemoveRange(existingTeams);
+            await RemoveAssignments(db, leagueId, replacedNumbers, existingTeams);
             var maxNumber = await db.KingQueenTeam.Where(team => team.LeagueID == leagueId)
                 .Select(team => (int?)team.ScrambleNumber).MaxAsync() ?? 0;
+            maxNumber = Math.Max(maxNumber, originalSettings.LastScrambleNumber);
             foreach (var round in input.Rounds.OrderBy(row => row.RoundNumber))
             {
                 if (!current.TryGetValue(round.RoundNumber, out var stored))
@@ -154,9 +183,11 @@ namespace Allport_s_League_Scrambler.Controllers
                     stored = new TournamentRound { LeagueId = leagueId, RoundNumber = round.RoundNumber };
                     roundSet.Add(stored);
                 }
+                var roundSettings = replacements.Contains(stored)
+                    ? settings with { GamesPerMatchup = stored.GamesPerMatchup } : settings;
                 stored.ScrambleNumber = ++maxNumber;
-                stored.GamesPerMatchup = settings.GamesPerMatchup;
-                stored.GenerationJson = JsonSerializer.Serialize(new { settings, eligible = eligible.Order(), input.AllowHistoricalFallback });
+                stored.GamesPerMatchup = roundSettings.GamesPerMatchup;
+                stored.GenerationJson = JsonSerializer.Serialize(new { settings = roundSettings, eligible = eligible.Order(), input.AllowHistoricalFallback });
                 foreach (var team in round.Teams)
                     db.KingQueenTeam.Add(new KingQueenTeam
                     {
@@ -171,6 +202,8 @@ namespace Allport_s_League_Scrambler.Controllers
                         ByePlayers = round.Byes.Select(id => new ByePlayer { PlayerId = id }).ToList()
                     });
             }
+            details.RoundSettingsJson = JsonSerializer.Serialize(originalSettings with
+                { NumberOfRounds = settings.NumberOfRounds, UnavailablePlayerIds = unavailable, LastScrambleNumber = maxNumber });
             details.WorkflowStep = 7;
             details.Version = Guid.NewGuid();
             await db.SaveChangesAsync();

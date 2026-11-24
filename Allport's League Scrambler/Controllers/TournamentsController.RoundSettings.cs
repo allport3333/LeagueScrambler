@@ -37,10 +37,12 @@ namespace Allport_s_League_Scrambler.Controllers
                     teamId = row.Id, row.ScrambleNumber, row.DateOfTeam,
                     playerIds = row.KingQueenPlayers.Select(player => player.PlayerId).Distinct().ToArray()
                 }).ToListAsync();
+            var latest = await db.Set<TournamentRound>().AsNoTracking().Where(round => round.LeagueId == leagueId)
+                .OrderByDescending(round => round.RoundNumber).FirstOrDefaultAsync();
             return Ok(new
             {
                 details.Version, mode = (int)details.CheckInMode, roster, presentIds, history,
-                settings = DecodeSettings(details)
+                settings = DecodeSettings(details), additionalDefaults = latest == null ? null : SavedGenerationSettings(latest)
             });
         }
 
@@ -61,18 +63,28 @@ namespace Allport_s_League_Scrambler.Controllers
             var roster = (await Roster(db, leagueId).Select(row => row.Id).ToListAsync()).ToHashSet();
             var saved = (await db.KingQueenTeam.Where(row => row.LeagueID == leagueId && row.KingQueenPlayers.Any())
                 .Select(row => row.ScrambleNumber).Distinct().ToListAsync()).ToHashSet();
-            var error = input.Settings.Validate(roster, saved);
+            var highest = await db.TournamentRounds.Where(round => round.LeagueId == leagueId)
+                .MaxAsync(round => (int?)round.RoundNumber);
+            var error = input.Settings.Validate(roster, saved, highest);
             if (error != null) return BadRequest(new { message = error });
-            if (await db.Set<TournamentRound>().AnyAsync(round => round.LeagueId == leagueId && round.RoundNumber > input.Settings.NumberOfRounds))
-                return Conflict(new { message = "The round count cannot be reduced below already saved rounds." });
-            details.RoundSettingsJson = JsonSerializer.Serialize(input.Settings);
+            if (highest.HasValue)
+            {
+                var current = DecodeSettings(details);
+                if (input.Settings.NumberOfRounds != current.NumberOfRounds || input.Settings.GamesPerMatchup != current.GamesPerMatchup)
+                    return Conflict(new { message = "The saved format is fixed. Use Add Additional Rounds to extend the tournament." });
+            }
+            else if (input.Settings.NumberOfRounds < 1)
+                return BadRequest(new { message = "Choose at least one initial round." });
+            var original = DecodeSettings(details);
+            details.RoundSettingsJson = JsonSerializer.Serialize(input.Settings with
+                { UnavailablePlayerIds = original.UnavailablePlayerIds, LastScrambleNumber = original.LastScrambleNumber });
             details.Version = Guid.NewGuid();
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
             return Ok(new { details.Version, settings = input.Settings });
         }
 
-        private static TournamentRoundSettings DecodeSettings(TournamentConfiguration details) =>
+        internal static TournamentRoundSettings DecodeSettings(TournamentConfiguration details) =>
             details.RoundSettingsJson == null ? new TournamentRoundSettings() :
                 JsonSerializer.Deserialize<TournamentRoundSettings>(details.RoundSettingsJson);
 

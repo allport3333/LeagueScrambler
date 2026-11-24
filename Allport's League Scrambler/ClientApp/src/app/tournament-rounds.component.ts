@@ -15,11 +15,14 @@ interface SettingsState {
     version: string; mode: number; roster: (Player & ScramblePlayer)[]; presentIds: number[];
     history: {scrambleNumber: number; dateOfTeam: string; playerIds: number[]}[];
     settings: TournamentSettings;
+    additionalDefaults?: TournamentSettings;
 }
 interface SavedRound {
-    roundNumber: number; status: 'unplayed' | 'partial' | 'completed'; gamesPerMatchup: number;
+    roundNumber: number; status: 'unplayed' | 'partial' | 'completed' | 'voided'; gamesPerMatchup: number;
     teams: {id: number; players: Player[]; scores: {game: number; points: number}[]}[];
     byes: Player[];
+    voidedAtUtc?: string;
+    voidedByUserId?: number;
     manualByeIds?: number[] | null;
 }
 interface ScoreEdit {
@@ -43,6 +46,7 @@ export class TournamentRoundsComponent implements OnInit {
     readonly initialRunView = input<string>();
     readonly standingsRequested = output<void>();
     readonly roundsSaved = output<void>();
+    readonly roundsCleared = output<void>();
     readonly runRequested = output<void>();
     readonly completionChanged = output<boolean>();
     matchupPrintLayout: 2 | 6 = 6;
@@ -54,7 +58,42 @@ export class TournamentRoundsComponent implements OnInit {
     private readonly destroy = inject(DestroyRef);
     state?: SettingsState;
     rounds: SavedRound[] = [];
+    managementOpen = false;
+    availabilityDraft?: number[];
+    availabilityFilter = "";
+    get selectedRemovalNumbers() { return [...this.removalSelection].sort((a, b) => a - b); }
+    get currentlyEligibleCount() { return this.baseEligible.filter(player => !this.savedUnavailable.includes(player.id)).length; }
+    get unplayedRoundLabels() { return this.unplayedRounds.map(round => round.roundNumber).join(", "); }
+    get availabilityPlayers() {
+        const search = this.availabilityFilter.trim().toLowerCase();
+        return this.state.roster.filter(player => this.playerName(player).toLowerCase().includes(search));
+    }
+    playingCount(round: SavedRound) { return round.teams.reduce((count, team) => count + team.players.length, 0); }
+    removalSelection = new Set<number>();
+    removeRequest?: { numbers: number[]; voidScored: boolean };
+    canVoid = false;
+    get activeRounds() { return this.rounds.filter(round => round.status !== "voided"); }
+    get unplayedRounds() { return this.rounds.filter(round => round.status === "unplayed"); }
+    get savedUnavailable() { return this.state?.settings.unavailablePlayerIds ?? []; }
+    get baseEligible() {
+        if (!this.state?.mode) return [];
+        return this.state.mode === 3 ? this.state.roster : this.state.roster.filter(player => this.state.presentIds.includes(player.id));
+    }
     preview: TournamentAllocation[] = [];
+    additionalSettings?: TournamentSettings;
+    readonly tournamentRoundLimit = 30;
+    get editSettings() { return this.additionalSettings ?? this.state?.settings; }
+    get lastSavedRound() { return this.rounds.at(-1)?.roundNumber ?? 0; }
+    get remainingRounds() { return this.tournamentRoundLimit - this.lastSavedRound; }
+    get additionalRoundNumbers() {
+        const count = this.additionalSettings?.numberOfRounds;
+        return Number.isInteger(count) && count > 0 && count <= this.remainingRounds
+            ? this.sequence(count).map(number => number + this.lastSavedRound) : [];
+    }
+    get byeRoundNumbers() { return this.additionalSettings ? this.additionalRoundNumbers : this.rounds.length ? this.activeRounds.map(round => round.roundNumber) : this.sequence(this.state.settings.numberOfRounds); }
+    get gamesPerMatchupSummary() {
+        return [...new Set(this.activeRounds.map(round => round.gamesPerMatchup))].sort((a, b) => a - b).join(", ");
+    }
     notice = '';
     private savedSettings?: TournamentSettings;
     noticeView = '';
@@ -81,15 +120,15 @@ export class TournamentRoundsComponent implements OnInit {
     priorityFilter = 'All';
     printRoundNumber?: number;
     get currentPrintRound() {
-        return this.rounds.find(round => round.roundNumber === this.printRoundNumber) ?? this.scoreRound ?? this.nextRound ?? this.rounds[0];
+        return this.activeRounds.find(round => round.roundNumber === this.printRoundNumber) ?? this.scoreRound ?? this.nextRound ?? this.activeRounds[0];
     }
 
     priorityFor(id: number) {
-        const settings = this.state?.settings;
+        const settings = this.editSettings;
         return settings?.topPlayerIds.includes(id) ? 'top' : settings?.lowPlayerIds.includes(id) ? 'low' : 'regular';
     }
 
-    get manualByeCount() { return this.state?.settings.manualByes.filter(item => item.roundNumber === this.byeRound).length ?? 0; }
+    get manualByeCount() { return this.editSettings?.manualByes.filter(item => item.roundNumber === this.byeRound).length ?? 0; }
     get selectedByeRound() { return this.rounds.find(round => round.roundNumber === this.byeRound); }
     get savedByeSummary() {
         const round = this.selectedByeRound;
@@ -111,7 +150,7 @@ export class TournamentRoundsComponent implements OnInit {
     }
 
     get hasUnsavedChanges() {
-        return this.dirty || this.preview.length > 0 || this.hasUnsavedScores;
+        return !!this.additionalSettings || !!this.availabilityDraft || this.dirty || this.preview.length > 0 || this.hasUnsavedScores;
     }
 
     private get hasUnsavedScores() {
@@ -124,6 +163,8 @@ export class TournamentRoundsComponent implements OnInit {
     }
 
     discardUnsavedChanges() {
+        if (this.additionalSettings) this.cancelAdditionalRounds();
+        this.closeManagement();
         if (this.dirty && this.savedSettings && this.state) {
             this.state.settings = structuredClone(this.savedSettings);
             this.teamBySize = this.state.settings.maximumTeamSize !== null;
@@ -138,7 +179,7 @@ export class TournamentRoundsComponent implements OnInit {
     }
 
     roundStatus(round: SavedRound) {
-        return round.status === 'completed' ? 'Completed' : round.status === 'partial' ? 'Partially Scored' : 'Not Started';
+        return round.status === 'voided' ? 'Voided' : round.status === 'completed' ? 'Completed' : round.status === 'partial' ? 'Partially Scored' : 'Not Started';
     }
     byeRound = 1;
     scoreRound?: SavedRound;
@@ -147,7 +188,7 @@ export class TournamentRoundsComponent implements OnInit {
     private progression?: ReturnType<typeof setTimeout>;
     private get activeRoundKey() { return 'league-hub-tournament-score-round-' + this.leagueId(); }
     get tournamentComplete() {
-        return !!this.state?.settings.numberOfRounds && this.completed === this.state.settings.numberOfRounds;
+        return this.activeRounds.length > 0 && this.completed === this.activeRounds.length;
     }
 
     constructor() { this.destroy.onDestroy(() => this.clearScoreFeedback()); }
@@ -161,7 +202,7 @@ export class TournamentRoundsComponent implements OnInit {
     openRememberedScores() {
         let number: number;
         try { number = Number(sessionStorage.getItem(this.activeRoundKey)); } catch {}
-        const round = this.rounds.find(item => item.roundNumber === number) ?? this.nextRound ?? this.rounds[0];
+        const round = this.activeRounds.find(item => item.roundNumber === number) ?? this.nextRound ?? this.activeRounds[0];
         if (round) this.openScores(round);
     }
     printSelection = new Set<number>();
@@ -170,14 +211,13 @@ export class TournamentRoundsComponent implements OnInit {
     private get url(): string { return '/api/tournaments/' + this.leagueId(); }
 
     get eligible(): (Player & ScramblePlayer)[] {
-        if (!this.state || !this.state.mode) return [];
-        return this.state.mode === 3 ? this.state.roster :
-            this.state.roster.filter(player => this.state!.presentIds.includes(player.id));
+        const unavailable = new Set(this.availabilityDraft ?? this.savedUnavailable);
+        return this.baseEligible.filter(player => !unavailable.has(player.id));
     }
 
     get filteredPlayers(): (Player & ScramblePlayer)[] {
         const query = this.filter.trim().toLowerCase();
-        return (this.state?.roster ?? []).filter(player => this.playerName(player).toLowerCase().includes(query) &&
+        return (this.additionalSettings ? this.eligible : (this.state?.roster ?? [])).filter(player => this.playerName(player).toLowerCase().includes(query) &&
             (this.priorityView === 'byes' || this.priorityFilter === 'All' || this.priorityFor(player.id) === this.priorityFilter.toLowerCase()));
     }
 
@@ -186,12 +226,12 @@ export class TournamentRoundsComponent implements OnInit {
         return rows.filter((row, index) => rows.findIndex(test => test.scrambleNumber === row.scrambleNumber) === index);
     }
 
-    get roundsForPrinting(): SavedRound[] { return this.rounds.filter(round => this.printSelection.has(round.roundNumber)); }
+    get roundsForPrinting(): SavedRound[] { return this.activeRounds.filter(round => this.printSelection.has(round.roundNumber)); }
     matchupCount(teamCount: number): number { return Math.floor(teamCount / 2); }
     matchupFor(index: number): number { return Math.floor(index / 2) + 1; }
 
     get completed(): number { return this.rounds.filter(round => round.status === 'completed').length; }
-    get nextRound(): SavedRound | undefined { return this.rounds.find(round => round.status !== 'completed'); }
+    get nextRound(): SavedRound | undefined { return this.activeRounds.find(round => round.status !== 'completed'); }
     get hasUnplayed(): boolean { return this.rounds.some(round => round.status === 'unplayed'); }
 
     async ngOnInit(): Promise<void> {
@@ -204,7 +244,7 @@ export class TournamentRoundsComponent implements OnInit {
                 await this.reload();
                 if (this.rounds.length) this.step = this.initialRunView() === 'rounds' ? 'rounds' :
                     this.tournamentComplete ? 'complete' : 'rounds';
-                const requestedRound = this.rounds.find(round => round.roundNumber === this.initialScoreRound());
+                const requestedRound = this.activeRounds.find(round => round.roundNumber === this.initialScoreRound());
                 if (requestedRound && this.wizardStep() === 7) this.openScores(requestedRound);
             }
         });
@@ -217,7 +257,7 @@ export class TournamentRoundsComponent implements OnInit {
     private async reload(): Promise<void> {
         const [state, result] = await Promise.all([
             this.request(this.http.get<SettingsState>(this.url + '/round-settings')),
-            this.request(this.http.get<{version: string; settingsSaved: boolean; rounds: SavedRound[]}>(this.url + '/rounds'))
+            this.request(this.http.get<{version: string; settingsSaved: boolean; canVoid?: boolean; rounds: SavedRound[]}>(this.url + '/rounds'))
         ]);
         if (state.version !== result.version) throw new Error('Tournament state changed while loading. Refresh and try again.');
         this.state = state;
@@ -225,6 +265,8 @@ export class TournamentRoundsComponent implements OnInit {
         this.teamBySize = state.settings.maximumTeamSize !== null;
         this.rounds = result.rounds;
         this.settingsSaved = result.settingsSaved;
+        this.canVoid = !!result.canVoid;
+        this.printSelection = new Set(this.activeRounds.filter(round => this.printSelection.has(round.roundNumber)).map(round => round.roundNumber));
         this.completionChanged.emit(this.tournamentComplete);
         this.dirty = false;
     }
@@ -240,18 +282,18 @@ export class TournamentRoundsComponent implements OnInit {
 
     setTeamMode(size: boolean): void {
         this.teamBySize = size;
-        Object.assign(this.state!.settings, size ?
+        Object.assign(this.editSettings, size ?
             { maximumTeamSize: 4, numberOfTeams: null } : { maximumTeamSize: null, numberOfTeams: 4, activeTeamLimit: null });
         this.markEdited();
     }
 
     markEdited(): void {
-        this.dirty = true;
+        if (!this.additionalSettings) this.dirty = true;
         this.preview = [];
     }
 
     setPriority(id: number, priority: string): void {
-        const settings = this.state!.settings;
+        const settings = this.editSettings;
         const set = (ids: number[], active: boolean) => ids.includes(id) ?
             (active ? ids : ids.filter(saved => saved !== id)) : (active ? [...ids, id] : ids);
         settings.topPlayerIds = set(settings.topPlayerIds, priority === 'top');
@@ -260,25 +302,25 @@ export class TournamentRoundsComponent implements OnInit {
     }
 
     toggleHistory(number: number, checked: boolean): void {
-        const settings = this.state!.settings;
+        const settings = this.editSettings;
         settings.historicalScrambleNumbers = checked ? [...settings.historicalScrambleNumbers, number] :
             settings.historicalScrambleNumbers.filter(saved => saved !== number);
         this.markEdited();
     }
 
     setBye(playerId: number, checked: boolean): void {
-        const settings = this.state!.settings;
+        const settings = this.editSettings;
         settings.manualByes = settings.manualByes.filter(bye => bye.playerId !== playerId || bye.roundNumber !== this.byeRound);
         if (checked) settings.manualByes.push({ roundNumber: this.byeRound, playerId });
         this.markEdited();
     }
 
     manualBye(id: number): boolean {
-        return this.state!.settings.manualByes.some(bye => bye.playerId === id && bye.roundNumber === this.byeRound);
+        return this.editSettings.manualByes.some(bye => bye.playerId === id && bye.roundNumber === this.byeRound);
     }
 
     async saveSettings(): Promise<boolean> {
-        if (this.busy || !this.state) return false;
+        if (this.busy || !this.state || this.additionalSettings) return false;
         let success = false;
         await this.perform(async () => {
             const state = this.state!;
@@ -296,15 +338,63 @@ export class TournamentRoundsComponent implements OnInit {
         return success;
     }
 
+    async openAdditionalRounds(): Promise<void> {
+        if (this.dirty || this.additionalSettings || this.remainingRounds < 1) return;
+        await this.perform(async () => {
+            await this.reload();
+            if (!this.rounds.length || this.remainingRounds < 1) return;
+            const seed = this.state.additionalDefaults ?? this.state.settings;
+            const rosterIds = new Set(this.state.roster.map(player => player.id));
+            const historyIds = new Set(this.history.map(row => row.scrambleNumber));
+            this.additionalSettings = { ...structuredClone(seed), numberOfRounds: 1, manualByes: [],
+                topPlayerIds: seed.topPlayerIds.filter(id => rosterIds.has(id)),
+                lowPlayerIds: seed.lowPlayerIds.filter(id => rosterIds.has(id)),
+                historicalScrambleNumbers: seed.historicalScrambleNumbers.filter(id => historyIds.has(id)) };
+            this.availabilityFilter = "";
+            this.availabilityDraft = this.savedUnavailable.filter(id => rosterIds.has(id));
+            this.teamBySize = this.additionalSettings.maximumTeamSize !== null;
+            this.byeRound = this.lastSavedRound + 1;
+            this.priorityView = "priorities";
+            this.priorityFilter = "All";
+            this.filter = "";
+            this.fallback = false;
+        });
+    }
+
+    additionalCountEdited() {
+        if (!this.additionalRoundNumbers.includes(this.byeRound)) this.byeRound = this.lastSavedRound + 1;
+        this.markEdited();
+    }
+
+    cancelAdditionalRounds() {
+        this.additionalSettings = undefined;
+        this.cancelAvailability();
+        this.error = "";
+        this.fallback = false;
+        this.byeRound = 1;
+        this.teamBySize = this.state.settings.maximumTeamSize !== null;
+    }
+
     async propose(single?: number): Promise<void> {
         await this.perform(async () => {
             const state = this.state!;
-            const settings = state.settings;
+            let settings = this.editSettings;
             this.preview = [];
-            if (!this.settingsSaved || this.dirty) throw new Error('Save your tournament settings before generating rounds.');
-            const pending = single ? [single] : this.sequence(settings.numberOfRounds)
-                .filter(number => !this.rounds.some(round => round.roundNumber === number && round.status !== 'unplayed'));
-            const preserved = this.rounds.filter(round => !pending.includes(round.roundNumber)).map(round => ({
+            if (!this.additionalSettings && (!this.settingsSaved || this.dirty)) throw new Error('Save your tournament settings before generating rounds.');
+            if (this.additionalSettings && (!this.additionalRoundNumbers.length ||
+                !Number.isInteger(settings.gamesPerMatchup) || settings.gamesPerMatchup < 1 || settings.gamesPerMatchup > 9))
+                throw new Error("Choose a supported additional round count and 1 to 9 games per matchup.");
+            const pending = this.additionalSettings ? this.additionalRoundNumbers : single ? [single] :
+                this.rounds.length ? this.unplayedRounds.map(round => round.roundNumber) : this.sequence(settings.numberOfRounds);
+            if (this.managementOpen || this.availabilityDraft) {
+                const eligibleIds = new Set(this.eligible.map(player => player.id));
+                const configured = settings.manualByes.filter(bye => pending.includes(bye.roundNumber));
+                const saved = this.unplayedRounds.filter(round => pending.includes(round.roundNumber)).flatMap(round =>
+                    (round.manualByeIds ?? []).map(playerId => ({ roundNumber: round.roundNumber, playerId })));
+                settings = { ...settings, manualByes: [...configured, ...saved].filter((bye, index, all) =>
+                    eligibleIds.has(bye.playerId) && all.findIndex(other => other.roundNumber === bye.roundNumber && other.playerId === bye.playerId) === index) };
+            }
+            const preserved = this.activeRounds.filter(round => !pending.includes(round.roundNumber)).map(round => ({
                 roundNumber: round.roundNumber, teams: round.teams.map(team => team.players.map(p => p.id)),
                 byes: round.byes.map(p => p.id)
             }));
@@ -321,14 +411,86 @@ export class TournamentRoundsComponent implements OnInit {
 
     async saveRounds(): Promise<void> {
         await this.perform(async () => {
+            const additionalSettings = this.additionalSettings && { ...this.additionalSettings,
+                manualByes: this.additionalSettings.manualByes.filter(bye => this.additionalRoundNumbers.includes(bye.roundNumber)) };
             await this.request(this.http.put(this.url + '/rounds',
-                { version: this.previewVersion, allowHistoricalFallback: this.fallback, rounds: this.preview }));
+                { version: this.previewVersion, allowHistoricalFallback: this.fallback, rounds: this.preview, additionalSettings,
+                    unavailablePlayerIds: this.availabilityDraft, preserveSavedByes: this.managementOpen }));
+            this.availabilityDraft = undefined;
             this.preview = [];
+            if (additionalSettings) {
+                this.cancelAdditionalRounds();
+                this.step = 'rounds';
+            }
             await this.reload();
             this.versionChanged.emit(this.state!.version);
-            this.notice = 'Tournament rounds saved.';
+            this.notice = additionalSettings ? 'Additional rounds saved.' : 'Tournament rounds saved.';
             this.noticeView = 'rounds';
+            if (this.managementOpen) { this.closeManagement(); this.step = "rounds"; }
             this.roundsSaved.emit();
+        });
+    }
+
+    openManagement() {
+        if (this.hasUnsavedChanges || this.busy) return;
+        this.managementOpen = true;
+        this.error = "";
+    }
+
+    closeManagement() {
+        if (!this.managementOpen) return;
+        this.managementOpen = false;
+        this.cancelAvailability();
+        this.removeRequest = undefined;
+        this.removalSelection.clear();
+    }
+
+    async beginAvailability() {
+        await this.perform(async () => {
+            await this.reload();
+            const roster = new Set(this.state.roster.map(player => player.id));
+            this.availabilityFilter = "";
+            this.availabilityDraft = this.savedUnavailable.filter(id => roster.has(id));
+            this.preview = [];
+        });
+    }
+
+    updateAvailability(id: number, unavailable: boolean) {
+        this.availabilityDraft = unavailable ? [...this.availabilityDraft, id] : this.availabilityDraft.filter(player => player !== id);
+        this.preview = [];
+    }
+
+    cancelAvailability() {
+        this.availabilityDraft = undefined;
+        this.preview = [];
+        this.error = "";
+    }
+
+    async saveAvailabilityOnly() {
+        await this.perform(async () => {
+            await this.request(this.http.put(this.url + "/rounds", { version: this.state.version, rounds: [],
+                unavailablePlayerIds: this.availabilityDraft }));
+            this.cancelAvailability();
+            await this.reload();
+            this.versionChanged.emit(this.state.version);
+            this.notice = "Availability saved for future generation.";
+            this.noticeView = this.view;
+        });
+    }
+
+    async removeSelectedRounds() {
+        if (!this.removeRequest) return;
+        await this.perform(async () => {
+            const { numbers, voidScored } = this.removeRequest;
+            await this.request(this.http.post(this.url + "/rounds/remove", { version: this.state.version, roundNumbers: numbers, voidScored }));
+            this.removeRequest = undefined;
+            this.removalSelection.clear();
+            await this.reload();
+            this.versionChanged.emit(this.state.version);
+            if (!this.rounds.length) { this.closeManagement(); this.roundsCleared.emit(); }
+            this.step = this.tournamentComplete ? "complete" : "rounds";
+            this.notice = voidScored ? "Round voided. Its scores are retained for review." : "Selected rounds deleted.";
+            this.noticeView = this.view;
         });
     }
 
@@ -345,7 +507,7 @@ export class TournamentRoundsComponent implements OnInit {
 
     openScores(round: SavedRound): void {
         if (this.hasUnsavedScores && !window.confirm('Discard unsaved score changes?')) return;
-        if (this.wizardStep() === 6) this.runRequested.emit();
+        if (this.wizardStep() !== 7) this.runRequested.emit();
         this.initializeScores(round);
     }
 

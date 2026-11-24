@@ -11,9 +11,16 @@ PlayerSignIn stores attendance by event, local date, and player. Open and manual
 3. Apply `Apply-TournamentRoundSettings.sql`.
 4. Apply `Apply-TournamentRounds.sql`.
 5. Apply `Apply-TournamentWorkflow.sql`.
-6. Run `Classify-DevelopmentEvents.sql` only in LeagueScramblerDev when the guarded example classifications are needed.
+6. Apply `Apply-TournamentRoundManagement.sql`.
+7. Run `Classify-DevelopmentEvents.sql` only in LeagueScramblerDev when the guarded example classifications are needed.
 
 The settings column is nullable for existing configurations. The center supplies initial values until the organizer saves. TournamentRound uniquely maps an event and round number to a saved scramble and records the generation settings and eligibility snapshot. KingQueenTeam and KingQueenPlayer hold teams and assignments, ByeRounds and ByePlayer hold rests, and KingQueenRoundScores stores games within matchups. No existing data is migrated into guided rounds.
+
+## Round management
+
+After initial generation, additions preview and append only new rounds. The newest retained round supplies batch defaults. Active round counts exclude deleted and voided rounds. Middle deletions leave a gap so published or scored rounds keep their labels. Additions start after the highest retained label, within the existing 30-round numbering limit. The last scramble identity is retained to keep deleted scramble references from resolving to new assignments.
+
+Directors can mark registered players unavailable for future generation, or confirm that change together with replacement of unplayed rounds. Availability does not change attendance or registration. Administrators can void a scored round. Its assignments, scores, actor ID, and UTC timestamp remain available for review while its scores are excluded from standings and its assignments are excluded from active printing.
 
 ## Use and safeguards
 

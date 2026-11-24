@@ -36,6 +36,17 @@ describe('Tournament generation', () => {
         expect(result.rounds[0].teams.flat()).toHaveLength(4);
     });
 
+    it('uses retained rounds for repeat costs and bye rotation in appended rounds', async () => {
+        const roster = players.slice(0, 6);
+        const prior = [{ roundNumber: 3, teams: [[3, 4], [5, 6]], byes: [1, 2] }];
+        const next = await generateTournament({ ...settings, minimizeRepeats: true, activeTeamLimit: 2, automaticByes: true },
+            roster, [4], prior, [], false, seededRandom());
+        expect(next.rounds[0].roundNumber).toBe(4);
+        expect(next.rounds[0].byes).toHaveLength(2);
+        expect(next.rounds[0].byes.some(id => prior[0].byes.includes(id))).toBe(false);
+        expect(next.repeats).toBe(0);
+    });
+
     it('applies explicit priorities without gender balance', async () => {
         const result = await generateTournament({ ...settings, balancePriorities: true, topPlayerIds: [1, 2, 3, 4] },
             players, [1], [], [], false, seededRandom());

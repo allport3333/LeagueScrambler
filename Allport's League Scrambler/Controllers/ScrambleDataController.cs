@@ -1635,6 +1635,12 @@ namespace Allport_s_League_Scrambler.Controllers
             var guidedRounds = isTournament
                 ? await context.TournamentRounds.AsNoTracking().Where(round => round.LeagueId == leagueId).ToListAsync()
                 : new List<TournamentRound>();
+            if (guidedRounds.Any(round => round.VoidedAtUtc != null))
+            {
+                var voided = guidedRounds.Where(round => round.VoidedAtUtc != null).Select(round => round.ScrambleNumber).ToHashSet();
+                kingQueenTeams.RemoveAll(team => voided.Contains(team.ScrambleNumber));
+                guidedRounds.RemoveAll(round => round.VoidedAtUtc != null);
+            }
             var wins = guidedRounds.Count == 0 ? null : Services.TournamentMatchupResults.WinsByPlayer(guidedRounds, kingQueenTeams);
             var tournamentProgress = isTournament ? await TournamentProgress(context, leagueId, guidedRounds, kingQueenTeams) : null;
             if (isTournament) kingQueenTeams = kingQueenTeams.Where(team => team.KingQueenRoundScores.Count != 0).ToList();
@@ -1808,6 +1814,12 @@ namespace Allport_s_League_Scrambler.Controllers
             var guidedRounds = isTournament
                 ? await context.TournamentRounds.AsNoTracking().Where(round => round.LeagueId == leagueId).ToListAsync()
                 : new List<TournamentRound>();
+            if (guidedRounds.Any(round => round.VoidedAtUtc != null))
+            {
+                var voided = guidedRounds.Where(round => round.VoidedAtUtc != null).Select(round => round.ScrambleNumber).ToHashSet();
+                kingQueenTeams.RemoveAll(team => voided.Contains(team.ScrambleNumber));
+                guidedRounds.RemoveAll(round => round.VoidedAtUtc != null);
+            }
             var wins = guidedRounds.Count == 0 ? null : Services.TournamentMatchupResults.WinsByPlayer(guidedRounds, kingQueenTeams);
             var tournamentProgress = isTournament ? await TournamentProgress(context, leagueId, guidedRounds, kingQueenTeams) : null;
             if (isTournament) kingQueenTeams = kingQueenTeams.Where(team => team.KingQueenRoundScores.Count != 0).ToList();

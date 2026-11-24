@@ -15,6 +15,7 @@ export interface TournamentSettings {
     lowPlayerIds: number[];
     historicalScrambleNumbers: number[];
     manualByes: TournamentBye[];
+    unavailablePlayerIds?: number[];
 }
 export interface TournamentAllocation {
     roundNumber: number;

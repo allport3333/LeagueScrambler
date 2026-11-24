@@ -199,6 +199,73 @@ try
     Assert(savedByeDetails.GetProperty("manualByeIds")[0].GetInt32() == eligible[0].Id &&
         savedByeDetails.GetProperty("manualByeIds").GetArrayLength() == 1 &&
         savedByeDetails.GetProperty("byes").GetArrayLength() == 3, "Saved round distinguishes one manual bye and two automatic byes");
+    // Exercise management against the isolated, persisted fixture with its completed scores.
+    async Task<TournamentConfiguration> Configuration() => await db.TournamentConfigurations.AsNoTracking()
+        .SingleAsync(row => row.LeagueId == tournament.ID);
+    async Task<TournamentRound[]> SavedRounds() => await db.TournamentRounds.AsNoTracking().Where(row => row.LeagueId == tournament.ID)
+        .OrderBy(row => row.RoundNumber).ToArrayAsync();
+    var scoredRounds = await SavedRounds();
+    var scoredIds = scoredRounds.Select(round => round.ScrambleNumber).ToArray();
+    var beforeScoreIds = await db.KingQueenRoundScores.Where(score => db.KingQueenTeam.Any(team =>
+        team.Id == score.KingQueenTeamId && team.LeagueID == tournament.ID && scoredIds.Contains(team.ScrambleNumber)))
+        .OrderBy(score => score.Id).Select(score => score.Id).ToArrayAsync();
+    var latestManaged = await Configuration();
+    Assert(await reopenedCenter.RemoveRounds(tournament.ID, new(latestManaged.Version, [1])) is ConflictObjectResult,
+        "Deletion protects scored rounds");
+    Assert(await reopenedCenter.RemoveRounds(tournament.ID, new(latestManaged.Version, [1], true)) is ForbidResult,
+        "Only administrators can void historical scores");
+    var extraSettings = settings with { NumberOfRounds = 3, GamesPerMatchup = 2, BalanceGenders = false };
+    var extra = await Generate(extraSettings, eligible, [6, 7, 8], rounds);
+    var extension = new TournamentsController.SaveRoundsInput(latestManaged.Version, false, extra, extraSettings);
+    Assert(await reopenedCenter.SaveRounds(tournament.ID, extension) is OkObjectResult, "Completed tournament extended");
+    Assert(await reopenedCenter.SaveRounds(tournament.ID, extension) is ConflictObjectResult, "Stale append rejected");
+    var extended = await SavedRounds();
+    Assert(extended.Length == 8 && extended.Take(5).Zip(scoredRounds).All(pair =>
+        pair.First.ScrambleNumber == pair.Second.ScrambleNumber && pair.First.GenerationJson == pair.Second.GenerationJson) &&
+        extended.Skip(5).All(round => round.GamesPerMatchup == 2), "Append preserves historical snapshots and scoring formats");
+    latestManaged = await Configuration();
+    var remaining = eligible.Skip(1).ToArray();
+    var upcoming = await Generate(settings, remaining, [6, 7, 8], rounds);
+    Assert(await reopenedCenter.SaveRounds(tournament.ID, new(latestManaged.Version, false, upcoming,
+        UnavailablePlayerIds: [eligible[0].Id])) is OkObjectResult, "Future roster and replacements applied together");
+    var absent = await SavedRounds();
+    var changed = absent.Skip(5).Select(round => round.ScrambleNumber).ToArray();
+    Assert(!await db.KingQueenPlayer.AnyAsync(player => player.PlayerId == eligible[0].Id &&
+        db.KingQueenTeam.Any(team => team.Id == player.KingQueenTeamId && team.LeagueID == tournament.ID && changed.Contains(team.ScrambleNumber))),
+        "Unavailable player removed from future assignments only");
+    latestManaged = await Configuration();
+    Assert(await reopenedCenter.RemoveRounds(tournament.ID, new(latestManaged.Version, [6, 8])) is OkObjectResult,
+        "Delete multiple unplayed rounds without renumbering");
+    var retained = await SavedRounds();
+    var deletedScrambles = absent.Where(round => round.RoundNumber is 6 or 8).Select(round => round.ScrambleNumber).ToArray();
+    Assert(retained.Select(round => round.RoundNumber).SequenceEqual(new[] { 1, 2, 3, 4, 5, 7 }) &&
+        !await db.KingQueenTeam.AnyAsync(team => team.LeagueID == tournament.ID && deletedScrambles.Contains(team.ScrambleNumber)) &&
+        !await db.ByeRounds.AnyAsync(round => round.LeagueID == tournament.ID && deletedScrambles.Contains(round.ScrambleNumber)),
+        "Deleted rounds have no remaining team or bye assignments");
+    latestManaged = await Configuration();
+    Assert(await reopenedCenter.SaveRounds(tournament.ID, new(latestManaged.Version, false, [], UnavailablePlayerIds: []))
+        is OkObjectResult, "Participant can rejoin without rewriting existing teams");
+    latestManaged = await Configuration();
+    var latestAddition = await Generate(extraSettings, eligible, [8, 9], rounds.Concat(upcoming.Where(round => round.RoundNumber == 7)).ToArray());
+    Assert(await reopenedCenter.SaveRounds(tournament.ID, new(latestManaged.Version, false, latestAddition,
+        extraSettings with { NumberOfRounds = 2 })) is OkObjectResult, "Rejoined roster can play in newly appended rounds");
+    Assert((await SavedRounds()).Select(round => round.RoundNumber).SequenceEqual(new[] { 1, 2, 3, 4, 5, 7, 8, 9 }),
+        "Adding after a middle deletion keeps retained labels");
+    latestManaged = await Configuration();
+    reopenedCenter.ControllerContext = Identity(ownerId, "Admin");
+    Assert(await reopenedCenter.RemoveRounds(tournament.ID, new(latestManaged.Version, [1], true)) is OkObjectResult,
+        "Administrator can void a scored round");
+    var voided = (await SavedRounds())[0];
+    var retainedScoreIds = await db.KingQueenRoundScores.Where(score => beforeScoreIds.Contains(score.Id))
+        .OrderBy(score => score.Id).Select(score => score.Id).ToArrayAsync();
+    Assert(voided.VoidedAtUtc != null && voided.VoidedByUserId == ownerId && voided.ScrambleNumber == scoredIds[0] &&
+        beforeScoreIds.SequenceEqual(retainedScoreIds), "Void retains audit, scores, and historical identities");
+    var recalculated = (OkObjectResult)await creation.GetStandingsByLeague(prefix + "-T2");
+    var progress = JsonSerializer.SerializeToElement(recalculated.Value, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+        .GetProperty("tournamentProgress");
+    Assert(progress.GetProperty("completed").GetInt32() == 4 && progress.GetProperty("total").GetInt32() == 7,
+        "Standings exclude voided round and reflect added and removed rounds");
+    Console.WriteLine("Round management passed against LeagueScramblerDev.");
     reopenedCenter.ControllerContext = Identity(participant.UserId, "Player");
     Assert(await reopenedCenter.ReadRounds(tournament.ID) is OkObjectResult, "Linked participant can view saved rounds");
     reopenedCenter.ControllerContext = Identity(int.MaxValue, "Player");

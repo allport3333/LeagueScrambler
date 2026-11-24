@@ -118,14 +118,14 @@ interface TournamentDetails {
                         }
                         @if (step === 3 || step === 4 || step >= 6) {
                             <app-tournament-rounds [leagueId]="leagueId" [tournamentName]="name" [wizardStep]="step" [initialScoreRound]="initialScoreRound" [initialRunView]="initialRunView"
-                                (versionChanged)="details.version = $event" (roundsSaved)="runTournament()" (runRequested)="runTournament()" (standingsRequested)="openStandings()" (completionChanged)="completed = $event" />
+                                (versionChanged)="details.version = $event" (roundsSaved)="runTournament()" (roundsCleared)="resetRoundWorkflow()" (runRequested)="runTournament()" (standingsRequested)="openStandings()" (completionChanged)="updateCompletion($event)" />
                         }
                         <div class="actions">
                             @if (step > 1 && step < 7) { <button type="button" class="back" [disabled]="saving" (click)="goTo(step - 1)">Back</button> }
                             @if (step === 1) {
                                 <button class="primary save" type="submit" form="tournament-details"
                                     [disabled]="saving || !draftName.trim() || !details.eventDate">Save & Continue</button>
-                            } @else if (step <= 5) {
+                            } @else if (step <= 5 && !rounds()?.additionalSettings && !rounds()?.managementOpen) {
                                 <button type="button" class="primary save" [disabled]="navigationBusy" (click)="advance()">Save & Continue</button>
                             }
                             @if (step === 7) {
@@ -256,6 +256,19 @@ export class TournamentCenterComponent {
             const workspace = this.rounds();
             workspace?.changeRunView(workspace.tournamentComplete ? 'complete' : 'rounds');
         }
+    }
+
+    updateCompletion(complete: boolean) {
+        this.completed = complete;
+        if (this.hasRounds) this.status = this.rounds()?.activeRounds.length ? "In Progress" : "Ready";
+    }
+
+    resetRoundWorkflow() {
+        this.hasRounds = this.completed = false;
+        this.reached = 6;
+        this.step = Math.min(this.step, 6);
+        this.status = "Ready";
+        this.rememberStep();
     }
 
     runTournament() {

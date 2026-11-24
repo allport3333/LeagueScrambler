@@ -33,7 +33,7 @@ namespace Allport_s_League_Scrambler.Controllers
             var rosterSizes = await db.PlayersLeagues.Where(row => ids.Contains(row.LeagueID))
                 .GroupBy(row => row.LeagueID).Select(group => new { id = group.Key, count = group.Select(row => row.PlayerID).Distinct().Count() })
                 .ToDictionaryAsync(row => row.id, row => row.count);
-            var rounds = (await db.TournamentRounds.AsNoTracking().Where(row => ids.Contains(row.LeagueId)).ToListAsync())
+            var rounds = (await db.TournamentRounds.AsNoTracking().Where(row => ids.Contains(row.LeagueId) && row.VoidedAtUtc == null).ToListAsync())
                 .ToLookup(row => row.LeagueId);
             var teams = (await db.KingQueenTeam.AsNoTracking().Where(team => ids.Contains(team.LeagueID) &&
                 db.TournamentRounds.Any(round => round.LeagueId == team.LeagueID && round.ScrambleNumber == team.ScrambleNumber))
@@ -73,7 +73,8 @@ namespace Allport_s_League_Scrambler.Controllers
             if (input.Step == 5)
             {
                 var date = config.EventDate.ToDateTime(TimeOnly.MinValue);
-                var eligibility = Roster(db, leagueId);
+                var unavailable = DecodeSettings(config).UnavailablePlayerIds;
+                var eligibility = Roster(db, leagueId).Where(player => !unavailable.Contains(player.Id));
                 if (config.CheckInMode is TournamentCheckInMode.NotConfigured)
                     return BadRequest(new { message = "Choose who can play before continuing." });
                 if (config.CheckInMode != TournamentCheckInMode.Skipped)

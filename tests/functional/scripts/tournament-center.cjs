@@ -213,6 +213,19 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                 const [mobileLeft, mobileTop, mobileBottom] = await Promise.all([structure.boundingBox(), format.boundingBox(), preferences.boundingBox()]);
                 assert(Math.abs(mobileLeft.x - mobileTop.x) < 2 && mobileLeft.y + mobileLeft.height < mobileTop.y && mobileTop.y + mobileTop.height < mobileBottom.y);
                 await page.screenshot({path: path.join(out, theme + '-setup-mobile.png')});
+                await expect(page.getByLabel('Number of Rounds', {exact: true})).toHaveCount(0);
+                await page.getByRole('button', {name: 'Manage Existing Rounds', exact: true}).click();
+                await expect(page.getByRole('heading', {name: 'Manage Existing Rounds'})).toBeVisible();
+                await page.locator('.saved-round').first().locator('summary').click();
+                await expect(page.getByRole('button', {name: 'Delete Round', exact: true})).toBeVisible();
+                await page.screenshot({path: path.join(out, theme + '-manage-rounds-mobile.png')});
+                await page.getByRole('button', {name: 'Back to Tournament'}).click();
+                await page.getByRole('button', {name: 'Add Additional Rounds', exact: true}).click();
+                await page.getByLabel('Number of Additional Rounds').fill('2');
+                await expect(page.getByText(/5 existing rounds.*2 additional rounds.*7 total/)).toBeVisible();
+                assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+                await page.screenshot({path: path.join(out, theme + '-add-rounds-mobile.png')});
+                await page.getByRole('button', {name: 'Cancel', exact: true}).click();
             }
             role = 'Player';
             present = false;

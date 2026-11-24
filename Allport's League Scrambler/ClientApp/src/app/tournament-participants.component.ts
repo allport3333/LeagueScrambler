@@ -103,7 +103,9 @@ export class TournamentParticipantsComponent implements OnInit {
     notice = '';
     get hasUnsavedChanges() { return !!(this.firstName.trim() || this.lastName.trim() || this.gender); }
     get checkedIn() { return this.roster.filter(player => player.present).length; }
-    get eligible() { return this.mode === 3 ? this.roster.length : this.mode ? this.checkedIn : 0; }
+    private unavailableIds: number[] = [];
+    get eligible() { return this.mode ? this.roster.filter(player =>
+        (this.mode === 3 || player.present) && !this.unavailableIds.includes(player.id)).length : 0; }
 
     ngOnInit() {
         this.pickerData = { leagueId: this.leagueId(), leagueName: this.tournamentName(),
@@ -128,9 +130,10 @@ export class TournamentParticipantsComponent implements OnInit {
     }
 
     private async reload() {
-        const result = await this.request(this.http.get<{roster: Participant[]; mode: number}>('/api/tournament-attendance/' + this.leagueId()));
+        const result = await this.request(this.http.get<{roster: Participant[]; mode: number; unavailableIds?: number[]}>('/api/tournament-attendance/' + this.leagueId()));
         this.roster = result.roster;
         this.mode = result.mode;
+        this.unavailableIds = result.unavailableIds ?? [];
     }
 
     hasPlayer(id: number) { return this.roster.some(player => player.id === id); }
