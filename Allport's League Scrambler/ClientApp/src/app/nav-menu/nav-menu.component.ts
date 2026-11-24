@@ -57,13 +57,15 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     ];
 
     get primaryDestinations(): NavItem[] {
-        const tournament = this.leagues?.some(event => event.id === this.selectedLeagueId && event.eventTypeId === 2);
+        const tournament = this.leagues?.find(event => event.id === this.selectedLeagueId && event.eventTypeId === 2);
+        const manageCurrent = tournament && (this.userRole === 'Admin' || tournament.canManageTournament);
         const items = this.destinations.filter(item =>
             (!tournament || !['/sign-in', '/team-scores', '/league-dashboard', '/scrambler'].some(route => route === item.route)) &&
             (!item.signedInOnly || (this.authenticationChecked && this.loggedIn)) &&
             (!item.roles || item.roles.includes(this.userRole)))
             .filter(item => !item.children || item.children.length)
-            .map(item => item.children?.length === 1 ? item.children[0] : item);
+            .map(item => item.children?.length === 1 ? item.children[0] :
+                item.route === '/tournament' && manageCurrent ? { ...item, route: ['/tournament', tournament.id] } : item);
         if (tournament && this.loggedIn) {
             const standings = items.findIndex(item => item.route === '/standings');
             if (standings >= 0) items[standings] = {
@@ -141,7 +143,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         const path = this.router.url.split(/[?#]/)[0];
         const route = Array.isArray(item.route) ? item.route.join('/') : item.route;
         if (path === '/schedule') return route === '/league-dashboard';
-        if (route === '/tournament' && path.startsWith('/tournament/')) return true;
+        if (item.label === 'Tournament Center' && (path === '/tournament' || path.startsWith('/tournament/'))) return true;
         if (path !== route) return false;
         return true;
     }

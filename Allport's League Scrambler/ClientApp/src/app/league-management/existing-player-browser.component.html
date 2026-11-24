@@ -1,4 +1,5 @@
-<header class="browser-header"><div><h2 mat-dialog-title>{{ data.team ? 'Add League Players' : 'Add Existing Players' }}</h2><p>{{ data.leagueName }}@if (data.team) { &middot; {{ data.team.name }} &middot; {{ data.team.division || 'No Division' }} }</p></div><button mat-stroked-button type="button" mat-dialog-close aria-label="Close player browser">Close</button></header>
+@if (!embeddedData) {
+<header class="browser-header"><div><h2 mat-dialog-title>{{ data.team ? 'Add League Players' : 'Add Existing Players' }}</h2><p>{{ data.leagueName }}@if (data.team) { &middot; {{ data.team.name }} &middot; {{ data.team.division || 'No Division' }} }</p></div><button mat-stroked-button type="button" mat-dialog-close aria-label="Close player browser">Close</button></header>}
 <div class="browser-controls">
   <div class="browser-search-row"><mat-form-field appearance="outline" class="browser-search"><mat-label>Search players</mat-label><input matInput [(ngModel)]="search" (ngModelChange)="filter()" placeholder="Search players..." autocomplete="off">@if (search) {
   <button mat-button matSuffix type="button" (click)="search='';filter()" aria-label="Clear search">Clear</button>
@@ -7,7 +8,7 @@
   <div class="gender-filters" role="group" aria-label="Filter players by gender">@for (option of ['all','men','women']; track option) {
     <button mat-stroked-button type="button" [attr.aria-pressed]="gender === option" [class.gender-selected]="gender === option" (click)="setGender(option)">{{ option === 'all' ? 'All' : option === 'men' ? 'Men' : 'Women' }}</button>
   }</div>
-  @if (!data.team) { <mat-form-field appearance="outline" class="browser-division"><mat-label>Add to Division</mat-label><mat-select [(ngModel)]="divisionId" [disabled]="loading || blocked"><mat-option [value]="0">No Division</mat-option>@for (division of divisions; track division) {
+  @if (!data.team && !embeddedData) { <mat-form-field appearance="outline" class="browser-division"><mat-label>Add to Division</mat-label><mat-select [(ngModel)]="divisionId" [disabled]="loading || blocked"><mat-option [value]="0">No Division</mat-option>@for (division of divisions; track division) {
   <mat-option [value]="division.id">{{ division.name || division.code }}</mat-option>
 }</mat-select></mat-form-field> }
 </div>

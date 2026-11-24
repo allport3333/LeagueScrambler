@@ -1,3 +1,4 @@
+import { TournamentNavigationComponent } from './tournament-navigation.component';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -20,10 +21,10 @@ interface TournamentDetails {
 @Component({
     selector: 'app-tournament-center',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, RouterLink, TournamentParticipantsComponent, TournamentCheckInComponent, TournamentRoundsComponent],
+    imports: [FormsModule, RouterLink, TournamentParticipantsComponent, TournamentCheckInComponent, TournamentRoundsComponent, TournamentNavigationComponent],
     styles: [`
         main { padding: 16px; max-width: 100rem; margin: auto; }
-        header { text-align: center; margin-bottom: 16px; }
+        header { text-align: center; margin-bottom: 16px; overflow-wrap: anywhere; }
         .workflow { display: grid; grid-template-columns: minmax(170px, 220px) minmax(0, 1fr); gap: 20px; }
         ol { list-style: none; margin: 0; padding: 0; }
         ol button { width: 100%; text-align: start; margin-bottom: 6px; }
@@ -48,8 +49,9 @@ interface TournamentDetails {
             <header>
                 <h1>{{ name || 'Tournament Center' }}</h1>
                 @if (details.eventDate) { <p>{{ details.eventDate }}</p> }
-                @if (name) { <a routerLink="/standings" [queryParams]="{leagueId}">View Standings</a> }
+                @if (name && !(step === 7 && completed)) { <a routerLink="/standings" [queryParams]="{leagueId}">View Standings</a> }
             </header>
+            <app-tournament-navigation [leagueId]="name ? leagueId : undefined" />
             @if (loading) { <p role="status">Loading tournament…</p> }
             @if (error) { <p role="alert">{{ error }}</p> }
             @if (name) {
@@ -67,10 +69,10 @@ interface TournamentDetails {
                     </nav>
                     <section>
                         <label class="mobile-step">Step {{ step }} of {{ labels.length }}
-                            <select class="form-control" aria-label="Tournament setup step" [value]="step" [disabled]="saving"
-                                (change)="goTo(+$any($event.target).value)">
+                            <select class="form-control" aria-label="Tournament setup step" [ngModel]="step" [disabled]="saving"
+                                (ngModelChange)="goTo($event)">
                                 @for (label of labels; track label; let index = $index) {
-                                    <option [value]="index + 1" [disabled]="index + 1 > reached">{{ label }}</option>
+                                    <option [ngValue]="index + 1" [disabled]="index + 1 > reached">{{ label }}</option>
                                 }
                             </select>
                         </label>
@@ -97,7 +99,7 @@ interface TournamentDetails {
                         }
                         @if (step === 3 || step === 4 || step >= 6) {
                             <app-tournament-rounds [leagueId]="leagueId" [tournamentName]="name" [wizardStep]="step"
-                                (versionChanged)="details.version = $event" (roundsSaved)="runTournament()" />
+                                (versionChanged)="details.version = $event" (roundsSaved)="runTournament()" (completionChanged)="completed = $event" />
                         }
                         <div class="actions">
                             @if (step > 1 && step < 7) { <button type="button" [disabled]="saving" (click)="goTo(step - 1)">Back</button> }
@@ -131,6 +133,7 @@ export class TournamentCenterComponent {
     loading = true;
     saving = false;
     hasRounds = false;
+    completed = false;
     reached = 1;
     step = 1;
     error = '';

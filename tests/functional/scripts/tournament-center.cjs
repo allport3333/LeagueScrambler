@@ -20,16 +20,16 @@ const settings = {
 const details = { eventDate: '2026-12-12', description: '', location: 'Gym', version: 'fixture', workflowStep: 6 };
 const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
     roundNumber, status: roundNumber === 1 ? 'partial' : 'unplayed', gamesPerMatchup: 1,
-    teams: [0, 1, 2, 3, 4, 5].map((index) => ({
+    teams: Array.from({length: roundNumber === 1 ? 12 : 6}, (_, index) => ({
         id: 100 * roundNumber + index,
-        players: roster.slice(index * 3, index * 3 + (index === 5 ? 5 : 3)), scores: []
+        players: Array.from({length: 4}, (_, player) => roster[(index * 4 + player) % roster.length]), scores: []
     })),
     byes: []
 }));
 
 (async () => {
     fs.mkdirSync(out, { recursive: true });
-    const browser = await chromium.launch({ channel: 'msedge' });
+    const browser = await chromium.launch({ channel: 'chrome' });
     try {
         for (const theme of ['classic', 'navy', 'charcoal']) {
             const context = await browser.newContext({
@@ -105,7 +105,8 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             await expect(page.getByRole('button', { name: /WW Winter 2026/ })).toBeVisible();
             await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
             await expect(page.getByRole('link', { name: 'WW Winter 2026' })).toHaveCount(0);
-            await expect(page.getByRole('button', { name: 'Create Tournament' })).toBeDisabled();
+            if (theme !== 'classic') await page.getByText('Tournament menu', { exact: true }).click();
+            await expect(page.getByRole('link', { name: 'Create Tournament', exact: true })).toBeVisible();
             await page.locator('app-tournament-landing').screenshot({ path: path.join(out, theme + '-landing.png') });
             await page.getByRole('link', { name, exact: true }).click();
             await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
@@ -128,7 +129,12 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                 await page.getByRole('button', { name: 'Print Round 1', exact: true }).click();
                 const popup = await popupPending;
                 await expect(popup.getByRole('heading', { name, exact: true })).toBeVisible();
-                await expect(popup.getByText('Player 1', { exact: true })).toBeVisible();
+                await expect(popup.locator('.print-team').first().getByRole('row').nth(1).getByRole('cell', { name: 'Player 1', exact: true })).toBeVisible();
+                await expect(popup.locator('.printed-matchup')).toHaveCount(6);
+                const pdf = await popup.pdf({path: path.join(out, 'six-matchups-letter.pdf'), format: 'Letter', printBackground: true});
+                assert.equal((pdf.toString('latin1').match(/\/Type\s*\/Page\b/g) || []).length, 1);
+                await popup.emulateMedia({media: 'print'});
+                await popup.screenshot({path: path.join(out, 'six-matchups-print.png'), fullPage: true});
                 await popup.close();
             }
             await page.getByRole('button', { name: 'Continue: Enter Round 1 Scores' }).click();
@@ -151,10 +157,10 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             assert.equal(rounds.length, 5);
 
             await page.setViewportSize({ width: 390, height: 844 });
-            await page.getByLabel('Tournament setup step', { exact: true }).selectOption('3');
+            await page.getByLabel('Tournament setup step', { exact: true }).selectOption({ label: 'Team & Round Setup' });
             await expect(page.getByRole('heading', {name: 'Team & Round Setup'})).toBeVisible();
             await page.locator('app-tournament-center').screenshot({path: path.join(out, theme + '-wizard-mobile.png')});
-            await page.getByLabel('Tournament setup step', { exact: true }).selectOption('7');
+            await page.getByLabel('Tournament setup step', { exact: true }).selectOption({ label: 'Run Tournament' });
             await page.getByText(/Round 1.*Unplayed/).click();
             await page.locator('app-tournament-rounds').screenshot({ path: path.join(out, theme + '-rounds-mobile.png') });
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));

@@ -1,0 +1,117 @@
+
+  <div style="text-align: center; margin-bottom: 20px;">
+    @if (title) { <h2>{{ title }}</h2><h3>Round {{ roundNumber }}</h3> }
+    @else { <h2>Matchups & Scores</h2> }
+  </div>
+
+  <!-- Matchups Section -->
+  @for (team of listOfTeams; track team; let i = $index) {
+    <div>
+      <!-- Only show matchups for even-indexed teams -->
+      @if (i % 2 === 0 && listOfTeams[i + 1]) {
+        <div style="display: table; width: 100%; page-break-inside: avoid;">
+          <div style="display: table-cell; width: 48%; vertical-align: top;" class="print-team">
+            @if (getMatchCourt(team)) {
+              <p style="text-align:center;">Court {{ getMatchCourt(team) }}</p>
+              }<h4 style="text-align: center;">{{ "Team " + (i + 1) }}</h4>
+              <table class="table table-bordered" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (player of team.players; track player) {
+                    <tr>
+                      <td style="font-size: 16px; padding: 5px;">{{ player.firstName }}</td>
+                      <td style="font-size: 16px; padding: 5px;">{{ player.lastName }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div style="display: table-cell; width: 48%; vertical-align: top; padding-left: 20px;" class="print-team">
+              <h4 style="text-align: center;">{{ "Team " + (i + 2) }}</h4>
+              <table class="table table-bordered" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="font-size: 16px; padding: 5px;">First Name</th>
+                    <th style="font-size: 16px; padding: 5px;">Last Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (player of listOfTeams[i + 1]?.players; track player) {
+                    <tr>
+                      <td>{{ player.firstName }}</td>
+                      <td>{{ player.lastName }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+        <!-- Scores Table Below the Two Matchups -->
+        @if (i % 2 === 0 && listOfTeams[i + 1]) {
+          <div style="text-align: center; margin-bottom: 40px; margin-top: 20px; page-break-inside: avoid; ">
+            <h4>Scores</h4>
+            <table class="table table-bordered" style="width: 80%; margin: 0 auto;">
+              <thead>
+                <tr>
+                  <th>Team</th>
+                  @for (round of [].constructor(selectedRounds); track round; let index = $index) {
+                    <th>Game {{ index + 1 }}</th>
+                  }
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{ title ? "Team " + (i + 1) : "Team A" }}</td>
+                  @for (round of [].constructor(selectedRounds); track $index) {
+                    <td style="height: 15px; padding: 3px;">{{ scoreAt(i, $index + 1) ?? "&nbsp;" }}</td>
+                  }
+                  <td style="height: 15px; padding: 3px;">{{ total(i) ?? "&nbsp;" }}</td>
+                </tr>
+                <tr>
+                  <td>{{ title ? "Team " + (i + 2) : "Team B" }}</td>
+                  @for (round of [].constructor(selectedRounds); track $index) {
+                    <td style="height: 15px; padding: 3px;">{{ scoreAt(i + 1, $index + 1) ?? "&nbsp;" }}</td>
+                  }
+                  <td style="height: 15px; padding: 3px;">{{ total(i + 1) ?? "&nbsp;" }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        }
+        <!-- Force a page break after every two matchups -->
+        @if ((i + 2) % 4 === 0 && (!title || i < listOfTeams.length - 1)) {
+          <div style="page-break-after: always;"></div>
+        }
+      </div>
+    }
+
+    @if (!title || byePlayers.length) {
+    <!-- Bye Players Section -->
+    <div style="margin-top: 30px; page-break-inside: avoid;">
+      <h3 style="text-align: center;">Bye Players</h3>
+      <table class="table table-bordered" style="width: 50%; margin: 0 auto;">
+        <thead>
+          <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (player of byePlayers; track player) {
+            <tr>
+              <td>{{ player.firstName }}</td>
+              <td>{{ player.lastName }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    }

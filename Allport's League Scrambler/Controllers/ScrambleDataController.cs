@@ -1626,13 +1626,17 @@ namespace Allport_s_League_Scrambler.Controllers
 
             var isTournament = await context.Leagues.AnyAsync(league => league.ID == leagueId && league.EventTypeId == 2);
             var kingQueenTeams = await context.KingQueenTeam
-                .Where(team => team.LeagueID == leagueId && team.ScrambleWithScoresToBeSaved == true &&
-                    (!isTournament || team.KingQueenRoundScores.Any()))
+                .Where(team => team.LeagueID == leagueId && team.ScrambleWithScoresToBeSaved == true)
                 .Include(team => team.KingQueenRoundScores)
                 .Include(team => team.KingQueenPlayers)
                     .ThenInclude(player => player.Player)
                 .ToListAsync();
 
+            var guidedRounds = isTournament
+                ? await context.TournamentRounds.AsNoTracking().Where(round => round.LeagueId == leagueId).ToListAsync()
+                : new List<TournamentRound>();
+            var wins = guidedRounds.Count == 0 ? null : Services.TournamentMatchupResults.WinsByPlayer(guidedRounds, kingQueenTeams);
+            if (isTournament) kingQueenTeams = kingQueenTeams.Where(team => team.KingQueenRoundScores.Count != 0).ToList();
             if (!kingQueenTeams.Any())
             {
                 if (isTournament) return Ok(new { playerScores = Array.Empty<object>(), maxRounds = 0 });
@@ -1771,7 +1775,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             var maxRounds = validRounds.Count;
 
-            return Ok(new { playerScores, maxRounds });
+            return Ok(new { playerScores, maxRounds, matchupWins = wins });
         }
 
 
@@ -1793,13 +1797,17 @@ namespace Allport_s_League_Scrambler.Controllers
 
             var isTournament = await context.Leagues.AnyAsync(league => league.ID == leagueId && league.EventTypeId == 2);
             var kingQueenTeams = await context.KingQueenTeam
-                .Where(team => team.LeagueID == leagueId && team.ScrambleWithScoresToBeSaved == true &&
-                    (!isTournament || team.KingQueenRoundScores.Any()))
+                .Where(team => team.LeagueID == leagueId && team.ScrambleWithScoresToBeSaved == true)
                 .Include(team => team.KingQueenRoundScores)
                 .Include(team => team.KingQueenPlayers)
                     .ThenInclude(player => player.Player)
                 .ToListAsync();
 
+            var guidedRounds = isTournament
+                ? await context.TournamentRounds.AsNoTracking().Where(round => round.LeagueId == leagueId).ToListAsync()
+                : new List<TournamentRound>();
+            var wins = guidedRounds.Count == 0 ? null : Services.TournamentMatchupResults.WinsByPlayer(guidedRounds, kingQueenTeams);
+            if (isTournament) kingQueenTeams = kingQueenTeams.Where(team => team.KingQueenRoundScores.Count != 0).ToList();
             if (!kingQueenTeams.Any())
             {
                 if (isTournament) return Ok(new { playerScores = Array.Empty<object>(), maxRounds = 0 });
@@ -1998,7 +2006,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             var maxRounds = allScrambleNumbers.Count;
 
-            return Ok(new { playerScores, maxRounds });
+            return Ok(new { playerScores, maxRounds, matchupWins = wins });
         }
 
 

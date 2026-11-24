@@ -1,4 +1,11 @@
-import { Component, ElementRef, Inject, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { PageLoadingComponent } from '../page-loading.component';
+import { Component, ElementRef, Inject, Input, Optional, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { timeout } from 'rxjs/operators';
@@ -11,9 +18,10 @@ import { LeagueService } from '../services/league.service';
     templateUrl: './existing-player-browser.component.html',
     styleUrls: ['./existing-player-browser.component.css'],
     changeDetection: ChangeDetectionStrategy.Eager,
-    standalone: false
+    imports: [FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, PageLoadingComponent]
 })
 export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
+    @Input() embeddedData?: {leagueId: number; leagueName: string; onAdded: (result: any) => void};
     players: any[] = [];
     filteredPlayers: any[] = [];
     divisions: any[] = [];
@@ -30,13 +38,14 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
     private closed = false;
     private noticeTimer: any;
     private focusAfterAdd = new Map<number, number>();
-    constructor(@Inject(MAT_DIALOG_DATA) public data: any,
-        public dialogRef: MatDialogRef<ExistingPlayerBrowserComponent>,
+    constructor(@Optional() @Inject(MAT_DIALOG_DATA) public data: any,
+        @Optional() public dialogRef: MatDialogRef<ExistingPlayerBrowserComponent>,
         private service: PlayerService, private statistics: StatisticsService, private leagueService: LeagueService, private element: ElementRef) {}
 
     ngOnInit(): void {
+        this.data = this.embeddedData ?? this.data;
         this.divisionId = this.data.divisionId || 0;
-        this.contextReader = this.leagueService.selectedLeague$.subscribe(context => {
+        if (!this.embeddedData) this.contextReader = this.leagueService.selectedLeague$.subscribe(context => {
             if (context.leagueId !== this.data.leagueId) this.dialogRef.close();
         });
         if (this.data.team) {

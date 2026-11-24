@@ -628,7 +628,16 @@ namespace Allport_s_League_Scrambler.Controllers
                     return NotFound(new { message = "No linked leagues found for this user." });
             }
 
-            var userLeagues = await leagues.OrderByDescending(league => league.ID).ToListAsync();
+            var userLeagues = await leagues.OrderByDescending(league => league.ID).Select(league => new
+            {
+                league.ID, league.LeagueName, league.EventTypeId,
+                CanViewTournamentRounds = league.EventTypeId == 2 &&
+                    _context.UsersPlayer.Any(link => link.UserId == userId && _context.PlayersLeagues.Any(member =>
+                        member.LeagueID == league.ID && member.PlayerID == link.PlayerId)),
+                CanManageTournament = league.EventTypeId == 2 && (userData.UserRoleId == 1 ||
+                    (userData.UserRoleId == 2 && _context.TournamentConfigurations.Any(config =>
+                        config.LeagueId == league.ID && config.OwnerUserId == userId)))
+            }).ToListAsync();
             return Ok(userLeagues);
         }
 

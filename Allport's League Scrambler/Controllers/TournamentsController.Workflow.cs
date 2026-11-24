@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Allport_s_League_Scrambler.Data;
@@ -25,7 +26,29 @@ namespace Allport_s_League_Scrambler.Controllers
             var events = await db.Leagues.Where(row => row.EventTypeId == 2 &&
                 (isAdmin || db.TournamentConfigurations.Any(config => config.LeagueId == row.ID && config.OwnerUserId == account)))
                 .OrderBy(row => row.LeagueName).ToListAsync();
-            return Ok(events);
+            var ids = events.Select(row => row.ID).ToArray();
+            var settings = await db.TournamentConfigurations.AsNoTracking().Where(row => ids.Contains(row.LeagueId))
+                .ToDictionaryAsync(row => row.LeagueId);
+            var rosterSizes = await db.PlayersLeagues.Where(row => ids.Contains(row.LeagueID))
+                .GroupBy(row => row.LeagueID).Select(group => new { id = group.Key, count = group.Select(row => row.PlayerID).Distinct().Count() })
+                .ToDictionaryAsync(row => row.id, row => row.count);
+            var rounds = (await db.TournamentRounds.AsNoTracking().Where(row => ids.Contains(row.LeagueId)).ToListAsync())
+                .ToLookup(row => row.LeagueId);
+            var teams = (await db.KingQueenTeam.AsNoTracking().Where(team => ids.Contains(team.LeagueID) &&
+                db.TournamentRounds.Any(round => round.LeagueId == team.LeagueID && round.ScrambleNumber == team.ScrambleNumber))
+                .Include(team => team.KingQueenRoundScores).ToListAsync()).ToLookup(team => (team.LeagueID, team.ScrambleNumber));
+            return Ok(events.Select(row =>
+            {
+                var config = settings.GetValueOrDefault(row.ID);
+                var total = config?.RoundSettingsJson != null ? DecodeSettings(config).NumberOfRounds : 0;
+                var generated = rounds[row.ID].Count();
+                var completed = rounds[row.ID].Count(round => Services.TournamentMatchupResults.IsComplete(
+                    teams[(row.ID, round.ScrambleNumber)], round.GamesPerMatchup));
+                var status = total > 0 && completed == total ? "Completed" :
+                    generated > 0 ? "In Progress" : config?.WorkflowStep == 6 ? "Ready" : "Setup In Progress";
+                return new { row.ID, row.LeagueName, row.EventTypeId, eventDate = config?.EventDate,
+                    participants = rosterSizes.GetValueOrDefault(row.ID), total, generated, completed, status };
+            }));
         }
 
         [Authorize(Policy = "LeagueManagement")]

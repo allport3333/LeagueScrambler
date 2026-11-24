@@ -1,3 +1,12 @@
+import { CommonModule } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTabsModule } from '@angular/material/tabs';
+import { RouterLink } from '@angular/router';
+import { PageLoadingComponent } from '../page-loading.component';
 import { onLeagueResume } from '../pwa/pending-work.service';
 /* league-standings.component.ts */
 
@@ -16,9 +25,10 @@ import { transformKingQueenStandings } from './king-queen-standings';
     templateUrl: './league-standings.component.html',
     styleUrls: ['./league-standings.component.css'],
     changeDetection: ChangeDetectionStrategy.Eager,
-    standalone: false
+    imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, MatFormFieldModule, MatIconModule, MatSelectModule, MatTabsModule, PageLoadingComponent]
 })
 export class LeagueStandingsComponent implements OnInit {
+    @Input() fixedLeagueId?: number;
     @Input() leagueName: string | null = null;
 
     maleStandings: PlayerScoreGroup[] | null = [];
@@ -28,6 +38,27 @@ export class LeagueStandingsComponent implements OnInit {
     retrievedStandingsType: string;
 
     sortColumn: string = '';
+    readonly mobileStatistics = [
+        { key: 'totalScore', label: 'King Queen Score' },
+        { key: 'totalScoreBeforeReduction', label: 'Total Points' },
+        { key: 'totalWins', label: 'Total Wins' }
+    ] as const;
+
+    get mobileColumns() {
+        const selected = this.mobileStatistics.find(column => column.key === this.sortColumn) ?? this.mobileStatistics[0];
+        return [selected, ...this.mobileStatistics.filter(column => column.key !== selected.key)];
+    }
+
+    get returnTournament() {
+        if (this.fixedLeagueId) return null;
+        const event = this.leagueService.leaguesAvailable.find(item => item.id === this.selectedLeagueId && item.eventTypeId === 2);
+        if (!event) return null;
+        const manager = event.canManageTournament || this.userRole === 'Admin';
+        if (!manager && !event.canViewTournamentRounds && this.userRole !== 'Player') return null;
+        const name = /\btournament\b/i.test(event.leagueName) ? event.leagueName : event.leagueName + ' Tournament';
+        return { label: 'Back to ' + name + (manager ? '' : ' Matchups'),
+            route: manager ? ['/tournament', event.id] : ['/tournament', event.id, 'rounds'] };
+    }
     sortDirection: 'asc' | 'desc' = 'asc';
 
     standingsType: 'round' | 'matchup' = 'round';
@@ -108,7 +139,7 @@ export class LeagueStandingsComponent implements OnInit {
     ) { onLeagueResume(() => { if (this.lastResult && !this.playerLoading) this.initializeStandings(); }); }
 
     ngOnInit(): void {
-        const requestedLeague = Number(this.route.snapshot.queryParamMap.get('leagueId'));
+        const requestedLeague = this.fixedLeagueId ?? Number(this.route.snapshot.queryParamMap.get('leagueId'));
         this.mobileFullTable = this.route.snapshot.queryParamMap.get('mobileFullTable') === '1';
         this.returnGenderIndex = this.route.snapshot.queryParamMap.get('gender') === 'women' ? 1 : 0;
         if (Number.isInteger(requestedLeague) && requestedLeague > 0) {
@@ -124,7 +155,7 @@ export class LeagueStandingsComponent implements OnInit {
         );
 
         this.navigationSubscriptions.add(this.leagueService.selectedLeague$.subscribe((selectedLeague) => {
-            if (!this.navigationLeagueResolved && requestedLeague > 0 && selectedLeague.leagueId !== requestedLeague) { return; }
+            if ((this.fixedLeagueId || !this.navigationLeagueResolved) && requestedLeague > 0 && selectedLeague.leagueId !== requestedLeague) { return; }
             if (selectedLeague.leagueId) { this.navigationLeagueResolved = true; }
             this.settingsRequest?.unsubscribe();
             this.standingsRequest?.unsubscribe();
@@ -307,7 +338,7 @@ export class LeagueStandingsComponent implements OnInit {
             }
         }
 
-        const transformStandings = (input: PlayerScoreGroup[]) => transformKingQueenStandings(input, options, this.standingsType);
+        const transformStandings = (input: PlayerScoreGroup[]) => transformKingQueenStandings(input, options, this.standingsType, result.matchupWins);
 
         this.maleStandings = transformStandings(male);
         this.femaleStandings = transformStandings(female);

@@ -1,7 +1,7 @@
 import {PlayerScoreGroup} from '../data-models/playerScoresResponse';
 export interface KingQueenStandingsOptions {dropLowestNumber:number;numberOfSubsAllowed:number;subScorePercent:number;}
 // Shared with Home. This is the existing standings transformation, including its tie breakers.
-export function transformKingQueenStandings(input:PlayerScoreGroup[],options:KingQueenStandingsOptions,standingsType:'round'|'matchup'):PlayerScoreGroup[] {
+export function transformKingQueenStandings(input:PlayerScoreGroup[],options:KingQueenStandingsOptions,standingsType:'round'|'matchup', matchupWins?: Record<number, number>):PlayerScoreGroup[] {
             const output: PlayerScoreGroup[] = [];
 
             for (let i = 0; i < input.length; i++) {
@@ -95,7 +95,7 @@ export function transformKingQueenStandings(input:PlayerScoreGroup[],options:Kin
                     ...player,
                     scores: updatedScores,
                     totalScore: totalScore,
-                    totalWins: totalWins,
+                    totalWins: matchupWins ? (matchupWins[player.playerId] ?? 0) : totalWins,
                     totalScoreBeforeReduction: totalScoreBeforeReduction
                 };
 

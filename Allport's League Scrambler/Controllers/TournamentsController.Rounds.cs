@@ -51,7 +51,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     return new
                     {
                         round.RoundNumber, round.ScrambleNumber, round.GamesPerMatchup,
-                        status = scored == 0 ? "unplayed" : scored == roundTeams.Length * round.GamesPerMatchup ? "completed" : "partial",
+                        status = scored == 0 ? "unplayed" : Services.TournamentMatchupResults.IsComplete(roundTeams, round.GamesPerMatchup) ? "completed" : "partial",
                         teams = roundTeams.Select(team => new
                         {
                             team.Id,

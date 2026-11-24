@@ -3356,6 +3356,8 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.selectedMatchupsPerPage = event.value;
     }
 
+    readonly printCourt = (team: any) => this.getMatchCourt(team);
+
     printMatchups(): void {
         if (!this.canPrintMatchups) { this.showSnackBar('Save or cancel team changes before printing matchups.'); return; }
         let printContent = '';

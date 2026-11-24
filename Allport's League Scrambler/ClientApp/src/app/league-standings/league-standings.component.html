@@ -1,4 +1,8 @@
-<!-- league-standings.component.html -->
+@if (returnTournament; as tournament) {
+    <div class="tournament-return">
+        <a mat-stroked-button [routerLink]="tournament.route">{{ tournament.label }}</a>
+    </div>
+}
 
 @if (playerLoading) {
   <app-page-loading label="Loading player standings"></app-page-loading>
@@ -116,7 +120,7 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngIf="standingsType == 'round'" style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                        <th *ngIf="standingsType == 'round' || lastResult?.matchupWins" style="min-width: 80px; padding: 4px; cursor: pointer;"
                                             (click)="sortStandings('totalWins')">
                                             Total Wins
                                             <mat-icon *ngIf="sortColumn === 'totalWins'">
@@ -139,7 +143,7 @@
                                         <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
                                         <td [ngStyle]="{ 'background-color': 'var(--hub-win-surface, lightgreen)'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
-                                        <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
+                                        <td *ngIf="standingsType == 'round' || lastResult?.matchupWins" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
                                             [style.color]="score.isDropped ? 'var(--hub-loss-text, red)' : hasSubAdjustment(score) ? 'var(--hub-loss-text, #9b4d55)' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
@@ -182,7 +186,7 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngIf="standingsType == 'round'" style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                        <th *ngIf="standingsType == 'round' || lastResult?.matchupWins" style="min-width: 80px; padding: 4px; cursor: pointer;"
                                             (click)="sortStandings('totalWins')">
                                             Total Wins
                                             <mat-icon *ngIf="sortColumn === 'totalWins'">
@@ -205,7 +209,7 @@
                                         <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
                                         <td [ngStyle]="{ 'background-color': 'var(--hub-win-surface, lightgreen)'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
-                                        <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
+                                        <td *ngIf="standingsType == 'round' || lastResult?.matchupWins" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
                                             [style.color]="score.isDropped ? 'var(--hub-loss-text, red)' : hasSubAdjustment(score) ? 'var(--hub-loss-text, #9b4d55)' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
@@ -256,7 +260,7 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngIf="standingsType == 'round'" style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                        <th *ngIf="standingsType == 'round' || lastResult?.matchupWins" style="min-width: 80px; padding: 4px; cursor: pointer;"
                                             (click)="sortStandings('totalWins')">
                                             Total Wins
                                             <mat-icon *ngIf="sortColumn === 'totalWins'">
@@ -279,7 +283,7 @@
                                         <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
                                         <td [ngStyle]="{ 'background-color': 'var(--hub-win-surface, lightgreen)'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
-                                        <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
+                                        <td *ngIf="standingsType == 'round' || lastResult?.matchupWins" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
                                             [style.color]="score.isDropped ? 'var(--hub-loss-text, red)' : hasSubAdjustment(score) ? 'var(--hub-loss-text, #9b4d55)' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
@@ -323,7 +327,7 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngIf="standingsType == 'round'" style="min-width: 80px; padding: 4px; cursor: pointer;"
+                                        <th *ngIf="standingsType == 'round' || lastResult?.matchupWins" style="min-width: 80px; padding: 4px; cursor: pointer;"
                                             (click)="sortStandings('totalWins')">
                                             Total Wins
                                             <mat-icon *ngIf="sortColumn === 'totalWins'">
@@ -346,7 +350,7 @@
                                         <td style="padding: 2px;"><a class="standings-player-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)">{{ player.playerName }}</a></td>
                                         <td [ngStyle]="{ 'background-color': 'var(--hub-win-surface, lightgreen)'}" style="padding: 2px;">{{ player.totalScore }}</td>
                                         <td style="padding: 2px;">{{ player.totalScoreBeforeReduction }}</td>
-                                        <td *ngIf="standingsType == 'round'" style="padding: 2px;">{{ player.totalWins }}</td>
+                                        <td *ngIf="standingsType == 'round' || lastResult?.matchupWins" style="padding: 2px;">{{ player.totalWins }}</td>
                                         <td *ngFor="let score of player.scores"
                                             [style.color]="score.isDropped ? 'var(--hub-loss-text, red)' : hasSubAdjustment(score) ? 'var(--hub-loss-text, #9b4d55)' : 'inherit'"
                                             [style.fontWeight]="score.isDropped ? 'bold' : 'normal'"
@@ -378,9 +382,9 @@
                 <mat-label>Sort standings</mat-label>
                 <mat-select [value]="sortColumn || 'totalScore'" (selectionChange)="sortMobileStandings($event.value)">
                     <mat-option value="playerName">Player Name</mat-option>
-                    <mat-option value="totalScore">King Queen Score</mat-option>
-                    <mat-option value="totalScoreBeforeReduction">Total Points</mat-option>
-                    <mat-option value="totalWins">Total Wins</mat-option>
+                    @for (column of mobileStatistics; track column.key) {
+                        <mat-option [value]="column.key">{{ column.label }}</mat-option>
+                    }
                 </mat-select>
             </mat-form-field>
             <button mat-stroked-button type="button" class="mobile-sort-direction"
@@ -396,7 +400,12 @@
         <p *ngIf="mobileFullTable" class="mobile-standings-hint">Scroll sideways. Player names stay visible.</p>
         <table class="mobile-rankings" *ngIf="!mobileFullTable" aria-label="Compact player standings">
             <thead>
-                <tr><th scope="col">Place</th><th scope="col">Player Name</th><th scope="col">King Queen Score</th><th scope="col">Total Points</th></tr>
+                <tr><th scope="col">Place</th><th scope="col" [attr.aria-sort]="sortColumn === 'playerName' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : null">Player Name</th>
+                    @for (column of mobileColumns; track column.key; let index = $index) {
+                        <th scope="col" [class.mobile-primary-stat]="index === 0" [class.mobile-secondary-stat]="index > 0"
+                            [attr.aria-sort]="column.key === sortColumn ? (sortDirection === 'asc' ? 'ascending' : 'descending') : null">{{ column.label }}</th>
+                    }
+                </tr>
             </thead>
             <tbody>
                 <ng-container *ngFor="let player of players; let index = index">
@@ -410,12 +419,13 @@
                                 {{ player.playerName }} <span aria-hidden="true">{{ mobileExpandedPlayers[mobilePlayerKey(group, player.playerId)] ? '▴' : '▾' }}</span>
                             </button>
                         </th>
-                        <td class="mobile-kq-score">{{ player.totalScore }}</td>
-                        <td>{{ player.totalScoreBeforeReduction }}</td>
+                        @for (column of mobileColumns; track column.key; let index = $index) {
+                            <td [class.mobile-primary-stat]="index === 0" [class.mobile-secondary-stat]="index > 0">{{ player[column.key] ?? 0 }}</td>
+                        }
                     </tr>
                     <tr class="mobile-player-details" [hidden]="!mobileExpandedPlayers[mobilePlayerKey(group, player.playerId)]"
                         [id]="'details-' + mobilePlayerKey(group, player.playerId)">
-                        <td colspan="4">
+                        <td colspan="5">
                             <div class="mobile-player-summary mobile-player-context">
                                 <span *ngIf="player.leagueDivisionId > 0 && player.leagueDivisionCode && player.leagueDivisionCode.trim() && player.leagueDivisionCode !== 'Unassigned'"><strong>Division:</strong> {{ player.leagueDivisionCode }}</span>
                                 <a class="mobile-view-profile" [routerLink]="['/player-stats-tabs',player.playerId]" [queryParams]="profileQuery(player)" (click)="$event.stopPropagation()"><mat-icon aria-hidden="true">person</mat-icon><span>View Profile</span></a>
@@ -437,7 +447,7 @@
                         </td>
                     </tr>
                 </ng-container>
-                <tr *ngIf="!players || !players.length"><td colspan="4" class="mobile-standings-empty">No standings available.</td></tr>
+                <tr *ngIf="!players || !players.length"><td colspan="5" class="mobile-standings-empty">No standings available.</td></tr>
             </tbody>
         </table>
     </div>

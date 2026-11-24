@@ -1,5 +1,6 @@
+import { LeagueStandingsComponent } from './league-standings/league-standings.component';
+import { MatchupPrintSheetComponent, MatchupPrintSixComponent } from './matchup-print-sheet.component';
 import { renderMatchupPrint } from './matchup-print';
-import { RouterLink } from '@angular/router';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject, input, OnInit, output } from '@angular/core';
@@ -28,7 +29,7 @@ interface ScoreEdit {
 @Component({
     selector: 'app-tournament-rounds',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, NgTemplateOutlet, RouterLink],
+    imports: [FormsModule, NgTemplateOutlet, MatchupPrintSheetComponent, MatchupPrintSixComponent, LeagueStandingsComponent],
     templateUrl: './tournament-rounds.component.html',
     styleUrl: './tournament-rounds.component.css'
 })
@@ -38,6 +39,8 @@ export class TournamentRoundsComponent implements OnInit {
     readonly readOnly = input(false);
     readonly wizardStep = input(0);
     readonly roundsSaved = output<void>();
+    readonly completionChanged = output<boolean>();
+    matchupPrintLayout: 2 | 6 = 6;
     publicName = '';
     readonly versionChanged = output<string>();
     teamBySize = true;
@@ -69,6 +72,27 @@ export class TournamentRoundsComponent implements OnInit {
     byeRound = 1;
     scoreRound?: SavedRound;
     scoreEdits: ScoreEdit[] = [];
+    scoreFeedback?: { title: string; message: string };
+    private progression?: ReturnType<typeof setTimeout>;
+    private get activeRoundKey() { return 'league-hub-tournament-score-round-' + this.leagueId(); }
+    get tournamentComplete() {
+        return !!this.state?.settings.numberOfRounds && this.completed === this.state.settings.numberOfRounds;
+    }
+
+    constructor() { this.destroy.onDestroy(() => this.clearScoreFeedback()); }
+
+    clearScoreFeedback() {
+        clearTimeout(this.progression);
+        this.progression = undefined;
+        this.scoreFeedback = undefined;
+    }
+
+    openRememberedScores() {
+        let number: number;
+        try { number = Number(sessionStorage.getItem(this.activeRoundKey)); } catch {}
+        const round = this.rounds.find(item => item.roundNumber === number) ?? this.nextRound ?? this.rounds[0];
+        if (round) this.openScores(round);
+    }
     printSelection = new Set<number>();
     printRounds: SavedRound[] = [];
 
@@ -105,7 +129,7 @@ export class TournamentRoundsComponent implements OnInit {
                 this.rounds = result.rounds;
             } else {
                 await this.reload();
-                if (this.rounds.length) this.step = 'rounds';
+                if (this.rounds.length) this.step = this.tournamentComplete ? 'complete' : 'rounds';
             }
         });
     }
@@ -124,6 +148,7 @@ export class TournamentRoundsComponent implements OnInit {
         this.teamBySize = state.settings.maximumTeamSize !== null;
         this.rounds = result.rounds;
         this.settingsSaved = result.settingsSaved;
+        this.completionChanged.emit(this.tournamentComplete);
         this.dirty = false;
     }
 
@@ -228,7 +253,9 @@ export class TournamentRoundsComponent implements OnInit {
     }
 
     openScores(round: SavedRound): void {
+        this.clearScoreFeedback();
         this.step = 'scores';
+        try { sessionStorage.setItem(this.activeRoundKey, String(round.roundNumber)); } catch {}
         this.scoreRound = round;
         this.scoreEdits = [];
         for (let index = 0; index < round.teams.length; index += 2) {
@@ -255,8 +282,25 @@ export class TournamentRoundsComponent implements OnInit {
                 { version: this.state!.version, scores: started }));
             await this.reload();
             this.versionChanged.emit(this.state!.version);
-            this.openScores(this.rounds.find(round => round.roundNumber === number)!);
-            this.notice = 'Round scores saved.';
+            const saved = this.rounds.find(round => round.roundNumber === number)!;
+            this.openScores(saved);
+            if (saved.status !== 'completed') {
+                this.scoreFeedback = { title: 'Round scores saved.', message: 'You can enter the remaining scores when they are ready.' };
+                return;
+            }
+            const next = this.nextRound;
+            this.scoreFeedback = this.tournamentComplete
+                ? { title: 'Tournament Complete!', message: 'All rounds are scored. Opening the final standings.' }
+                : { title: 'Round ' + number + ' Complete!', message: next
+                    ? 'All scores saved. Continuing to Round ' + next.roundNumber + ' of ' + this.state!.settings.numberOfRounds + '.'
+                    : 'All saved rounds are scored. Open tournament setup to generate the remaining rounds.' };
+            if (this.tournamentComplete || next) {
+                this.progression = setTimeout(() => {
+                    if (this.view !== 'scores' || this.scoreRound?.roundNumber !== number) return;
+                    if (next) this.openScores(next);
+                    else { this.clearScoreFeedback(); this.step = 'complete'; }
+                }, 2200);
+            }
         });
     }
 
@@ -269,9 +313,14 @@ export class TournamentRoundsComponent implements OnInit {
             const printContent = this.host.nativeElement.querySelector('.tournament-print');
             if (!printContent || popup.closed) return;
             renderMatchupPrint(popup, 'Print Tournament Matchups', printContent.innerHTML,
-                '.player-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}' +
-                '.team{border:1px solid #333;padding:8px;break-inside:avoid}' +
-                'body>article+article{break-before:page}');
+                'body>article+article{break-before:page}' +
+                '@media print{body{padding:0;margin:0}' +
+                '.six-matchup-sheet .printed-matchup{break-inside:avoid;margin-bottom:0!important}' +
+                '.six-matchup-sheet h2,.six-matchup-sheet h3{margin:0 0 4px}' +
+                '.six-matchup-sheet .print-team table td{padding:2px 4px!important;line-height:1.2}' +
+                '.six-matchup-sheet .print-team table th{padding:2px 4px!important}' +
+                '.six-matchup-sheet .printed-matchup table th,.six-matchup-sheet .printed-matchup table td{padding-block:2px!important}' +
+                '.six-matchup-sheet h5{margin:3px 0}}');
             popup.focus();
             popup.print();
         }, 0);

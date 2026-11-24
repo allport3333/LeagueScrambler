@@ -22,3 +22,10 @@ button:disabled { opacity: .6; }
 .tournament-print { display: none; }
 .priority-player { background: var(--hub-female, #f6deeb); color: var(--hub-female-foreground, #633551); }
 .priority-player.male { background: var(--hub-male, #dcecf8); color: var(--hub-male-foreground, #244058); }
+.score-feedback { padding: 1rem; margin-block: .75rem; border-radius: .45rem; border: 1px solid var(--hub-border, #54806a); color: var(--hub-win-text, #20543e); background: var(--hub-win-surface, #e6f5ec); }
+
+.roster-summary { max-width: 36rem; margin-inline: auto; }
+.roster-summary p { margin: .4rem .5rem; }
+.completion-banner { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; padding: .75rem; border: 1px solid var(--hub-border, #b8c2ce); border-radius: .4rem; }
+.matchup-print-layout { display: grid; gap: .25rem; max-width: 17rem; margin: .5rem; }
+.form-grid label { align-content: start; }

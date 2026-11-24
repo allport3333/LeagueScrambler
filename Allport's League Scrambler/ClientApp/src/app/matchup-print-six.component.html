@@ -1,0 +1,148 @@
+<div class="six-matchup-sheet" style="font-size: 8px; padding: 5px;">
+  @for (team of listOfTeams; track team; let i = $index) {
+    <!-- Ensure a new page starts after every 6 matchups -->
+    @if (i % 12 === 0) {
+      <div [style.page-break-before]="!title || i > 0 ? 'always' : null">
+        <!-- Header for each page -->
+        <div style="text-align: center; margin-bottom: 10px;">
+          <h2 style="font-size: 12px;">{{ title || 'Matchups & Scores' }}</h2>@if (title) { <h3 style="font-size: 12px;">Round {{ roundNumber }}</h3> }
+        </div>
+        <!-- Flex Container for 6 Matchups Per Page -->
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px;">
+          @for (j of [0, 2, 4, 6, 8, 10]; track j) {
+            @if (listOfTeams[i + j] && listOfTeams[i + j + 1]) {
+              <!-- Matchup Block -->
+              <div class="printed-matchup" style="width: 48%; border: 1px solid black; padding: 5px; margin-bottom: 10px; box-sizing: border-box; position: relative;">
+                <!-- Teams Side by Side -->
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px; position: relative;">
+                  @if (!title) {
+                                <div style="
+                                            position: absolute;
+                                            top: -22px;
+                                            left: 50%;
+                                            transform: translate(-50%, 0);
+                                            display: flex;
+                                            flex-direction: column;
+                                            align-items: center;
+                                        ">
+                    <!-- Label "Court" -->
+                                    <span style="
+                                                font-size: 12px;
+                                                margin-bottom: 2px;
+                                                text-align: center;
+                                            ">
+                      Court
+                    </span>
+                    <!-- Box -->
+                                    <div class="printed-court-value" [attr.data-team-id]="listOfTeams[i + j].kingQueenTeamId" style="
+                                                width: 40px;
+                                                height: 40px;
+                                                background-color: var(--hub-surface, white);
+                                                border: 1px solid black; display:flex;align-items:center;justify-content:center;font-size:16px;
+                                            ">{{ getMatchCourt(listOfTeams[i + j]) }}</div>
+                  </div>
+                  }
+                  <!-- Team A -->
+                  <div class="print-team" style="width: 48%; border-right: 1px solid black; padding-right: 5px;">
+                    <h4 style="text-align: center; margin: 5px 0; font-size: 10px;">
+                      {{ "Team A (Team " + (i + j + 1) + ")" }}
+                    </h4>
+                    <table class="table table-bordered" style="width: 100%; font-size: 10px;">
+                      <thead>
+                        <tr>
+                          <th>Player Name</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (player of listOfTeams[i + j]?.players; track player) {
+                          <tr>
+                            <td style="font-size: 16px; padding: 5px;">{{ player.firstName }} {{ player.lastName }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                  <!-- Team B -->
+                  <div class="print-team" style="width: 48%; padding-left: 5px;">
+                    <h4 style="text-align: center; margin: 5px 0; font-size: 10px;">
+                      {{ "Team B (Team " + (i + j + 2) + ")" }}
+                    </h4>
+                    <table class="table table-bordered" style="width: 100%; font-size: 10px;">
+                      <thead>
+                        <tr>
+                          <th>Player Name</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (player of listOfTeams[i + j + 1]?.players; track player) {
+                          <tr>
+                            <td style="font-size: 16px; padding: 5px;">{{ player.firstName }} {{ player.lastName }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <!-- Scores -->
+                <div [style.margin-top.px]="title ? 0 : -14" style="text-align: center;">
+                  <!-- Adjust spacing for the Scores heading -->
+                  <h5 style="font-size: 12px; margin-bottom: 5px;">Scores</h5>
+                  <!-- Adjust table size and spacing -->
+                  <table class="table table-bordered" style="width: 100%; font-size: 10px; margin: 0 auto; border-collapse: collapse;">
+                    <thead>
+                      <tr>
+                        <th style="padding: 5px;">Team</th>
+                        @for (round of [].constructor(selectedRounds); track round; let index = $index) {
+                          <th style="padding:5px;">Game {{ index + 1 }}</th>
+                        }
+                        <th style="padding: 5px;">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style="padding: 5px;">Team<br />A</td>
+                        @for (round of [].constructor(selectedRounds); track $index) {
+                          <td style="height: 18px; padding: 5px;">{{ scoreAt(i + j, $index + 1) ?? " " }}</td>
+                        }
+                        <td style="height: 18px; padding: 5px;">{{ total(i + j) ?? " " }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 5px;">Team<br />B</td>
+                        @for (round of [].constructor(selectedRounds); track $index) {
+                          <td style="height: 18px; padding: 5px;">{{ scoreAt(i + j + 1, $index + 1) ?? " " }}</td>
+                        }
+                        <td style="height: 18px; padding: 5px;">{{ total(i + j + 1) ?? " " }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    }
+  }
+
+  @if (!title || byePlayers.length) {
+  <div style="margin-top: 10px; page-break-inside: avoid;">
+    <h3 style="text-align: center; font-size: 10px;">Bye Players</h3>
+    <table class="table table-bordered" style="width: 50%; margin: 0 auto; font-size: 8px;">
+      <thead>
+        <tr>
+          <th>First Name</th>
+          <th>Last Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (player of byePlayers; track player) {
+          <tr>
+            <td style="font-size: 14px; padding: 5px;">{{ player.firstName }}</td>
+            <td style="font-size: 14px; padding: 5px;">{{ player.lastName }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
+</div>

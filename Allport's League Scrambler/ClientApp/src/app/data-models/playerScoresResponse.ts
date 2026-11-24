@@ -1,6 +1,7 @@
 export interface PlayerScoresResponse {
     playerScores: PlayerScoreGroup[];
     maxRounds: number;
+    matchupWins?: Record<number, number>;
 }
 
 export interface PlayerScoreGroup {

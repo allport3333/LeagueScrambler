@@ -55,7 +55,7 @@
     .mobile-rankings thead th:nth-child(3) { width: 24%; }
     .mobile-rankings thead th:nth-child(4) { width: 22%; }
     .mobile-place { background-color: var(--hub-male, lightblue); font-weight: bold; }
-    .mobile-kq-score { background-color: var(--hub-win-surface, lightgreen); }
+    .mobile-primary-stat { background-color: var(--hub-win-surface, lightgreen); }
     .mobile-player-row { cursor: pointer; }
     .mobile-player-row:nth-of-type(4n+3) { background-color: var(--hub-row-alt, #f5f5f5); }
     .mobile-player-name { font-weight: normal; }
@@ -93,3 +93,19 @@
 }
 
 .sub-adjustment-marker{display:inline-block;font-size:12px;font-weight:600;color: var(--hub-loss-text, #9b4d55);margin-left:2px}.mobile-score-dropped .sub-adjustment-marker{color: var(--hub-loss-text, red)}
+
+.tournament-return { margin: 12px 0; text-align: center; }
+.tournament-return a { min-height: 44px; height: auto; white-space: normal; line-height: 1.35; }
+@media (max-width: 440px) {
+    .mobile-rankings .mobile-secondary-stat { display: none; }
+}
+@media (max-width: 440px) {
+    .mobile-rankings thead th:nth-child(1) { width: 15%; }
+    .mobile-rankings thead th:nth-child(2) { width: 55%; }
+    .mobile-rankings thead th:nth-child(3) { width: 30%; }
+}
+@media (min-width: 441px) and (max-width: 767px) {
+    .mobile-rankings thead th:nth-child(1) { width: 11%; }
+    .mobile-rankings thead th:nth-child(2) { width: 35%; }
+    .mobile-rankings thead th:nth-child(n+3) { width: 18%; }
+}

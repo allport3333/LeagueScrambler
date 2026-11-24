@@ -1,3 +1,5 @@
+import { TournamentRouteReuse } from './tournament-route-reuse';
+import { MatchupPrintSheetComponent, MatchupPrintSixComponent } from './matchup-print-sheet.component';
 import { MatRadioModule } from '@angular/material/radio';
 import { PageLoadingComponent } from './page-loading.component';
 import { AppearanceComponent } from './appearance.component';
@@ -16,7 +18,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { APP_ID, NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
-import { RouterModule } from '@angular/router';
+import { RouteReuseStrategy, RouterModule } from '@angular/router';
 
 import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
@@ -93,7 +95,6 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
         DetailedPlayerStatsComponent,
         SignInComponent,
         CreateTeamsComponent,
-        LeagueStandingsComponent,
         LeagueDashboardComponent,
         LeagueScheduleComponent,
         LeagueTeamsComponent,
@@ -104,7 +105,6 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
         InstallLocallyComponent,
         TeamRosterButtonComponent,
         TeamRosterDialogComponent,
-        ExistingPlayerBrowserComponent,
         PlayerImportComponent,
         ManageScheduleComponent,
         LeaguePlayerEditComponent,
@@ -152,15 +152,19 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
         MatTreeModule,
         MatSnackBarModule,
         PageLoadingComponent,
+        MatchupPrintSheetComponent,
+        MatchupPrintSixComponent,
+        LeagueStandingsComponent,
+        ExistingPlayerBrowserComponent,
         RouterModule.forRoot([
             { path: 'account-recovery', loadComponent: () => import('./account-recovery.component').then(m => m.AccountRecoveryComponent) },
             { path: 'change-email', data: { mode: 'email-change' }, loadComponent: () => import('./account-recovery.component').then(m => m.AccountRecoveryComponent) },
             { path: 'recovery-review', data: { mode: 'review' }, loadComponent: () => import('./account-recovery.component').then(m => m.AccountRecoveryComponent) },
             { path: 'access-denied', component: LeagueManagementDeniedComponent },
             { path: 'tournament', canActivate: [LeagueManagementGuard], loadComponent: () => import('./tournament-landing.component').then(m => m.TournamentLandingComponent) },
-            { path: 'tournament/:leagueId', canActivate: [LeagueManagementGuard], loadComponent: () => import('./tournament-center.component').then(m => m.TournamentCenterComponent) },
-            { path: 'tournament/:leagueId/rounds', loadComponent: () => import('./tournament-matchups.component').then(m => m.TournamentMatchupsComponent) },
-            { path: 'tournament/:leagueId/check-in', loadComponent: () => import('./tournament-check-in.component').then(m => m.TournamentCheckInComponent) },
+            { path: 'tournament/:leagueId', data: { tournamentContext: true }, canActivate: [LeagueManagementGuard], loadComponent: () => import('./tournament-center.component').then(m => m.TournamentCenterComponent) },
+            { path: 'tournament/:leagueId/rounds', data: { tournamentContext: true }, loadComponent: () => import('./tournament-matchups.component').then(m => m.TournamentMatchupsComponent) },
+            { path: 'tournament/:leagueId/check-in', data: { tournamentContext: true }, loadComponent: () => import('./tournament-check-in.component').then(m => m.TournamentCheckInComponent) },
             { path: '', component: HomeComponent, pathMatch: 'full' },
             { path: '', component: ScramblerWorkspaceComponent, children: [
                     { path: 'scrambler', component: WorkspaceRouteComponent },
@@ -183,5 +187,5 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
             ] }
         ], {}),
         ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production }),
-        BrowserAnimationsModule], providers: [{ provide: APP_ID, useValue: 'ng-cli-universal' }, MatSnackBar, AuthService, provideHttpClient(withXhr(), withInterceptorsFromDi())] })
+        BrowserAnimationsModule], providers: [{ provide: RouteReuseStrategy, useClass: TournamentRouteReuse }, { provide: APP_ID, useValue: 'ng-cli-universal' }, MatSnackBar, AuthService, provideHttpClient(withXhr(), withInterceptorsFromDi())] })
 export class AppModule { }

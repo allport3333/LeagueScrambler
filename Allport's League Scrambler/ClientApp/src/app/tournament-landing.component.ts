@@ -1,8 +1,10 @@
+import { TournamentNavigationComponent } from './tournament-navigation.component';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+interface ManagedTournament extends Leagues { eventDate?: string; participants: number; total: number; generated: number; completed: number; status: string; }
 import { Leagues } from './data-models/leagues.model';
 import { LeagueService } from './services/league.service';
 import { PlayerService } from './services/player.service';
@@ -10,7 +12,7 @@ import { PlayerService } from './services/player.service';
 @Component({
     selector: 'app-tournament-landing',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, RouterLink],
+    imports: [FormsModule, RouterLink, TournamentNavigationComponent],
     styles: [`
         main { max-width: 66rem; margin: 1rem auto; padding: 16px; }
         h1 { text-align: center; }
@@ -20,6 +22,7 @@ import { PlayerService } from './services/player.service';
         button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--hub-border, #527098); border-radius: 5px; color: var(--hub-action-text, #fff); background: var(--hub-primary-action, #30577e); }
         button:disabled { opacity: .65; }
         ul { list-style: none; margin: 0; padding: 0; }
+        li p { margin: 0 4px; }
         li + li { border-top: 1px solid var(--hub-border, #bcc6d2); }
         a { display: block; padding: 12px 4px; overflow-wrap: anywhere; }
         :is(button, a, input):focus-visible { outline: 2px solid var(--hub-focus, #1c5d9b); outline-offset: 2px; }
@@ -27,7 +30,9 @@ import { PlayerService } from './services/player.service';
     template: `
         <main>
             <h1>Tournament Center</h1>
+            <app-tournament-navigation />
             <div class="sections">
+                @if (creatingView) {
                 <section aria-labelledby="create-heading">
                     <h2 id="create-heading">Create a Tournament</h2>
                     <form #form="ngForm" (ngSubmit)="create()">
@@ -44,6 +49,7 @@ import { PlayerService } from './services/player.service';
                         <a [routerLink]="['/tournament', createdId]">Open your new tournament</a>
                     }
                 </section>
+                } @else {
                 <section aria-labelledby="existing-heading">
                     <h2 id="existing-heading">Manage Tournaments</h2>
                     @if (loading) { <p role="status">Loading tournaments…</p> }
@@ -53,11 +59,17 @@ import { PlayerService } from './services/player.service';
                     } @else {
                         <ul>
                             @for (event of tournaments; track event.id) {
-                                <li><a [routerLink]="['/tournament', event.id]">{{ event.leagueName }}</a></li>
+                                <li>
+                                    <a [routerLink]="['/tournament', event.id]">{{ event.leagueName }}</a>
+                                    <p>{{ event.eventDate || 'Date not set' }} · {{ event.participants }} registered · {{ event.status }}</p>
+                                    @if (event.total) { <p>{{ event.completed }} of {{ event.total }} rounds completed</p> }
+                                    <a [routerLink]="['/tournament', event.id]" [attr.aria-label]="'Manage ' + event.leagueName">Manage</a>
+                                </li>
                             } @empty { <li>You have no tournaments to manage yet.</li> }
                         </ul>
                     }
                 </section>
+                }
             </div>
         </main>
     `
@@ -68,7 +80,9 @@ export class TournamentLandingComponent {
     private readonly players = inject(PlayerService);
     private readonly router = inject(Router);
     private readonly destroy = inject(DestroyRef);
-    tournaments: Leagues[] = [];
+    private readonly route = inject(ActivatedRoute);
+    get creatingView() { return this.route.snapshot.queryParamMap.get('view') === 'create'; }
+    tournaments: ManagedTournament[] = [];
     name = '';
     date = '';
     createdId?: number;
@@ -82,7 +96,7 @@ export class TournamentLandingComponent {
     load(): void {
         this.loading = true;
         this.listError = false;
-        this.http.get<Leagues[]>('/api/tournaments').pipe(takeUntilDestroyed(this.destroy)).subscribe({
+        this.http.get<ManagedTournament[]>('/api/tournaments').pipe(takeUntilDestroyed(this.destroy)).subscribe({
             next: events => {
                 this.tournaments = events.filter(event => event.eventTypeId === 2);
                 this.loading = false;
@@ -102,7 +116,7 @@ export class TournamentLandingComponent {
                 this.leagues.getLeagues().pipe(takeUntilDestroyed(this.destroy)).subscribe({
                     next: events => {
                         this.creating = false;
-                        this.tournaments = events.filter(event => event.eventTypeId === 2);
+
                         this.router.navigate(['/tournament', created.id]);
                     },
                     error: () => {

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Allport_s_League_Scrambler.Services;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -20,6 +22,32 @@ var prefix = "EventCheck-" + Guid.NewGuid().ToString("N");
 var date = new DateOnly(2026, 12, 12);
 try
 {
+    var names = new[]
+    {
+        new Player { Id = 1, FirstName = "William", LastName = "Smythe" },
+        new Player { Id = 2, FirstName = " william ", LastName = "Smythe" },
+        new Player { Id = 3, FirstName = "Bill", LastName = "Smythe" },
+        new Player { Id = 4, FirstName = "Willam", LastName = "Smythe" },
+        new Player { Id = 5, FirstName = "Different", LastName = "Elsewhere" }
+    };
+    var matches = PlayerNameMatches.Find("  WILLIAM ", "smythe ", names);
+    Assert(matches.Select(match => match.Id).Order().SequenceEqual(new[] { 1, 2, 3, 4 }) &&
+        matches.Count(match => match.Exact) == 2, "Exact names, case, spaces, nickname, spelling, and distinct same-name identities");
+    var pairedRound = new TournamentRound { ScrambleNumber = 1, GamesPerMatchup = 2 };
+    var identityA = new KingQueenTeam { Id = 1, ScrambleNumber = 1,
+        KingQueenPlayers = [new KingQueenPlayer { PlayerId = 10 }], KingQueenRoundScores = [] };
+    var identityB = new KingQueenTeam { Id = 2, ScrambleNumber = 1,
+        KingQueenPlayers = [new KingQueenPlayer { PlayerId = 20 }], KingQueenRoundScores = [] };
+    identityA.KingQueenRoundScores.Add(new KingQueenRoundScores { RoundId = 1, RoundScore = 12 });
+    identityB.KingQueenRoundScores.Add(new KingQueenRoundScores { RoundId = 1, RoundScore = 15 });
+    Assert(TournamentMatchupResults.WinsByPlayer([pairedRound], [identityA, identityB]).Count == 0, "Incomplete matchup awards no win");
+    identityA.KingQueenRoundScores.Add(new KingQueenRoundScores { RoundId = 2, RoundScore = 11 });
+    identityB.KingQueenRoundScores.Add(new KingQueenRoundScores { RoundId = 2, RoundScore = 13 });
+    Assert(TournamentMatchupResults.WinsByPlayer([pairedRound], [identityA, identityB]).GetValueOrDefault(20) == 1, "Two games award one matchup win");
+    identityA.KingQueenRoundScores[1].RoundScore = 16;
+    Assert(TournamentMatchupResults.WinsByPlayer([pairedRound], [identityA, identityB]).Count == 0, "Tied aggregate awards no win");
+    identityA.KingQueenRoundScores[1].RoundScore = 17;
+    Assert(TournamentMatchupResults.WinsByPlayer([pairedRound], [identityA, identityB]).GetValueOrDefault(10) == 1, "Correcting a score changes the winner");
     var creation = new ScrambleDataController { ControllerContext = Identity(ownerId, "Admin") };
     var league = Created(await creation.AddNewLeague(prefix + "-L"));
     var tournament = Created(await creation.AddNewLeague(prefix + "-T", 2, date));
@@ -108,7 +136,7 @@ try
         var loaded = await db.Set<TournamentRound>().AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID && row.RoundNumber == number);
         var teamIds = await db.KingQueenTeam.Where(row => row.LeagueID == tournament.ID && row.ScrambleNumber == loaded.ScrambleNumber)
             .OrderBy(row => row.Id).Select(row => row.Id).ToArrayAsync();
-        var scores = teamIds.Chunk(2).Select((pair, i) => new TournamentsController.MatchScore(pair[0], pair[1], 1, 21, 15 + i));
+        var scores = teamIds.Chunk(2).Select((pair, i) => new TournamentsController.MatchScore(pair[0], pair[1], 1, 12, 15 + i));
         var latest = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
         Assert(await reopenedCenter.SaveScores(tournament.ID, number, new(latest.Version, (partial ? scores.Take(1) : scores).ToArray()))
             is OkObjectResult, "Score save");
@@ -161,6 +189,12 @@ try
     Assert(await reopenedCenter.ReadRounds(tournament.ID) is OkObjectResult, "Linked participant can view saved rounds");
     reopenedCenter.ControllerContext = Identity(int.MaxValue, "Player");
     Assert(await reopenedCenter.ReadRounds(tournament.ID) is ForbidResult, "Nonparticipant cannot view saved rounds");
+    var registration = new TournamentsController.RegistrationInput("WizardRace", prefix, "Female", [], false);
+    var otherRegistration = new TournamentsController { ControllerContext = Identity(ownerId, "Admin") };
+    var concurrent = await Task.WhenAll(center.RegisterParticipant(tournament.ID, registration),
+        otherRegistration.RegisterParticipant(randomTournament.ID, registration));
+    Assert(concurrent.Count(result => result is OkObjectResult) == 1 &&
+        concurrent.Count(result => result is ConflictObjectResult) == 1, "Concurrent duplicate registration requires review");
     Console.WriteLine("Tournament engine, 24 registered, 20 checked in, five SQL-backed rounds, regeneration guard, partial scores and final standings passed.");
     Console.WriteLine("Event types, tournament details, access, and manual, self-service and skipped check-in passed against LeagueScramblerDev.");
 }
@@ -181,7 +215,7 @@ finally
     await db.TournamentConfigurations.Where(row => fixtureIds.Contains(row.LeagueId)).ExecuteDeleteAsync();
     await db.UserLeagues.Where(row => fixtureIds.Contains(row.LeagueTypeId) && row.UserId == ownerId).ExecuteDeleteAsync();
     await db.LeagueSettings.Where(row => fixtureIds.Contains(row.LeagueId)).ExecuteDeleteAsync();
-    await db.Players.Where(row => row.LastName == prefix && (row.FirstName == "WizardOne" || row.FirstName == "WizardTwo")).ExecuteDeleteAsync();
+    await db.Players.Where(row => row.LastName == prefix && (row.FirstName == "WizardOne" || row.FirstName == "WizardTwo" || row.FirstName == "WizardRace")).ExecuteDeleteAsync();
     await db.Leagues.Where(row => fixtureIds.Contains(row.ID) && row.LeagueName.StartsWith(prefix)).ExecuteDeleteAsync();
     await transaction.CommitAsync();
 }

@@ -9,17 +9,26 @@
     } @empty {
       @if (!busy && !error) { <p>No tournament rounds have been saved yet.</p> }
     }
-  } @else if (wizardStep() === 7) {
-  <nav aria-label="Run Tournament" class="step-actions">
-    <button type="button" [attr.aria-pressed]="step === 'rounds'" (click)="step = 'rounds'">Matchups & Printing</button>
-    <button type="button" [attr.aria-pressed]="step === 'scores'" [disabled]="!rounds.length" (click)="openScores(scoreRound || nextRound || rounds[0])">Scores</button>
+  } @else if (wizardStep() === 7 && view !== 'complete') {
+    <nav aria-label="Run Tournament" class="step-actions">
+    <button type="button" [attr.aria-pressed]="step === 'rounds'" (click)="clearScoreFeedback(); step = 'rounds'">Matchups & Printing</button>
+    @if (tournamentComplete) {
+      <button type="button" [attr.aria-pressed]="step === 'complete'" (click)="clearScoreFeedback(); step = 'complete'">Final Standings</button>
+    }
+    <button type="button" [attr.aria-pressed]="step === 'scores'" [disabled]="!rounds.length" (click)="openRememberedScores()">Scores</button>
   </nav>
   }
   @if (error) { <p role="alert">{{ error }}</p> }
   @if (notice) { <p role="status">{{ notice }}</p> }
   @if (busy) { <p role="status">Working…</p> }
   @if (state; as data) {
-    <p class="summary">{{ data.roster.length }} registered · {{ data.presentIds.length }} checked in · {{ eligible.length }} eligible · {{ rounds.length }} saved rounds · {{ completed }} of {{ data.settings.numberOfRounds }} rounds completed</p>
+@if (view !== 'complete') {
+      @if (rounds.length) { <p class="summary">{{ completed }} of {{ data.settings.numberOfRounds }} rounds completed</p> }
+      <details class="roster-summary">
+        <summary>Participants and saved rounds</summary>
+        <p>{{ data.roster.length }} registered · {{ data.presentIds.length }} checked in · {{ eligible.length }} eligible · {{ rounds.length }} saved rounds</p>
+      </details>
+    }
     <fieldset [disabled]="busy">
       @if (view === 'configuration') {
         <h2>Team & Round Setup</h2>
@@ -31,7 +40,9 @@
           </label>
           @if (teamBySize) {
             <label>Maximum Team Size <input class="form-control" type="number" min="2" max="5" [(ngModel)]="data.settings.maximumTeamSize" (ngModelChange)="markEdited()"></label>
-            <label>Active Team Limit (optional) <input class="form-control" type="number" min="2" max="128" step="2" [(ngModel)]="data.settings.activeTeamLimit" (ngModelChange)="markEdited()"></label>
+            <label>Maximum Teams Playing Per Round (optional) <input class="form-control" type="number" min="2" max="128" step="2" [(ngModel)]="data.settings.activeTeamLimit" (ngModelChange)="markEdited()">
+              <small>Use an even limit with Maximum Team Size. For example, 20 eligible players, a maximum team size of 4, and a limit of 4 teams means 16 play and 4 sit out when automatic byes are enabled. Leave blank to let all eligible players play except for manual byes. Number of Teams already sets the team count.</small>
+            </label>
           } @else {
             <label>Number of Teams <input class="form-control" type="number" min="2" max="128" step="2" [(ngModel)]="data.settings.numberOfTeams" (ngModelChange)="markEdited()"></label>
           }
@@ -114,6 +125,12 @@
             If strict avoidance is impossible, allow the minimum-repeat fallback
           </label>
         }
+@if (tournamentComplete) {
+          <section class="completion-banner">
+            <strong>Tournament complete</strong>
+            <button type="button" class="primary" (click)="step = 'complete'">View Final Standings</button>
+          </section>
+        }
         <div class="step-actions">
           @if (!rounds.length || hasUnplayed || rounds.length < data.settings.numberOfRounds) {
             <button type="button" class="primary" [disabled]="!settingsSaved || dirty || !data.mode || eligible.length < 2" (click)="propose()">
@@ -123,14 +140,17 @@
           @if (nextRound; as round) { @if (wizardStep() === 7) {
             <button type="button" (click)="openScores(round)">Continue: Enter Round {{ round.roundNumber }} Scores</button>
           } }
-          @if (rounds.length === data.settings.numberOfRounds && completed === rounds.length) {
-            <a class="button-link" routerLink="/standings" [queryParams]="{leagueId: leagueId()}">Continue: Review Final Standings</a>
-          }
-          @if (rounds.length) {
-            <button type="button" (click)="print(rounds)">Print All Rounds</button>
-            <button type="button" [disabled]="!printSelection.size" (click)="print(roundsForPrinting)">Print Selected Rounds</button>
-          }
         </div>
+        @if (rounds.length) {
+          <details class="print-options">
+            <summary>Printing options</summary>
+            <ng-container *ngTemplateOutlet="printLayout"></ng-container>
+            <div class="step-actions">
+              <button type="button" (click)="print(rounds)">Print All Rounds</button>
+              <button type="button" [disabled]="!printSelection.size" (click)="print(roundsForPrinting)">Print Selected Rounds</button>
+            </div>
+          </details>
+        }
         @if (preview.length) {
           <section class="preview">
             <h3>Proposed Rounds</h3>
@@ -170,8 +190,28 @@
           </details>
         }
       }
+      @if (view === 'complete') {
+        <h2>Tournament Complete</h2>
+        <p class="summary">{{ completed }} of {{ data.settings.numberOfRounds }} rounds completed.</p>
+        <app-league-standings [fixedLeagueId]="leagueId()" />
+        <details class="completed-actions">
+          <summary>Matchups, scores, and printing</summary>
+          <ng-container *ngTemplateOutlet="printLayout"></ng-container>
+          <div class="step-actions">
+            <button type="button" (click)="print(rounds)">Print Tournament Results</button>
+            <button type="button" (click)="step = 'rounds'">Review Matchups</button>
+            <button type="button" (click)="openRememberedScores()">Review or Correct Scores</button>
+          </div>
+        </details>
+      }
       @if (view === 'scores' && scoreRound) {
-        <h2>Scores</h2>
+        <h2>Round {{ scoreRound.roundNumber }} Scores</h2>
+        @if (scoreFeedback; as feedback) {
+          <div class="score-feedback" role="status">
+            <strong>{{ feedback.title }}</strong>
+            <div>{{ feedback.message }}</div>
+          </div>
+        }
         <label>Round
           <select class="form-control" [ngModel]="scoreRound" (ngModelChange)="openScores($event)">
             @for (round of rounds; track round.roundNumber) { <option [ngValue]="round">Round {{ round.roundNumber }}</option> }
@@ -208,12 +248,25 @@
   }
 </ng-template>
 
+<ng-template #printLayout>
+  <label class="matchup-print-layout">Matchups per printed page
+    <select class="form-control" [(ngModel)]="matchupPrintLayout">
+      <option [ngValue]="6">Six matchups</option>
+      <option [ngValue]="2">Two matchups</option>
+    </select>
+  </label>
+</ng-template>
+
 <section class="tournament-print">
   @for (round of printRounds; track round.roundNumber) {
     <article>
-      <h1>{{ tournamentName() }}</h1>
-      <h2>Round {{ round.roundNumber }}</h2>
-      <ng-container *ngTemplateOutlet="roundTeams; context: {$implicit: round}"></ng-container>
+      @if (matchupPrintLayout === 6) {
+        <app-matchup-print-six [title]="tournamentName()" [roundNumber]="round.roundNumber"
+          [listOfTeams]="round.teams" [byePlayers]="round.byes" [selectedRounds]="round.gamesPerMatchup" />
+      } @else {
+      <app-matchup-print-sheet [title]="tournamentName()" [roundNumber]="round.roundNumber"
+        [listOfTeams]="round.teams" [byePlayers]="round.byes" [selectedRounds]="round.gamesPerMatchup" />
+      }
     </article>
   }
 </section>

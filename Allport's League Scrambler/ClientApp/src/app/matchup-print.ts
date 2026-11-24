@@ -7,6 +7,7 @@ export function renderMatchupPrint(window: Window, title: string, content: strin
     <style>
         @page { size: portrait; margin: 1cm; }
         body { font-family: Arial, sans-serif; }
+        app-matchup-print-sheet, app-matchup-print-six { display: block; }
         @media print {
             body { padding: 20px; }
             table { width: 100%; border-collapse: collapse; }
