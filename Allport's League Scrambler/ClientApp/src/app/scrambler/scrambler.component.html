@@ -641,21 +641,19 @@ Apply Top Players (Male Standings)
           <mat-card appearance="outlined" style="margin-top: 20px; margin-bottom: 20px; background-color: var(--hub-surface, #eeeeee)">
             <div class="tab-content d-flex flex-column align-items-center">
               <h5 class="mb-2">Retrieve Previous Scramble</h5>
-              <mat-selection-list dense [(ngModel)]="selectedRetrieveScrambleList" (ngModelChange)="updateScrambleNumbers($event)">
+              <mat-selection-list class="retrieve-scramble-selection" aria-label="Previous scrambles" dense [(ngModel)]="selectedRetrieveScrambleList" (ngModelChange)="updateScrambleNumbers($event)">
                 <div>
                   <!-- Male Players -->
                   <div style="display: flex; flex-direction: column;">
                     <mat-list class="retrieved-scramble-list">
                       @for (scramble of queriedScrambles; track scramble; let i = $index) {
-                        <mat-list-option [style.width.%]="getListItemWidth(queriedScrambles.length)" [style.margin-bottom.px]="isSmallScreen ? 10 : 2" style="background-color: lightgray; text-align: center;" [value]="scramble">
-                          <div style="display: flex; align-items: center; justify-content: center;">
-                            <div style="margin: 5px;">
-                              <!-- Add margin here -->
+                        <mat-list-option class="retrieve-scramble-row" [style.width.%]="getListItemWidth(queriedScrambles.length)" [value]="scramble">
+                          <div class="retrieve-scramble-row-content">
+                            <div class="retrieve-scramble-details">
                               <span>Scramble Number: <b>{{ scramble.scrambleNumber }}</b></span>
-                              <br>
-                                <span>Date of Scramble: {{ scramble.dateOfTeam | date:'shortDate' }}</span>
+                                <span class="retrieve-scramble-date">Date: {{ scramble.dateOfTeam | date:'shortDate' }}</span>
                               </div>
-                              <button mat-icon-button (click)="requestRetrieveScramble(scramble); $event.stopPropagation()" matTooltip="Retrieve Scramble">
+                              <button mat-icon-button class="retrieve-scramble-action" aria-label="Retrieve scramble {{ scramble.scrambleNumber }}" (click)="requestRetrieveScramble(scramble); $event.stopPropagation()" matTooltip="Retrieve Scramble">
                                 <mat-icon>sync</mat-icon>
                               </button>
                             </div>
@@ -674,7 +672,7 @@ Apply Top Players (Male Standings)
                   }
                   <!-- Display selected scramble numbers at the bottom -->
                   @if (listOfRetrievedScrambleNumbers.length > 0) {
-                    <div style="text-align: center;">
+                    <div class="retrieved-scramble-summary">
                       <span>Retrieved Scramble Numbers To Use:</span>
                       <br>
                         <div style="margin: 0 auto; display: inline-block;">

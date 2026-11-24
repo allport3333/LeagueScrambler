@@ -85,7 +85,7 @@ td {
 
 .scramble-button.enabled {
     background-color: var(--hub-success-action, #98D0A7) !important; /* Light green when enabled */
-    color: #ffffff !important; /* White text for contrast */
+    color: var(--hub-action-text, #163f25) !important;
 }
 
 .scramble-button.enabled:hover {
@@ -94,8 +94,8 @@ td {
 }
 
 .scramble-button.disabled {
-    background-color: #b0b0b0 !important; /* Grey background when disabled */
-    color: #ffffff !important; /* White text for contrast */
+    background-color: var(--hub-section, #e0e4eb) !important;
+    color: var(--hub-disabled-text, #505a67) !important;
     cursor: not-allowed; /* Show 'not-allowed' cursor */
     box-shadow: none; /* Remove shadow when disabled */
 }
@@ -125,7 +125,7 @@ td {
 
 .scramble-button.enabled {
     background-color: var(--hub-success-action, #98D0A7) !important; /* match scramble green */
-    color: #ffffff !important;
+    color: var(--hub-action-text, #163f25) !important;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2) !important;
 }
 
@@ -134,8 +134,8 @@ td {
 }
 
 .scramble-button.grey {
-    background-color: #b0b0b0 !important; /* grey look */
-    color: #ffffff !important;
+    background-color: var(--hub-section, #e0e4eb) !important;
+    color: var(--hub-text, #212529) !important;
     box-shadow: 0px 2px 3px rgba(0,0,0,0.12) !important;
     /* Important: do NOT set pointer-events: none here. That would prevent clicks even when visually grey. */
 }
@@ -143,7 +143,9 @@ td {
 /* Keep a true disabled appearance when the disabled attribute is set (optional).
    This selector only affects actual disabled state — it does not prevent us from showing a grey-but-clickable button. */
 button[disabled].scramble-button {
-    opacity: 0.7;
+    background-color: var(--hub-section, #e0e4eb) !important;
+    color: var(--hub-disabled-text, #505a67) !important;
+    opacity: 1;
     cursor: not-allowed;
     box-shadow: none !important;
 }
@@ -151,7 +153,7 @@ button[disabled].scramble-button {
 /* Apply-top button visuals */
 .apply-top-button.enabled {
     background-color: var(--hub-success-action, #98D0A7) !important; /* same green as scramble */
-    color: #ffffff !important;
+    color: var(--hub-action-text, #163f25) !important;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2) !important;
 }
 
@@ -161,15 +163,17 @@ button[disabled].scramble-button {
 
 /* Grey visual state — NOTE: does NOT block pointer events. real disabled/unclickable state is controlled by [disabled]. */
 .apply-top-button.grey {
-    background-color: #b0b0b0 !important;
-    color: #ffffff !important;
+    background-color: var(--hub-section, #e0e4eb) !important;
+    color: var(--hub-text, #212529) !important;
     box-shadow: 0px 2px 3px rgba(0,0,0,0.12) !important;
     /* do not set pointer-events:none here so button remains clickable when intended */
 }
 
 /* Keep a true disabled appearance when the disabled attribute is set */
 button[disabled].apply-top-button {
-    opacity: 0.7;
+    background-color: var(--hub-section, #e0e4eb) !important;
+    color: var(--hub-disabled-text, #505a67) !important;
+    opacity: 1;
     cursor: not-allowed;
     box-shadow: none !important;
 }
@@ -194,13 +198,13 @@ button[disabled].apply-top-button {
 /* Reuse visuals already present — ensure grey does not block clicks */
 .apply-top-button.enabled {
     background-color: var(--hub-success-action, #98D0A7) !important;
-    color: #ffffff !important;
+    color: var(--hub-action-text, #163f25) !important;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2) !important;
 }
 
 .apply-top-button.grey {
-    background-color: #b0b0b0 !important;
-    color: #ffffff !important;
+    background-color: var(--hub-section, #e0e4eb) !important;
+    color: var(--hub-text, #212529) !important;
     box-shadow: 0px 2px 3px rgba(0,0,0,0.12) !important;
 }
 /* Workspace organization only; the roster and algorithms retain their original structure. */
@@ -277,7 +281,7 @@ button[disabled].apply-top-button {
 .scramble-setup h2, .scramble-rules h3, .scramble-workflow-actions h2, .results-heading h2 { text-align: center; font-size: 20px; font-weight: 600; line-height: 1.3; color: var(--hub-heading, #293d69); margin: 0 0 10px; }
 .balancing-actions .apply-top-wrapper { width: 100%; flex-wrap: wrap; }
 .primary-action { width: 440px; max-width: 100%; min-width: 0; min-height: 64px; font-size: 24px; line-height: 1.25; padding: 16px 24px; font-weight: 700; }
-.primary-action.enabled { background: var(--hub-success-action, #98D0A7) !important; color: #fff !important; box-shadow: 0 3px 7px rgba(28,88,49,.25) !important; }
+.primary-action.enabled { background: var(--hub-success-action, #98D0A7) !important; color: var(--hub-action-text, #163f25) !important; box-shadow: 0 3px 7px rgba(28,88,49,.25) !important; }
 .primary-action.enabled:hover { background: var(--hub-success-action, #98D0A7) !important; transform: none; }
 .primary-action.disabled, .primary-action[disabled] { background: var(--hub-section, #e0e4eb) !important; color: var(--hub-muted, #606a79) !important; box-shadow: none !important; opacity: 1; }
 .progression-actions { text-align: center; grid-column: 1 / span 2; padding: 12px 0 8px; }
@@ -381,8 +385,8 @@ button[disabled].apply-top-button {
 .results-control-row { flex-direction: column; gap: 12px; }
 .results-print-action { width: 360px; max-width: 100%; text-align: center; }
 .results-print-action > button { width: 100%; min-height: 48px; font-size: 17px; font-weight: 600; }
-.results-print-action > button:not([disabled]) { background: var(--hub-success-action, #98D0A7); color: #fff; }
-.results-print-action > button[disabled] { background: #e2e6ec; color: #5a6574; }
+.results-print-action > button:not([disabled]) { background: var(--hub-success-action, #98D0A7); color: var(--hub-action-text, #163f25); }
+.results-print-action > button[disabled] { background: var(--hub-section, #e2e6ec); color: var(--hub-disabled-text, #5a6574); }
 .results-print-action .workspace-help { margin-bottom: 0; }
 .mobile-player-identity { flex: 1 1 auto; min-width: 0; }
 .mobile-player-name { display: block; font-size: 16px; }
@@ -498,6 +502,12 @@ button[disabled].apply-top-button {
 }
 
 // Shared score-only winner indication; does not alter team/substitute styling.
+.mobile-round-input, .desktop-round-input {
+  color: var(--hub-text, #212529);
+  background: var(--hub-surface, #fff);
+  border-color: var(--hub-border, #aebccd);
+}
+.mobile-scoring-player small { color: #212529; }
 .mobile-round-input.round-score-winner, .desktop-round-input.round-score-winner { background: var(--hub-win-surface, #e5f4e8); border-color: #62a772; box-shadow: inset 0 0 0 1px #62a772; }
 
 /* Compact results and the single shared view/edit dialog. */
@@ -780,7 +790,55 @@ button[disabled].apply-top-button {
 .roster-panel[hidden] { display: none; }
 .player-icon-action.low-player-active { background: var(--hub-heading, #293d69); color: #fff; border-radius: 50%; }
 .scramble-roster-grid .desktop-player-name, .scramble-roster-grid .mobile-player-name { font-weight: 500; letter-spacing: normal; }
-.retrieved-scramble-list { display: flex; flex-wrap: wrap; justify-content: space-between; }
+.retrieve-scramble-selection { width: min(100%, 680px); }
+.retrieved-scramble-list { display: flex; flex-wrap: wrap; justify-content: space-between; row-gap: 4px; }
+.retrieve-scramble-row {
+  --mat-list-list-item-label-text-color: var(--hub-text, #262c35);
+  --mat-list-list-item-hover-label-text-color: var(--hub-text, #262c35);
+  --mat-list-list-item-focus-label-text-color: var(--hub-text, #262c35);
+  --mat-checkbox-unselected-icon-color: var(--hub-link, #435575);
+  --mat-checkbox-unselected-hover-icon-color: var(--hub-link, #435575);
+  --mat-checkbox-unselected-focus-icon-color: var(--hub-focus, #3f51b5);
+  --mat-checkbox-selected-icon-color: var(--hub-link, #3f51b5);
+  --mat-checkbox-selected-hover-icon-color: var(--hub-link, #3f51b5);
+  --mat-checkbox-selected-focus-icon-color: var(--hub-focus, #3f51b5);
+  --mat-checkbox-selected-checkmark-color: var(--hub-page, #fff);
+  background: var(--hub-section, #d3d3d3);
+  border: 1px solid var(--hub-border, #bcc6d2);
+  border-radius: 4px;
+  text-align: center;
+}
+.retrieve-scramble-row:hover { background: var(--hub-row-alt, #e1e5ec); }
+.retrieve-scramble-row[aria-selected='true'] {
+  background: var(--hub-header, #e2e9f7);
+  border-color: var(--hub-link, #526e9f);
+}
+.retrieve-scramble-row:focus-visible {
+  outline: 2px solid var(--hub-focus, #3f51b5);
+  outline-offset: -2px;
+}
+.retrieve-scramble-row-content { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.retrieve-scramble-details {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  font-size: 14px;
+  line-height: 18px;
+  white-space: normal;
+}
+.retrieve-scramble-date { color: var(--hub-muted, #394655); }
+.retrieve-scramble-action { color: var(--hub-link, #344e74); }
+@media (max-width: 400px) {
+  .retrieve-scramble-details { font-size: 13px; }
+}
+.retrieved-scramble-summary {
+  max-width: 100%;
+  padding: 4px 10px;
+  text-align: center;
+  color: var(--hub-text, #262c35);
+  background: var(--hub-section, transparent);
+  border-radius: 4px;
+}
 @media (max-width: 1200px) {
   .scramble-roster-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }
 }
