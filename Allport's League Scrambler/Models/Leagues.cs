@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,6 +27,8 @@ namespace Allport_s_League_Scrambler.Models
         public string Location { get; set; }
         public Guid Version { get; set; }
         public TournamentCheckInMode CheckInMode { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore, Newtonsoft.Json.JsonIgnore]
+        public string RoundSettingsJson { get; set; }
     }
 
     public enum TournamentCheckInMode { NotConfigured, Open, Manual, Skipped }

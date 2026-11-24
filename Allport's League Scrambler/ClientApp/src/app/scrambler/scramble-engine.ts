@@ -30,6 +30,7 @@ export interface ScrambleInput {
     mode: 'balanced' | 'random';
     maxTeamSize?: number;
     numberOfTeams?: number;
+    balancePriorities?: boolean;
     topIds?: number[];
     lowIds?: number[];
     configuredTop?: TopPriority[];
@@ -272,15 +273,16 @@ export async function generateScramble(input: ScrambleInput, random: RandomInt =
         }
         const balanced = input.mode === 'balanced', ids = new Set(players.map(p => p.id));
         const topCandidates = new Set((input.topIds || players.filter(p => p.isTopPlayer).map(p => p.id)).filter(id => ids.has(id)));
-        const ranked = balanced ? rankTopPlayers(players.filter(p => topCandidates.has(p.id)), input.configuredTop, input.standings) : [];
+        const usePriorities = input.balancePriorities ?? balanced;
+        const ranked = usePriorities ? rankTopPlayers(players.filter(p => topCandidates.has(p.id)), input.configuredTop, input.standings) : [];
         const hasPriority = (id: number) => (input.configuredTop || []).some(p => p.playerId === id && Number.isFinite(p.rank) && p.rank > 0)
             || (input.standings || []).some(p => p.playerId === id);
         if (ranked.length > caps.length && ranked.slice(0, caps.length).some(p => !hasPriority(p.id)))
             return finish('invalid-configuration', 'Excess Top Players need configured ranks or loaded King/Queen standings to determine priority. No player was arbitrarily demoted.');
         result.retainedTopIds = ranked.slice(0, caps.length).map(p => p.id);
         result.demotedTopIds = ranked.slice(caps.length).map(p => p.id);
-        const tops = new Set(result.retainedTopIds), lows = new Set(balanced ? (input.lowIds || players.filter(p => p.isLowPlayer).map(p => p.id)).filter(id => ids.has(id) && !topCandidates.has(id)) : []);
-        if (balanced && players.some(p => topCandidates.has(p.id) && p.isLowPlayer))
+        const tops = new Set(result.retainedTopIds), lows = new Set(usePriorities ? (input.lowIds || players.filter(p => p.isLowPlayer).map(p => p.id)).filter(id => ids.has(id) && !topCandidates.has(id)) : []);
+        if (usePriorities && players.some(p => topCandidates.has(p.id) && p.isLowPlayer))
             result.warnings.push('Overlapping Top/Low designations use Top precedence for this generation.');
         const prohibited = new Set<string>();
         for (const pair of input.prohibitedPairs || []) {
@@ -301,7 +303,7 @@ export async function generateScramble(input: ScrambleInput, random: RandomInt =
                 return finish('invalid-configuration', 'League teammate history repeats an aggregate pair.');
             frequencies.set(key, pair.count);
         }
-        if (!balanced && !prohibited.size && !input.prioritizeHistory) {
+        if (!balanced && !usePriorities && !prohibited.size && !input.prioritizeHistory) {
             const pool = shuffled(players, random);
             let offset = 0;
             result.teams = caps.map(size => { const team = pool.slice(offset, offset + size); offset += size; return team; });

@@ -1,3 +1,4 @@
+import { TournamentRoundsComponent } from './tournament-rounds.component';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -16,11 +17,13 @@ interface TournamentDetails {
 @Component({
     selector: 'app-tournament-center',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, MatButtonModule, RouterModule],
+    imports: [FormsModule, MatButtonModule, RouterModule, TournamentRoundsComponent],
     styles: [`
         main { padding: 16px; }
         .mat-mdc-button-base { font-family: Arial, sans-serif; }
         header { text-align: center; }
+        .details-card { max-width: 580px; margin: 16px auto; }
+        summary { text-align: center; cursor: pointer; min-height: 44px; padding: 10px; }
         form {
             display: grid; gap: 12px; max-width: 580px; margin: 16px auto;
             padding: 16px; border: 1px solid var(--hub-border, #bcc6d2);
@@ -40,8 +43,10 @@ interface TournamentDetails {
               @if (details.version) { <a mat-stroked-button [routerLink]="['/tournament', leagueId, 'check-in']">Player Check In</a> }
             </nav>
             <p class="text-center">{{ participants }} {{ participants === 1 ? 'participant' : 'participants' }}</p>
+            <details class="details-card" [open]="!details.version">
+            <summary>Tournament Details</summary>
             <form #detailsForm="ngForm" (ngSubmit)="save()">
-              <h2>Tournament Details</h2>
+
               <label>Tournament Name <input class="form-control" name="name" maxlength="50" required [(ngModel)]="draftName"></label>
               <label>Tournament Date <input class="form-control" name="date" type="date" required [(ngModel)]="details.eventDate"></label>
               <label>Location <input class="form-control" name="location" maxlength="120" [(ngModel)]="details.location"></label>
@@ -49,6 +54,12 @@ interface TournamentDetails {
               <button mat-flat-button color="primary" type="submit" [disabled]="detailsForm.invalid || saving">Save Details</button>
               @if (saved) { <p role="status">Tournament details saved.</p> }
             </form>
+            </details>
+            @if (details.version) {
+              @for (revision of [detailsRevision]; track revision) {
+                <app-tournament-rounds [leagueId]="leagueId" [tournamentName]="name" (versionChanged)="details.version = $event" />
+              }
+            }
           }
           @if (error) { <p role="alert" class="text-center">{{ error }}</p> }
         </main>
@@ -63,6 +74,7 @@ export class TournamentCenterComponent {
     name = '';
     draftName = '';
     participants = 0;
+    detailsRevision = 0;
     leagueSelected = false;
     details: TournamentDetails = { eventDate: '', description: '', location: '', version: null };
     loading = true;
@@ -97,6 +109,7 @@ export class TournamentCenterComponent {
                     const renamed = this.name !== response.name;
                     this.name = this.draftName = response.name;
                     this.details = response.details;
+                    this.detailsRevision++;
                     this.saved = true;
                     this.saving = false;
                     if (renamed) this.leagueService.getLeagues().pipe(takeUntilDestroyed(this.destroy))

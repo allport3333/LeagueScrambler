@@ -58,16 +58,23 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     get primaryDestinations(): NavItem[] {
         const tournament = this.leagues?.some(event => event.id === this.selectedLeagueId && event.eventTypeId === 2);
         const items = this.destinations.filter(item =>
-            (!tournament || item.route !== '/sign-in') &&
+            (!tournament || !['/sign-in', '/team-scores', '/league-dashboard', '/scrambler'].some(route => route === item.route)) &&
             (!item.signedInOnly || (this.authenticationChecked && this.loggedIn)) &&
             (!item.roles || item.roles.includes(this.userRole)))
             .filter(item => !item.children || item.children.length)
             .map(item => item.children?.length === 1 ? item.children[0] : item);
         if (tournament && this.loggedIn) {
+            const standings = items.findIndex(item => item.route === '/standings');
+            if (standings >= 0) items[standings] = {
+                label: 'Standings', icon: 'emoji_events', route: '/standings', queryParams: { leagueId: this.selectedLeagueId }
+            };
             const organizer = this.userRole === 'Admin' || this.userRole === 'Manager';
             items.splice(1, 0, organizer
                 ? { label: 'Tournament Center', icon: 'emoji_events', route: ['/tournament', this.selectedLeagueId] }
                 : { label: 'Tournament Check In', icon: 'how_to_reg', route: ['/tournament', this.selectedLeagueId, 'check-in'] });
+            if (!organizer) items.splice(2, 0, {
+                label: 'Matchups', icon: 'view_list', route: ['/tournament', this.selectedLeagueId, 'rounds']
+            });
         }
         return items;
     }

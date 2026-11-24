@@ -16,6 +16,7 @@ namespace Allport_s_League_Scrambler.Data
         public virtual DbSet<LeagueType> Leagues { get; set; }
         public DbSet<EventType> EventTypes { get; set; }
         public DbSet<TournamentConfiguration> TournamentConfigurations { get; set; }
+        public DbSet<TournamentRound> TournamentRounds { get; set; }
         public virtual DbSet<Password> Passwords { get; set; }
         public virtual DbSet<PlayerScore> PlayerScore { get; set; }
         public virtual DbSet<LeagueTeam> LeagueTeam { get; set; }

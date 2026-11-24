@@ -8,7 +8,9 @@
     <button mat-button type="button" (click)="initializeSettings()">Retry</button>
   </div>
 }
-@if (lastResult) {
+@if (lastResult?.maxRounds === 0) {
+  <p class="text-center" role="status">No tournament scores have been entered yet.</p>
+} @else if (lastResult) {
 <mat-card appearance="outlined" style="margin-top: 20px; margin-bottom: 20px;">
     <div class="tab-content d-flex flex-column align-items-center">
         <h5 class="mb-2">Player Standings</h5>

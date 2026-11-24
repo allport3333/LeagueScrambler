@@ -11,11 +11,12 @@ using Microsoft.EntityFrameworkCore;
 namespace Allport_s_League_Scrambler.Controllers
 {
     [Route("api/tournaments/{leagueId:int}")]
-    [Authorize(Policy = "LeagueManagement")]
-    public class TournamentsController : ControllerBase
+    [Authorize]
+    public partial class TournamentsController : ControllerBase
     {
         public record DetailsInput(string Name, DateOnly EventDate, string Description, string Location, Guid? Version);
 
+        [Authorize(Policy = "LeagueManagement")]
         [HttpGet]
         public async Task<IActionResult> Read(int leagueId)
         {
@@ -30,6 +31,7 @@ namespace Allport_s_League_Scrambler.Controllers
             return Ok(new { name, details, participants });
         }
 
+        [Authorize(Policy = "LeagueManagement")]
         [HttpPut("details")]
         [SameOrigin]
         public async Task<IActionResult> SaveDetails(int leagueId, [FromBody] DetailsInput input)

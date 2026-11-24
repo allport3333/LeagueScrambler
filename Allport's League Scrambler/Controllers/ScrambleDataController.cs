@@ -682,6 +682,10 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
 
+        private static bool IsGuidedTournamentTeam(DataContext context, int teamId) =>
+            context.KingQueenTeam.Any(team => team.Id == teamId && context.TournamentRounds.Any(round =>
+                round.LeagueId == team.LeagueID && round.ScrambleNumber == team.ScrambleNumber));
+
         [HttpPost("SaveKingQueenRoundScores/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
         public async Task<IActionResult> SaveKingQueenRoundScores(
@@ -712,6 +716,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 {
                     return BadRequest("Score references a team outside the selected league.");
                 }
+                if (IsGuidedTournamentTeam(context, targetTeamId))
+                    return Conflict("Save guided tournament scores in Tournament Center.");
             }
 
             try
@@ -782,6 +788,8 @@ namespace Allport_s_League_Scrambler.Controllers
             if (!LeagueAccess.CanManage(User, context, leagueId))
                 return Forbid();
 
+            if (IsGuidedTournamentTeam(context, dto.KingQueenTeamId))
+                return Conflict("Guided tournament assignments are managed in Tournament Center.");
             kingQueenPlayer.isSubScore = dto.IsSubScore;
 
             try
@@ -840,6 +848,9 @@ namespace Allport_s_League_Scrambler.Controllers
 
                 var leagueId = existingLeague.ID;
 
+                if (context.TournamentConfigurations.Any(row => row.LeagueId == leagueId))
+                    return Conflict("Generate tournament rounds in Tournament Center.");
+
                 // 2) Determine next ScrambleNumber (if that's how you want to group these new teams)
                 var scrambleNumber = (context.KingQueenTeam
                     .Where(kt => kt.LeagueID == leagueId)
@@ -892,6 +903,9 @@ namespace Allport_s_League_Scrambler.Controllers
                     return Forbid();
 
                 var leagueId = existingLeague.ID;
+
+                if (context.TournamentConfigurations.Any(row => row.LeagueId == leagueId))
+                    return Conflict("Save tournament rounds in Tournament Center.");
 
                 // The viewer supplies stable IDs for both generated and retrieved teams.
                 // Keep the legacy no-ID finalization path below for other existing callers.
@@ -1232,6 +1246,9 @@ namespace Allport_s_League_Scrambler.Controllers
                 !LeagueAccess.CanManage(User, context, sc.LeagueId) ||
                 !context.Leagues.Any(l => l.ID == sc.LeagueId)))
                 return Forbid();
+
+            if (scores.Any(score => context.TournamentConfigurations.Any(row => row.LeagueId == score.LeagueId)))
+                return Conflict("Enter guided tournament scores in Tournament Center.");
 
             // The Create Teams screen sends temporary positive team IDs for
             // brand-new teams. Those IDs won't exist in the database yet and
@@ -1607,8 +1624,10 @@ namespace Allport_s_League_Scrambler.Controllers
                 return BadRequest(new { message = "League not found." });
             }
 
+            var isTournament = await context.Leagues.AnyAsync(league => league.ID == leagueId && league.EventTypeId == 2);
             var kingQueenTeams = await context.KingQueenTeam
-                .Where(team => team.LeagueID == leagueId && team.ScrambleWithScoresToBeSaved == true)
+                .Where(team => team.LeagueID == leagueId && team.ScrambleWithScoresToBeSaved == true &&
+                    (!isTournament || team.KingQueenRoundScores.Any()))
                 .Include(team => team.KingQueenRoundScores)
                 .Include(team => team.KingQueenPlayers)
                     .ThenInclude(player => player.Player)
@@ -1616,6 +1635,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             if (!kingQueenTeams.Any())
             {
+                if (isTournament) return Ok(new { playerScores = Array.Empty<object>(), maxRounds = 0 });
                 return Ok(new { message = "No teams found in the league." });
             }
 
@@ -1771,8 +1791,10 @@ namespace Allport_s_League_Scrambler.Controllers
                 return BadRequest(new { message = "League not found." });
             }
 
+            var isTournament = await context.Leagues.AnyAsync(league => league.ID == leagueId && league.EventTypeId == 2);
             var kingQueenTeams = await context.KingQueenTeam
-                .Where(team => team.LeagueID == leagueId && team.ScrambleWithScoresToBeSaved == true)
+                .Where(team => team.LeagueID == leagueId && team.ScrambleWithScoresToBeSaved == true &&
+                    (!isTournament || team.KingQueenRoundScores.Any()))
                 .Include(team => team.KingQueenRoundScores)
                 .Include(team => team.KingQueenPlayers)
                     .ThenInclude(player => player.Player)
@@ -1780,6 +1802,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             if (!kingQueenTeams.Any())
             {
+                if (isTournament) return Ok(new { playerScores = Array.Empty<object>(), maxRounds = 0 });
                 return Ok(new { message = "No teams found in the league." });
             }
 

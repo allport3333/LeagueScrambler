@@ -1,3 +1,4 @@
+import { renderMatchupPrint } from '../matchup-print';
 import { injectConfirmation } from '../confirmation-dialog';
 import { protectPendingWork } from '../pwa/pending-work.service';
 import { LeaguePlayerEditComponent } from '../league-management/player-management-dialogs.component';
@@ -3384,34 +3385,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         if (printContent) {
             const printWindow = window.open('', '_blank', 'width=800,height=600');
             if (printWindow) {
-                printWindow.document.open();
-                printWindow.document.write(`
-                <html>
-                    <head>
-                        <title>Print Matchups</title>
-                        <style>
-                            @media print {
-                                @page { size: portrait; margin: 1cm; }
-                                body {
-                                    font-family: Arial, sans-serif;
-                                    padding: 20px;
-                                }
-                                table {
-                                    width: 100%;
-                                    border-collapse: collapse;
-                                }
-                                th, td {
-                                    border: 1px solid #000;
-                                    padding: 5px;
-                                    text-align: center;
-                                }
-                            }
-                        </style>
-                    </head>
-                    <body>${printContent}</body>
-                </html>
-            `);
-                printWindow.document.close();
+                renderMatchupPrint(printWindow, 'Print Matchups', printContent);
                 printWindow.onload = () => {
                     printWindow.print();
                     printWindow.close();

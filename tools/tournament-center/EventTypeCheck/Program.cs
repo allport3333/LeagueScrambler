@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using System.Text.Json;
+using System.Threading.Tasks;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -61,12 +64,114 @@ try
     var open = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
     Assert(await attendance.SaveMode(tournament.ID, new(TournamentCheckInMode.Skipped, open.Version)) is NoContentResult, "Skipped mode saved");
     Assert(await db.PlayerSignIn.CountAsync(row => row.LeagueId == tournament.ID) == 1, "Skipping preserves attendance");
+    var fixturePlayers = await db.Players.Where(row => row.Id != participant.PlayerId)
+        .OrderBy(row => row.Id).Take(23).ToListAsync();
+    fixturePlayers.Add(await db.Players.SingleAsync(row => row.Id == participant.PlayerId));
+    Assert(fixturePlayers.Count == 24, "24 roster participants");
+    db.PlayersLeagues.AddRange(fixturePlayers.Where(row => row.Id != participant.PlayerId)
+        .Select(row => new PlayersLeague { LeagueID = tournament.ID, PlayerID = row.Id }));
+    await db.SaveChangesAsync();
+
+    var current = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
+    Assert(await attendance.SaveMode(tournament.ID, new(TournamentCheckInMode.Manual, current.Version)) is NoContentResult, "Resume manual check-in");
+    var eligible = fixturePlayers.Take(19).Append(fixturePlayers.Last()).ToArray();
+    foreach (var player in eligible)
+        Assert(await attendance.SavePresence(tournament.ID, player.Id, present) is NoContentResult, "Record eligible participant");
+    Assert(await db.PlayerSignIn.CountAsync(row => row.LeagueId == tournament.ID) == 20, "20 checked in");
+
+    center.ControllerContext = Identity(ownerId, "Manager");
+    var settings = new TournamentRoundSettings
+    {
+        BalancePriorities = true, TopPlayerIds = eligible.Take(3).Select(row => row.Id).ToArray(),
+        LowPlayerIds = eligible.Skip(3).Take(3).Select(row => row.Id).ToArray()
+    };
+    current = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
+    Assert(await center.SaveRoundSettings(tournament.ID, new(current.Version, settings)) is OkObjectResult, "Round settings save");
+    current = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
+    var rounds = await Generate(settings, eligible, Enumerable.Range(1, 5).ToArray(), []);
+    Assert(rounds.Length == 5 && rounds.All(row => row.Teams.Length == 6 && row.Byes.Length == 0), "Five complete feasible rounds");
+    var generation = new TournamentsController.SaveRoundsInput(current.Version, false, rounds);
+    Assert(await center.SaveRounds(tournament.ID, generation) is OkObjectResult, "Generated rounds persist");
+    Assert(await center.SaveRounds(tournament.ID, generation) is ConflictObjectResult, "Duplicate generation request denied");
+    var reopenedCenter = new TournamentsController { ControllerContext = Identity(ownerId, "Manager") };
+    Assert(await reopenedCenter.ReadRounds(tournament.ID) is OkObjectResult, "Reopened tournament loads rounds");
+    var persisted = await db.Set<TournamentRound>().AsNoTracking().Where(row => row.LeagueId == tournament.ID)
+        .OrderBy(row => row.RoundNumber).ToListAsync();
+    Assert(persisted.Count == 5, "Five rounds present on reopening");
+
+    async Task ScoreRound(int number, bool partial = false)
+    {
+        var loaded = await db.Set<TournamentRound>().AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID && row.RoundNumber == number);
+        var teamIds = await db.KingQueenTeam.Where(row => row.LeagueID == tournament.ID && row.ScrambleNumber == loaded.ScrambleNumber)
+            .OrderBy(row => row.Id).Select(row => row.Id).ToArrayAsync();
+        var scores = teamIds.Chunk(2).Select((pair, i) => new TournamentsController.MatchScore(pair[0], pair[1], 1, 21, 15 + i));
+        var latest = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
+        Assert(await reopenedCenter.SaveScores(tournament.ID, number, new(latest.Version, (partial ? scores.Take(1) : scores).ToArray()))
+            is OkObjectResult, "Score save");
+    }
+
+    await ScoreRound(1, true);
+    await HttpResumeCheck.Run(prefix, tournament.ID);
+    var standings = await creation.GetStandingsByLeague(prefix + "-T2");
+    Assert(standings is OkObjectResult before && JsonSerializer.SerializeToElement(before.Value).GetProperty("playerScores").GetArrayLength() > 0,
+        "Authoritative standings available after partial scoring");
+    current = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
+    Assert(await reopenedCenter.SaveRounds(tournament.ID, new(current.Version, false, [rounds[0]])) is ConflictObjectResult,
+        "Partially scored round protected");
+    var replacement = await Generate(settings, eligible, [2], rounds.Where(row => row.RoundNumber != 2).ToArray());
+    Assert(await reopenedCenter.SaveRounds(tournament.ID, new(current.Version, false, replacement)) is OkObjectResult,
+        "Unplayed round replaced");
+    await ScoreRound(1);
+    for (var number = 2; number <= 5; number++) await ScoreRound(number);
+    Assert(await db.KingQueenRoundScores.CountAsync(score =>
+        db.KingQueenTeam.Any(team => team.Id == score.KingQueenTeamId && team.LeagueID == tournament.ID)) == 30,
+        "All five rounds scored exactly once");
+    Assert(await creation.GetStandingsByLeague(prefix + "-T2") is OkObjectResult final &&
+        JsonSerializer.SerializeToElement(final.Value).GetProperty("playerScores").GetArrayLength() == 20, "Final rankings for 20 participants");
+
+    var randomSettings = settings with
+    {
+        BalanceGenders = false, BalancePriorities = false, ActiveTeamLimit = 4, AutomaticByes = true,
+        ManualByes = [new(1, eligible[0].Id)]
+    };
+    var randomRounds = await Generate(randomSettings, eligible.Take(19).ToArray(), Enumerable.Range(1, 5).ToArray(), []);
+    Assert(randomRounds.All(round => round.Teams.Length == 4 && round.Byes.Length == 3), "Uneven attendance uses actual capacity");
+    Assert(randomRounds[0].Byes.Contains(eligible[0].Id) &&
+        randomRounds.SelectMany(round => round.Byes).Distinct().Count() == 15, "Manual bye retained and automatic byes rotate");
+    Assert(randomRounds.All(round => round.Teams.SelectMany(team => team).Concat(round.Byes).Distinct().Count() == 19),
+        "Random generation with repeat minimization accounts for each eligible player");
+    var randomTournament = Created(await creation.AddNewLeague(prefix + "-R", 2, date));
+    db.PlayersLeagues.AddRange(eligible.Take(19).Select(row => new PlayersLeague { LeagueID = randomTournament.ID, PlayerID = row.Id }));
+    await db.SaveChangesAsync();
+    var randomConfig = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == randomTournament.ID);
+    Assert(await attendance.SaveMode(randomTournament.ID, new(TournamentCheckInMode.Skipped, randomConfig.Version)) is NoContentResult,
+        "Skipped check-in uses the eligible roster");
+    randomConfig = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == randomTournament.ID);
+    Assert(await center.SaveRoundSettings(randomTournament.ID, new(randomConfig.Version, randomSettings)) is OkObjectResult, "Random settings saved");
+    randomConfig = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == randomTournament.ID);
+    Assert(await center.SaveRounds(randomTournament.ID, new(randomConfig.Version, false, randomRounds)) is OkObjectResult,
+        "Random rounds with manual and automatic byes persist");
+    Assert(await db.ByePlayer.CountAsync(bye => db.ByeRounds.Any(round => round.Id == bye.ByeRoundId &&
+        round.LeagueID == randomTournament.ID)) == 15, "All fair byes persisted on existing bye records");
+    reopenedCenter.ControllerContext = Identity(participant.UserId, "Player");
+    Assert(await reopenedCenter.ReadRounds(tournament.ID) is OkObjectResult, "Linked participant can view saved rounds");
+    reopenedCenter.ControllerContext = Identity(int.MaxValue, "Player");
+    Assert(await reopenedCenter.ReadRounds(tournament.ID) is ForbidResult, "Nonparticipant cannot view saved rounds");
+    Console.WriteLine("Tournament engine, 24 registered, 20 checked in, five SQL-backed rounds, regeneration guard, partial scores and final standings passed.");
     Console.WriteLine("Event types, tournament details, access, and manual, self-service and skipped check-in passed against LeagueScramblerDev.");
 }
 finally
 {
     var fixtureIds = await db.Leagues.Where(league => league.LeagueName.StartsWith(prefix)).Select(league => league.ID).ToListAsync();
     await using var transaction = await db.Database.BeginTransactionAsync();
+    var fixtureTeams = db.KingQueenTeam.Where(row => fixtureIds.Contains(row.LeagueID));
+    var fixtureByes = db.ByeRounds.Where(row => fixtureIds.Contains(row.LeagueID));
+    await db.KingQueenRoundScores.Where(row => fixtureTeams.Any(team => team.Id == row.KingQueenTeamId)).ExecuteDeleteAsync();
+    await db.KingQueenPlayer.Where(row => fixtureTeams.Any(team => team.Id == row.KingQueenTeamId)).ExecuteDeleteAsync();
+    await fixtureTeams.ExecuteDeleteAsync();
+    await db.ByePlayer.Where(row => fixtureByes.Any(bye => bye.Id == row.ByeRoundId)).ExecuteDeleteAsync();
+    await fixtureByes.ExecuteDeleteAsync();
+    await db.Set<TournamentRound>().Where(row => fixtureIds.Contains(row.LeagueId)).ExecuteDeleteAsync();
     await db.PlayerSignIn.Where(row => fixtureIds.Contains(row.LeagueId)).ExecuteDeleteAsync();
     await db.PlayersLeagues.Where(row => fixtureIds.Contains(row.LeagueID)).ExecuteDeleteAsync();
     await db.TournamentConfigurations.Where(row => fixtureIds.Contains(row.LeagueId)).ExecuteDeleteAsync();
@@ -74,6 +179,24 @@ finally
     await db.LeagueSettings.Where(row => fixtureIds.Contains(row.LeagueId)).ExecuteDeleteAsync();
     await db.Leagues.Where(row => fixtureIds.Contains(row.ID) && row.LeagueName.StartsWith(prefix)).ExecuteDeleteAsync();
     await transaction.CommitAsync();
+}
+
+static async Task<TournamentsController.Allocation[]> Generate(TournamentRoundSettings settings, Player[] players,
+    int[] pending, TournamentsController.Allocation[] preserved)
+{
+    using var process = Process.Start(new ProcessStartInfo("node", "tools/tournament-center/generate-fixture.cjs")
+    {
+        RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false
+    });
+    var json = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    await process.StandardInput.WriteAsync(JsonSerializer.Serialize(new { settings, players, pending, preserved }, json));
+    process.StandardInput.Close();
+    var output = process.StandardOutput.ReadToEndAsync();
+    var errors = process.StandardError.ReadToEndAsync();
+    await process.WaitForExitAsync();
+    if (process.ExitCode != 0) throw new InvalidOperationException(await errors);
+    return JsonSerializer.Deserialize<TournamentsController.Allocation[]>(
+        JsonDocument.Parse(await output).RootElement.GetProperty("rounds"), json);
 }
 
 static LeagueType Created(IActionResult result) => (result as OkObjectResult)?.Value as LeagueType
