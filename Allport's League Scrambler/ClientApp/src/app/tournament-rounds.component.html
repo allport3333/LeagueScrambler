@@ -289,7 +289,7 @@
               } @else if (round.status === "unplayed") {
                 <div class="step-actions">
                   <label class="choice"><input type="checkbox" [checked]="removalSelection.has(round.roundNumber)" (change)="$any($event.target).checked ? removalSelection.add(round.roundNumber) : removalSelection.delete(round.roundNumber)"> Select for deletion</label>
-                  <button type="button" [disabled]="dirty" (click)="propose(round.roundNumber)">Regenerate Round</button>
+                  <button type="button" [disabled]="dirty" (click)="propose(round.roundNumber)">Redraw Round Teams</button>
                   <button type="button" (click)="removeRequest = {numbers: [round.roundNumber], voidScored: false}">Delete Round</button>
                 </div>
               } @else {
