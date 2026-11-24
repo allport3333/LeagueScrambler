@@ -1109,13 +1109,25 @@ Apply Top Players (Male Standings)
 <mat-tab label="Create League">
   <div class="management-create-league">
     <mat-card appearance="outlined" class="setup-card">
-    <h3>Create New League</h3>
-    <form class="setup-form" [formGroup]="LeagueForm" (ngSubmit)="addLeague()">
+    <h3>Create an Event</h3>
+    <form class="setup-form" [formGroup]="LeagueForm" (ngSubmit)="addLeague(+eventType.value, eventDate.value)">
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>New League Name</mat-label>
-        <input matInput type="text" formControlName="newLeagueName" required />
+        <mat-label>Event Name</mat-label>
+        <input matInput type="text" formControlName="newLeagueName" maxlength="50" required />
       </mat-form-field>
-      <button mat-raised-button color="primary" [disabled]="LeagueForm.invalid || leagueCreationPending">Add New League</button>
+      <label>Event Type
+        <select #eventType class="form-control" (change)="creationError = ''">
+          <option value="1">League</option>
+          <option value="2">Tournament</option>
+          <option value="3">Pickup</option>
+        </select>
+      </label>
+      <label [hidden]="eventType.value !== '2'">Tournament Date
+        <input #eventDate type="date" class="form-control" [required]="eventType.value === '2'" (input)="creationError = ''" />
+      </label>
+      <button mat-raised-button color="primary" [disabled]="LeagueForm.invalid || leagueCreationPending || (eventType.value === '2' && !eventDate.value)">
+        {{ eventType.value === '2' ? 'Create Tournament' : eventType.value === '3' ? 'Create Pickup Event' : 'Create League' }}
+      </button>
     </form>
     @if (creationError) { <p role="alert">{{ creationError }}</p> }
   </mat-card>

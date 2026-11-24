@@ -56,11 +56,20 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     ];
 
     get primaryDestinations(): NavItem[] {
-        return this.destinations.filter(item =>
+        const tournament = this.leagues?.some(event => event.id === this.selectedLeagueId && event.eventTypeId === 2);
+        const items = this.destinations.filter(item =>
+            (!tournament || item.route !== '/sign-in') &&
             (!item.signedInOnly || (this.authenticationChecked && this.loggedIn)) &&
             (!item.roles || item.roles.includes(this.userRole)))
             .filter(item => !item.children || item.children.length)
             .map(item => item.children?.length === 1 ? item.children[0] : item);
+        if (tournament && this.loggedIn) {
+            const organizer = this.userRole === 'Admin' || this.userRole === 'Manager';
+            items.splice(1, 0, organizer
+                ? { label: 'Tournament Center', icon: 'emoji_events', route: ['/tournament', this.selectedLeagueId] }
+                : { label: 'Tournament Check In', icon: 'how_to_reg', route: ['/tournament', this.selectedLeagueId, 'check-in'] });
+        }
+        return items;
     }
 
     get accountDestination(): NavItem | null {

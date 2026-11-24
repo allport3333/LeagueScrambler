@@ -1,10 +1,11 @@
 import { injectConfirmation } from '../confirmation-dialog';
 import { protectPendingWork } from '../pwa/pending-work.service';
 import { LeaguePlayerEditComponent } from '../league-management/player-management-dialogs.component';
-import { Component, Inject, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, TemplateRef, ElementRef, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Inject, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, TemplateRef, ElementRef, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 import { HistoricalScramblePreviewComponent, HistoricalScramblePreviewData } from './historical-scramble-preview.component';
 import { MatSelectionListChange } from '@angular/material/list';
 import { MatTabGroup, MatTabChangeEvent } from '@angular/material/tabs';
@@ -43,6 +44,7 @@ import { generateScramble as runScrambleV2, rankTopPlayers, capacitiesFor, histo
     standalone: false
 })
 export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
+    private readonly router = inject(Router);
     prioritizePreviousTeammates = false;
     allowMinimumRepeats = false;
     generationBusy = false;
@@ -2437,7 +2439,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.strictFailureSignature = null;
     }
 
-    addLeague(): void {
+    addLeague(eventTypeId = 1, eventDate?: string): void {
         const name = this.LeagueForm.controls['newLeagueName'].value?.trim();
         if (!this.canCreateLeague || !name || this.leagueCreationPending) return;
         if (this.leaguesAvailable?.some(league => league.leagueName.toLowerCase() === name.toLowerCase())) {
@@ -2447,7 +2449,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
         this.creationError = '';
         this.leagueCreationPending = true;
-        this.playerService.AddNewLeague(name).subscribe({
+        this.playerService.AddNewLeague(name, eventTypeId, eventDate).subscribe({
             next: created => {
                 this.showSnackBar('League created.');
                 this.LeagueForm.reset();
@@ -2461,6 +2463,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
                         this.createdLeagueId = created.id;
                         this.leaguesAvailable = leagues;
                         this.leagueService.setSelectedLeague(created.id);
+                        if (created.eventTypeId === 2) this.router.navigate(['/tournament', created.id]);
                     },
                     error: () => {
                         this.leagueCreationPending = false;

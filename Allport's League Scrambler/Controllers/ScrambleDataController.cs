@@ -1163,6 +1163,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 {
                     return NotFound("League not found.");
                 }
+                if (await context.Leagues.AnyAsync(l => l.ID == playerSignIn.LeagueId && l.EventTypeId == 2))
+                    return Conflict("Use Tournament Check In for this event.");
 
                 // Do not trust a posted player ID to belong to this league.
                 if (!await context.PlayersLeagues.AnyAsync(pl =>
@@ -1547,6 +1549,8 @@ namespace Allport_s_League_Scrambler.Controllers
             {
                 return NotFound($"PlayerSignIn record with ID {playerSignInId} not found.");
             }
+            if (await context.Leagues.AnyAsync(l => l.ID == signInRecord.LeagueId && l.EventTypeId == 2))
+                return Conflict("Use Tournament Check In for this event.");
 
             // Managers can remove entries; ordinary players can only remove
             // their own entry. This preserves the existing sign-in toggle.
@@ -2148,24 +2152,28 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost("[action]/{leagueName}")]
         [Authorize(Policy = "LeagueManagement")]
         [SameOrigin]
-        public async Task<IActionResult> AddNewLeague(string leagueName)
+        public async Task<IActionResult> AddNewLeague(string leagueName, [FromQuery] int eventTypeId = 1, [FromQuery] DateOnly? eventDate = null)
         {
             if (!LeagueAccess.TryGetAccountId(User, out var ownerId))
                 return Forbid();
 
             leagueName = leagueName?.Trim();
-            if (string.IsNullOrEmpty(leagueName))
-                return BadRequest(new { message = "Enter a league name." });
+            if (!ModelState.IsValid || string.IsNullOrEmpty(leagueName) || leagueName.Length > 50)
+                return BadRequest(new { message = "Enter an event name of 50 characters or fewer and choose a valid event type and date." });
 
             await using var context = new DataContext();
             await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            if (!await context.EventTypes.AnyAsync(type => type.ID == eventTypeId))
+                return BadRequest(new { message = "Choose a valid event type." });
+            if (eventTypeId == 2 && !eventDate.HasValue)
+                return BadRequest(new { message = "Choose a tournament date." });
             var existing = await context.Leagues.FirstOrDefaultAsync(league => league.LeagueName == leagueName);
             if (existing != null)
                 return LeagueAccess.CanManage(User, context, existing.ID)
                     ? Conflict(new { message = "A league with that name already exists." })
                     : Forbid();
 
-            var league = new LeagueType { LeagueName = leagueName };
+            var league = new LeagueType { LeagueName = leagueName, EventTypeId = eventTypeId };
             context.Leagues.Add(league);
             await context.SaveChangesAsync();
 
@@ -2175,6 +2183,9 @@ namespace Allport_s_League_Scrambler.Controllers
                 new LeagueSettings { LeagueId = league.ID, SettingName = "dropLowest", SettingValue = "0" },
                 new LeagueSettings { LeagueId = league.ID, SettingName = "dayOfLeague", SettingValue = "Monday" });
             context.UserLeagues.Add(new UserLeague { LeagueTypeId = league.ID, UserId = ownerId });
+            if (eventTypeId == 2)
+                context.TournamentConfigurations.Add(new TournamentConfiguration
+                    { LeagueId = league.ID, EventDate = eventDate.Value, Version = Guid.NewGuid() });
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
             return Ok(league);

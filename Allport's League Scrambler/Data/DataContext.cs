@@ -14,6 +14,8 @@ namespace Allport_s_League_Scrambler.Data
         public virtual DbSet<Player> Players { get; set; }
         public virtual DbSet<PlayersLeague> PlayersLeagues { get; set; }
         public virtual DbSet<LeagueType> Leagues { get; set; }
+        public DbSet<EventType> EventTypes { get; set; }
+        public DbSet<TournamentConfiguration> TournamentConfigurations { get; set; }
         public virtual DbSet<Password> Passwords { get; set; }
         public virtual DbSet<PlayerScore> PlayerScore { get; set; }
         public virtual DbSet<LeagueTeam> LeagueTeam { get; set; }
@@ -60,6 +62,14 @@ namespace Allport_s_League_Scrambler.Data
             modelBuilder.Entity<LeagueScheduleEvent>().ToTable("LeagueScheduleEvent", "dbo");
             modelBuilder.Entity<PlayersLeague>().ToTable("PlayersLeague", "dbo");
             modelBuilder.Entity<LeagueType>().ToTable("LeagueType", "dbo");
+            modelBuilder.Entity<EventType>().ToTable("EventType", "dbo");
+            var tournament = modelBuilder.Entity<TournamentConfiguration>().ToTable("TournamentConfiguration", "dbo");
+            tournament.HasKey(details => details.LeagueId);
+            tournament.Property(details => details.Version).IsConcurrencyToken();
+            tournament.HasOne<LeagueType>().WithOne().HasForeignKey<TournamentConfiguration>(details => details.LeagueId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<LeagueType>().HasOne<EventType>().WithMany()
+                .HasForeignKey(league => league.EventTypeId).OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<Password>().ToTable("Password", "dbo");
             modelBuilder.Entity<PlayerScore>().ToTable("PlayerScore", "dbo");
             modelBuilder.Entity<LeagueTeam>().ToTable("LeagueTeam", "dbo");

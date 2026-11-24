@@ -38,7 +38,7 @@ export class LeagueService {
 
     // Nonredirecting session restoration; retain a still-accessible current selection.
     restoreLeagues(leagues: Leagues[]): void {
-        this.leaguesAvailable = (leagues || []).map(league => ({ id: league.id, leagueName: league.leagueName }));
+        this.leaguesAvailable = leagues || [];
         const current = this.selectedLeagueSource.getValue();
         let remembered: number | null = null;
         try { remembered = Number(sessionStorage.getItem(this.selectionKey)) || null; }
@@ -57,9 +57,9 @@ export class LeagueService {
 
     // Data loading must not redirect the route during session restoration. A valid
     // Admin/Manager can have leagues without a claimed player profile.
-    getLeagues(): Observable<{ id: number; leagueName: string }[]> {
+    getLeagues(): Observable<Leagues[]> {
         return this.loginService.getUserLeagues().pipe(map(leagues => {
-            this.leaguesAvailable = (leagues || []).map(league => ({ id: league.id, leagueName: league.leagueName }));
+            this.leaguesAvailable = leagues || [];
             return this.leaguesAvailable;
         }));
     }

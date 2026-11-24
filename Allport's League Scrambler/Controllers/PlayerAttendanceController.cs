@@ -26,6 +26,9 @@ namespace Allport_s_League_Scrambler.Controllers
    var linked=await context.UsersPlayer.Where(link=>link.UserId==userId).Select(link=>link.PlayerId).Distinct().ToListAsync();
    state.IsOwnProfile=linked.Contains(playerId);state.Visible=state.IsOwnProfile||linked.Count==0;
    if(!state.IsOwnProfile){state.Reason=linked.Count==0?"Your account has no linked player profile.":null;return state;}
+   if(await context.Leagues.AnyAsync(league=>league.ID==leagueId&&league.EventTypeId==2)){
+    state.Reason="Use Tournament Check In for this event.";return state;
+   }
    var member=await context.PlayersLeagues.AnyAsync(link=>link.PlayerID==playerId&&link.LeagueID==leagueId);
    var locked=await context.LeagueSignInLocked.AnyAsync(value=>value.LeagueId==leagueId&&value.SignInLocked);
    var day=await context.LeagueSettings.Where(value=>value.LeagueId==leagueId&&value.SettingName=="dayOfLeague").Select(value=>value.SettingValue).FirstOrDefaultAsync();
