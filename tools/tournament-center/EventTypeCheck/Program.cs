@@ -29,7 +29,11 @@ try
     var original = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
     Assert(original.EventDate == date, "Tournament date persisted at creation");
     var center = new TournamentsController { ControllerContext = Identity(ownerId, "Manager") };
-    Assert(await center.Read(tournament.ID) is OkObjectResult, "Linked manager can load tournament");
+    Assert(await center.Read(tournament.ID) is OkObjectResult, "Owner can load tournament");
+    center.ControllerContext = Identity(ownerId, "Admin");
+    Assert(await center.Read(31) is OkObjectResult && await center.Read(32) is OkObjectResult,
+        "Administrator can manage the unassigned historical tournaments");
+    center.ControllerContext = Identity(ownerId, "Manager");
     var edit = new TournamentsController.DetailsInput(prefix + "-T2", date.AddDays(1), "Fixture description", "Fixture court", original.Version);
     Assert(await center.SaveDetails(tournament.ID, edit) is OkObjectResult, "Linked manager can save tournament");
     Assert(await center.SaveDetails(tournament.ID, edit) is ConflictObjectResult, "Stale update rejected");
@@ -177,6 +181,7 @@ finally
     await db.TournamentConfigurations.Where(row => fixtureIds.Contains(row.LeagueId)).ExecuteDeleteAsync();
     await db.UserLeagues.Where(row => fixtureIds.Contains(row.LeagueTypeId) && row.UserId == ownerId).ExecuteDeleteAsync();
     await db.LeagueSettings.Where(row => fixtureIds.Contains(row.LeagueId)).ExecuteDeleteAsync();
+    await db.Players.Where(row => row.LastName == prefix && (row.FirstName == "WizardOne" || row.FirstName == "WizardTwo")).ExecuteDeleteAsync();
     await db.Leagues.Where(row => fixtureIds.Contains(row.ID) && row.LeagueName.StartsWith(prefix)).ExecuteDeleteAsync();
     await transaction.CommitAsync();
 }

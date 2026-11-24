@@ -28,7 +28,8 @@ namespace Allport_s_League_Scrambler.Controllers
             var details = await db.TournamentConfigurations.AsNoTracking().SingleOrDefaultAsync(row => row.LeagueId == leagueId);
             var participants = await db.PlayersLeagues.Where(row => row.LeagueID == leagueId)
                 .Select(row => row.PlayerID).Distinct().CountAsync();
-            return Ok(new { name, details, participants });
+            var hasRounds = await db.TournamentRounds.AnyAsync(round => round.LeagueId == leagueId);
+            return Ok(new { name, details, participants, hasRounds });
         }
 
         [Authorize(Policy = "LeagueManagement")]

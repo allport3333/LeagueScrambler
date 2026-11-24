@@ -9,11 +9,9 @@
     } @empty {
       @if (!busy && !error) { <p>No tournament rounds have been saved yet.</p> }
     }
-  } @else {
-  <nav aria-label="Tournament workflow" class="step-actions">
-    <button type="button" [attr.aria-pressed]="step === 'configuration'" (click)="step = 'configuration'">Team & Round Setup</button>
-    <button type="button" [attr.aria-pressed]="step === 'priorities'" (click)="step = 'priorities'">Player Priorities & Byes</button>
-    <button type="button" [attr.aria-pressed]="step === 'rounds'" (click)="step = 'rounds'">Rounds & Printing</button>
+  } @else if (wizardStep() === 7) {
+  <nav aria-label="Run Tournament" class="step-actions">
+    <button type="button" [attr.aria-pressed]="step === 'rounds'" (click)="step = 'rounds'">Matchups & Printing</button>
     <button type="button" [attr.aria-pressed]="step === 'scores'" [disabled]="!rounds.length" (click)="openScores(scoreRound || nextRound || rounds[0])">Scores</button>
   </nav>
   }
@@ -21,9 +19,9 @@
   @if (notice) { <p role="status">{{ notice }}</p> }
   @if (busy) { <p role="status">Working…</p> }
   @if (state; as data) {
-    <p class="summary">{{ data.roster.length }} registered · {{ eligible.length }} eligible · {{ rounds.length }} saved rounds · {{ completed }} of {{ data.settings.numberOfRounds }} rounds completed</p>
+    <p class="summary">{{ data.roster.length }} registered · {{ data.presentIds.length }} checked in · {{ eligible.length }} eligible · {{ rounds.length }} saved rounds · {{ completed }} of {{ data.settings.numberOfRounds }} rounds completed</p>
     <fieldset [disabled]="busy">
-      @if (step === 'configuration') {
+      @if (view === 'configuration') {
         <h2>Team & Round Setup</h2>
         <div class="form-grid">
           <label>Team Configuration
@@ -65,7 +63,7 @@
           </details>
         }
       }
-      @if (step === 'priorities') {
+      @if (view === 'priorities') {
         <h2>Player Priorities & Byes</h2>
         <p>Top players are prioritized in the order selected. Automatic byes are assigned when an active team limit leaves too few places.</p>
         <div class="step-actions">
@@ -73,7 +71,7 @@
           <label class="choice"><input type="checkbox" [(ngModel)]="data.settings.automaticByes" (ngModelChange)="markEdited()"> Allow Automatic Byes</label>
         </div>
         <div class="form-grid">
-          <label>Filter Eligible Players <input class="form-control" type="search" [(ngModel)]="filter"></label>
+          <label>Filter Participants <input class="form-control" type="search" [(ngModel)]="filter"></label>
           <label>Manual Byes for Round
             <select class="form-control" [(ngModel)]="byeRound">
               @for (number of sequence(data.settings.numberOfRounds); track number) { <option [ngValue]="number">{{ number }}</option> }
@@ -92,15 +90,23 @@
               <label class="choice"><input type="checkbox" [ngModel]="manualBye(player.id)" (ngModelChange)="setBye(player.id, $event)"> Manual bye</label>
               <small>{{ byeCount(player.id) }} saved byes</small>
             </article>
-          } @empty { <p>No matching eligible players. Configure check-in to establish eligibility.</p> }
+          } @empty { <p>No matching participants.</p> }
         </div>
       }
-      @if (step === 'configuration' || step === 'priorities') {
+      @if (view === 'configuration' || view === 'priorities') {
         @if (rounds.length) { <p>Saved settings apply to future generation. Existing rounds stay as saved until an unplayed round is explicitly replaced.</p> }
-        <button type="button" class="primary" [disabled]="!dirty && settingsSaved" (click)="saveSettings()">Save Round Settings</button>
+
       }
-      @if (step === 'rounds') {
-        <h2>Rounds & Printing</h2>
+      @if (view === 'rounds') {
+                <h2>{{ wizardStep() === 6 ? 'Generate & Preview Tournament' : 'Run Tournament' }}</h2>
+        @if (wizardStep() === 6) {
+          <p>{{ data.settings.numberOfRounds }} rounds · {{ data.settings.gamesPerMatchup }} games per matchup ·
+            {{ data.settings.maximumTeamSize ? 'Maximum ' + data.settings.maximumTeamSize + ' players per team' : data.settings.numberOfTeams + ' teams' }} ·
+            {{ data.settings.balanceGenders ? 'Balanced teams' : 'Random gender composition' }} ·
+            {{ data.settings.minimizeRepeats ? 'Minimize repeats' : 'Allow repeats' }}</p>
+          <p>{{ data.settings.topPlayerIds.length }} top · {{ data.settings.lowPlayerIds.length }} low ·
+            {{ data.settings.manualByes.length }} manual byes · {{ data.settings.historicalScrambleNumbers.length }} historical scrambles excluded</p>
+        }
         @if (!data.mode) { <p>Open, manually configure, or skip check-in before generating rounds.</p> }
         @if (!settingsSaved || dirty) { <p>Save team and round settings before generating.</p> }
         @if (data.settings.historicalScrambleNumbers.length) {
@@ -114,9 +120,9 @@
               {{ rounds.length ? 'Preview All Unplayed Rounds' : 'Generate Tournament Rounds' }}
             </button>
           }
-          @if (nextRound; as round) {
+          @if (nextRound; as round) { @if (wizardStep() === 7) {
             <button type="button" (click)="openScores(round)">Continue: Enter Round {{ round.roundNumber }} Scores</button>
-          }
+          } }
           @if (rounds.length === data.settings.numberOfRounds && completed === rounds.length) {
             <a class="button-link" routerLink="/standings" [queryParams]="{leagueId: leagueId()}">Continue: Review Final Standings</a>
           }
@@ -136,7 +142,7 @@
                 <summary>Round {{ round.roundNumber }}</summary>
                 <div class="player-grid">
                   @for (team of round.teams; track $index) {
-                    <article class="team"><strong>Team {{ $index + 1 }}</strong>
+                    <article class="team"><strong>Team {{ $index + 1 }} · Matchup {{ matchupFor($index) }}</strong>
                       <ul>@for (id of team; track id) { <li>{{ previewName(id) }}</li> }</ul>
                     </article>
                   }
@@ -164,7 +170,7 @@
           </details>
         }
       }
-      @if (step === 'scores' && scoreRound) {
+      @if (view === 'scores' && scoreRound) {
         <h2>Scores</h2>
         <label>Round
           <select class="form-control" [ngModel]="scoreRound" (ngModelChange)="openScores($event)">

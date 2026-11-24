@@ -36,6 +36,8 @@ export class TournamentRoundsComponent implements OnInit {
     readonly leagueId = input.required<number>();
     readonly tournamentName = input('');
     readonly readOnly = input(false);
+    readonly wizardStep = input(0);
+    readonly roundsSaved = output<void>();
     publicName = '';
     readonly versionChanged = output<string>();
     teamBySize = true;
@@ -54,7 +56,15 @@ export class TournamentRoundsComponent implements OnInit {
     previewVersion = '';
     repeats = 0;
     relaxedRounds: number[] = [];
-    step = 'configuration';
+    step = 'rounds';
+    get view(): string {
+        switch (this.wizardStep()) {
+            case 3: return 'configuration';
+            case 4: return 'priorities';
+            case 6: return 'rounds';
+            default: return this.step;
+        }
+    }
     filter = '';
     byeRound = 1;
     scoreRound?: SavedRound;
@@ -72,7 +82,7 @@ export class TournamentRoundsComponent implements OnInit {
 
     get filteredPlayers(): (Player & ScramblePlayer)[] {
         const query = this.filter.trim().toLowerCase();
-        return this.eligible.filter(player => this.playerName(player).toLowerCase().includes(query));
+        return (this.state?.roster ?? []).filter(player => this.playerName(player).toLowerCase().includes(query));
     }
 
     get history() {
@@ -165,7 +175,9 @@ export class TournamentRoundsComponent implements OnInit {
         return this.state!.settings.manualByes.some(bye => bye.playerId === id && bye.roundNumber === this.byeRound);
     }
 
-    async saveSettings(): Promise<void> {
+    async saveSettings(): Promise<boolean> {
+        if (this.busy || !this.state) return false;
+        let success = false;
         await this.perform(async () => {
             const state = this.state!;
             const saved = await this.request(this.http.put<{version: string}>(this.url + '/round-settings',
@@ -175,7 +187,9 @@ export class TournamentRoundsComponent implements OnInit {
             this.settingsSaved = true;
             this.dirty = false;
             this.notice = 'Tournament settings saved.';
+            success = true;
         });
+        return success;
     }
 
     async propose(single?: number): Promise<void> {
@@ -209,6 +223,7 @@ export class TournamentRoundsComponent implements OnInit {
             await this.reload();
             this.versionChanged.emit(this.state!.version);
             this.notice = 'Tournament rounds saved.';
+            this.roundsSaved.emit();
         });
     }
 

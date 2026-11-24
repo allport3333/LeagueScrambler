@@ -27,6 +27,9 @@ namespace Allport_s_League_Scrambler.Models
         public string Location { get; set; }
         public Guid Version { get; set; }
         public TournamentCheckInMode CheckInMode { get; set; }
+        public int WorkflowStep { get; set; } = 2;
+        [Newtonsoft.Json.JsonIgnore]
+        public int? OwnerUserId { get; set; }
         [System.Text.Json.Serialization.JsonIgnore, Newtonsoft.Json.JsonIgnore]
         public string RoundSettingsJson { get; set; }
     }

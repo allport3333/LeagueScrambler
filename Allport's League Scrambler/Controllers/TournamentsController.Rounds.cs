@@ -161,6 +161,7 @@ namespace Allport_s_League_Scrambler.Controllers
                         ByePlayers = round.Byes.Select(id => new ByePlayer { PlayerId = id }).ToList()
                     });
             }
+            details.WorkflowStep = 7;
             details.Version = Guid.NewGuid();
             await db.SaveChangesAsync();
             await transaction.CommitAsync();

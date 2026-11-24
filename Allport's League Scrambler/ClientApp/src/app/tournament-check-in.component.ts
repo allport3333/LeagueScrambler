@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,13 +28,13 @@ interface AttendanceState {
     `],
     template: `
         <main>
-          <header><h1>Tournament Check In</h1>
+          <header>@if (embedded()) { <h2>Player Check In</h2> } @else { <h1>Tournament Check In</h1> }
             @if (state) { <p>{{ state.name }} · {{ state.eventDate }}</p> }
           </header>
           @if (state) {
             @if (state.organizers) {
               <div class="check-in-modes">
-                <a mat-button [routerLink]="['/tournament', leagueId]">Tournament Center</a>
+                @if (!embedded()) { <a mat-button [routerLink]="['/tournament', leagueId]">Tournament Center</a> }
                 <button mat-stroked-button [disabled]="busy || state.mode === 1" (click)="setMode(1)">Open Player Check In</button>
                 <button mat-stroked-button [disabled]="busy || state.mode === 2" (click)="setMode(2)">Check In Players Manually</button>
                 <button mat-stroked-button [disabled]="busy || state.mode === 3" (click)="setMode(3)">Skip Check In</button>
@@ -62,11 +62,13 @@ interface AttendanceState {
         </main>
     `
 })
-export class TournamentCheckInComponent {
+export class TournamentCheckInComponent implements OnInit {
     private readonly http = inject(HttpClient);
     private readonly destroy = inject(DestroyRef);
-    readonly leagueId = Number(inject(ActivatedRoute).snapshot.paramMap.get('leagueId'));
-    private readonly url = '/api/tournament-attendance/' + this.leagueId;
+    readonly embedded = input(false);
+    private readonly routeLeagueId = Number(inject(ActivatedRoute).snapshot.paramMap.get('leagueId'));
+    get leagueId() { return this.routeLeagueId; }
+    private get url() { return '/api/tournament-attendance/' + this.leagueId; }
     state: AttendanceState;
     loading = true;
     busy = false;
@@ -74,7 +76,7 @@ export class TournamentCheckInComponent {
     notice = '';
     filter = '';
 
-    constructor() { this.load(); }
+    ngOnInit() { this.load(); }
 
     get presentCount() { return this.state.roster.filter(player => player.present).length; }
     get shownPlayers() {

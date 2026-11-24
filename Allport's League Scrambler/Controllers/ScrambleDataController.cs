@@ -2208,7 +2208,7 @@ namespace Allport_s_League_Scrambler.Controllers
             context.UserLeagues.Add(new UserLeague { LeagueTypeId = league.ID, UserId = ownerId });
             if (eventTypeId == 2)
                 context.TournamentConfigurations.Add(new TournamentConfiguration
-                    { LeagueId = league.ID, EventDate = eventDate.Value, Version = Guid.NewGuid() });
+                    { LeagueId = league.ID, EventDate = eventDate.Value, OwnerUserId = ownerId, WorkflowStep = 1, Version = Guid.NewGuid() });
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
             return Ok(league);

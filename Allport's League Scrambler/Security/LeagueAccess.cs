@@ -93,6 +93,10 @@ namespace Allport_s_League_Scrambler.Security
                 return false;
             }
 
+            if (context.Leagues.Any(league => league.ID == leagueId && league.EventTypeId == 2))
+                return context.TournamentConfigurations.Any(tournament =>
+                    tournament.LeagueId == leagueId && tournament.OwnerUserId == userId);
+
             return context.UserLeagues.Any(link =>
                 link.UserId == userId && link.LeagueTypeId == leagueId);
         }

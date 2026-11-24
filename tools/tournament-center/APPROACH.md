@@ -10,13 +10,14 @@ PlayerSignIn stores attendance by event, local date, and player. Open and manual
 2. Apply `Apply-TournamentCheckIn.sql`.
 3. Apply `Apply-TournamentRoundSettings.sql`.
 4. Apply `Apply-TournamentRounds.sql`.
-5. Run `Classify-DevelopmentEvents.sql` only in LeagueScramblerDev when the guarded example classifications are needed.
+5. Apply `Apply-TournamentWorkflow.sql`.
+6. Run `Classify-DevelopmentEvents.sql` only in LeagueScramblerDev when the guarded example classifications are needed.
 
 The settings column is nullable for existing configurations. The center supplies initial values until the organizer saves. TournamentRound uniquely maps an event and round number to a saved scramble and records the generation settings and eligibility snapshot. KingQueenTeam and KingQueenPlayer hold teams and assignments, ByeRounds and ByePlayer hold rests, and KingQueenRoundScores stores games within matchups. No existing data is migrated into guided rounds.
 
 ## Use and safeguards
 
-Open Tournament Center after creation. Manage Participants opens the existing player management tools for the selected event. Set the check-in mode, save team and round settings, and generate a preview. Saving makes the rounds visible to linked participants. Refreshing loads the persisted rounds and points to the next incomplete score entry. Standings are available before, during, and after score entry through the existing King & Queen calculation.
+Open Tournament Center after creation. Manage Participants uses the existing player search, registration, and membership services inside the wizard. The setup step is saved on TournamentConfiguration. Once rounds exist, the center opens the operational dashboard directly. Set the check-in mode, save team and round settings, and generate a preview. Saving makes the rounds visible to linked participants. Refreshing loads the persisted rounds and points to the next incomplete score entry. Standings are available before, during, and after score entry through the existing King & Queen calculation.
 
 Generation runs Scrambler V2 in the browser with a bounded search and ranks candidate schedules by historical violations, bye spread, and repeat cost. Gender balancing and Top/Low placement are independent. Strict fallback is opt-in and the engine only uses it when it proves strict assignment impossible for that round. An explicit even active-team limit is required for automatic rests. Previously saved and preserved rounds inform the replacement preview.
 
@@ -31,3 +32,5 @@ Build Angular in production mode and run the Angular unit tests. From the reposi
 For fixture-based visual verification, copy the Angular production browser bundle under this worktree's ignored `tests/functional/artifacts` directory. Set `LEAGUE_TEST_DIST` to the copied browser directory and `LEAGUE_TEST_OUT` to the screenshot destination. Run `node tests/functional/scripts/tournament-center.cjs` to check the three themes, modal print preview, and responsive organizer and participant pages without a database mutation.
 
 The search compares complete schedules within a budget and can report inconclusive results. It makes no guarantee of a globally minimum repeat count.
+
+New tournaments record the creating user as owner. Administrators can manage any tournament. Owners with the Manager role can manage their own tournaments. The migration leaves legacy ownership unset for administrator review. Ordinary league management continues to use UserLeague assignments.

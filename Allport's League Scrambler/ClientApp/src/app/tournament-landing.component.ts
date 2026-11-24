@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -62,6 +63,7 @@ import { PlayerService } from './services/player.service';
     `
 })
 export class TournamentLandingComponent {
+    private readonly http = inject(HttpClient);
     private readonly leagues = inject(LeagueService);
     private readonly players = inject(PlayerService);
     private readonly router = inject(Router);
@@ -80,7 +82,7 @@ export class TournamentLandingComponent {
     load(): void {
         this.loading = true;
         this.listError = false;
-        this.leagues.getLeagues().pipe(takeUntilDestroyed(this.destroy)).subscribe({
+        this.http.get<Leagues[]>('/api/tournaments').pipe(takeUntilDestroyed(this.destroy)).subscribe({
             next: events => {
                 this.tournaments = events.filter(event => event.eventTypeId === 2);
                 this.loading = false;
