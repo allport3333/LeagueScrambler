@@ -26,15 +26,10 @@
             <h4>Male Players ({{ malePlayerCount }})</h4>
             <div class="player-grid">
               @for (player of malePlayers1; track player) {
-                <div
-                  class="player-item"
-                  (click)="addPlayerToTeam(player)"
-                  [style.background-color]="'#ADD8E6'"
-                  style="padding: 5px; margin: 5px 0; border-radius: 5px; cursor: pointer;">
-                  <span [style.text-decoration]="player.isUsed ? 'line-through' : 'none'">
-                    {{ player.firstName }} {{ player.lastName }}
-                  </span>
-                </div>
+                <button type="button" class="player-item male-player"
+                  [attr.aria-pressed]="!!player.isUsed" (click)="addPlayerToTeam(player)">
+                  {{ player.firstName }} {{ player.lastName }}
+                </button>
               }
             </div>
           </div>
@@ -43,15 +38,10 @@
             <h4>Female Players ({{ femalePlayerCount }})</h4>
             <div class="player-grid">
               @for (player of femalePlayers1; track player) {
-                <div
-                  class="player-item"
-                  (click)="addPlayerToTeam(player)"
-                  [style.background-color]="'#FFC0CB'"
-                  style="padding: 5px; margin: 5px 0; border-radius: 5px; cursor: pointer;">
-                  <span [style.text-decoration]="player.isUsed ? 'line-through' : 'none'">
-                    {{ player.firstName }} {{ player.lastName }}
-                  </span>
-                </div>
+                <button type="button" class="player-item female-player"
+                  [attr.aria-pressed]="!!player.isUsed" (click)="addPlayerToTeam(player)">
+                  {{ player.firstName }} {{ player.lastName }}
+                </button>
               }
             </div>
           </div>
@@ -62,13 +52,10 @@
         <h3 style="text-align: center;">Teams</h3>
         <div class="row">
           <div class="col-12 d-flex flex-wrap justify-content-center mb-4">
-            <!-- Container for both sections -->
-            <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
-              <!-- Number of Rounds -->
-              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: #f9f9f9; min-width: 120px;">
-                <label for="roundDropdown" style="display: block; font-weight: bold; margin-bottom: 8px;">Number of Rounds:</label>
-                <mat-form-field appearance="outline" style="width: 100%;">
-                  <mat-select [(value)]="selectedRounds" (selectionChange)="setNumberOfRounds($event.value)">
+            <div class="manual-team-controls">
+                <mat-form-field appearance="outline" floatLabel="always" subscriptSizing="dynamic">
+                  <mat-label>Number of Rounds</mat-label>
+                  <mat-select panelClass="manual-team-select-panel" [(value)]="selectedRounds" (selectionChange)="setNumberOfRounds($event.value)">
                     @for (num of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; track num) {
                       <mat-option [value]="num">
                         {{ num }}
@@ -76,12 +63,9 @@
                     }
                   </mat-select>
                 </mat-form-field>
-              </div>
-              <!-- Scramble Number -->
-              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: #f9f9f9; min-width: 150px;">
-                <label for="scrambleNumber" style="display: block; font-weight: bold; margin-bottom: 8px;">Scramble Number:</label>
-                <mat-form-field appearance="outline" style="width: 100%;">
-                  <mat-select [(value)]="selectedScrambleNumber" (selectionChange)="onScrambleNumberChange($event.value)">
+                <mat-form-field appearance="outline" floatLabel="always" subscriptSizing="dynamic">
+                  <mat-label>Scramble Number</mat-label>
+                  <mat-select panelClass="manual-team-select-panel" [(value)]="selectedScrambleNumber" (selectionChange)="onScrambleNumberChange($event.value)">
                     @for (number of scrambleNumbers; track number) {
                       <mat-option [value]="number">
                         Scramble {{ number }}
@@ -90,7 +74,6 @@
                     <mat-option value="new">New Scramble</mat-option>
                   </mat-select>
                 </mat-form-field>
-              </div>
             </div>
           </div>
         </div>
@@ -106,10 +89,9 @@
           </div>
           <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; align-items: center;">
             @for (player of team.players; track player) {
-              <li style="display: flex; align-items: center; gap: 10px; width: 300px; border-radius: 5px;"
-                [ngStyle]="{'background-color': player.gender === 'Male' ? '#ADD8E6' : '#FFC0CB', 'padding': '5px'}">
+              <li class="manual-team-player" [class.male-player]="player.isMale" [class.female-player]="!player.isMale">
                 <span style="flex: 1; text-align: left;">{{ player.firstName }} {{ player.lastName }}</span>
-                <mat-slide-toggle matTooltip="Mark as Sub"
+                <mat-slide-toggle matTooltip="Mark as Sub" [aria-label]="'Mark ' + player.firstName + ' ' + player.lastName + ' as substitute'"
                   [(ngModel)]="player.isSubScore"
                   (change)="updateIsSubScore(team.kingQueenTeamId, player.id, player.isSubScore)"
                   style="margin: 0;">

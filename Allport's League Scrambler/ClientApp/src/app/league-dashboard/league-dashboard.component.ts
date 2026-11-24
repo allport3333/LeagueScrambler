@@ -28,7 +28,7 @@ export class LeagueDashboardComponent implements OnInit, OnDestroy {
     ngOnDestroy(){this.navigationSubscriptions.unsubscribe();}
     ngOnInit(): void {
         this.navigationSubscriptions.add(this.route.queryParams.subscribe(params=>{
-            this.activeDashboardTab=params.tab==='schedule'?1:0;
+            this.activeDashboardTab = params.tab === 'schedule' ? 1 : params.tab === 'teams' ? 3 : 0;
             this.requestedWeekNumber=params.weekNumber===undefined?null:Number(params.weekNumber);
             this.requestedScheduleDate=params.scheduleDate||null;
             this.requestedLeague=params.leagueId===undefined?null:Number(params.leagueId);this.navigationError='';

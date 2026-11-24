@@ -1,91 +1,37 @@
 @if (loading) {
   <app-page-loading label="Loading league teams"></app-page-loading>
 }
-
 @if (error) {
   <p role="alert" class="text-center">{{ error }} <button mat-button (click)="loadTeamsWithPlayers()">Retry</button></p>
 }
-
-<!-- If teams are loaded and not empty -->
-@if (!loading && teams.length > 0) {
-  <div style="padding: 16px; overflow-x: hidden;">
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-evenly; gap: 20px;">
-      <!-- Repeat a card for each team -->
-      @for (team of teams; track team) {
-        <mat-card appearance="outlined"
-                  style="
-                      flex: 1 1 calc(25% - 20px);
-                      min-width: 250px;
-                      max-width: 300px;
-                      margin-bottom: 20px;
-                      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-                      border-radius: 8px;
-                      transition: transform 0.2s, box-shadow 0.2s;
-                  "
-          (mouseenter)="team.hovered = true"
-          (mouseleave)="team.hovered = false"
-                  [ngStyle]="{
-                      'background-color': team.division === 'Gold' ? 'var(--hub-gold, #FFF8DC)' :
-                                         team.division === 'Silver' ? 'var(--hub-silver, #E0E0E0)' :
-                                         team.division === 'Bronze' ? 'var(--hub-bronze, #F5F5DC)' : 'var(--hub-surface, white)',
-                      'border-left': team.division === 'Gold' ? '6px solid #FFD700' :
-                                     team.division === 'Silver' ? '6px solid #C0C0C0' :
-                                     team.division === 'Bronze' ? '6px solid #CD7F32' : 'none',
-                      transform: team.hovered ? 'scale(1.03)' : 'scale(1)',
-                      boxShadow: team.hovered ? '0 4px 12px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.2)'
-                  }">
-          <!-- Team Header -->
-          <mat-card-header>
-            <mat-card-title style="font-weight: bold; text-align: center;">
-              {{ team.teamName }}
-            </mat-card-title>
-            <mat-card-subtitle style="text-align: center;">
-              Wins: {{ team.totalWins }} | Losses: {{ team.totalLosses }}
-            </mat-card-subtitle>
-          </mat-card-header>
-          <!-- Team Players List -->
-          <mat-card-content>
-            <ul style="list-style-type: none; padding: 0; margin: 0;">
-              @for (player of team.players; track player) {
-                <li
-                        [ngStyle]="{
-                            'background-color': player.backgroundColor,
-                            'padding': '6px 10px',
-                            'border-radius': '4px',
-                            'margin-bottom': '6px',
-                            'display': 'block',
-                            'text-align': 'center'
-                        }">
-                  {{ player.fullName }}
-                </li>
-              }
-            </ul>
-          </mat-card-content>
-          <!-- Division Badge -->
-          <div class="division-chip-container">
-            @if (team.division) {
-              <mat-chip-option
-                          [ngStyle]="{
-                  'background-color': team.division === 'Gold' ? 'var(--hub-gold, #FFF8DC)' :
-                                     team.division === 'Silver' ? 'var(--hub-silver, #E0E0E0)' :
-                                     team.division === 'Bronze' ? 'var(--hub-bronze, #F5F5DC)' : 'var(--hub-silver, #E0E0E0)',
-                  'color': 'var(--hub-text, #000)',
-                  'font-weight': 'bold',
-                  'margin-top': '10px'
-              }">
-                {{ team.division }} Division
-              </mat-chip-option>
-            }
-          </div>
-        </mat-card>
-      }
-    </div>
+@if (!loading && divisions.length) {
+  <div class="league-team-divisions">
+    @for (division of divisions; track division.key) {
+      <section class="league-team-division" [attr.aria-label]="division.label">
+        <h3>{{ division.label }}</h3>
+        <div class="league-team-grid">
+          @for (team of division.teams; track team.id) {
+            <mat-card appearance="outlined" class="league-team-card"
+              [class.gold-team]="division.key === 'gold'" [class.silver-team]="division.key === 'silver'"
+              [class.bronze-team]="division.key === 'bronze'">
+              <mat-card-header>
+                <mat-card-title>{{ team.teamName }}</mat-card-title>
+                <mat-card-subtitle>Wins: {{ team.totalWins }} | Losses: {{ team.totalLosses }}</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <ul class="team-player-list">
+                  @for (player of team.players; track player.id) {
+                    <li [class.male-player]="player.isMale" [class.female-player]="!player.isMale">{{ player.fullName }}</li>
+                  }
+                </ul>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      </section>
+    }
   </div>
 }
-
-<!-- If teams are loaded but empty -->
-@if (!loading && !error && leagueId && teams.length === 0) {
-  <div style="text-align: center;">
-    <p>No teams found for this league.</p>
-  </div>
+@if (!loading && !error && leagueId && !divisions.length) {
+  <p class="text-center">No teams found for this league.</p>
 }

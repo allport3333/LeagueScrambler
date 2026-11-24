@@ -530,3 +530,13 @@ html { @include mat.form-field-overrides((
   filled-label-text-tracking: normal,
   outlined-label-text-tracking: normal
 )); }
+
+/* Manual team selects open in the Material overlay, outside the component tree. */
+.manual-team-select-panel.mat-mdc-select-panel {
+  background: var(--hub-surface, #fff);
+  --mat-option-label-text-color: var(--hub-text, #263444);
+  --mat-option-hover-state-layer-color: var(--hub-row-alt, #edf1f6);
+  --mat-option-focus-state-layer-color: var(--hub-header, #e1e8f2);
+  --mat-option-selected-state-layer-color: var(--hub-header, #e1e8f2);
+  --mat-option-selected-state-label-text-color: var(--hub-text, #263444);
+}

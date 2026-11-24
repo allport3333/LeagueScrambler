@@ -2,7 +2,15 @@
   <app-page-loading label="Loading team scores"></app-page-loading>
 }
 
-@if (!loading) {
+@if (!loading && !isActionAllowed) {
+  <section class="text-center my-4">
+    <h2>Teams &amp; Scores</h2>
+    <p>Select a league you manage to enter scores or manage teams.</p>
+    <a mat-stroked-button routerLink="/league-dashboard" [queryParams]="{tab:'teams'}">View League Teams</a>
+  </section>
+}
+
+@if (!loading && isActionAllowed) {
   <div class="row justify-content-center">
     <div #workspaceTabs class="col-12 scores-workspace">
       <mat-card appearance="outlined" class="mt-2" style="box-shadow: none; padding: 0;">
@@ -146,11 +154,6 @@
                 </section>
               </mat-tab>
             }
-            <!-- TAB 2: League Teams -->
-            <mat-tab label="League Teams">
-              <app-league-teams [leagueId]="leagueID" style="width: 100%;"></app-league-teams>
-            </mat-tab>
-            <!-- TAB 3: Team Management -->
             @if (isActionAllowed) {
               <mat-tab label="Team Management">
                 <app-team-management [leagueName]="selectedLeague" [leagueId]="leagueID" style="display: block; width: 100%;"></app-team-management>

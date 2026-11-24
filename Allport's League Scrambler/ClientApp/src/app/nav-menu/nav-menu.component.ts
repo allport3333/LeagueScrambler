@@ -40,7 +40,6 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         { route: '/scrambler', label: 'Scrambler', icon: 'shuffle', roles: ['Admin', 'Manager'] },
         { route: '/team-scores', label: 'Teams & Scores', icon: 'group', roles: ['Admin', 'Manager'] },
         { route: '/league-dashboard', label: 'League Dashboard', icon: 'dashboard', roles: ['Admin', 'Manager', 'Player'] },
-        { route: '/league-dashboard', queryParams: { tab: 'schedule' }, label: 'Schedule', icon: 'event', roles: ['Admin', 'Manager', 'Player'] },
         { route: '/standings', label: 'King & Queen', icon: 'emoji_events', roles: ['Admin', 'Manager', 'Player'], children: [
             { route: '/standings', label: 'Standings', icon: 'emoji_events' },
             { route: '/kqmatchups', label: 'Matchups', icon: 'view_list' }
@@ -124,10 +123,9 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     destinationActive(item: NavLink): boolean {
         const path = this.router.url.split(/[?#]/)[0];
         const route = Array.isArray(item.route) ? item.route.join('/') : item.route;
-        if (path === '/schedule') return route === '/league-dashboard' && item.queryParams?.tab === 'schedule';
+        if (path === '/schedule') return route === '/league-dashboard';
         if (path !== route) return false;
-        return route !== '/league-dashboard' ||
-            (this.router.parseUrl(this.router.url).queryParams.tab === 'schedule') === !!item.queryParams?.tab;
+        return true;
     }
 
     itemActive(item: NavItem): boolean {

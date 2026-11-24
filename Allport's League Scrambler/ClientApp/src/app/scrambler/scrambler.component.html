@@ -1533,7 +1533,7 @@ Apply Top Players (Male Standings)
         <div class="row mb-4">
           <!-- CARD #1: Team i & i+1 (col-6) -->
           <div class="col-6">
-            <mat-card appearance="outlined" style="padding: 1rem; border: 2px solid black; box-shadow: none;"><h3 class="viewer-match-number">Match {{ i / 2 + 1 }}</h3>
+            <mat-card appearance="outlined" style="padding: 1rem; border: 2px solid var(--hub-border, black); box-shadow: none;"><h3 class="viewer-match-number">Match {{ i / 2 + 1 }}</h3>
             <div class="row justify-content-center align-items-center">
               <!-- LEFT TEAM (Team i) -->
               @if (listOfTeams[i]) {
@@ -1806,7 +1806,7 @@ Apply Top Players (Male Standings)
     <!-- CARD #2: Team i+2 & i+3 (col-6) -->
     @if (listOfTeams[i+2]) {
       <div class="col-6">
-        <mat-card appearance="outlined" style="padding: 1rem; border: 2px solid black; box-shadow: none;"><h3 class="viewer-match-number">Match {{ i / 2 + 2 }}</h3>
+        <mat-card appearance="outlined" style="padding: 1rem; border: 2px solid var(--hub-border, black); box-shadow: none;"><h3 class="viewer-match-number">Match {{ i / 2 + 2 }}</h3>
         <div class="row justify-content-center align-items-center">
           <!-- LEFT TEAM (Team i+2) -->
           @if (listOfTeams[i+2]) {

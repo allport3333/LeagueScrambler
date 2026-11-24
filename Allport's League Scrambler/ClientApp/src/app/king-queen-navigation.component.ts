@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { MatTabsModule } from '@angular/material/tabs';
 import { RouterModule } from '@angular/router';
 
 @Component({
     selector: 'app-king-queen-navigation',
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatTabsModule, RouterModule],
     template: `
         <nav mat-tab-nav-bar [tabPanel]="panel" [mat-stretch-tabs]="false" mat-align-tabs="center" aria-label="King &amp; Queen">

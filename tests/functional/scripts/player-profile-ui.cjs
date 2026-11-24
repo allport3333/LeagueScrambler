@@ -104,7 +104,7 @@ const emptyKq={individualRounds:[],scrambleTotals:[],teamMembers:[],teammateCoun
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     const inline=await desktop.isVisible();
     if(inline){
-     const expected=role==='Anonymous'?['/','/install-locally','/faq']:['/',...(role==='Player'?[]:['/scrambler','/team-scores']),'/league-dashboard','/league-dashboard?tab=schedule','/standings','/fetch-data','/sign-in',...(role==='Player'?[]:['/league-management']),'/install-locally','/faq'];
+     const expected=role==='Anonymous'?['/','/install-locally','/faq']:['/',...(role==='Player'?[]:['/scrambler','/team-scores']),'/league-dashboard','/standings','/fetch-data','/sign-in',...(role==='Player'?[]:['/league-management']),'/install-locally','/faq'];
      assert.deepEqual(await desktop.locator('a.navigation-link').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),expected);
      await expect(desktop.getByRole('link',{name:'F.A.Q',exact:true})).toHaveClass(/active/);
      await expect(desktop.getByRole('link',{name:'League Management',exact:true})).toHaveCount(['Admin','Manager'].includes(role)?1:0);

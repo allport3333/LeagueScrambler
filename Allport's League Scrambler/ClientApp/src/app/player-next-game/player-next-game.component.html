@@ -41,5 +41,8 @@
     }
   }
 }
+    @if (!result || loading || error || !result.hasSchedule) {
+      <a mat-stroked-button color="primary" routerLink="/league-dashboard" [queryParams]="scheduleQuery()">View Full Schedule</a>
+    }
 </section>
 }

@@ -4,6 +4,12 @@ import { StatisticsService } from '../services/statistics.service';
 import { TeamWithPlayersDto } from '../data-models/DTOs';
 import { TeamUpdateService } from '../services/team-update.service';
 
+interface TeamDivision {
+    key: string;
+    label: string;
+    teams: TeamWithPlayersDto[];
+}
+
 @Component({
     selector: 'app-league-teams',
     templateUrl: './league-teams.component.html',
@@ -14,7 +20,7 @@ import { TeamUpdateService } from '../services/team-update.service';
 export class LeagueTeamsComponent implements OnInit, OnChanges, OnDestroy {
     @Input() leagueId: number | null = null;
 
-    teams: TeamWithPlayersDto[] = [];
+    divisions: TeamDivision[] = [];
     loading = false;
     error = '';
     private request: Subscription;
@@ -34,7 +40,7 @@ export class LeagueTeamsComponent implements OnInit, OnChanges, OnDestroy {
     loadTeamsWithPlayers(): void {
         this.request?.unsubscribe();
         this.error = '';
-        if (this.loadedLeague !== this.leagueId) this.teams = [];
+        if (this.loadedLeague !== this.leagueId) this.divisions = [];
         this.loading = !!this.leagueId && this.loadedLeague !== this.leagueId;
         if (!this.leagueId) return;
 
@@ -42,13 +48,19 @@ export class LeagueTeamsComponent implements OnInit, OnChanges, OnDestroy {
         this.request = this.statsService.GetAllTeamsWithPlayers(leagueId).subscribe({
             next: (res) => {
                 this.loadedLeague = leagueId;
-                this.teams = res.map(team => ({
-                    ...team,
-                    players: team.players.map(player => ({
-                        ...player,
-                        backgroundColor: player.isMale ? 'var(--hub-male, lightblue)' : 'var(--hub-female, lightpink)'
-                    }))
-                }));
+                const grouped = new Map<string, TeamDivision>();
+                for (const team of res) {
+                    const division = team.division?.trim() || '';
+                    const key = division.toLowerCase();
+                    let group = grouped.get(key);
+                    if (!group) {
+                        group = { key, label: division ? division + ' Division' : 'Unassigned Teams', teams: [] };
+                        grouped.set(key, group);
+                    }
+                    group.teams.push(team);
+                }
+                // The API already orders divisions; keep the returned order within each group.
+                this.divisions = [...grouped.values()];
                 this.loading = false;
             },
             error: () => {

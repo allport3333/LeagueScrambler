@@ -358,9 +358,9 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
   const drawer=page.locator('#navigation-drawer');
   const desktop=nav.locator('.desktop-navigation');
   const groups=drawer.locator('summary');
-  const direct=['Home','League Dashboard','Schedule','Players','Sign In Sheet'];
-  const senior=['Home','Scrambler','Teams & Scores','League Dashboard','Schedule','King & Queen','Players','Sign In Sheet','League Management','Install Locally','F.A.Q'];
-  const regular=['Home','League Dashboard','Schedule','King & Queen','Players','Sign In Sheet','Install Locally','F.A.Q'];
+  const direct=['Home','League Dashboard','Players','Sign In Sheet'];
+  const senior=['Home','Scrambler','Teams & Scores','League Dashboard','King & Queen','Players','Sign In Sheet','League Management','Install Locally','F.A.Q'];
+  const regular=['Home','League Dashboard','King & Queen','Players','Sign In Sheet','Install Locally','F.A.Q'];
   const group=name=>groups.filter({has:page.getByText(name,{exact:true})});
   async function expandGroup(name){const summary=group(name);if(!await summary.evaluate(el=>el.parentElement.open))await summary.tap();}
   const link=(scope,name)=>scope.getByRole('link',{name,exact:true});
@@ -480,7 +480,7 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
    if(role!=='Player'){
     await link(nav,'Teams & Scores').click();
     await expect(link(nav,'Teams & Scores')).toHaveAttribute('aria-current','page');
-    for(const name of ['Enter Team Scores','League Teams','Team Management']){
+    for(const name of ['Enter Team Scores','Team Management']){
      const entry=page.getByRole('tab',{name,exact:true});await entry.click();await expect(entry).toHaveAttribute('aria-selected','true');
     }
     await link(nav,'League Management').click();
