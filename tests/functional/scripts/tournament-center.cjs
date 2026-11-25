@@ -1020,8 +1020,10 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             await page.setViewportSize({ width: theme === 'classic' ? 1920 : 390, height: 900 });
             await page.goto(origin + '/');
             await expect(page.getByRole('button', { name: /WW Winter 2026/ })).toBeVisible();
-            if (theme !== 'classic') await page.getByRole('button', { name: 'Open navigation' }).click();
-            await page.getByRole('link', { name: 'Tournament Center', exact: true }).click();
+            await page.locator('#leagueDropdown').click();
+            const category = page.getByRole('group', { name: 'Tournaments', exact: true });
+            await category.locator('.event-category').click();
+            await category.getByRole('link', { name: 'Manage Tournaments', exact: true }).click();
             await expect(page.getByRole('heading', { name: 'Tournament Center', exact: true })).toBeVisible();
             await expect(page.getByRole('button', { name: /WW Winter 2026/ })).toBeVisible();
             await expect(page.getByRole('link', { name: 'Open Tournament: ' + name, exact: true })).toBeVisible();

@@ -7,6 +7,14 @@ const { origin, email, password, leagueId, administrator } = JSON.parse(fs.readF
 assert.match(origin, /^https:\/\/127\.0\.0\.1:\d+$/);
 assert.match(email, /^EventCheck-[a-f0-9]{32}@example\.invalid$/);
 assert(Number.isSafeInteger(leagueId) && leagueId > 0);
+async function openTournamentManagement(page) {
+    await page.locator('#leagueDropdown').click();
+    const category = page.getByRole('group', { name: 'Tournaments', exact: true });
+    const toggle = category.locator('.event-category');
+    if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+    await category.getByRole('link', { name: 'Manage Tournaments', exact: true }).click();
+}
+
 (async () => {
     const browser = await chromium.launch({ channel: 'chrome' });
     try {
@@ -24,7 +32,7 @@ assert(Number.isSafeInteger(leagueId) && leagueId > 0);
         await page.setViewportSize({ width: 1920, height: 900 });
         await page.goto(origin + '/');
         await expect(page.getByRole('button', { name: /WW Winter 2026/ })).toBeVisible();
-        await page.getByRole('link', { name: 'Tournament Center', exact: true }).click();
+        await openTournamentManagement(page);
         await expect(page.getByRole('heading', { name: 'Tournament Center', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: /WW Winter 2026/ })).toBeVisible();
         await expect(page.getByRole('link', { name: 'WW Winter 2026' })).toHaveCount(0);
@@ -42,11 +50,11 @@ assert(Number.isSafeInteger(leagueId) && leagueId > 0);
                 await testTournament.click();
                 await expect(page.locator('app-tournament-center time')).toHaveText('November 26, 2026');
                 await expect(page.getByRole('heading', { name: 'Test 1', exact: true })).toBeVisible();
-                await page.getByRole('link', { name: 'Tournament Center', exact: true }).click();
+                await openTournamentManagement(page);
                 await expect(page.getByRole('heading', { name: 'Tournament Center', exact: true })).toBeVisible();
                 await page.getByRole('button', { name: /Test 1/ }).click();
                 await page.getByRole('menuitem', { name: /WW Winter 2026/ }).click();
-                await page.getByRole('link', { name: 'Tournament Center', exact: true }).click();
+                await openTournamentManagement(page);
                 await expect(page.getByRole('heading', { name: 'Tournament Center', exact: true })).toBeVisible();
             }
         } else {
@@ -166,7 +174,7 @@ assert(Number.isSafeInteger(leagueId) && leagueId > 0);
         await checkedInOnly.check();
         await expect(count("1 eligible")).toBeVisible();
         await page.getByRole('link', { name: 'Home', exact: true }).click();
-        await page.getByRole('link', { name: 'Tournament Center', exact: true }).click();
+        await openTournamentManagement(page);
         await page.getByRole('link', { name: 'Current Tournament', exact: true }).click();
         await page.getByRole('link', { name: 'Continue Tournament', exact: true }).click();
         await expect(page.getByRole('heading', { name: 'Confirm Participants' })).toBeVisible();

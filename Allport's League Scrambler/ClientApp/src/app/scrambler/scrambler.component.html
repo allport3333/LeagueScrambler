@@ -1114,6 +1114,11 @@ Apply Top Players (Male Standings)
     </mat-card>
   }
 </div></mat-tab>
+@if (userRole === 'Admin') {
+  <mat-tab label="Recovery Review">
+    <ng-template matTabContent><app-account-recovery [embeddedReview]="true" /></ng-template>
+  </mat-tab>
+}
 <mat-tab label="Create League">
   <div class="management-create-league">
     <mat-card appearance="outlined" class="setup-card">

@@ -443,8 +443,8 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
   const desktop=nav.locator('.desktop-navigation');
   const groups=drawer.locator('summary');
   const direct=['Home','League Dashboard','Players','Sign In Sheet'];
-  const senior=['Home','Scrambler','Teams & Scores','League Dashboard','King & Queen','Players','Sign In Sheet','League Management','Install Locally','F.A.Q'];
-  const regular=['Home','League Dashboard','King & Queen','Players','Sign In Sheet','Install Locally','F.A.Q'];
+  const senior=['Home','Scrambler','Teams & Scores','League Dashboard','King & Queen','Players','Sign In Sheet','League Management'];
+  const regular=['Home','League Dashboard','King & Queen','Players','Sign In Sheet'];
   const group=name=>groups.filter({has:page.getByText(name,{exact:true})});
   async function expandGroup(name){const summary=group(name);if(!await summary.evaluate(el=>el.parentElement.open))await summary.tap();}
   const link=(scope,name)=>scope.getByRole('link',{name,exact:true});
@@ -466,8 +466,8 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
    if(width>=1920)assert(Math.abs(center.x+center.width/2-bar.x-bar.width/2)<2,'desktop primary links centered');
    await nav.screenshot({path:path.join(out,role+'-'+theme+'-desktop-'+width+'.png')});
    if(width===1920){
-    await expect(link(nav,'Install Locally')).toHaveClass(/featured-link/);
-    await expect(link(nav,'F.A.Q')).toBeVisible();
+    await expect(link(nav,'Install Locally')).toHaveCount(0);
+    await expect(link(nav,'F.A.Q.')).toHaveCount(0);
     await expect(button(nav,'More')).toHaveCount(0);
     await expect(button(nav,'Manage')).toHaveCount(0);
     await expect(link(nav,'League Management')).toHaveCount(role==='Player'?0:1);
@@ -475,8 +475,8 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
     await expect(page.getByRole('menuitem',{name:'Profile'})).toBeFocused();
     await page.keyboard.press('ArrowDown');
     await expect(page.getByRole('menuitem',{name:'Appearance'})).toBeFocused();
-    for(const name of ['Profile','Appearance','Change Email','Logout'])await expect(page.getByRole('menuitem',{name,exact:true})).toBeVisible();
-    await expect(page.getByRole('menuitem',{name:'Recovery Review',exact:true})).toHaveCount(role==='Admin'?1:0);
+    for(const name of ['Profile','Appearance','Install Locally','F.A.Q.','Change Email','Logout'])await expect(page.getByRole('menuitem',{name,exact:true})).toBeVisible();
+    await expect(page.getByRole('menuitem',{name:'Recovery Review',exact:true})).toHaveCount(0);
     await page.locator('.mat-mdc-menu-panel').screenshot({path:path.join(out,role+'-'+theme+'-account.png')});
     await page.keyboard.press('Escape');await expect(accountButton).toBeFocused();
    }
@@ -491,15 +491,15 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
    for(const name of direct)await expect(link(drawer,name)).toBeVisible();
    await expandGroup('King & Queen');
    await expect(link(drawer,'Standings')).toBeVisible();await expect(link(drawer,'Matchups')).toBeVisible();
-   await expect(link(drawer,'Install Locally')).toHaveClass(/featured-link/);
-   await expect(link(drawer,'F.A.Q')).toBeVisible();
    await expandGroup('Account');
+   await expect(link(drawer,'Install Locally')).toBeVisible();
+   await expect(link(drawer,'F.A.Q.')).toBeVisible();
    for(const name of ['Profile','Change Email','Appearance','Logout']){
     const entry=name==='Profile'||name==='Change Email'?link(drawer,name):button(drawer,name);
     await expect(entry).toBeVisible();
     assert((await entry.boundingBox()).height>=44);
    }
-   await expect(link(drawer,'Recovery Review')).toHaveCount(role==='Admin'?1:0);
+   await expect(link(drawer,'Recovery Review')).toHaveCount(0);
    await expect(link(drawer,'League Management')).toHaveCount(role==='Player'?0:1);
    if([320,375,390,768,1024,1280].includes(width)){
     const scroller=drawer.locator('.mat-drawer-inner-container');
@@ -585,12 +585,12 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
    await button(drawer,'Close navigation').tap();
    await page.reload();await expect(tab(tabs,'Matchups')).toHaveAttribute('aria-selected','true');
    await expect(button(nav,'Second Synthetic League')).toBeVisible();
-   await openDrawer();await link(drawer,'F.A.Q').tap();
+   await openDrawer();await expandGroup('Account');await link(drawer,'F.A.Q.').tap();
    await expect(drawer).toBeHidden();await expect(page).toHaveURL(/\/faq$/);
    await openDrawer();
    await page.setViewportSize({width:2560,height:900});await expect(drawer).toBeHidden();
    await expect(page).toHaveURL(/\/faq$/);
-   await page.setViewportSize({width:1920,height:900});await expect(link(nav,'F.A.Q')).toHaveAttribute('aria-current','page');
+   await page.setViewportSize({width:1920,height:900});await expect(button(nav,'Account')).toHaveClass(/active/);
    checks.push(role+': shared routes and groups in three themes; tablet and touch layouts; deep links, keyboard, history, refresh and league retention');
   }
   assert.equal(writes.length,0);

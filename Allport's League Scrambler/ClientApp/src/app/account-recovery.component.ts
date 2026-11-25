@@ -4,7 +4,7 @@ import { ProfileMatch } from './data-models/profile-match';
 import { Subject, of, timer } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, Input, OnInit } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -27,10 +27,15 @@ interface ReviewRequest {
 }
 
 @Component({
+  selector: 'app-account-recovery',
   standalone: true,
   imports: [FormsModule, DatePipe, PageLoadingComponent, RouterLink],
   template: `
-    <h1>{{ review ? 'Account Recovery Review' : emailChange ? 'Change Account Email' : 'Recover Existing Account' }}</h1>
+    @if (embeddedReview) {
+      <h2 class="review-title">Account Recovery Review</h2>
+    } @else {
+      <h1>{{ review ? 'Account Recovery Review' : emailChange ? 'Change Account Email' : 'Recover Existing Account' }}</h1>
+    }
     @if (review) {
       @if (reviewLoading) {
         <app-page-loading label="Loading recovery requests"></app-page-loading>
@@ -165,7 +170,7 @@ interface ReviewRequest {
     :host { display: block; max-width: 42rem; margin: 1rem auto; padding: 1rem; color: var(--hub-text); }
     h1 { text-align: center; font-size: clamp(1.5rem, 4vw, 2rem); }
     h2 { font-size: 1.2rem; }
-    .review-intro { text-align: center; }
+    .review-title, .review-intro { text-align: center; }
     .review-filter { grid-template-columns: auto minmax(0, 12rem); align-items: center; justify-content: center; }
     .review-pagination { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .5rem; border-top: 1px solid var(--hub-border); padding-top: .75rem; }
     .review-state { text-align: center; padding: .75rem; }
@@ -189,8 +194,9 @@ export class AccountRecoveryComponent implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
-  readonly review = this.route.snapshot.data['mode'] === 'review';
-  readonly emailChange = this.route.snapshot.data['mode'] === 'email-change';
+  @Input() embeddedReview = false;
+  get review() { return this.embeddedReview || this.route.snapshot.data['mode'] === 'review'; }
+  get emailChange() { return !this.review && this.route.snapshot.data['mode'] === 'email-change'; }
   private readonly api = '/api/account-recovery';
   email = '';
   password = '';

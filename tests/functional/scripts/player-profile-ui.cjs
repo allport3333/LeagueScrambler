@@ -98,15 +98,15 @@ const emptyKq={individualRounds:[],scrambleTotals:[],teamMembers:[],teammateCoun
    state.navRole=role;
    await page.setViewportSize({width:1920,height:900});
    await page.goto(BASE_URL+'/faq');
-   await expect(nav.getByRole('button',{name:role==='Anonymous'?'Appearance':'Account',exact:true})).toBeVisible();
+   await expect(nav.getByRole('button',{name:'Account',exact:true})).toBeVisible();
    for(const width of [1920,1600,1366,1024,1366,1920]){
     await page.setViewportSize({width,height:900});
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     const inline=await desktop.isVisible();
     if(inline){
-     const expected=role==='Anonymous'?['/','/install-locally','/faq']:['/',...(role==='Player'?[]:['/scrambler','/team-scores']),'/league-dashboard','/standings','/fetch-data','/sign-in',...(role==='Player'?[]:['/league-management']),'/install-locally','/faq'];
+     const expected=role==='Anonymous'?['/']:['/',...(role==='Player'?[]:['/scrambler','/team-scores']),'/league-dashboard','/standings','/fetch-data','/sign-in',...(role==='Player'?[]:['/league-management'])];
      assert.deepEqual(await desktop.locator('a.navigation-link').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),expected);
-     await expect(desktop.getByRole('link',{name:'F.A.Q',exact:true})).toHaveClass(/active/);
+     await expect(nav.getByRole('button',{name:'Account',exact:true})).toHaveClass(/active/);
      await expect(desktop.getByRole('link',{name:'League Management',exact:true})).toHaveCount(['Admin','Manager'].includes(role)?1:0);
      assert(await desktop.evaluate(e=>e.scrollWidth<=e.clientWidth));
     }else await expect(nav.getByRole('button',{name:'Open navigation'})).toBeVisible();
@@ -117,7 +117,7 @@ const emptyKq={individualRounds:[],scrambleTotals:[],teamMembers:[],teammateCoun
    await page.setViewportSize({width:375,height:667});
    await nav.getByRole('button',{name:'Open navigation'}).click();
    const drawer=page.locator('#navigation-drawer');
-   await expect(drawer.getByRole('link',{name:'F.A.Q',exact:true})).toBeVisible();
+   await expect(drawer.getByRole('link',{name:'F.A.Q.',exact:true})).toBeVisible();
    await expect(drawer.getByRole('link',{name:'League Management',exact:true})).toHaveCount(['Admin','Manager'].includes(role)?1:0);
    await drawer.getByRole('button',{name:'Close navigation'}).click();
    await expect(drawer).toBeHidden();

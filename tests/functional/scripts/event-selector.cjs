@@ -4,7 +4,7 @@ const { chromium, expect } = require('@playwright/test');
 const asset = require('./fixture-asset.cjs');
 
 const origin = 'https://localhost:5001';
-const league = { id: 37, leagueName: 'WW Winter 2026', eventTypeId: 1 };
+const league = { id: 37, leagueName: 'Test League Fixture', eventTypeId: 1 };
 const tournament = { id: 31, leagueName: 'Wallyball Unicorn Tournament', eventTypeId: 2, canManageTournament: true };
 const second = { id: 32, leagueName: 'Advanced 3s Tourney Jan 2025 with an unusually long descriptive name', eventTypeId: 2, canManageTournament: true };
 const legacy = { id: 40, leagueName: 'Legacy Competition', eventTypeId: null };
@@ -26,17 +26,25 @@ const legacy = { id: 40, leagueName: 'Legacy Competition', eventTypeId: null };
                 if (!sessionStorage.getItem('league-hub-selected-league')) sessionStorage.setItem('league-hub-selected-league', '37');
                 sessionStorage.setItem('league-hub-tournament-step:31', '2');
             }, theme);
+            let created;
             await context.route('**/*', async route => {
                 if (await asset(route)) return;
                 const url = new URL(route.request().url()), endpoint = url.pathname.toLowerCase();
-                if (url.origin !== origin || route.request().method() !== 'GET') return route.abort();
+                if (url.origin !== origin) return route.abort();
+                if (route.request().method() === 'POST' && endpoint.includes('/addnewleague/')) {
+                    assert.equal(url.searchParams.get('eventTypeId'), '2');
+                    created = { id: 44, leagueName: 'New Tournament Fixture', eventTypeId: 2, canManageTournament: true };
+                    events.push(created);
+                    return route.fulfill({ json: created });
+                }
+                if (route.request().method() !== 'GET') return route.abort();
                 let result = [];
                 if (endpoint.endsWith('/isauthenticated')) result = true;
                 else if (endpoint.endsWith('/getusersrole')) result = { role };
                 else if (endpoint.endsWith('/getusersplayer')) result = { playerId: 1 };
                 else if (endpoint.endsWith('/getuserleagues')) result = events;
                 else if (endpoint.endsWith('/getleagues')) result = [league, tournament, second, legacy];
-                else if (endpoint === '/api/tournaments') {
+                else if (endpoint === '/api/tournaments/managed') {
                     result = events.filter(event => event.eventTypeId === 2 && (role === 'Admin' || event.canManageTournament));
                     return route.fulfill({ json: result, headers: { 'X-Tournaments-Exist': 'true' } });
                 } else if (/^\/api\/tournaments\/\d+$/.test(endpoint)) {
@@ -62,7 +70,7 @@ const legacy = { id: 40, leagueName: 'Legacy Competition', eventTypeId: null };
             const field = search.getByRole('searchbox');
             const groups = panel.getByRole('group');
             const expected = ['Leagues', 'Tournaments', 'Other events'].filter((_, index) =>
-                events.some(event => event.eventTypeId === [1, 2, null][index]));
+                index === 1 || events.some(event => event.eventTypeId === [1, 2, null][index]));
             assert.deepEqual(await groups.evaluateAll(items => items.map(item => item.getAttribute('aria-label'))), expected);
             const checkBounds = async locator => {
                 const box = await locator.boundingBox();
@@ -105,7 +113,36 @@ const legacy = { id: 40, leagueName: 'Legacy Competition', eventTypeId: null };
                 if (width === 390) await screenshot('search');
                 await field.press('Escape');
                 await expect(searchTrigger).toBeFocused();
-            } else await expect(panel.getByText('You have no accessible events.')).toBeVisible();
+            } else await expect(panel.getByText('No tournaments yet.')).toBeVisible();
+            const nav = page.getByRole('navigation', {name: 'Main navigation'});
+            await expect(nav.getByRole('link', {name: 'Tournament Center', exact: true})).toHaveCount(0);
+            if (events.length) await trigger.click();
+            const tournamentGroup = panel.getByRole('group', {name: 'Tournaments', exact: true});
+            const tournamentCategory = tournamentGroup.locator('.event-category');
+            if (await tournamentCategory.getAttribute('aria-expanded') !== 'true') await tournamentCategory.click();
+            const selectedLabel = await trigger.locator('.league-name').innerText();
+            await tournamentGroup.getByRole('link', {name: 'Create Tournament'}).click();
+            await expect(page).toHaveURL(/\/tournament\?view=create$/);
+            await expect(page.getByRole('heading', {name: 'Create a Tournament'})).toBeVisible();
+            await expect(trigger.locator('.league-name')).toHaveText(selectedLabel);
+            await trigger.click();
+            if (await tournamentCategory.getAttribute('aria-expanded') !== 'true') await tournamentCategory.click();
+            await tournamentGroup.getByRole('link', {name: 'Manage Tournaments'}).click();
+            await expect(page).toHaveURL(/\/tournament$/);
+            await expect(page.getByRole('region', {name: 'Manage Tournaments'})).toBeVisible();
+            await expect(trigger.locator('.league-name')).toHaveText(selectedLabel);
+            if (!events.length) {
+                await trigger.click();
+                await tournamentGroup.getByRole('link', {name: 'Create Tournament'}).click();
+                await page.getByLabel('Tournament Name').fill('New Tournament Fixture');
+                await page.getByLabel('Tournament Date').fill('2026-12-01');
+                await page.getByRole('button', {name: 'Create Tournament', exact: true}).click();
+                await expect(page).toHaveURL(/\/tournament\/44\?step=1$/);
+                await expect(trigger).toContainText('New Tournament Fixture');
+                assert(created);
+                await context.close();
+                continue;
+            }
             if (role === 'Admin' || (role === 'Player' && width === 390)) {
                 if (width < 500) await searchTrigger.tap();
                 else await searchTrigger.click();
@@ -118,6 +155,7 @@ const legacy = { id: 40, leagueName: 'Legacy Competition', eventTypeId: null };
                 await expect(page.getByRole('heading', { name: 'Manage Participants' })).toBeVisible();
                 await page.reload();
                 await expect(trigger).toContainText(tournament.leagueName);
+                if (width >= 1300) await expect(nav.getByRole('link', {name: 'Tournament Workspace'})).toHaveAttribute('href', '/tournament/31');
                 if (role === 'Admin') {
                     await page.goto(origin + '/tournament/31?step=1');
                     await page.getByLabel('Tournament Name', { exact: true }).fill('Unsaved fixture title');

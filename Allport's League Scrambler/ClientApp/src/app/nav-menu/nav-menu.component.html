@@ -41,6 +41,17 @@
                     @for (event of group.events; track event.id) {
                       <ng-container *ngTemplateOutlet="eventChoice; context: {$implicit: event}"></ng-container>
                     }
+                    @if (group.id === 2) {
+                      @if (!group.events.length) { <p class="event-empty">No tournaments yet.</p> }
+                      <div class="tournament-event-actions">
+                        <a class="event-choice create-tournament" routerLink="/tournament" [queryParams]="{view: 'create'}" (click)="closeEventSelector()">
+                          <mat-icon aria-hidden="true">add</mat-icon><span>Create Tournament</span>
+                        </a>
+                        <a class="event-choice" routerLink="/tournament" (click)="closeEventSelector()">
+                          <mat-icon aria-hidden="true">settings</mat-icon><span>Manage Tournaments</span>
+                        </a>
+                      </div>
+                    }
                   }
                 </div>
               </div>

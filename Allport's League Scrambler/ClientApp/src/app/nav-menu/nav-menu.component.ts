@@ -44,7 +44,6 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     // Presentation metadata only: these are the existing routes and visibility rules.
     readonly destinations: NavItem[] = [
         { route: '/', label: 'Home', icon: 'home' },
-        { route: '/tournament', label: 'Tournament Center', icon: 'emoji_events', signedInOnly: true },
         { route: '/scrambler', label: 'Scrambler', icon: 'shuffle', roles: ['Admin', 'Manager'] },
         { route: '/team-scores', label: 'Teams & Scores', icon: 'group', roles: ['Admin', 'Manager'] },
         { route: '/league-dashboard', label: 'League Dashboard', icon: 'dashboard', roles: ['Admin', 'Manager', 'Player'] },
@@ -56,10 +55,6 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         { route: '/sign-in', label: 'Sign In Sheet', icon: 'how_to_reg', signedInOnly: true },
         { label: 'Manage', icon: 'settings', roles: ['Admin', 'Manager'], children: [
             { route: '/league-management', label: 'League Management', icon: 'settings' }
-        ] },
-        { route: '/install-locally', label: 'Install Locally', icon: 'get_app', featured: true },
-        { label: 'More', icon: 'more_horiz', children: [
-            { route: '/faq', label: 'F.A.Q', icon: 'help_outline' }
         ] }
     ];
 
@@ -77,6 +72,9 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
                 label: 'Standings', icon: 'emoji_events', route: '/standings', queryParams: { leagueId: this.selectedLeagueId, tournament: 1 }
             };
             const organizer = this.userRole === 'Admin' || tournament.canManageTournament;
+            if (organizer) items.splice(1, 0, {
+                label: 'Tournament Workspace', icon: 'emoji_events', route: ['/tournament', tournament.id]
+            });
             if (!organizer && tournament.canViewTournamentRounds) items.splice(1, 0, {
                 label: 'Matchups', icon: 'view_list', route: ['/tournament', this.selectedLeagueId, 'rounds']
             });
@@ -90,13 +88,16 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         if (this.loggedIn && this.playerId) {
             children.push({ label: 'Profile', icon: 'person', route: ['/player-stats-tabs', this.playerId], queryParams: { leagueId: this.selectedLeagueId, tab: 'kq' } });
         }
-        children.push({ label: 'Appearance', icon: 'palette', action: 'appearance' });
+        children.push(
+            { label: 'Appearance', icon: 'palette', action: 'appearance' },
+            { label: 'Install Locally', icon: 'get_app', route: '/install-locally' },
+            { label: 'F.A.Q.', icon: 'help_outline', route: '/faq' }
+        );
         if (this.loggedIn) {
             children.push({ label: 'Change Email', icon: 'alternate_email', route: '/change-email' });
-            if (this.userRole === 'Admin') children.push({ label: 'Recovery Review', icon: 'fact_check', route: '/recovery-review' });
             children.push({ label: 'Logout', icon: 'exit_to_app', action: 'logout' });
         }
-        return this.loggedIn ? { label: 'Account', icon: 'account_circle', children } : children[0];
+        return { label: 'Account', icon: 'account_circle', children };
     }
 
     get visibleDestinations(): NavItem[] {
@@ -145,7 +146,6 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         const path = this.router.url.split(/[?#]/)[0];
         const route = Array.isArray(item.route) ? item.route.join('/') : item.route;
         if (path === '/schedule') return route === '/league-dashboard';
-        if (item.label === 'Tournament Center' && (path === '/tournament' || path.startsWith('/tournament/'))) return true;
         if (path !== route) return false;
         return true;
     }
@@ -181,13 +181,13 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         const matching = this.leagues.filter(event => event.leagueName.toLocaleLowerCase().includes(query));
         return [...eventTypes, unclassified].map(type => ({
             ...type, events: matching.filter(event => this.eventType(event).id === type.id)
-        })).filter(group => group.events.length);
+        })).filter(group => group.events.length || (this.eventPopup === 'categories' && group.id === 2));
     }
 
     toggleEventPopup(popup: 'categories' | 'search'): void {
         if (this.eventPopup === popup) { this.closeEventSelector(); return; }
         this.eventSearch = '';
-        this.expandedEventType = this.selectedEvent ? this.eventType(this.selectedEvent).id : null;
+        this.expandedEventType = this.selectedEvent ? this.eventType(this.selectedEvent).id : 2;
         this.eventPopup = popup;
         requestAnimationFrame(() => {
             if (this.eventPopup !== popup) return;
@@ -216,7 +216,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     onSelectorKey(event: KeyboardEvent): void {
         if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
         const panel = this.eventPanel?.nativeElement;
-        const choices = [...(panel?.querySelectorAll<HTMLElement>('input, button') ?? [])];
+        const choices = [...(panel?.querySelectorAll<HTMLElement>('input, button, a[href]') ?? [])];
         const index = choices.indexOf(event.target as HTMLElement);
         const next = choices[index + (event.key === 'ArrowDown' ? 1 : -1)];
         if (next) {
