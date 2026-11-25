@@ -58,7 +58,7 @@ namespace Allport_s_League_Scrambler
                     options.Events.OnValidatePrincipal = LeagueAccess.RefreshAccountRole;
                     options.LoginPath = "/"; // Set the login page
                     options.AccessDeniedPath = ""; // Set the access denied page
-                    if (PickupEnvironment.Requested) options.Cookie.Name = ".LeagueHub.PickupDev";
+                    if (PickupEnvironment.Requested) options.Cookie.Name = PickupEnvironment.CookieName;
                     options.Cookie.HttpOnly = true; // Ensure cookies are only accessible via HTTP
                     options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Require HTTPS for authentication cookies
                     options.Cookie.SameSite = SameSiteMode.Lax; // Adjust SameSite mode as needed

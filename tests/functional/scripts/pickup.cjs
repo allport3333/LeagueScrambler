@@ -4,9 +4,9 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const {chromium, expect} = require('@playwright/test');
 
-const origin = 'https://localhost:5002';
+const origin = 'https://localhost:5003';
 const token = crypto.randomBytes(5).toString('hex');
-const inbox = path.join(process.env.LOCALAPPDATA, 'LeagueHub', 'LeagueScramblerPickupDev', 'mail');
+const inbox = path.join(process.env.LOCALAPPDATA, 'LeagueHub', 'PickupTest', 'mail');
 const run = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 const values = {name: 'Pickup fixture ' + token, sport: 'Wallyball', venue: 'Fixture Recreation Center',
     address: '1 Fixture Way', city: 'Fixtureville', region: 'MI', postalCode: '48001', country: 'US',
@@ -32,6 +32,8 @@ async function api(page, endpoint, method = 'GET', body) {
             const ctx = await browser.newContext({ignoreHTTPSErrors: true, serviceWorkers: 'block', viewport: {width, height: 900}});
             const page = await ctx.newPage();
             page.on('pageerror', error => errors.push(error.message));
+            const catalog = await ctx.request.get(origin + '/api/pickup/catalog');
+            assert.equal(catalog.headers()['x-pickup-test-database'], 'LeagueScramblerPickupTest', 'Refusing to write fixtures outside the disposable database.');
             await page.goto(origin + '/pickup');
             await expect(page.getByRole('heading', {name: 'Pickup Games'})).toBeVisible();
             if (authenticated) {
@@ -82,7 +84,7 @@ async function api(page, endpoint, method = 'GET', body) {
             fs.readFile(path.join(inbox, file), 'utf8')))).find(message => message.includes(guestEmail));
         assert(raw, 'Local mail delivery missing');
         const mail = raw.replace(/=\r?\n/g, '').replace(/=3D/g, '=');
-        const link = mail.match(/https:\/\/localhost:5002\/pickup\/[\w-]+#verify=[A-F\d]{64}/)?.[0];
+        const link = mail.match(/https:\/\/localhost:5003\/pickup\/[\w-]+#verify=[A-F\d]{64}/)?.[0];
         assert(link, 'Expected a local verification URL');
         await visitor.goto(link);
         await expect(visitor.getByText('Your registration: Confirmed')).toBeVisible();

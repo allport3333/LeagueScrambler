@@ -1,8 +1,19 @@
-﻿-- Additive upgrade for a Pickup Development database with the baseline League Hub schema.
--- A fresh Pickup database is initialized from the current EF model with --initialize-pickup.
+-- Additive Pickup schema for shared Development or an explicitly named disposable test database.
+SET ANSI_NULLS ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET QUOTED_IDENTIFIER ON;
+SET NUMERIC_ROUNDABORT OFF;
 SET XACT_ABORT ON;
 SET NOCOUNT ON;
-IF DB_NAME() <> N'LeagueScramblerPickupDev' THROW 51000, 'Pickup migration requires LeagueScramblerPickupDev.', 1;
+IF DB_NAME() NOT IN (N'LeagueScramblerDev', N'LeagueScramblerPickupTest')
+    THROW 51000, 'Pickup migration requires the shared Development database or disposable test database.', 1;
+IF OBJECT_ID(N'dbo.[User]', N'U') IS NULL OR OBJECT_ID(N'dbo.Player', N'U') IS NULL
+   OR COL_LENGTH(N'dbo.[User]', N'UserId') <> 4 OR COL_LENGTH(N'dbo.Player', N'Id') <> 4
+    THROW 51002, 'Existing account and player keys are required.', 1;
+
 BEGIN TRANSACTION;
 IF OBJECT_ID(N'dbo.PickupRegistration', N'U') IS NULL
 BEGIN
@@ -43,4 +54,16 @@ BEGIN
 END
 ELSE IF OBJECT_ID(N'dbo.PickupSession', N'U') IS NULL OR OBJECT_ID(N'dbo.PickupVenue', N'U') IS NULL
     THROW 51001, 'Partial Pickup schema requires review.', 1;
+-- These object checks are the migration marker, as in existing additive SQL upgrades.
+IF (SELECT COUNT(*) FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.PickupVenue')) <> 10
+ OR (SELECT COUNT(*) FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.PickupSession')) <> 16
+ OR (SELECT COUNT(*) FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.PickupRegistration')) <> 13
+ OR (SELECT COUNT(*) FROM sys.foreign_keys WHERE parent_object_id IN (OBJECT_ID(N'dbo.PickupSession'), OBJECT_ID(N'dbo.PickupRegistration'))
+     AND delete_referential_action = 0 AND is_disabled = 0 AND is_not_trusted = 0) <> 5
+ OR NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID(N'dbo.PickupRegistration')
+     AND name=N'IX_PickupRegistration_SessionId_AccountId' AND is_unique=1 AND has_filter=1 AND is_disabled=0)
+ OR NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID(N'dbo.PickupRegistration')
+     AND name=N'IX_PickupRegistration_SessionId_EmailKey' AND is_unique=1 AND is_disabled=0)
+    THROW 51003, 'Pickup foundation schema verification failed.', 1;
 COMMIT;
+SELECT DB_NAME() AS DatabaseName, '001-PickupFoundation verified' AS MigrationState;

@@ -17,7 +17,8 @@ namespace Allport_s_League_Scrambler
         {
             if (args.Contains("--initialize-pickup"))
             {
-                if (!Pickup.PickupEnvironment.Requested) throw new InvalidOperationException("Select the Pickup Development profile.");
+                if (!Pickup.PickupEnvironment.Requested || !Pickup.PickupEnvironment.DisposableTest)
+                    throw new InvalidOperationException("Select the Pickup Disposable Test profile.");
                 using var host = CreateHostBuilder(Array.Empty<string>()).Build();
                 Pickup.PickupEnvironment.Configure((IWebHostEnvironment)host.Services.GetService(typeof(IWebHostEnvironment)));
                 Pickup.PickupEnvironment.Initialize();

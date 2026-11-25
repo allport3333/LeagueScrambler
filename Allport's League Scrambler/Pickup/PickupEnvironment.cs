@@ -10,11 +10,13 @@ namespace Allport_s_League_Scrambler.Pickup;
 
 public static class PickupEnvironment
 {
-    public const string Database = "LeagueScramblerPickupDev";
-    public const string Origin = "https://localhost:5002";
+    public static bool DisposableTest => Environment.GetEnvironmentVariable("LEAGUE_HUB_PICKUP_DISPOSABLE_TEST") == "1";
+    public static string Database => DisposableTest ? "LeagueScramblerPickupTest" : "LeagueScramblerDev";
+    public static string Origin => DisposableTest ? "https://localhost:5003" : "https://localhost:5002";
+    public static string CookieName => DisposableTest ? ".LeagueHub.PickupTest" : ".LeagueHub.PickupSharedDev";
     public static bool Requested => Environment.GetEnvironmentVariable("LEAGUE_HUB_PICKUP_DEV") == "1";
     public static string LocalDirectory => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LeagueHub", Database);
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LeagueHub", DisposableTest ? "PickupTest" : "PickupSharedDev");
 
     public static void Configure(IWebHostEnvironment environment)
     {
@@ -29,9 +31,11 @@ public static class PickupEnvironment
 
     public static void Initialize()
     {
+        if (!Requested || !DisposableTest)
+            throw new InvalidOperationException("Automatic initialization is restricted to the disposable Pickup test profile.");
         using var db = new DataContext();
-        if (!Requested || db.Database.GetDbConnection().Database != Database)
-            throw new InvalidOperationException("Pickup initialization requires the dedicated database.");
+        if (db.Database.GetDbConnection().Database != "LeagueScramblerPickupTest")
+            throw new InvalidOperationException("Unexpected disposable test database.");
         db.Database.EnsureCreated();
         // Reference data only. No users, players, or application records are copied.
         db.Database.ExecuteSqlRaw("""

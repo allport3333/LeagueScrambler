@@ -26,7 +26,12 @@ public sealed class PickupController(TransactionalMail mail) : ControllerBase
     private static readonly string[] Sports = ["Wallyball", "Volleyball", "Basketball", "Pickleball", "Soccer", "Other"];
 
     [HttpGet("catalog")]
-    public IActionResult Catalog() => PickupEnvironment.Requested ? Ok(Sports) : NotFound();
+    public IActionResult Catalog()
+    {
+        if (!PickupEnvironment.Requested) return NotFound();
+        if (PickupEnvironment.DisposableTest) Response.Headers["X-Pickup-Test-Database"] = "LeagueScramblerPickupTest";
+        return Ok(Sports);
+    }
 
     [HttpGet("sessions")]
     public async Task<IActionResult> Discover(string sport, string location, DateOnly? date, bool available, string skill, int page = 0)

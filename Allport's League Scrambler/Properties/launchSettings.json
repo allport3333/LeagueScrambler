@@ -9,6 +9,17 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "LEAGUE_HUB_PICKUP_DEV": "1"
       }
+    },
+    "Pickup Disposable Test": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "launchUrl": "pickup",
+      "applicationUrl": "https://localhost:5003",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "LEAGUE_HUB_PICKUP_DEV": "1",
+        "LEAGUE_HUB_PICKUP_DISPOSABLE_TEST": "1"
+      }
     }
   }
 }

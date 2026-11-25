@@ -1,19 +1,18 @@
-﻿# Pickup Games · Phase 1
+# Pickup Games ? Phase 1
 
-## Isolated development
+## Shared Development
 
-Open `Allport's League Scrambler.sln` in the Pickup worktree and choose **Pickup Development**. The Kestrel profile runs at `https://localhost:5002/pickup`. It uses the checked-out worktree's own Angular output. Rebuild Angular after UI edits.
+Use the original worktree on `https://localhost:5001` and the `feature/pickup-sessions` worktree `LeagueScrambler-pickup` on `https://localhost:5002/pickup`. Both use the existing local SQL Server database `LeagueScramblerDev`.
 
-From the web project directory, the initial setup is:
+In the Pickup worktree, open `Allport's League Scrambler.sln` and select **Pickup Development**. From the web project directory, build that worktree's Angular assets before launching or after frontend edits.
 
 ```powershell
 npm.cmd --prefix ClientApp ci
 npm.cmd --prefix ClientApp run build -- --configuration=production
-dotnet run --launch-profile "Pickup Development" -- --initialize-pickup
 dotnet run --launch-profile "Pickup Development"
 ```
 
-The profile requires Development and forces the local SQL Server database `LeagueScramblerPickupDev` with Windows integrated authentication. It bypasses the existing dotenv search and uses a dedicated authentication cookie and key directory. Email is written as `.eml` files under `%LOCALAPPDATA%\LeagueHub\LeagueScramblerPickupDev\mail`, including verification links. Test with `example.invalid` addresses. The browser needs a trusted ASP.NET development certificate. Port 5001, the original checkout, and the original databases are separate.
+Pickup uses Windows integrated authentication for local SQL Server. Its authentication cookie and Data Protection keys remain separate from port 5001, so sign into port 5002 using the same Development account. Pickup mail is written to `%LOCALAPPDATA%\LeagueHub\PickupSharedDev\mail`. The profile bypasses dotenv probing and does not use the original SMTP configuration. Trust the local ASP.NET development certificate if needed.
 
 ## Architecture
 
@@ -32,20 +31,32 @@ The profile requires Development and forces the local SQL Server database `Leagu
 
 `POST /sessions` creates a session, `PUT /sessions/{id}` updates it, and `POST /sessions/{id}/cancel` cancels it. Session-scoped POST actions are `join`, `guest`, `verify`, `leave`, and `registrations/{registrationId}` for an organizer decision. Public payloads include counts and the organizer's display name; the organizer's private notes and participant names are owner-only.
 
-## Migration and rollback
+## Migration and recovery
 
-Fresh local setup uses the current EF model to initialize a clean database and seeds only roles and event types. The additive, target-guarded [SQL migration](001-PickupFoundation.sql) upgrades a baseline-only Pickup development database. It does not upgrade production. Disable the Pickup profile to take the feature offline while retaining its data. For local schema rollback, back up the dedicated database and remove Pickup registrations, sessions and venues in that dependency order. Existing account, league and tournament tables do not depend on those three tables. A production rollout will require separate migration and retention review.
+Back up `LeagueScramblerDev` before schema changes. Use a full `COPY_ONLY` backup with `CHECKSUM` outside the repository and confirm it with `RESTORE VERIFYONLY ... WITH CHECKSUM`. Preserve the backup. If investigation or recovery is needed, restore it under a new database name first. Replacing shared Development requires separate authorization.
+
+From the Pickup worktree root, apply the additive migration only after the backup verifies:
+
+```powershell
+sqlcmd -S lpc:localhost -d LeagueScramblerDev -E -C -b -i tools/pickup/001-PickupFoundation.sql
+```
+
+Require exit code 0 and the `001-PickupFoundation verified` receipt. Existing SQL add-ons use schema-object checks to record and detect application. This script verifies the three tables and key constraints on rerun and leaves the existing EF migration history untouched. Filtered indexes require the explicit SQL session settings included in the script.
+
+Keep future changes backward compatible while both apps share the database. Avoid resetting shared Development. A genuinely breaking change must use a temporary restored copy until the schemas can be reconciled. The old `LeagueScramblerPickupDev` remains an unused fallback, and its synthetic fixtures should stay separate.
 
 ## Focused verification
 
-With the Pickup profile running, from the worktree root run:
+Shared Development checks should read existing league, tournament, and player data and clean up any narrowly scoped Pickup write fixtures. Use **Pickup Disposable Test** on port 5003 for the concurrency and guest browser suite. It uses the separate throwaway database `LeagueScramblerPickupTest` and refuses to seed shared Development.
+
+From the web project directory:
 
 ```powershell
-npm.cmd --prefix tests/functional ci
-node tests/functional/scripts/pickup.cjs
+dotnet run --launch-profile "Pickup Disposable Test" -- --initialize-pickup
+dotnet run --launch-profile "Pickup Disposable Test"
 ```
 
-The browser check uses synthetic accounts and local `.eml` files, exercises the real API and SQL transactions, and cancels its fixture sessions after successful verification. No external mail or database is involved.
+From the worktree root, run `npm.cmd --prefix tests/functional ci` and `node tests/functional/scripts/pickup.cjs`. The harness requires the disposable-profile marker before writing any fixtures.
 
 ## Roadmap
 
