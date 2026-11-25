@@ -3,17 +3,17 @@
 .session-counts { text-align: center; gap: clamp(.5rem, 3vw, 2rem); margin-block: 0 1rem; }
 .session-counts strong { display: block; font-size: 1.45em; }
 .workspace-actions { margin-block: .7rem; }
-.workspace-actions button[aria-pressed=true] { background: var(--hub-primary-action, #30577e); color: var(--hub-action-text, white); }
+.workspace-actions button[aria-selected=true] { background: var(--hub-primary-action, #30577e); color: var(--hub-action-text, white); }
 .workspace-fields, .pickup-matchups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: .8rem; margin-block: .75rem; }
 .workspace-fields label, .score-fields label { min-width: 0; }
-.picker, .game-set, .pickup-matchup { min-width: 0; border: 1px solid var(--hub-border, currentColor); border-radius: .6rem; padding: .65rem; margin-block: .5rem; }
+.picker, .game-set, .pickup-matchup { min-width: 0; border: 1px solid var(--hub-border, #a4b5c8); border-radius: .6rem; padding: .65rem; margin-block: .5rem; }
 .pickup-matchup h4, .game-set h4 { text-align: center; margin-block: 0 .5rem; }
 .pickup-matchup h5 { margin-block: .25rem; font-size: 1em; }
 .pickup-matchup ul { padding-inline-start: 1.1rem; }
 .pickup-matchup li { overflow-wrap: anywhere; margin-block-end: .25rem; }
-.player-line, .priority-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; align-items: center; padding: .4rem 0; border-bottom: 1px solid var(--hub-border, currentColor); }
+.priority-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; align-items: center; padding: .4rem 0; border-bottom: 1px solid var(--hub-border, #a4b5c8); }
 .opponents, .score-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
-.score-fields { padding: .45rem; min-width: 0; border: 1px solid var(--hub-border, currentColor); }
+.score-fields { padding: .45rem; min-width: 0; border: 1px solid var(--hub-border, #a4b5c8); }
 .score-fields input, .pickup-matchup select { width: 100%; }
 .workspace button { max-width: 100%; }
 @media (max-width: 480px) {
@@ -22,29 +22,52 @@
 }
 
 .session-lifecycle { display: flex; justify-content: center; align-items: center; gap: .5rem; flex-wrap: wrap; margin-block: .6rem .85rem; }
-.session-counts { background: var(--hub-section); border-radius: .55rem; padding: .5rem; margin-block-end: .6rem; }
+.session-counts { background: var(--hub-section, #edf3fa); border-radius: .55rem; padding: .5rem; margin-block-end: .6rem; }
 .session-counts strong { font-size: 1.2em; }
 .workspace > h2, .workspace > h3 { font-size: 1.3rem; margin-block: 1rem .45rem; }
-.workspace-actions[aria-label] { border-bottom: 1px solid var(--hub-border); padding-block-end: .65rem; }
-.player-totals { display: flex; gap: .3rem 1rem; flex-wrap: wrap; color: var(--hub-muted); }
-.player-line { display: grid; grid-template-columns: minmax(0, 1fr) minmax(7rem, auto) auto; }
+.workspace-actions[aria-label] { border-bottom: 1px solid var(--hub-border, #a4b5c8); padding-block-end: .65rem; }
+.player-totals { display: flex; gap: .3rem 1rem; flex-wrap: wrap; color: var(--hub-muted, #475569); }
 .player-name { overflow-wrap: anywhere; }
-.player-status { color: var(--hub-muted); }
+.player-status { color: var(--hub-muted, #475569); }
 .workspace .choice > input { flex: 0 0 auto; margin: 0; }
-.workspace .choice small { display: block; color: var(--hub-muted); }
-.verification-list { margin-block: 1rem .5rem; padding-block-start: .7rem; border-top: 1px solid var(--hub-border); }
+.workspace .choice small { display: block; color: var(--hub-muted, #475569); }
+.verification-list { margin-block: 1rem .5rem; padding-block-start: .7rem; border-top: 1px solid var(--hub-border, #a4b5c8); }
 .verification-list h3 { font-size: 1rem; }
 .game-set h4 button { display: flex; width: 100%; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .65rem; text-align: left; font-weight: 650; }
-.game-set h4 small { color: var(--hub-muted); }
+.game-set h4 small { color: var(--hub-muted, #475569); }
 .playing-roster ul { columns: 2; }
-@media (max-width: 480px) {
-  .player-line { grid-template-columns: minmax(0, 1fr) auto; }
-  .player-line button { grid-row: 1 / span 2; grid-column: 2; }
-  .player-line button + button { grid-row: auto; }
-}
 
 .player-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; margin: .65rem 0; }
 .workspace .eligibility-choice { width: 100%; align-items: flex-start; min-height: 44px; margin: 0 0 .55rem; }
 .workspace .eligibility-choice > input { margin-block-start: .25em; }
 .eligibility-choice > span { min-width: 0; overflow-wrap: normal; word-break: normal; }
 .workspace-watch { grid-column: 1 / -1; }
+
+.workspace-tabs { justify-content: center; }
+.active-panel { border: 1px solid var(--hub-border, #a4b5c8); border-radius: .6rem; padding: clamp(.55rem, 2vw, 1rem); }
+.active-panel > h2, .active-panel > h3 { font-size: 1.3rem; margin: 0 0 .5rem; }
+.players-heading, .roster-empty { text-align: center; }
+.player-totals, .player-toolbar { justify-content: center; }
+.workspace .eligibility-choice { width: fit-content; max-width: 100%; margin-inline: auto; }
+.pickup-roster { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: .55rem; max-width: 56rem; margin: .55rem auto 0; }
+.roster-empty { grid-column: 1 / -1; }
+.player-line { display: grid; justify-items: start; align-content: start; gap: .25rem; padding: .55rem .65rem; min-width: 0; border: 1px solid var(--hub-border, #a4b5c8); border-radius: .5rem; background: var(--hub-section, #edf3fa); }
+.player-line button { min-height: 36px; padding: .3rem .55rem; }
+.player-line.male, .pickup-matchup li.male { background: var(--hub-male, #c1e0e8); }
+.player-line.female, .pickup-matchup li.female { background: var(--hub-female, #f5ceda); }
+.pickup-matchups { grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr)); }
+.pickup-matchup, .game-set { background: var(--hub-section, #edf3fa); }
+.pickup-matchup ul { padding: 0; list-style: none; }
+.pickup-matchup li { padding: .2rem .35rem; border-radius: .25rem; background: var(--hub-surface, #fff); }
+.workspace-fields { padding: .55rem; border-radius: .4rem; background: var(--hub-section, #edf3fa); }
+@media (max-width: 480px) {
+  .pickup-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .player-line button { min-height: 44px; }
+  .workspace-actions { justify-content: center; }
+}
+
+.game-set h4 button { font-size: 1rem; line-height: 1.25; }
+.session-counts { border: 1px solid var(--hub-border, #a4b5c8); }
+.workspace-fields input:not([type=checkbox]), .workspace-fields select { width: 100%; }
+
+.session-counts .session-lifecycle { margin: 0; }

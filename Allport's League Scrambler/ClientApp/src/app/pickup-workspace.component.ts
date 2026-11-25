@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, Input, Output, EventEmitter, OnChanges, OnDestroy } from '@angular/core';
+import { NgClass } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
@@ -13,7 +14,7 @@ import { TournamentNotifications } from './tournament-notifications.service';
 
 interface Participant { id: string; playerId: number | null; name: string; gender: string | null; }
 interface Registration extends Participant { state: number; playing: boolean | null; }
-interface Options { teamCount: number; maxTeamSize: number; balanced: boolean; history: string; top: string[]; low: string[]; allowMinimumRepeats: boolean; }
+interface Options { configurationMode?: 'size' | 'count'; teamCount: number | null; maxTeamSize: number | null; balanced: boolean; history: string; top: string[]; low: string[]; allowMinimumRepeats: boolean; }
 interface Board { teams: Participant[][]; byes: Participant[]; gamesPerMatchup: number; options: Options; }
 interface Score { matchup: number; game: number; first: number; second: number; }
 interface GameSet { id: string; number: number; version: number; board: Board; scores: Score[]; }
@@ -26,7 +27,7 @@ interface SessionSummary { id: string; name: string; state: number; owner: boole
 @Component({
     selector: 'app-pickup-workspace',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule],
+    imports: [FormsModule, NgClass],
     templateUrl: './pickup-workspace.component.html',
     styleUrls: ['./pickup.component.css', './pickup-workspace.component.css']
 })
@@ -36,6 +37,7 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
     @Output() sessionUpdated = new EventEmitter<void>();
     @Output() editSettings = new EventEmitter<void>();
     @Output() viewDetails = new EventEmitter<void>();
+    @Input() shareUrl = '';
     @Output() invite = new EventEmitter<void>();
 
     private readonly http = inject(HttpClient);
@@ -56,8 +58,9 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
     reopenNow = false;
     reopenStart = '';
     priority: Record<string, string> = {};
-    options = { teamCount: 2, maxTeamSize: 4, balanced: true, history: 'none', games: 1, watch: false };
+    options = { configurationMode: 'size' as 'size' | 'count', teamCount: 2, maxTeamSize: 4, balanced: true, history: 'none', games: 1, watch: false };
     preview?: Board;
+    previewStale = false;
     warnings: string[] = [];
     strictFallback = false;
     open = new Set<string>();
@@ -77,13 +80,14 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
             this.busy = false;
             this.error = '';
             this.open.clear();
-            this.preview = undefined;
+            this.discardPreview();
             this.scoring = this.editing = undefined;
             this.priority = {};
             this.playerBrowser?.close();
             this.guestOpen = this.reschedule = this.reopenNow = false;
             this.reopenStart = '';
         }
+        if (this.tabs.length && !this.tabs.includes(this.tab)) this.selectTab(this.tabs[0]);
         void this.load();
     }
 
@@ -94,6 +98,25 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
         this.dialog?.close();
     }
 
+    get tabs(): string[] {
+        if (!this.session.owner) return this.session.canReopen ? ['Session Settings'] : [];
+        return ['Players', ...(this.active ? ['Scramble Teams'] : []), 'Teams & Scores',
+            ...(this.session.visibility !== 2 ? ['Invite Players'] : []), 'Session Settings'];
+    }
+
+    tabId(tab: string): string { return 'pickup-tab-' + tab.split(' ')[0].toLowerCase(); }
+
+    tabKey(event: KeyboardEvent, index: number): void {
+        const tabs = this.tabs;
+        const target = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+            : event.key === 'ArrowRight' ? (index + 1) % tabs.length
+            : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length : -1;
+        if (target < 0) return;
+        event.preventDefault();
+        this.selectTab(tabs[target]);
+        document.getElementById(this.tabId(tabs[target]))?.focus();
+    }
+
     selectTab(tab: string): void {
         this.tab = tab;
         try { sessionStorage.setItem('pickup-tab-' + this.session.id, tab); } catch { /* Optional resume. */ }
@@ -102,8 +125,7 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
     private savedTab(): string {
         try {
             const tab = sessionStorage.getItem('pickup-tab-' + this.session.id);
-            if (tab === 'Session Settings') return tab;
-            if (tab === 'Teams & Scores' || (tab === 'Scramble Teams' && this.active)) return tab;
+            if (tab && this.tabs.includes(tab)) return tab;
         } catch { /* Optional resume. */ }
         return this.session.state === 4 ? 'Session Settings' : 'Players';
     }
@@ -123,7 +145,14 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
         const request = ++this.request;
         try {
             const result = await firstValueFrom(this.http.get<Workspace>(this.endpoint + '/workspace'));
-            if (request === this.request) this.data = result;
+            if (request === this.request) {
+                this.data = result;
+                const roster = new Set(this.eligible.map(player => player.id));
+                if (this.preview) {
+                    const proposed = [...this.preview.teams.flat(), ...this.preview.byes];
+                    if (roster.size !== proposed.length || proposed.some(player => !roster.has(player.id))) this.previewStale = true;
+                }
+            }
         } catch (error) {
             if (request === this.request) this.error = this.message(error);
         }
@@ -219,7 +248,35 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
         });
     }
 
-    setAttendance(body: object): void { void this.mutate('/attendance', body, 'PUT', () => { this.preview = undefined; }); }
+    setAttendance(body: object): void { void this.mutate('/attendance', body, 'PUT'); }
+
+    get plannedTeams(): number | null {
+        const count = this.eligible.length;
+        const {configurationMode, teamCount, maxTeamSize} = this.options;
+        const value = configurationMode === 'size' ? maxTeamSize : teamCount;
+        if (!Number.isInteger(value) || value < 1 || value > 80 || count < 2 || count > 80) return null;
+        const teams = configurationMode === 'size' ? 2 * Math.ceil(count / (2 * value)) : value;
+        return teams >= 2 && teams <= count && teams % 2 === 0 ? teams : null;
+    }
+
+    discardPreview(): void { this.preview = undefined; this.previewStale = false; }
+
+    get previewConfigurationChanged(): boolean {
+        if (!this.preview) return false;
+        const board = this.preview;
+        const {configurationMode, teamCount, maxTeamSize, games, history, balanced} = this.options;
+        return board.options.configurationMode !== configurationMode ||
+            board.options.teamCount !== (configurationMode === 'count' ? teamCount : null) ||
+            board.options.maxTeamSize !== (configurationMode === 'size' ? maxTeamSize : null) ||
+            board.gamesPerMatchup !== games || board.options.history !== history || board.options.balanced !== balanced ||
+            this.eligible.some(p => (this.priority[p.id] === 'top') !== board.options.top.includes(p.id) ||
+                (this.priority[p.id] === 'low') !== board.options.low.includes(p.id));
+    }
+
+    genderClass(player: Participant): string {
+        const gender = player.gender?.toLowerCase();
+        return gender === 'male' || gender === 'female' ? gender : '';
+    }
 
     async generate(allowMinimumRepeats = false): Promise<void> {
         if (this.busy) return;
@@ -227,16 +284,18 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
         this.error = '';
         this.warnings = [];
         this.strictFallback = false;
-        this.preview = undefined;
+        this.discardPreview();
         if (roster.length < 2 || roster.length > 80) {
             this.error = roster.length > 80 ? 'The Scrambler supports 80 players per draw. Mark some participants Not Playing to select a smaller group.'
                 : 'At least two playing participants are needed to scramble.';
             return;
         }
-        const {teamCount, maxTeamSize, balanced, history, games, watch} = this.options;
-        if (![teamCount, maxTeamSize, games].every(Number.isInteger) || teamCount < 0 || teamCount > 80 || teamCount % 2 !== 0 ||
-            maxTeamSize < 1 || maxTeamSize > 80 || games < 1 || games > 20) {
-            this.error = 'Choose an even team count (or 0 for automatic), a team size from 1 to 80, and 1 to 20 games.';
+        const {configurationMode, teamCount, maxTeamSize, balanced, history, games, watch} = this.options;
+        const planned = this.plannedTeams;
+        if (!planned || !Number.isInteger(games) || games < 1 || games > 20) {
+            this.error = !planned ? (configurationMode === 'size'
+                ? 'Choose a maximum size from 1 to 80 that allows complete matchups for every playing participant.'
+                : 'Choose an even number of teams between 2 and the playing roster size.') : 'Choose 1 to 20 games per matchup.';
             return;
         }
         const id = this.currentId;
@@ -251,8 +310,8 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
             const mode = balanced ? 'balanced' : 'random';
             const result = await generateScramble({
                 players: roster.map((p, i) => ({id: i + 1, isMale: p.gender?.toLowerCase() !== 'female'})),
-                topIds, lowIds, balancePriorities: top.length + low.length > 0, mode, maxTeamSize,
-                numberOfTeams: teamCount || undefined, prioritizeMatchupComposition: balanced,
+                topIds, lowIds, balancePriorities: top.length + low.length > 0, mode,
+                numberOfTeams: planned, prioritizeMatchupComposition: balanced, tournamentTopPairing: true,
                 prioritizeHistory: history !== 'none', frequencies,
                 prohibitedPairs: history === 'strict' ? frequencies.map(p => pairKey(p.player1Id, p.player2Id)) : [],
                 allowMinimumRepeats, cancelled: () => id !== this.currentId
@@ -266,8 +325,17 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
             this.warnings = result.warnings;
             const teams = result.teams.map(team => team.map(p => roster[p.id - 1]));
             const byes = result.byes.map(p => roster[p.id - 1]);
+            const assigned = [...teams.flat(), ...byes];
+            if (teams.length !== planned || byes.length || assigned.length !== roster.length ||
+                new Set(assigned.map(p => p?.id)).size !== roster.length || assigned.some(p => !p) ||
+                teams.some(team => team.length < Math.floor(roster.length / planned) || team.length > Math.ceil(roster.length / planned) ||
+                    (configurationMode === 'size' && team.length > maxTeamSize))) {
+                this.error = 'The generated teams do not satisfy the selected configuration.';
+                return;
+            }
             this.preview = {teams, byes, gamesPerMatchup: games, options: {
-                teamCount, maxTeamSize, balanced, history, allowMinimumRepeats, top: top.map(p => p.id), low: low.map(p => p.id)
+                configurationMode, teamCount: configurationMode === 'count' ? teamCount : null,
+                maxTeamSize: configurationMode === 'size' ? maxTeamSize : null, balanced, history, allowMinimumRepeats, top: top.map(p => p.id), low: low.map(p => p.id)
             }};
             if (watch) {
                 const draft = buildScrambleDraft(result.teams.map((team, i) => ({id: i + 1, playerIds: team.map(p => p.id)})),
@@ -301,7 +369,7 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
     }
 
     saveTeams(): void {
-        if (!this.preview) return;
+        if (!this.preview || this.previewStale || this.previewConfigurationChanged) return;
         const board = this.preview;
         void this.mutate('/sets', {teams: board.teams.map(team => team.map(p => p.id)), byes: board.byes.map(p => p.id),
             gamesPerMatchup: board.gamesPerMatchup, options: board.options}, 'POST', () => {

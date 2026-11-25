@@ -2,6 +2,10 @@
 @if (data; as workspace) {
   @if (session.owner || session.canReopen || workspace.sets) {
     <section class="workspace">
+      @if (session.owner || workspace.sets) { <div class="session-counts" aria-label="Session summary">
+        <span><strong>{{ session.confirmed }}</strong> Registered Players</span>
+        <span><strong>{{ workspace.playing }}</strong> Playing Today</span>
+        <span><strong>{{ workspace.gameSets }}</strong> Game Sets</span>
       @if (active && tab !== 'Session Settings') {
         <div class="session-lifecycle">
           @if (session.state === 1) {
@@ -11,28 +15,20 @@
           }
         </div>
       }
-      @if (session.owner || workspace.sets) { <div class="session-counts" aria-label="Session summary">
-        <span><strong>{{ session.confirmed }}</strong> Registered Players</span>
-        <span><strong>{{ workspace.playing }}</strong> Playing Today</span>
-        <span><strong>{{ workspace.gameSets }}</strong> Game Sets</span>
       </div> }
-      @if (session.owner) {
-        <nav class="workspace-actions" aria-label="Pickup workspace">
-          <button type="button" [attr.aria-pressed]="tab === 'Players'" (click)="selectTab('Players')">Players</button>
-          @if (active) {
-            <button type="button" [attr.aria-pressed]="tab === 'Scramble Teams'" (click)="selectTab('Scramble Teams')">Scramble Teams</button>
+      @if (tabs.length) {
+        <div class="workspace-actions workspace-tabs" role="tablist" aria-label="Pickup workspace">
+          @for (item of tabs; track item; let i = $index) {
+            <button type="button" role="tab" [id]="tabId(item)" [attr.aria-selected]="tab === item"
+              [attr.aria-controls]="tab === item ? 'pickup-active-panel' : null" [attr.tabindex]="tab === item ? 0 : -1"
+              (keydown)="tabKey($event, i)" (click)="selectTab(item)">{{ item }}</button>
           }
-          <button type="button" [attr.aria-pressed]="tab === 'Teams & Scores'" (click)="selectTab('Teams & Scores')">Teams &amp; Scores</button>
-          @if (session.visibility !== 2) {
-            <button type="button" (click)="invite.emit()">Invite Players</button>
-          }
-          <button type="button" [attr.aria-pressed]="tab === 'Session Settings'" (click)="selectTab('Session Settings')">Session Settings</button>
-        </nav>
-
+        </div>
       }
-
+      <div class="active-panel" id="pickup-active-panel" [attr.role]="tabs.length ? 'tabpanel' : null"
+        [attr.aria-labelledby]="tabs.length ? tabId(tab) : null">
       @if (tab === 'Players' && session.owner) {
-        <h2>Players</h2>
+        <h2 class="players-heading">Players</h2>
         <div class="player-totals">
           <span>{{ session.confirmed }} registered</span>
           <span>{{ workspace.playing }} playing</span>
@@ -56,8 +52,9 @@
             </div>
           }
         }
+        <div class="pickup-roster">
         @for (player of participants; track player.id) {
-          <div class="player-line">
+          <article class="player-line" [ngClass]="genderClass(player)">
             <strong class="player-name">{{ player.name }}</strong>
             <span class="player-status">{{ player.state === 2 ? (playing(player) ? 'Playing' : 'Not Playing') : statuses[player.state] }}</span>
             @if (active && player.state === 2) {
@@ -68,8 +65,9 @@
               <button type="button" [disabled]="busy" (click)="mutate('/registrations/' + player.id, {approve: true})">Approve</button>
               <button type="button" [disabled]="busy" (click)="mutate('/registrations/' + player.id, {approve: false})">Decline</button>
             }
-          </div>
-        } @empty { <p>No players have joined yet.</p> }
+          </article>
+        } @empty { <p class="roster-empty">No players have joined yet.</p> }
+        </div>
       }
 
       @if (tab === 'Players' && session.owner && verifying.length) {
@@ -90,8 +88,17 @@
           <button type="button" (click)="selectTab('Players')">Choose Playing Participants</button>
         }
         <div class="workspace-fields">
-          <label>Team count (0 for automatic)<input type="number" min="0" max="80" step="2" [(ngModel)]="options.teamCount"></label>
-          <label>Maximum team size<input type="number" min="1" max="80" [(ngModel)]="options.maxTeamSize"></label>
+          <label>Team configuration
+            <select [(ngModel)]="options.configurationMode">
+              <option value="size">Maximum Team Size</option>
+              <option value="count">Number of Teams</option>
+            </select>
+          </label>
+          @if (options.configurationMode === 'size') {
+            <label>Maximum Team Size<input type="number" min="1" max="80" [(ngModel)]="options.maxTeamSize"></label>
+          } @else {
+            <label>Number of Teams<input type="number" min="2" max="80" step="2" [(ngModel)]="options.teamCount"></label>
+          }
           <label>Games per matchup<input type="number" min="1" max="20" [(ngModel)]="options.games"></label>
           <label>Team balance<select [(ngModel)]="options.balanced"><option [ngValue]="true">Balanced</option><option [ngValue]="false">Completely random</option></select></label>
           <label>Previous pickup teammates<select [(ngModel)]="options.history">
@@ -99,6 +106,11 @@
           </select></label>
           <label class="choice workspace-watch"><input type="checkbox" [(ngModel)]="options.watch"> Watch the Scramble</label>
         </div>
+        @if (plannedTeams; as count) {
+          <p class="team-plan" role="status">{{ eligible.length }} players will be distributed across {{ count }} teams.</p>
+        } @else if (eligible.length >= 2 && eligible.length <= 80) {
+          <p class="team-plan">Choose a team configuration that allows complete matchups for this roster.</p>
+        }
         <details>
           <summary>Top and Low Player priorities</summary>
           @for (player of eligible; track player.id) {
@@ -118,13 +130,16 @@
         @for (warning of warnings; track $index) { <p>{{ warning }}</p> }
         @if (preview; as result) {
           <h4>Proposed Teams</h4>
+          @if (previewStale || previewConfigurationChanged) {
+            <p class="feedback" role="status">{{ previewStale ? 'The playing roster changed.' : 'The team settings changed.' }} Generate teams again before saving.</p>
+          }
           <div class="pickup-matchups">
             @for (pair of matchups(result.teams); track $index; let i = $index) {
               <article class="pickup-matchup">
                 <h4>Matchup {{ i + 1 }}</h4>
                 <div class="opponents">
                   @for (roster of [pair.first, pair.second]; track $index) {
-                    <section><h5>Team {{ i * 2 + $index + 1 }}</h5><ul>@for (player of roster; track player.id) { <li>{{ player.name }}</li> }</ul></section>
+                    <section><h5>Team {{ i * 2 + $index + 1 }}</h5><ul>@for (player of roster; track player.id) { <li [ngClass]="genderClass(player)">@if (result.options.top.includes(player.id)) { <span aria-label="Top Player">&#9733; </span> }{{ player.name }}</li> }</ul></section>
                   }
                 </div>
               </article>
@@ -134,8 +149,8 @@
             <p>Sitting out: @for (player of result.byes; track player.id) { {{ player.name }}{{ $last ? '' : ', ' }} }</p>
           }
           <div class="workspace-actions">
-            <button type="button" class="primary" [disabled]="busy" (click)="saveTeams()">Save Teams to Pickup Session</button>
-            <button type="button" (click)="preview = undefined">Discard Preview</button>
+            <button type="button" class="primary" [disabled]="busy || previewStale || previewConfigurationChanged" (click)="saveTeams()">Save Teams to Pickup Session</button>
+            <button type="button" (click)="discardPreview()">Discard Preview</button>
           </div>
         }
       }
@@ -174,7 +189,7 @@
                           <h5>Team {{ i * 2 + side + 1 }}</h5>
                           <ul>
                             @for (player of roster; track player.id) {
-                              <li>{{ player.name }}
+                              <li [ngClass]="genderClass(player)">@if (set.board.options.top.includes(player.id)) { <span aria-label="Top Player">&#9733; </span> }{{ player.name }}
                                 @if (editing?.id === set.id) {
                                   <select #teamChoice [attr.aria-label]="'Assigned team for ' + player.name" [value]="i * 2 + side"
                                     (change)="move(player, i * 2 + side, +teamChoice.value, teamChoice)">
@@ -240,6 +255,14 @@
           <p>{{ active && session.confirmed ? 'Ready to play? Scramble your players into teams.' : 'No game sets yet.' }}</p>
         }
       }
+      @if (tab === 'Invite Players') {
+        <h2>Invite Players</h2>
+        <p>Share the session link so players can open this pickup game.</p>
+        <button type="button" class="primary" (click)="invite.emit()">Copy Invitation Link</button>
+        @if (shareUrl) {
+          <label class="share-link">Invitation Link<input readonly [value]="shareUrl" (focus)="$any($event.target).select()"></label>
+        }
+      }
       @if (tab === 'Session Settings' && (session.owner || session.canReopen)) {
         <h2>Session Settings</h2>
         @if (session.organizerNotes) { <p>{{ session.organizerNotes }}</p> }
@@ -266,6 +289,7 @@
           <button type="button" class="primary" [disabled]="busy" (click)="reopen()">Reopen Session</button>
         }
       }
+      </div>
     </section>
   }
 }

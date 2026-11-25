@@ -68,6 +68,16 @@ withPickupTestHost(async origin => {
             }, theme);
             if (width < 480) await expect(organizer.locator('.drawer-toggle')).toBeVisible();
             await expect(organizer.locator('.player-line')).toHaveCount(count);
+            const structure = await organizer.locator('.pickup-workspace-shell').evaluate(shell => {
+                const border = el => parseFloat(getComputedStyle(el).borderTopWidth);
+                const tabs = shell.querySelector('[role=tab][aria-selected=false]');
+                const card = shell.querySelector('.player-line');
+                return [border(shell), border(tabs), card ? border(card) : 1,
+                    getComputedStyle(shell.querySelector('.pickup-roster')).gridTemplateColumns.split(' ').length];
+            });
+            assert(structure.slice(0, 3).every(width => width >= 1));
+            if (count >= 12) assert(structure[3] >= (width >= 1366 ? 3 : 2), JSON.stringify({width, structure}));
+
             const layout = await organizer.locator('.eligibility-choice').evaluate(label => {
                 const title = label.querySelector('strong');
                 const input = label.querySelector('input');
@@ -151,7 +161,7 @@ withPickupTestHost(async origin => {
         await organizer.getByRole('button', {name: 'Mark Walk-in 7 playing'}).click();
         await expect(organizer.locator('.player-line').filter({hasText: 'Walk-in 7'}).getByText('Playing', {exact: true})).toBeVisible();
 
-        await organizer.getByRole('button', {name: 'Scramble Teams', exact: true}).click();
+        await organizer.getByRole('tab', {name: 'Scramble Teams', exact: true}).click();
         await organizer.getByLabel('Games per matchup').fill('3');
         await organizer.getByLabel('Watch the Scramble').check();
         await organizer.getByRole('button', {name: 'Generate Teams', exact: true}).click();
@@ -187,10 +197,10 @@ withPickupTestHost(async origin => {
         assert.equal((await api(outsider, session.api + '/workspace')).data.sets, null);
 
         await organizer.setViewportSize({width: 390, height: 850});
-        await organizer.getByRole('button', {name: 'Players', exact: true}).click();
+        await organizer.getByRole('tab', {name: 'Players', exact: true}).click();
         await organizer.getByRole('button', {name: 'Mark Walk-in 7 not playing'}).click();
         await expect(organizer.locator('.player-line').filter({hasText: 'Walk-in 7'}).getByText('Not Playing', {exact: true})).toBeVisible();
-        await organizer.getByRole('button', {name: 'Scramble Teams', exact: true}).click();
+        await organizer.getByRole('tab', {name: 'Scramble Teams', exact: true}).click();
         await organizer.getByLabel('Watch the Scramble').uncheck();
         await organizer.getByLabel('Previous pickup teammates').selectOption('minimize');
         await organizer.getByRole('button', {name: 'Generate Next Teams', exact: true}).click();
@@ -205,10 +215,11 @@ withPickupTestHost(async origin => {
         await expect(organizer.getByRole('link', {name: /Continue Pickup Session/})).toBeVisible();
         await openPickupMenu();
         await menu.getByRole('link', {name: 'Continue Pickup Session'}).click();
-        await expect(organizer.getByRole('button', {name: 'Teams & Scores'})).toHaveAttribute('aria-pressed', 'true');
-        await organizer.getByRole('button', {name: /Game Set 2/}).click();
-        assert.equal(later.sets[1].board.teams.flat().length + later.sets[1].board.byes.length, 7);
-        assert(![...later.sets[1].board.teams.flat(), ...later.sets[1].board.byes].some(p => p.name === 'Walk-in 7'));
+        await expect(organizer.getByRole('tab', {name: 'Teams & Scores'})).toHaveAttribute('aria-selected', 'true');
+        const secondSetToggle = organizer.getByRole('button', {name: /Game Set 2/});
+        await secondSetToggle.scrollIntoViewIfNeeded();
+        await organizer.screenshot({path: path.join(screenshots, 'mobile-saved-sets.png')});
+        await secondSetToggle.click({position: {x: 20, y: 18}});
         const second = later.sets[1];
         const secondCard = organizer.locator('.game-set').filter({has: organizer.getByRole('button', {name: /^Game Set 2/})});
         await secondCard.getByRole('button', {name: 'Manage Teams'}).click();
@@ -220,7 +231,7 @@ withPickupTestHost(async origin => {
         assert(edited.board.teams[1].some(p => p.id === movedPlayer.id));
         assert(!edited.board.teams[0].some(p => p.id === movedPlayer.id));
 
-        await organizer.getByRole('button', {name: 'Session Settings'}).click();
+        await organizer.getByRole('tab', {name: 'Session Settings'}).click();
         await organizer.getByRole('button', {name: 'Cancel Session', exact: true}).click();
         const cancel = organizer.getByRole('alertdialog');
         await expect(cancel.getByText('Cancel Pickup Session?')).toBeVisible();
@@ -254,7 +265,7 @@ withPickupTestHost(async origin => {
         await organizer.goto(unscored.url);
         await checkLayout(2, 768, 'navy');
         await checkLayout(2, 390, 'charcoal');
-        await organizer.getByRole('button', {name: 'Scramble Teams', exact: true}).click();
+        await organizer.getByRole('tab', {name: 'Scramble Teams', exact: true}).click();
         await organizer.getByRole('button', {name: 'Generate Teams', exact: true}).click();
         await organizer.getByRole('button', {name: 'Save Teams to Pickup Session'}).click();
         await expect(organizer.getByRole('button', {name: /^Game Set 1/})).toBeVisible();
@@ -284,9 +295,81 @@ withPickupTestHost(async origin => {
             (await api(organizer, large.api + '/players', 'POST', {guestName: 'Layout player ' + i})).status, 204);
         await organizer.goto(large.url);
         await checkLayout(21, 1920, 'classic');
+        await checkLayout(21, 1366, 'classic');
         await checkLayout(21, 1366, 'navy');
+        await checkLayout(21, 768, 'classic');
         await checkLayout(21, 768, 'charcoal');
         await checkLayout(21, 390, 'classic');
+
+        const matrix = [
+            {players: 12, mode: 'size', value: 4, sizes: [3, 3, 3, 3]},
+            {players: 12, mode: 'count', value: 2, sizes: [6, 6]},
+            {players: 16, mode: 'size', value: 4, sizes: [4, 4, 4, 4]},
+            {players: 10, mode: 'size', value: 4, sizes: [2, 2, 3, 3]},
+            {players: 20, mode: 'count', value: 4, sizes: [5, 5, 5, 5]}
+        ];
+        await organizer.setViewportSize({width: 1366, height: 850});
+        for (const scenario of matrix) {
+            await api(organizer, large.api + '/attendance', 'PUT', {all: true, playing: true});
+            const roster = (await api(organizer, large.api + '/workspace')).data.players;
+            for (const row of roster.slice(scenario.players))
+                assert.equal((await api(organizer, large.api + '/attendance', 'PUT', {playerId: row.id, playing: false})).status, 204);
+            await organizer.reload();
+            await organizer.getByRole('tab', {name: 'Scramble Teams'}).click();
+            await organizer.getByLabel('Team configuration').selectOption(scenario.mode);
+            await organizer.getByLabel(scenario.mode === 'size' ? 'Maximum Team Size' : 'Number of Teams', {exact: true}).fill(String(scenario.value));
+            await expect(organizer.getByText(scenario.players + ' players will be distributed across ' + scenario.sizes.length + ' teams.')).toBeVisible();
+            if (scenario.players === 12 && scenario.mode === 'size') {
+                await organizer.getByRole('tab', {name: 'Players', exact: true}).click();
+                await checkLayout(21, 1366, 'classic');
+                await organizer.getByRole('tab', {name: 'Scramble Teams'}).click();
+                await expect(organizer.getByLabel('Maximum Team Size', {exact: true})).toHaveValue('4');
+                await organizer.getByText('Top and Low Player priorities', {exact: true}).click();
+                for (const picker of (await organizer.locator('.priority-row select').all()).slice(0, 2)) await picker.selectOption('top');
+            }
+            await organizer.getByRole('button', {name: /^Generate (Next )?Teams$/}).click();
+            if (scenario.players === 12 && scenario.mode === 'size') await organizer.locator('.pickup-matchups').screenshot({path: path.join(screenshots, '12-players-maximum-4.png')});
+            await organizer.getByRole('button', {name: 'Save Teams to Pickup Session'}).click();
+            await expect(organizer.getByRole('tab', {name: 'Teams & Scores'})).toHaveAttribute('aria-selected', 'true');
+            const saved = (await api(organizer, large.api + '/workspace')).data.sets.at(-1).board;
+            assert.deepEqual(saved.teams.map(team => team.length).sort((a, b) => a - b), scenario.sizes);
+            assert.equal(new Set(saved.teams.flat().map(player => player.id)).size, scenario.players);
+            assert.deepEqual(saved.byes, []);
+            if (scenario.players === 12 && scenario.mode === 'size') {
+                const locations = saved.options.top.map(id => saved.teams.findIndex(team => team.some(p => p.id === id)));
+                assert.equal(locations.length, 2);
+                assert.notEqual(locations[0], locations[1]);
+                assert.equal(Math.floor(locations[0] / 2), Math.floor(locations[1] / 2));
+            }
+        }
+        const last = (await api(organizer, large.api + '/workspace')).data.sets.at(-1).board;
+        const oversized = {teams: last.teams.map(team => team.map(player => player.id)), byes: [], gamesPerMatchup: 1,
+            options: {...last.options, configurationMode: 'size', maxTeamSize: 4, teamCount: null}};
+        assert.equal((await api(organizer, large.api + '/sets', 'POST', oversized)).status, 400);
+        await organizer.getByRole('tab', {name: 'Scramble Teams'}).click();
+        await organizer.getByLabel('Team configuration').selectOption('count');
+        await organizer.getByLabel('Number of Teams', {exact: true}).fill('3');
+        await organizer.getByRole('button', {name: 'Generate Next Teams'}).click();
+        await expect(organizer.getByRole('alert')).toContainText('Choose an even number of teams');
+        await organizer.getByRole('tab', {name: 'Invite Players'}).click();
+        await expect(organizer.getByRole('tabpanel').getByRole('button', {name: 'Copy Invitation Link'})).toBeVisible();
+        await expect(organizer.getByLabel('Team configuration')).toHaveCount(0);
+
+        for (let i = 21; i < 80; i++)
+            assert.equal((await api(organizer, large.api + '/players', 'POST', {guestName: 'Limit player ' + i})).status, 204);
+        await api(organizer, large.api + '/attendance', 'PUT', {all: true, playing: true});
+        await organizer.reload();
+        await organizer.getByRole('tab', {name: 'Scramble Teams'}).click();
+        await expect(organizer.getByText('80 players will be distributed across 20 teams.')).toBeVisible();
+        await organizer.getByRole('button', {name: 'Generate Next Teams'}).click();
+        await expect(organizer.locator('.pickup-matchup')).toHaveCount(10);
+        await organizer.getByRole('tab', {name: 'Players', exact: true}).click();
+        await organizer.getByRole('button', {name: 'Mark Limit player 79 not playing'}).click();
+        await organizer.getByRole('tab', {name: 'Scramble Teams'}).click();
+        await expect(organizer.getByText(/The playing roster changed/)).toBeVisible();
+        await expect(organizer.getByRole('button', {name: 'Save Teams to Pickup Session'})).toBeDisabled();
+        await organizer.getByRole('button', {name: 'Discard Preview'}).click();
+        await expect(organizer.getByText('Proposed Teams', {exact: true})).toHaveCount(0);
         assert.equal((await api(organizer, large.api + '/cancel', 'POST', {})).status, 204);
         console.log('Layout screenshots: ' + screenshots);
         console.log('Pickup workspace checks passed for generation, attendance, playback, scoring, permissions and lifecycle.');

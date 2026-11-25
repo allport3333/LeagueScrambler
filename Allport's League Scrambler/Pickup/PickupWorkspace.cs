@@ -169,8 +169,18 @@ public sealed partial class PickupController
         var ids = input.Teams.SelectMany(t => t).Concat(input.Byes).ToHashSet();
         if (!ids.SetEquals(roster.Keys)) return ConflictMessage("The playing roster changed. Generate teams again.");
         var option = input.Options;
-        if (option.TeamCount is < 0 or > 80 || option.MaxTeamSize is < 1 or > 80 || option.History is not ("none" or "minimize" or "strict")
-            || (option.TeamCount > 0 && option.TeamCount != input.Teams.Length) || input.Teams.Any(team => team.Length > option.MaxTeamSize)
+        var expected = option.ConfigurationMode switch
+        {
+            "size" when option.TeamCount == null && option.MaxTeamSize is >= 1 and <= ScrambleLimit =>
+                2 * (int)Math.Ceiling(roster.Count / (2.0 * option.MaxTeamSize.Value)),
+            "count" when option.MaxTeamSize == null && option.TeamCount is >= 2 and <= ScrambleLimit => option.TeamCount.Value,
+            _ => 0
+        };
+        if (expected < 2 || expected > roster.Count || expected % 2 != 0 || expected != input.Teams.Length ||
+            input.Byes.Length != 0 || input.Teams.Any(team => team.Length < roster.Count / expected ||
+                team.Length > (roster.Count + expected - 1) / expected || (option.MaxTeamSize is int cap && team.Length > cap)))
+            return Invalid("Teams must match the selected size or team count and include all playing participants in complete matchups.");
+        if (option.History is not ("none" or "minimize" or "strict")
             || option.Top == null || option.Low == null || !ids.IsSupersetOf(option.Top.Concat(option.Low))
             || option.Top.Intersect(option.Low).Any() || option.Top.Distinct().Count() != option.Top.Length
             || option.Low.Distinct().Count() != option.Low.Length)
@@ -260,7 +270,7 @@ public sealed partial class PickupController
     public sealed record AttendanceInput(Guid? PlayerId, bool All, bool Playing, bool? CheckedInOnly);
     public sealed record LifecycleInput(bool Complete);
     public sealed record ReopenInput(bool StartNow, string Start);
-    public sealed record GameOptions(int TeamCount, int MaxTeamSize, bool Balanced, string History, Guid[] Top, Guid[] Low, bool AllowMinimumRepeats);
+    public sealed record GameOptions(int? TeamCount, int? MaxTeamSize, bool Balanced, string History, Guid[] Top, Guid[] Low, bool AllowMinimumRepeats, string ConfigurationMode = null);
     public sealed record SetInput(Guid[][] Teams, Guid[] Byes, int GamesPerMatchup, GameOptions Options);
     public sealed record TeamInput(int Version, Guid[][] Teams);
     public sealed record ScoreInput(int Version, GameScore[] Scores);

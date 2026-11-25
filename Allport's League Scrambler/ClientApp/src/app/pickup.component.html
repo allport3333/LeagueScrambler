@@ -151,10 +151,7 @@
           <span>Organizer: {{ game.organizer }}</span>
         </div>
       </div>
-      @if (game.owner || game.canReopen) {
-        <app-pickup-workspace [session]="game" [statuses]="statuses" (sessionUpdated)="load()"
-          (editSettings)="edit(game)" (invite)="copyInvitation()" (viewDetails)="sessionDetails.open = true; sessionDetails.scrollIntoView({block: 'nearest'})"></app-pickup-workspace>
-      }
+      <div class="session-subactions" [class.organizer-subactions]="game.owner">
       <details #sessionDetails class="session-details">
         <summary>Session Details</summary>
         <p>{{ game.sport }} &middot; {{ game.skill || 'Any level' }}</p>
@@ -164,9 +161,6 @@
         @if (game.deadlineUtc) { <p>Registration closes {{ format(game.deadlineUtc, game.venue.timeZone) }}.</p> }
         @if (game.description) { <p>{{ game.description }}</p> }
       </details>
-      @if (game.visibility !== 2 && shareUrl) {
-        <label class="share-link">Invitation link<input readonly [value]="shareUrl" (focus)="$any($event.target).select()"></label>
-      }
       @if (game.capacity == null && game.registrationOpen) { <p class="registration-note">Open Registration</p> }
       @if (game.state === 4) { <p class="registration-note">Session cancelled. Previous registrations are preserved.</p> }
       <ng-template #registrationActions>
@@ -195,6 +189,11 @@
       } @else {
         <ng-container [ngTemplateOutlet]="registrationActions"></ng-container>
         @if (!game.owner && !game.canReopen) { <app-pickup-workspace [session]="game" [statuses]="statuses" (sessionUpdated)="load()"></app-pickup-workspace> }
+      }
+      </div>
+      @if (game.owner || game.canReopen) {
+        <app-pickup-workspace [session]="game" [statuses]="statuses" [shareUrl]="shareUrl" (sessionUpdated)="load()"
+          (editSettings)="edit(game)" (invite)="copyInvitation()" (viewDetails)="sessionDetails.open = true; sessionDetails.scrollIntoView({block: 'nearest'})"></app-pickup-workspace>
       }
     </section>
   } @else if (sports && !id) {
