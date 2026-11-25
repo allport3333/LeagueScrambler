@@ -5,7 +5,6 @@
     <a class="pickup-home-link" routerLink="/pickup">Pickup Games</a>
   }
   @if (error) { <p class="feedback" role="alert">{{ error }}</p> }
-  @if (notice) { <p class="feedback" role="status">{{ notice }}</p> }
   @if (loading) { <p role="status">Loading pickup games…</p> }
   @if (sports && (editing || view === 'create')) {
     @if (signedIn | async) {
@@ -166,6 +165,7 @@
       <ng-template #registrationActions>
       @if (game.state !== 4) {
       @if (game.capacity != null) { <p>{{ game.capacity - game.confirmed }} spots open</p> }
+      @if (verificationPending) { <p role="status">Check your email for a verification link.</p> }
       @if (game.registration != null) { <p role="status">Your registration: <strong>{{ statuses[game.registration] }}</strong></p> }
       @if (registered) {
         <button type="button" [disabled]="busy" (click)="change('leave')">Cancel Registration</button>

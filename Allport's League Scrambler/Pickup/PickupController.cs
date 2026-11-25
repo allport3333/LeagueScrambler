@@ -28,7 +28,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     [HttpGet("catalog")]
     public IActionResult Catalog()
     {
-        if (!PickupEnvironment.Requested) return NotFound();
+        if (!PickupEnvironment.Enabled) return NotFound();
         if (PickupEnvironment.DisposableTest) Response.Headers["X-Pickup-Test-Database"] = "LeagueScramblerPickupTest";
         return Ok(Sports);
     }
@@ -36,7 +36,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     [Authorize, HttpGet("venues")]
     public async Task<IActionResult> Venues(string q)
     {
-        if (!PickupEnvironment.Requested) return NotFound();
+        if (!PickupEnvironment.Enabled) return NotFound();
         if (!LeagueAccess.TryGetAccountId(User, out var account)) return Unauthorized();
         if (q?.Length > 140) return BadRequest();
         await using var db = new DataContext();
@@ -53,7 +53,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     [HttpGet("sessions")]
     public async Task<IActionResult> Discover(string sport, string location, DateOnly? date, bool available, string skill, int page = 0)
     {
-        if (!PickupEnvironment.Requested) return NotFound();
+        if (!PickupEnvironment.Enabled) return NotFound();
         if (page is < 0 or > 200 || location?.Length > 80 || skill?.Length > 40 || sport?.Length > 40) return BadRequest();
         await using var db = new DataContext();
         var now = DateTimeOffset.UtcNow;
@@ -76,7 +76,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     [Authorize, HttpGet("mine")]
     public async Task<IActionResult> Mine()
     {
-        if (!PickupEnvironment.Requested) return NotFound();
+        if (!PickupEnvironment.Enabled) return NotFound();
         if (!LeagueAccess.TryGetAccountId(User, out var account)) return Unauthorized();
         await using var db = new DataContext();
         return Ok(await Cards(db, db.PickupSessions.AsNoTracking().Include(s => s.Venue)
@@ -87,7 +87,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     [HttpGet("sessions/{id:guid}")]
     public async Task<IActionResult> Get(Guid id)
     {
-        if (!PickupEnvironment.Requested) return NotFound();
+        if (!PickupEnvironment.Enabled) return NotFound();
         await using var db = new DataContext();
         var session = await db.PickupSessions.AsNoTracking().Include(s => s.Venue).SingleOrDefaultAsync(s => s.Id == id);
         var mine = await FindRegistration(db, id);
@@ -113,7 +113,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     [Authorize, SameOrigin, HttpPost("sessions")]
     public async Task<IActionResult> Create(SessionInput input)
     {
-        if (!PickupEnvironment.Requested) return NotFound();
+        if (!PickupEnvironment.Enabled) return NotFound();
         if (!LeagueAccess.TryGetAccountId(User, out var account)) return Unauthorized();
         await using var db = new DataContext();
         var session = new PickupSession { Id = Guid.NewGuid(), OrganizerId = account, State = SessionState.Published };
@@ -287,7 +287,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
 
     private async Task<IActionResult> WithSession(Guid id, Func<DataContext, PickupSession, Task<IActionResult>> work)
     {
-        if (!PickupEnvironment.Requested) return NotFound();
+        if (!PickupEnvironment.Enabled) return NotFound();
         await using var db = new DataContext();
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
         var resource = "pickup-session:" + id;

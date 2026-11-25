@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net.Mail;
+using Allport_s_League_Scrambler.Services;
 using Allport_s_League_Scrambler.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +14,9 @@ public static class PickupEnvironment
 {
     public static bool DisposableTest => Environment.GetEnvironmentVariable("LEAGUE_HUB_PICKUP_DISPOSABLE_TEST") == "1";
     public static string Database => DisposableTest ? "LeagueScramblerPickupTest" : "LeagueScramblerDev";
-    public static string Origin => DisposableTest ? "https://localhost:5003" : "https://localhost:5002";
+    private static string productionOrigin;
+    public static bool Enabled => Requested || productionOrigin != null;
+    public static string Origin => Requested ? (DisposableTest ? "https://localhost:5003" : "https://localhost:5002") : productionOrigin;
     public static string CookieName => DisposableTest ? ".LeagueHub.PickupTest" : ".LeagueHub.PickupSharedDev";
     public static bool Requested => Environment.GetEnvironmentVariable("LEAGUE_HUB_PICKUP_DEV") == "1";
     public static string LocalDirectory => Path.Combine(
@@ -27,6 +31,26 @@ public static class PickupEnvironment
         var mail = Directory.CreateDirectory(Path.Combine(LocalDirectory, "mail"));
         Environment.SetEnvironmentVariable("SMTP_MODE", "pickup");
         Environment.SetEnvironmentVariable("SMTP_PICKUP_DIRECTORY", mail.FullName);
+    }
+
+    public static void ConfigureProduction(IWebHostEnvironment environment)
+    {
+        if (!environment.IsProduction()) return;
+        var mode = Environment.GetEnvironmentVariable("SMTP_MODE")?.Trim().ToLowerInvariant();
+        var username = Environment.GetEnvironmentVariable("SMTP_USERNAME");
+        var sender = Environment.GetEnvironmentVariable("SMTP_FROM");
+        if (mode is not (null or "" or "smtp") || string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SMTP_SERVER")) ||
+            string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SMTP_PASSWORD")) ||
+            !MailAddress.TryCreate(string.IsNullOrWhiteSpace(sender) ? username : sender, out _)) return;
+        try
+        {
+            productionOrigin = PasswordResetEmail.ResolveOrigin(
+                Environment.GetEnvironmentVariable("LEAGUESCRAMBLER_PUBLIC_BASE_URL"), environment.EnvironmentName);
+        }
+        catch (InvalidOperationException)
+        {
+            // Leave Pickup unavailable when a secure public verification link cannot be constructed.
+        }
     }
 
     public static void Initialize()

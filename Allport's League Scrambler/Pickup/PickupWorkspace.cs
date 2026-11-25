@@ -19,7 +19,7 @@ public sealed partial class PickupController
     [Authorize, HttpGet("selector")]
     public async Task<IActionResult> Selector()
     {
-        if (!PickupEnvironment.Requested) return NotFound();
+        if (!PickupEnvironment.Enabled) return NotFound();
         if (!LeagueAccess.TryGetAccountId(User, out var account)) return Unauthorized();
         await using var db = new DataContext();
         var now = DateTimeOffset.UtcNow;
@@ -34,7 +34,7 @@ public sealed partial class PickupController
     [HttpGet("sessions/{id:guid}/workspace")]
     public async Task<IActionResult> Workspace(Guid id)
     {
-        if (!PickupEnvironment.Requested) return NotFound();
+        if (!PickupEnvironment.Enabled) return NotFound();
         await using var db = new DataContext();
         var session = await db.PickupSessions.AsNoTracking().SingleOrDefaultAsync(s => s.Id == id);
         var mine = await FindRegistration(db, id);
@@ -57,7 +57,7 @@ public sealed partial class PickupController
     [Authorize, HttpGet("sessions/{id:guid}/player-options")]
     public async Task<IActionResult> PlayerOptions(Guid id)
     {
-        if (!PickupEnvironment.Requested) return NotFound();
+        if (!PickupEnvironment.Enabled) return NotFound();
         await using var db = new DataContext();
         var session = await db.PickupSessions.FindAsync(id);
         if (session == null || !IsOwner(session)) return NotFound();

@@ -22,7 +22,7 @@ withPickupTestHost(async origin => {
     const browser = await chromium.launch({channel: 'chrome'});
     try {
         async function open(role, width = 1440) {
-            const ctx = await browser.newContext({ignoreHTTPSErrors: true, viewport: {width, height: 850}, serviceWorkers: 'block'});
+            const ctx = await browser.newContext({ignoreHTTPSErrors: true, viewport: {width, height: 850}, serviceWorkers: 'block', permissions: ['clipboard-read', 'clipboard-write']});
             const probe = await ctx.request.get(origin + '/api/pickup/catalog');
             assert.equal(probe.headers()['x-pickup-test-database'], 'LeagueScramblerPickupTest');
             const page = await ctx.newPage();
@@ -60,6 +60,26 @@ withPickupTestHost(async origin => {
         }
         const screenshots = path.join(os.tmpdir(), 'leaguehub-pickup-workspace');
         await fs.mkdir(screenshots, {recursive: true});
+        async function checkPopup(message, dismiss = true) {
+            const popup = organizer.locator('mat-snack-bar-container').filter({hasText: message});
+            await expect(popup).toBeVisible();
+            const offset = await popup.evaluate(el => {
+                const r = el.getBoundingClientRect();
+                return [Math.abs(r.x + r.width / 2 - innerWidth / 2), Math.abs(r.y + r.height / 2 - innerHeight / 2)];
+            });
+            assert(offset.every(value => value <= 2), JSON.stringify(offset));
+            assert.equal(await organizer.locator('main > p.feedback').filter({hasText: message}).count(), 0);
+            if (dismiss) {
+                await popup.getByRole('button', {name: 'OK'}).click();
+                await expect(popup).toHaveCount(0);
+            } else {
+                const started = Date.now();
+                await expect(popup).toBeVisible();
+                await expect(popup).toHaveCount(0, {timeout: 4500});
+                assert(Date.now() - started >= 2300);
+            }
+        }
+
         async function checkLayout(count, width, theme) {
             await organizer.setViewportSize({width, height: 850});
             await organizer.evaluate(theme => {
@@ -157,6 +177,7 @@ withPickupTestHost(async origin => {
         await organizer.getByRole('button', {name: 'Start Playing'}).click();
         await expect(organizer.getByText('In Progress', {exact: true})).toBeVisible();
         await organizer.getByRole('button', {name: 'Mark Walk-in 7 not playing'}).click();
+        await checkPopup('Player attendance updated.');
         await expect(organizer.locator('.player-line').filter({hasText: 'Walk-in 7'}).getByText('Not Playing', {exact: true})).toBeVisible();
         await organizer.getByRole('button', {name: 'Mark Walk-in 7 playing'}).click();
         await expect(organizer.locator('.player-line').filter({hasText: 'Walk-in 7'}).getByText('Playing', {exact: true})).toBeVisible();
@@ -169,6 +190,7 @@ withPickupTestHost(async origin => {
         await organizer.getByRole('button', {name: 'Review Proposed Teams'}).click();
         await organizer.getByRole('button', {name: 'Save Teams to Pickup Session'}).click();
         await expect(organizer.getByRole('button', {name: /^Game Set 1/})).toBeVisible();
+        await checkPopup('Teams saved to this pickup session.');
         await expect(organizer.getByText('Unscored')).toBeVisible();
 
         const original = (await api(organizer, session.api + '/workspace')).data;
@@ -354,6 +376,24 @@ withPickupTestHost(async origin => {
         await organizer.getByRole('tab', {name: 'Invite Players'}).click();
         await expect(organizer.getByRole('tabpanel').getByRole('button', {name: 'Copy Invitation Link'})).toBeVisible();
         await expect(organizer.getByLabel('Team configuration')).toHaveCount(0);
+        for (const [theme, width] of [['classic', 1366], ['navy', 390], ['charcoal', 768]]) {
+            await organizer.setViewportSize({width, height: 850});
+            await organizer.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+            const copy = organizer.getByRole('button', {name: 'Copy Invitation Link'});
+            await copy.scrollIntoViewIfNeeded();
+            const heading = organizer.locator('.session-heading');
+            const before = await heading.boundingBox();
+            await copy.click();
+            await checkPopup('Invitation link copied.', theme !== 'classic');
+            assert.deepEqual(await heading.boundingBox(), before);
+            await expect(organizer.getByRole('textbox', {name: 'Invitation Link'})).toHaveCount(0);
+        }
+        await organizer.getByRole('tab', {name: 'Session Settings'}).click();
+        await organizer.getByRole('button', {name: 'Edit Session'}).click();
+        await organizer.getByText('Advanced Options', {exact: true}).click();
+        await organizer.getByLabel('Description').fill('Updated in a disposable browser fixture.');
+        await organizer.getByRole('button', {name: 'Save Pickup Game'}).click();
+        await checkPopup('Session updated.');
 
         for (let i = 21; i < 80; i++)
             assert.equal((await api(organizer, large.api + '/players', 'POST', {guestName: 'Limit player ' + i})).status, 204);
@@ -369,6 +409,7 @@ withPickupTestHost(async origin => {
         await expect(organizer.getByText(/The playing roster changed/)).toBeVisible();
         await expect(organizer.getByRole('button', {name: 'Save Teams to Pickup Session'})).toBeDisabled();
         await organizer.getByRole('button', {name: 'Discard Preview'}).click();
+        await organizer.getByRole('alertdialog').getByRole('button', {name: 'Discard Preview'}).click();
         await expect(organizer.getByText('Proposed Teams', {exact: true})).toHaveCount(0);
         assert.equal((await api(organizer, large.api + '/cancel', 'POST', {})).status, 204);
         console.log('Layout screenshots: ' + screenshots);

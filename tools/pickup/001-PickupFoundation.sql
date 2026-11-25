@@ -9,6 +9,8 @@ SET NUMERIC_ROUNDABORT OFF;
 SET XACT_ABORT ON;
 SET NOCOUNT ON;
 IF DB_NAME() NOT IN (N'LeagueScramblerDev', N'LeagueScramblerPickupTest')
+   AND NOT (DB_NAME() = N'LeagueScrambler' AND CONVERT(nvarchar(128), SERVERPROPERTY('MachineName')) = N'DESKTOP-UN67OEK'
+        AND ISNULL(TRY_CONVERT(int, SESSION_CONTEXT(N'PickupProductionRelease')), 0) = 1 AND @@TRANCOUNT > 0)
     THROW 51000, 'Pickup migration requires the shared Development database or disposable test database.', 1;
 IF OBJECT_ID(N'dbo.[User]', N'U') IS NULL OR OBJECT_ID(N'dbo.Player', N'U') IS NULL
    OR COL_LENGTH(N'dbo.[User]', N'UserId') <> 4 OR COL_LENGTH(N'dbo.Player', N'Id') <> 4
@@ -56,8 +58,8 @@ ELSE IF OBJECT_ID(N'dbo.PickupSession', N'U') IS NULL OR OBJECT_ID(N'dbo.PickupV
     THROW 51001, 'Partial Pickup schema requires review.', 1;
 -- These object checks are the migration marker, as in existing additive SQL upgrades.
 IF (SELECT COUNT(*) FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.PickupVenue')) <> 10
- OR (SELECT COUNT(*) FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.PickupSession')) <> 16
- OR (SELECT COUNT(*) FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.PickupRegistration')) <> 13
+ OR (SELECT COUNT(*) FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.PickupSession')) <> 16 + CASE WHEN COL_LENGTH(N'dbo.PickupSession', N'CheckedInOnly') IS NULL THEN 0 ELSE 1 END
+ OR (SELECT COUNT(*) FROM sys.columns WHERE object_id=OBJECT_ID(N'dbo.PickupRegistration')) <> 13 + CASE WHEN COL_LENGTH(N'dbo.PickupRegistration', N'Playing') IS NULL THEN 0 ELSE 1 END
  OR (SELECT COUNT(*) FROM sys.foreign_keys WHERE parent_object_id IN (OBJECT_ID(N'dbo.PickupSession'), OBJECT_ID(N'dbo.PickupRegistration'))
      AND delete_referential_action = 0 AND is_disabled = 0 AND is_not_trusted = 0) <> 5
  OR NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID(N'dbo.PickupRegistration')

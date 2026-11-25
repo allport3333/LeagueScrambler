@@ -170,14 +170,14 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
             await this.load();
             this.sessionUpdated.emit();
         } catch (error) {
-            if (id === this.currentId) this.error = this.message(error);
+            if (id === this.currentId) this.notifications.error(this.message(error));
         } finally {
             if (id === this.currentId) this.busy = false;
         }
     }
 
     private message(error: any): string {
-        return error?.error?.message || 'The Pickup workspace could not complete that action. Try again.';
+        return error?.status < 500 && error?.error?.message || 'The Pickup workspace could not complete that action. Try again.';
     }
 
     browse(): void {
@@ -194,13 +194,14 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
                 if (sessionId !== this.currentId) return;
                 this.preview = undefined;
                 this.sessionUpdated.emit();
+                this.notifications.success('Player added.');
                 void this.load();
             }}
         });
         this.playerBrowser.afterClosed().subscribe(() => { this.playerBrowser = undefined; });
     }
 
-    readonly clearGuest = () => { this.guestName = ''; };
+    readonly clearGuest = () => { this.guestName = ''; this.notifications.success('Player added.'); };
 
     onTeam(roster: Participant[], id: string): boolean { return roster.some(player => player.id === id); }
 
@@ -248,7 +249,7 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
         });
     }
 
-    setAttendance(body: object): void { void this.mutate('/attendance', body, 'PUT'); }
+    setAttendance(body: object): void { void this.mutate('/attendance', body, 'PUT', () => this.notifications.success('Player attendance updated.')); }
 
     get plannedTeams(): number | null {
         const count = this.eligible.length;
@@ -257,6 +258,13 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
         if (!Number.isInteger(value) || value < 1 || value > 80 || count < 2 || count > 80) return null;
         const teams = configurationMode === 'size' ? 2 * Math.ceil(count / (2 * value)) : value;
         return teams >= 2 && teams <= count && teams % 2 === 0 ? teams : null;
+    }
+
+    async confirmDiscardPreview(): Promise<void> {
+        if (await this.ask({title: 'Discard Unsaved Teams?', action: 'Discard Preview',
+            dismiss: 'Keep Preview', message: 'Discard this team preview? Saved game sets will stay as they are.'})) {
+            this.discardPreview();
+        }
     }
 
     discardPreview(): void { this.preview = undefined; this.previewStale = false; }

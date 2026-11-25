@@ -2,6 +2,8 @@
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 IF DB_NAME() NOT IN (N'LeagueScramblerDev', N'LeagueScramblerPickupTest')
+   AND NOT (DB_NAME() = N'LeagueScrambler' AND CONVERT(nvarchar(128), SERVERPROPERTY('MachineName')) = N'DESKTOP-UN67OEK'
+        AND ISNULL(TRY_CONVERT(int, SESSION_CONTEXT(N'PickupProductionRelease')), 0) = 1 AND @@TRANCOUNT > 0)
     THROW 51000, 'Pickup workspace requires a Development database.', 1;
 IF OBJECT_ID(N'dbo.PickupSession', N'U') IS NULL OR OBJECT_ID(N'dbo.PickupRegistration', N'U') IS NULL
     THROW 51001, 'Apply Pickup Foundation first.', 1;

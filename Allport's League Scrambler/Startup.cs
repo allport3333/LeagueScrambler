@@ -36,6 +36,7 @@ namespace Allport_s_League_Scrambler
             else
                 DotEnv.Load(options: new DotEnvOptions(probeForEnv: true, probeLevelsToSearch: 6, overwriteExistingVars: false));
 
+            PickupEnvironment.ConfigureProduction(environment);
             Configuration = configuration;
         }
 

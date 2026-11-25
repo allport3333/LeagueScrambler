@@ -15,7 +15,7 @@
 </div>
 <div class="browser-meta">@if (!loading) {
   <p class="browser-count" aria-live="polite">{{ availableCount }} available &middot; {{ filteredPlayers.length }} shown</p>
-  }@if (!embeddedData) { <p class="browser-notice" role="status" aria-live="polite">{{ notice }}</p> }</div>
+  }@if (!embeddedData && !data.pickup) { <p class="browser-notice" role="status" aria-live="polite">{{ notice }}</p> }</div>
   @if (error) {
     <div class="browser-error" role="alert">{{ error }} @if (!players.length && !blocked) {
       <button mat-button type="button" (click)="load()">Retry</button>

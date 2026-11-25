@@ -76,7 +76,7 @@ export class PickupComponent implements OnInit {
     editing = false;
     guestForm = false;
     error = '';
-    notice = '';
+    verificationPending = false;
     private request = 0;
     private initialToken = '';
     private initialWaitlist = false;
@@ -97,7 +97,7 @@ export class PickupComponent implements OnInit {
             this.session = undefined;
             this.editing = false;
             this.guestForm = false;
-            this.notice = '';
+            this.verificationPending = false;
             this.shareUrl = '';
             this.resetCreation();
             if (this.sports == null && !await this.loadCatalog()) return;
@@ -116,7 +116,8 @@ export class PickupComponent implements OnInit {
         await this.act(async () => {
             await firstValueFrom(this.http.post(this.sessionUrl('/verify'), {token, waitlist}));
             await this.load();
-            this.notice = 'Email verified.';
+            this.verificationPending = false;
+            this.notifications.success(this.registrationFeedback() ?? 'Email verified.');
         });
     }
 
@@ -194,7 +195,7 @@ export class PickupComponent implements OnInit {
                 await firstValueFrom(this.http.put(this.sessionUrl(), data));
                 this.editing = false;
                 await this.load();
-                this.notice = 'Session updated.';
+                this.notifications.success('Session updated.');
             } else {
                 const result = await firstValueFrom(this.http.post<{id: string}>('/api/pickup/sessions', data));
                 await this.router.navigate(['/pickup', result.id]);
@@ -366,12 +367,13 @@ export class PickupComponent implements OnInit {
     }
 
     async copyInvitation(): Promise<void> {
-        this.shareUrl = new URL('/pickup/' + this.id, window.location.origin).href;
+        const url = new URL('/pickup/' + this.id, window.location.origin).href;
         try {
-            await navigator.clipboard.writeText(this.shareUrl);
-            this.notice = 'Invitation link copied.';
+            await navigator.clipboard.writeText(url);
+            this.notifications.success('Invitation link copied.');
         } catch {
-            this.notice = 'Copy the invitation link below.';
+            this.shareUrl = url;
+            this.notifications.error('Automatic copying is unavailable. Copy the invitation link shown in the session.');
         }
     }
 
@@ -380,7 +382,7 @@ export class PickupComponent implements OnInit {
             await firstValueFrom(this.http.post(this.sessionUrl('/guest' + (this.sessionFull ? '?waitlist=true' : '')), this.join));
             this.guestForm = false;
             this.join = { name: '', email: '' };
-            this.notice = 'Check your email for a verification link.';
+            this.verificationPending = true;
         });
     }
 
@@ -388,8 +390,21 @@ export class PickupComponent implements OnInit {
         await this.act(async () => {
             await firstValueFrom(this.http.post(this.sessionUrl('/' + action), data));
             await this.load();
-            if (action === 'leave') this.notice = 'Registration cancelled.';
+            if (action === 'leave') this.notifications.success('Registration cancelled.');
+            else if (action.startsWith('join')) {
+                const message = this.registrationFeedback();
+                if (message) this.notifications.success(message);
+            }
         });
+    }
+
+    private registrationFeedback(): string | undefined {
+        switch (this.session?.registration) {
+            case 1: return 'Registration sent for organizer approval.';
+            case 2: return 'Registration confirmed.';
+            case 5: return 'You joined the waitlist.';
+        }
+        return undefined;
     }
 
     get registered(): boolean { return [1, 2, 5].includes(this.session?.registration); }
@@ -411,20 +426,21 @@ export class PickupComponent implements OnInit {
     private async act(action: () => Promise<void>): Promise<void> {
         if (this.busy) return;
         this.busy = true;
-        this.notice = this.error = '';
+        this.error = '';
         try { await action(); }
         catch (error) {
             const field = error.error?.field;
             if (field && (this.editing || this.view === 'create')) {
                 this.fieldErrors[field] = this.describeError(error);
                 if (['deadline', 'timeZone', 'visibility', 'capacity', 'duration'].includes(field)) this.advancedOpen = true;
-            } else this.error = this.describeError(error);
+            } else this.notifications.error(this.describeError(error));
         }
         finally { this.busy = false; }
     }
     private sessionUrl(suffix = ''): string { return '/api/pickup/sessions/' + this.id + suffix; }
     private describeError(error: any): string {
-        return error.error?.message || Object.values<string[]>(error.error?.errors ?? {})[0]?.[0] || (error.status === 429 ? 'Too many requests. Try again in a few minutes.' :
-            error.status === 401 ? 'Sign in to continue.' : 'The request could not be completed. Try again.');
+        if (error?.status >= 500) return 'The request could not be completed. Try again.';
+        return error?.error?.message || Object.values<string[]>(error?.error?.errors ?? {})[0]?.[0] || (error?.status === 429 ? 'Too many requests. Try again in a few minutes.' :
+            error?.status === 401 ? 'Sign in to continue.' : 'The request could not be completed. Try again.');
     }
 }

@@ -77,3 +77,9 @@ node tests/functional/scripts/pickup-workspace.cjs
 - [x] Phase 4: Existing Scrambler and Watch the Scramble, with session-local history.
 - [x] Phase 5: Saved game sets, optional score entry, team edits, and session history.
 - [ ] Phase 6 · Notifications, moderation, retention, external mail verification and release security review.
+
+## Production
+
+Production Pickup runs on the existing League Hub site and database. The local Pickup profile retains its separate port, cookies, and file-based mail. Production uses the existing canonical HTTPS origin and authenticated SMTP settings for verification links.
+
+After verifying a fresh checksum-protected production backup and rehearsing the schema change, run `tools/pickup/Apply-ProductionPickup.sql` from the repository root using `sqlcmd -b` for the approved production instance. The driver checks the server and database, applies all three Pickup migrations in a single transaction, and verifies the foreign keys and registration constraints. The application can be rolled back while leaving the additive schema in place.

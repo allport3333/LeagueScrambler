@@ -106,7 +106,7 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
                 next: () => this.confirm({player}),
                 error: response => {
                     this.failed(player);
-                    this.error = response.error?.message || this.error;
+                    if (response.status < 500) this.error = response.error?.message || this.error;
                 }
             });
             return;
@@ -165,7 +165,7 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
         if (this.data.pickup) result.player.alreadyAdded = true;
         else this.players = this.players.filter(p => p.id !== result.player.id);
         this.filter();
-        if (!this.embeddedData) {
+        if (!this.embeddedData && !this.data.pickup) {
             this.notice = result.player.firstName + ' ' + result.player.lastName + (result.alreadyMember ? ' is already in ' : ' added to ') + (this.data.team?.name || this.data.leagueName) + '.';
             clearTimeout(this.noticeTimer); this.noticeTimer = setTimeout(() => this.notice = '', 4000);
         }
