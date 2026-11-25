@@ -14,14 +14,12 @@ namespace Allport_s_League_Scrambler.Models
         public int GamesPerMatchup { get; init; } = 1;
         public bool BalanceGenders { get; init; } = true;
         public bool MinimizeRepeats { get; init; } = true;
-        public bool BalancePriorities { get; init; }
         public bool AutomaticByes { get; init; }
         public int? ActiveTeamLimit { get; init; }
         public int[] TopPlayerIds { get; init; } = Array.Empty<int>();
         public int[] LowPlayerIds { get; init; } = Array.Empty<int>();
         public int[] HistoricalScrambleNumbers { get; init; } = Array.Empty<int>();
         public int LastScrambleNumber { get; init; }
-        public int[] UnavailablePlayerIds { get; init; } = Array.Empty<int>();
         public TournamentBye[] ManualByes { get; init; } = Array.Empty<TournamentBye>();
 
         public string Validate(HashSet<int> roster, HashSet<int> savedScrambles, int? maximumRoundNumber = null)

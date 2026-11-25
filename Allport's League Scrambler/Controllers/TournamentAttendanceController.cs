@@ -40,8 +40,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 .Select(player => new { player.Id, player.FirstName, player.LastName,
                     Present = attended.Any(row => row.PlayerId == player.Id) }).ToListAsync();
             var name = await db.Leagues.Where(row => row.ID == leagueId).Select(row => row.LeagueName).SingleAsync();
-            return Ok(new { name, details.EventDate, mode = (int)details.CheckInMode, details.Version, organizers, ownPlayerId, roster,
-                unavailableIds = organizers ? TournamentsController.DecodeSettings(details).UnavailablePlayerIds : null });
+            return Ok(new { name, details.EventDate, mode = (int)details.CheckInMode, details.Version, organizers, ownPlayerId, roster });
         }
 
         [HttpPut("mode")]

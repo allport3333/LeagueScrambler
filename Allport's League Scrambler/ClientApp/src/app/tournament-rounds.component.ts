@@ -2,14 +2,15 @@ import { MatchupPrintSheetComponent, MatchupPrintSixComponent } from './matchup-
 import { renderMatchupPrint } from './matchup-print';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, inject, Injector, input, NgZone, OnInit, output } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, inject, Injector, input, OnInit, output, TemplateRef, viewChild } from '@angular/core';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { EditableMatchupTeam, TournamentTeamEditorComponent } from './tournament-team-editor.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { generateTournament, TournamentAllocation, TournamentSettings } from './tournament-generation';
 import { pairKey, ScramblePlayer } from './scrambler/scramble-engine';
 import { TournamentNotifications } from './tournament-notifications.service';
-import { moveToRedrawPreview } from './tournament-redraw-transition';
 import { injectConfirmation } from './confirmation-dialog';
 
 interface Player { id: number; firstName: string; lastName: string; }
@@ -35,7 +36,7 @@ interface ScoreEdit {
 @Component({
     selector: 'app-tournament-rounds',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, NgTemplateOutlet, MatchupPrintSheetComponent, MatchupPrintSixComponent],
+    imports: [FormsModule, NgTemplateOutlet, MatDialogModule, TournamentTeamEditorComponent, MatchupPrintSheetComponent, MatchupPrintSixComponent],
     templateUrl: './tournament-rounds.component.html',
     styleUrl: './tournament-rounds.component.css'
 })
@@ -44,6 +45,9 @@ export class TournamentRoundsComponent implements OnInit {
     readonly tournamentName = input('');
     readonly readOnly = input(false);
     readonly wizardStep = input(0);
+    readonly initialRegenerationRound = input<number>();
+    readonly regenerationResumed = output<void>();
+    readonly attendanceRequested = output<number>();
     readonly initialScoreRound = input<number>();
     readonly initialRunView = input<string>();
     readonly standingsRequested = output<void>();
@@ -57,42 +61,46 @@ export class TournamentRoundsComponent implements OnInit {
     teamBySize = true;
     private readonly http = inject(HttpClient);
     private readonly notifications = inject(TournamentNotifications);
+    private readonly dialogs = inject(MatDialog);
+    private readonly manageTemplate = viewChild<TemplateRef<unknown>>('manageRoundDialog');
+    private manageDialog?: MatDialogRef<unknown>;
+    managedRound?: SavedRound;
+    teamEditor?: { teams: EditableMatchupTeam[]; preview: boolean; version?: string };
+    private manuallyEditedPreview = false;
+    regeneratingFuture = false;
+    private get keepSavedByes() { return this.wizardStep() !== 4 && this.replacingRounds.size > 0; }
     private readonly confirm = injectConfirmation();
-    private readonly host = inject(ElementRef<HTMLElement>);
+    private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
     private readonly injector = inject(Injector);
-    private readonly zone = inject(NgZone);
     private readonly changeDetector = inject(ChangeDetectorRef);
     private readonly destroy = inject(DestroyRef);
     state?: SettingsState;
     rounds: SavedRound[] = [];
     managementOpen = false;
-    availabilityDraft?: number[];
-    availabilityFilter = "";
+    showRegeneration = false;
     get selectedRemovalNumbers() { return [...this.removalSelection].sort((a, b) => a - b); }
-    get currentlyEligibleCount() { return this.baseEligible.filter(player => !this.savedUnavailable.includes(player.id)).length; }
-    get unplayedRoundLabels() { return this.unplayedRounds.map(round => round.roundNumber).join(", "); }
-    get availabilityPlayers() {
-        const search = this.availabilityFilter.trim().toLowerCase();
-        return this.state.roster.filter(player => this.playerName(player).toLowerCase().includes(search));
-    }
     playingCount(round: SavedRound) { return round.teams.reduce((count, team) => count + team.players.length, 0); }
     removalSelection = new Set<number>();
     removeRequest?: { numbers: number[]; voidScored: boolean };
     canVoid = false;
     get activeRounds() { return this.rounds.filter(round => round.status !== "voided"); }
     get unplayedRounds() { return this.rounds.filter(round => round.status === "unplayed"); }
-    get savedUnavailable() { return this.state?.settings.unavailablePlayerIds ?? []; }
-    get baseEligible() {
+    get eligible() {
         if (!this.state?.mode) return [];
         return this.state.mode === 3 ? this.state.roster : this.state.roster.filter(player => this.state.presentIds.includes(player.id));
     }
     preview: TournamentAllocation[] = [];
     redrawRound?: number;
     redrawTrigger?: EventTarget | null;
-    private stopRedrawTransition?: () => void;
-    redrawState: 'idle' | 'loading' | 'animating' | 'revealing' | 'ready' = 'idle';
+    private redrawAnimations: Animation[] = [];
+    private scrollFrame?: number;
+    private scoreGuidance?: { scroller: HTMLElement; start: number; release: () => void };
+    private roundHighlight?: Animation;
+    readonly replacingRounds = new Set<number>();
+    readonly inlinePreviews = new Map<number, SavedRound>();
+    redrawState: 'idle' | 'loading' | 'fading' | 'shuffling' | 'revealing' | 'ready' = 'idle';
     get redrawTransitionPending(): boolean {
-        return this.redrawState === 'loading' || this.redrawState === 'animating' || this.redrawState === 'revealing';
+        return this.redrawState !== 'idle' && this.redrawState !== 'ready';
     }
     additionalSettings?: TournamentSettings;
     readonly tournamentRoundLimit = 30;
@@ -117,6 +125,7 @@ export class TournamentRoundsComponent implements OnInit {
     previewVersion = '';
     repeats = 0;
     relaxedRounds: number[] = [];
+    sharedTopRounds: number[] = [];
     step = 'rounds';
     readonly expandedRounds = new Set<number>();
     printingOpen = false;
@@ -173,7 +182,7 @@ export class TournamentRoundsComponent implements OnInit {
     }
 
     get hasUnsavedChanges() {
-        return !!this.additionalSettings || !!this.availabilityDraft || this.dirty || this.preview.length > 0 || this.hasUnsavedScores;
+        return !!this.additionalSettings || this.dirty || this.preview.length > 0 || this.hasUnsavedScores;
     }
 
     private get hasUnsavedScores() {
@@ -186,6 +195,7 @@ export class TournamentRoundsComponent implements OnInit {
     }
 
     discardUnsavedChanges() {
+        this.stopScoreGuidance();
         if (this.additionalSettings) this.cancelAdditionalRounds();
         this.closeManagement();
         if (this.dirty && this.savedSettings && this.state) {
@@ -206,6 +216,7 @@ export class TournamentRoundsComponent implements OnInit {
     }
     byeRound = 1;
     scoreRound?: SavedRound;
+    private scoreVersion?: string;
     scoreEdits: ScoreEdit[] = [];
     scoreValidation = '';
     private get activeRoundKey() { return 'league-hub-tournament-score-round-' + this.leagueId(); }
@@ -217,11 +228,6 @@ export class TournamentRoundsComponent implements OnInit {
     printRounds: SavedRound[] = [];
 
     private get url(): string { return '/api/tournaments/' + this.leagueId(); }
-
-    get eligible(): (Player & ScramblePlayer)[] {
-        const unavailable = new Set(this.availabilityDraft ?? this.savedUnavailable);
-        return this.baseEligible.filter(player => !unavailable.has(player.id));
-    }
 
     get filteredPlayers(): (Player & ScramblePlayer)[] {
         const query = this.filter.trim().toLowerCase();
@@ -243,7 +249,8 @@ export class TournamentRoundsComponent implements OnInit {
     get hasUnplayed(): boolean { return this.rounds.some(round => round.status === 'unplayed'); }
 
     async ngOnInit(): Promise<void> {
-        this.destroy.onDestroy(() => this.stopRedrawTransition?.());
+        this.destroy.onDestroy(() => { this.clearRedrawAnimations(); this.stopScoreGuidance(); });
+        this.destroy.onDestroy(() => this.manageDialog?.close());
         if (!this.readOnly()) {
             try {
                 for (const value of (sessionStorage.getItem(this.expandedRoundsKey) ?? '').split(',')) {
@@ -260,11 +267,20 @@ export class TournamentRoundsComponent implements OnInit {
             } else {
                 await this.reload();
                 const requestedRound = this.activeRounds.find(round => round.roundNumber === this.initialScoreRound());
-                if (requestedRound && this.wizardStep() === 7) await this.openScores(requestedRound);
+                if (requestedRound && this.wizardStep() === 7) {
+                    this.updateExpanded(requestedRound.roundNumber, true);
+                    this.initializeScores(requestedRound);
+                }
             }
         }, true);
-        if (!this.readOnly() && !this.error && this.wizardStep() === 7 && this.initialRunView() === 'management' && this.rounds.length)
-            this.openManagement();
+        const resume = this.unplayedRounds.find(round => round.roundNumber === this.initialRegenerationRound());
+        if (this.initialRegenerationRound() && this.wizardStep() === 7) {
+            this.regenerationResumed.emit();
+            if (resume) {
+                this.openRoundManager(resume);
+                this.showRegeneration = true;
+            }
+        }
     }
 
     private request<T>(value: import('rxjs').Observable<T>): Promise<T> {
@@ -369,11 +385,9 @@ export class TournamentRoundsComponent implements OnInit {
             const rosterIds = new Set(this.state.roster.map(player => player.id));
             const historyIds = new Set(this.history.map(row => row.scrambleNumber));
             this.additionalSettings = { ...structuredClone(seed), numberOfRounds: 1, manualByes: [],
-                topPlayerIds: seed.topPlayerIds.filter(id => rosterIds.has(id)),
-                lowPlayerIds: seed.lowPlayerIds.filter(id => rosterIds.has(id)),
+                topPlayerIds: this.state.settings.topPlayerIds.filter(id => rosterIds.has(id)),
+                lowPlayerIds: this.state.settings.lowPlayerIds.filter(id => rosterIds.has(id)),
                 historicalScrambleNumbers: seed.historicalScrambleNumbers.filter(id => historyIds.has(id)) };
-            this.availabilityFilter = "";
-            this.availabilityDraft = this.savedUnavailable.filter(id => rosterIds.has(id));
             this.teamBySize = this.additionalSettings.maximumTeamSize !== null;
             this.byeRound = this.lastSavedRound + 1;
             this.priorityView = "priorities";
@@ -390,39 +404,51 @@ export class TournamentRoundsComponent implements OnInit {
 
     cancelAdditionalRounds() {
         this.additionalSettings = undefined;
-        this.cancelAvailability();
+        this.cancelPreview();
         this.error = "";
         this.fallback = false;
         this.byeRound = 1;
         this.teamBySize = this.state.settings.maximumTeamSize !== null;
     }
 
-    async propose(single?: number, trigger?: EventTarget | null): Promise<void> {
-        if (this.busy || this.redrawTransitionPending) return;
-        this.stopRedrawTransition?.();
+    async propose(single?: number, trigger?: EventTarget | null, fromRound?: number): Promise<void> {
+        if (this.busy || this.redrawTransitionPending || this.hasUnsavedScores) return;
+        this.clearRedrawAnimations();
         this.redrawState = single === undefined ? 'idle' : 'loading';
-        this.redrawTrigger = trigger;
+
+        this.redrawTrigger = trigger instanceof EventTarget ? trigger : undefined;
         await this.perform(async () => {
+            if (!this.additionalSettings && (!this.settingsSaved || this.dirty)) throw new Error('Save your tournament settings before generating rounds.');
+            await this.refreshEligibility();
             const state = this.state!;
             let settings = this.editSettings;
             this.preview = [];
+            this.manuallyEditedPreview = false;
+            this.regeneratingFuture = fromRound !== undefined;
             this.redrawRound = undefined;
+            this.inlinePreviews.clear();
+            this.replacingRounds.clear();
+            if (this.scoreRound) this.returnFromScoring();
             if (single !== undefined && !this.unplayedRounds.some(round => round.roundNumber === single))
                 throw new Error('Only an unplayed round can be redrawn.');
-            if (!this.additionalSettings && (!this.settingsSaved || this.dirty)) throw new Error('Save your tournament settings before generating rounds.');
             if (this.additionalSettings && (!this.additionalRoundNumbers.length ||
                 !Number.isInteger(settings.gamesPerMatchup) || settings.gamesPerMatchup < 1 || settings.gamesPerMatchup > 9))
                 throw new Error("Choose a supported additional round count and 1 to 9 games per matchup.");
             const pending = this.additionalSettings ? this.additionalRoundNumbers : single ? [single] :
-                this.rounds.length ? this.unplayedRounds.map(round => round.roundNumber) : this.sequence(settings.numberOfRounds);
-            if (this.managementOpen || this.availabilityDraft) {
-                const eligibleIds = new Set(this.eligible.map(player => player.id));
-                const configured = settings.manualByes.filter(bye => pending.includes(bye.roundNumber));
-                const saved = this.unplayedRounds.filter(round => pending.includes(round.roundNumber)).flatMap(round =>
-                    (round.manualByeIds ?? []).map(playerId => ({ roundNumber: round.roundNumber, playerId })));
-                settings = { ...settings, manualByes: [...configured, ...saved].filter((bye, index, all) =>
-                    eligibleIds.has(bye.playerId) && all.findIndex(other => other.roundNumber === bye.roundNumber && other.playerId === bye.playerId) === index) };
+                this.rounds.length ? this.unplayedRounds.filter(round => fromRound === undefined || round.roundNumber >= fromRound)
+                    .map(round => round.roundNumber) : this.sequence(settings.numberOfRounds);
+            if (!this.additionalSettings && this.rounds.length) {
+                this.redrawState = 'loading';
+                for (const number of pending) this.replacingRounds.add(number);
+                if (!pending.some(number => this.expandedRounds.has(number)) && pending.length)
+                    this.updateExpanded(pending[0], true);
             }
+            const eligibleIds = new Set(this.eligible.map(player => player.id));
+            const configured = settings.manualByes.filter(bye => pending.includes(bye.roundNumber));
+            const saved = this.keepSavedByes ? this.unplayedRounds.filter(round => pending.includes(round.roundNumber)).flatMap(round =>
+                (round.manualByeIds ?? []).map(playerId => ({ roundNumber: round.roundNumber, playerId }))) : [];
+            settings = { ...settings, manualByes: [...configured, ...saved].filter((bye, index, all) =>
+                eligibleIds.has(bye.playerId) && all.findIndex(other => other.roundNumber === bye.roundNumber && other.playerId === bye.playerId) === index) };
             const preserved = this.activeRounds.filter(round => !pending.includes(round.roundNumber)).map(round => ({
                 roundNumber: round.roundNumber, teams: round.teams.map(team => team.players.map(p => p.id)),
                 byes: round.byes.map(p => p.id)
@@ -436,54 +462,132 @@ export class TournamentRoundsComponent implements OnInit {
             }
             const result = await generateTournament(settings, this.eligible, pending, preserved, [...prohibited], this.fallback);
             if (this.destroy.destroyed) return;
-            const source = trigger instanceof HTMLElement && trigger.isConnected ? trigger.getBoundingClientRect() : undefined;
-            if (single !== undefined && result.rounds.length) this.redrawState = 'animating';
             this.preview = result.rounds;
             this.repeats = result.repeats;
             this.relaxedRounds = result.relaxedRounds;
+            this.sharedTopRounds = result.sharedTopRounds;
             this.previewVersion = state.version;
             this.redrawRound = single;
-            if (single !== undefined && this.preview.length) {
-                afterNextRender(() => {
-                    const host = this.host.nativeElement as HTMLElement;
-                    const preview = host.querySelector<HTMLElement>('.preview');
-                    const heading = preview?.querySelector<HTMLElement>('.redraw-heading');
-                    const card = preview?.querySelector<HTMLElement>('.redraw-flight');
-                    if (preview && heading && card) {
-                        this.stopRedrawTransition = this.zone.runOutsideAngular(() =>
-                            moveToRedrawPreview(preview, heading, card, source, animate => this.zone.run(() => {
-                                if (this.destroy.destroyed || !this.preview.length) return;
-                                if (animate) {
-                                    this.redrawState = 'revealing';
-                                    this.changeDetector.markForCheck();
-                                }
-                                else this.finishRedrawReveal();
-                            })));
-                    } else this.redrawState = 'idle';
-                }, { injector: this.injector });
+            if (this.replacingRounds.size) {
+                await this.revealRedrawnMatchups();
+                if (!this.destroy.destroyed && this.replacingRounds.size) this.redrawState = 'ready';
             }
         });
         this.redrawTrigger = undefined;
-        if (this.redrawState === 'loading') this.redrawState = 'idle';
+        if (this.redrawTransitionPending) {
+            this.redrawState = 'idle';
+            this.replacingRounds.clear();
+        }
     }
 
-    finishRedrawReveal(): void {
-        if (this.redrawState !== 'animating' && this.redrawState !== 'revealing') return;
-        this.redrawState = 'ready';
-        this.changeDetector.markForCheck();
-        afterNextRender(() => (this.host.nativeElement as HTMLElement).querySelector<HTMLElement>('.redraw-heading')
-            ?.focus({ preventScroll: true }), { injector: this.injector });
+    private async revealRedrawnMatchups(): Promise<void> {
+        this.changeDetector.detectChanges();
+        const containers = this.matchupContainers();
+        if (!containers.length || !containers[0].animate || this.reducedMotion()) {
+            this.updateInlinePreviews();
+            return;
+        }
+        const rosters = () => containers.flatMap(container => [...container.querySelectorAll<HTMLElement>('.opponents')]);
+        const original = rosters();
+        this.redrawState = 'fading';
+        await this.animateMatchups(original,
+            [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.98)' }], 320, 'ease-in');
+        if (this.destroy.destroyed || !this.replacingRounds.size) return;
+        this.redrawState = 'shuffling';
+        for (const container of containers) {
+            const bounds = container.getBoundingClientRect();
+            const visibleStart = Math.max(bounds.top, 0);
+            const visibleEnd = Math.min(bounds.bottom, window.innerHeight);
+            if (visibleEnd > visibleStart)
+                container.style.setProperty('--shuffle-offset', (visibleStart + (visibleEnd - visibleStart) / 2 - bounds.top) + 'px');
+        }
+        this.changeDetector.detectChanges();
+        await this.animateMatchups(containers, [{ opacity: 1 }, { opacity: 1 }], 420, 'linear');
+        if (this.destroy.destroyed || !this.replacingRounds.size) return;
+        this.redrawState = 'revealing';
+        this.coverMatchups(containers, true);
+        this.updateInlinePreviews();
+        this.changeDetector.detectChanges();
+        const reveal = this.animateMatchups(rosters(),
+            [{ opacity: 0, transform: 'scale(.98)' }, { opacity: 1, transform: 'scale(1)' }], 440, 'ease-out');
+        this.coverMatchups(containers, false);
+        this.redrawAnimations.splice(0, original.length + containers.length).forEach(animation => animation.cancel());
+        await reveal;
+        this.clearRedrawAnimations();
+        if (!this.destroy.destroyed)
+            this.highlightRound(containers[0].closest('details, .saved-bye-matchups'));
+    }
+
+    private matchupContainers(): HTMLElement[] {
+        return [...this.host.nativeElement.querySelectorAll<HTMLElement>('.round-matchups')]
+            .filter(container => this.replacingRounds.has(Number(container.dataset.round)) &&
+                (container.closest('details')?.open ?? true) && container.getClientRects().length > 0);
+    }
+
+    private coverMatchups(containers: HTMLElement[], covered: boolean): void {
+        for (const container of containers)
+            container.querySelector('.matchup-grid')?.classList.toggle('redraw-cover', covered);
+    }
+
+    private animateMatchups(elements: HTMLElement[], keyframes: Keyframe[], duration: number, easing: string): Promise<unknown> {
+        const animations = elements.map(element => element.animate(keyframes, { duration, easing, fill: 'forwards' }));
+        this.redrawAnimations.push(...animations);
+        return Promise.allSettled(animations.map(animation => animation.finished));
+    }
+
+    private clearRedrawAnimations(): void {
+        this.redrawAnimations.splice(0).forEach(animation => animation.cancel());
+        for (const grid of this.host.nativeElement.querySelectorAll('.redraw-cover')) grid.classList.remove('redraw-cover');
+        for (const container of this.host.nativeElement.querySelectorAll<HTMLElement>('.round-matchups'))
+            container.style.removeProperty('--shuffle-offset');
+    }
+
+    private reducedMotion(): boolean { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+
+    private updateInlinePreviews(): void {
+        const roster = new Map(this.state.roster.map(player => [player.id, player]));
+        for (const proposed of this.preview) {
+            const saved = this.rounds.find(round => round.roundNumber === proposed.roundNumber)!;
+            this.inlinePreviews.set(proposed.roundNumber, { ...saved,
+                teams: proposed.teams.map((ids, index) => ({
+                    id: saved.teams[index]?.id ?? -(index + 1), players: ids.map(id => roster.get(id)), scores: []
+                })),
+                byes: proposed.byes.map(id => roster.get(id))
+            });
+        }
+    }
+
+    async cancelInlinePreview(): Promise<void> {
+        const containers = this.matchupContainers();
+        if (!containers.length || !containers[0].animate || this.reducedMotion()) { this.cancelPreview(); return; }
+        const rosters = () => containers.flatMap(panel => [...panel.querySelectorAll<HTMLElement>('.opponents')]);
+        this.redrawState = 'fading';
+        await this.animateMatchups(rosters(), [{ opacity: 1 }, { opacity: 0 }], 130, 'ease-in');
+        if (this.destroy.destroyed || !this.replacingRounds.size) return;
+        this.coverMatchups(containers, true);
+        this.preview = [];
+        this.inlinePreviews.clear();
+        this.changeDetector.detectChanges();
+        const revert = this.animateMatchups(rosters(), [{ opacity: 0 }, { opacity: 1 }], 180, 'ease-out');
+        this.coverMatchups(containers, false);
+        await revert;
+        if (!this.destroy.destroyed && this.replacingRounds.size) this.cancelPreview();
     }
 
     cancelPreview(): void {
-        this.stopRedrawTransition?.();
+        this.clearRedrawAnimations();
         this.redrawState = 'idle';
+        this.inlinePreviews.clear();
+        this.replacingRounds.clear();
         this.preview = [];
+        this.manuallyEditedPreview = false;
+        this.regeneratingFuture = false;
+        this.redrawRound = undefined;
     }
 
     async saveRounds(): Promise<void> {
         if (this.redrawTransitionPending) return;
-        this.stopRedrawTransition?.();
+        this.clearRedrawAnimations();
         await this.perform(async () => {
             const count = this.preview.length;
             const redrawRound = this.redrawRound;
@@ -492,8 +596,7 @@ export class TournamentRoundsComponent implements OnInit {
                 manualByes: this.additionalSettings.manualByes.filter(bye => this.additionalRoundNumbers.includes(bye.roundNumber)) };
             await this.request(this.http.put(this.url + '/rounds',
                 { version: this.previewVersion, allowHistoricalFallback: this.fallback, rounds: this.preview, additionalSettings,
-                    unavailablePlayerIds: this.availabilityDraft, preserveSavedByes: this.managementOpen }));
-            this.availabilityDraft = undefined;
+                    preserveSavedByes: this.keepSavedByes, manuallyEdited: this.manuallyEditedPreview }));
             this.cancelPreview();
             if (additionalSettings) {
                 this.cancelAdditionalRounds();
@@ -502,10 +605,9 @@ export class TournamentRoundsComponent implements OnInit {
             await this.reload();
             this.versionChanged.emit(this.state!.version);
             this.notifications.success(additionalSettings ? (count === 1 ? 'One additional round added.' : count + ' additional rounds added.')
-                : redrawRound !== undefined ? 'Round ' + redrawRound + ' teams updated.'
+                : redrawRound !== undefined ? 'Round ' + redrawRound + ' teams updated successfully.'
                 : updating ? 'Upcoming tournament rounds updated.' : 'Tournament rounds generated successfully.');
-            if (this.managementOpen) { this.closeManagement(); this.step = "rounds"; }
-            this.roundsSaved.emit();
+            if (!updating || additionalSettings) this.roundsSaved.emit();
         });
     }
 
@@ -515,44 +617,125 @@ export class TournamentRoundsComponent implements OnInit {
         this.error = "";
     }
 
+    openRoundManager(round: SavedRound): void {
+        if (this.busy || this.hasUnsavedChanges || this.manageDialog) return;
+        this.managedRound = round;
+        this.updateExpanded(round.roundNumber, true);
+        this.openRoundDialog();
+    }
+
+    private openRoundDialog(): void {
+        const opener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+        this.manageDialog = this.dialogs.open(this.manageTemplate(), {
+            width: this.teamEditor ? '960px' : '580px', maxWidth: 'calc(100vw - 24px)',
+            maxHeight: 'calc(100dvh - 24px)', disableClose: true, restoreFocus: false
+        });
+        this.manageDialog.keydownEvents().subscribe(event => {
+            if (event.key !== 'Escape' || this.busy) return;
+            event.preventDefault();
+            if (this.teamEditor) this.cancelTeamEditor();
+            else void this.closeRoundDialog();
+        });
+        this.manageDialog.afterClosed().subscribe(() => {
+            this.manageDialog = undefined;
+            this.managedRound = undefined;
+            this.teamEditor = undefined;
+            this.removeRequest = undefined;
+            this.showRegeneration = false;
+            if (opener?.isConnected) opener.focus({ preventScroll: true });
+        });
+    }
+
+    async closeRoundDialog(): Promise<void> {
+        if (!this.manageDialog) return;
+        const closed = firstValueFrom(this.manageDialog.afterClosed());
+        this.manageDialog.close();
+        await closed;
+    }
+
+    async redrawManagedRound(): Promise<void> {
+        const number = this.managedRound?.roundNumber;
+        if (!number) return;
+        await this.closeRoundDialog();
+        if (!this.destroy.destroyed) await this.propose(number);
+    }
+
+    async regenerateManagedRounds(): Promise<void> {
+        const number = this.managedRound?.roundNumber;
+        if (!number) return;
+        await this.closeRoundDialog();
+        if (!this.destroy.destroyed) await this.propose(undefined, undefined, number);
+    }
+
+    editSavedTeams(round: SavedRound): void {
+        this.teamEditor = { teams: round.teams, preview: false, version: this.state.version };
+        this.manageDialog?.updateSize('960px');
+    }
+
+    editPreviewTeams(): void {
+        if (!this.redrawRound || this.redrawTransitionPending || this.manageDialog) return;
+        const roster = new Map(this.state.roster.map(player => [player.id, player]));
+        this.teamEditor = { teams: this.preview[0].teams.map((players, index) =>
+            ({ id: index + 1, players: players.map(id => roster.get(id)) })),
+            preview: true };
+        this.openRoundDialog();
+    }
+
+    cancelTeamEditor(): void {
+        if (this.teamEditor?.preview) void this.closeRoundDialog();
+        else {
+            this.teamEditor = undefined;
+            this.manageDialog?.updateSize('580px');
+        }
+    }
+
+    async saveTeamEdits(teams: EditableMatchupTeam[]): Promise<void> {
+        if (this.teamEditor?.preview) {
+            this.preview = [{ ...this.preview[0], teams: teams.map(team => team.players.map(player => player.id)) }];
+            this.manuallyEditedPreview = true;
+            if (this.inlinePreviews.size) this.updateInlinePreviews();
+            await this.closeRoundDialog();
+            return;
+        }
+        const round = this.managedRound;
+        if (!round) return;
+        const version = this.teamEditor?.version;
+        await this.perform(async () => {
+            await this.request(this.http.put(this.url + '/rounds/' + round.roundNumber + '/teams', { version,
+                teams: teams.map(team => ({ teamId: team.id, playerIds: team.players.map(player => player.id) })) }));
+            await this.reload();
+            this.versionChanged.emit(this.state.version);
+            await this.closeRoundDialog();
+            this.notifications.success('Round ' + round.roundNumber + ' teams updated successfully.');
+        });
+    }
+
     closeManagement() {
         if (!this.managementOpen) return;
         this.managementOpen = false;
-        this.cancelAvailability();
+        this.cancelPreview();
         this.removeRequest = undefined;
         this.removalSelection.clear();
     }
 
-    async beginAvailability() {
+    async openRegeneration(): Promise<void> {
         await this.perform(async () => {
-            await this.reload();
-            const roster = new Set(this.state.roster.map(player => player.id));
-            this.availabilityFilter = "";
-            this.availabilityDraft = this.savedUnavailable.filter(id => roster.has(id));
-            this.cancelPreview();
+            await this.refreshEligibility();
+            this.showRegeneration = true;
         });
     }
 
-    updateAvailability(id: number, unavailable: boolean) {
-        this.availabilityDraft = unavailable ? [...this.availabilityDraft, id] : this.availabilityDraft.filter(player => player !== id);
-        this.cancelPreview();
+    async goToConfirmParticipants(): Promise<void> {
+        const round = this.managedRound?.roundNumber;
+        if (round === undefined) return;
+        await this.closeRoundDialog();
+        this.attendanceRequested.emit(round);
     }
 
-    cancelAvailability() {
-        this.availabilityDraft = undefined;
-        this.cancelPreview();
-        this.error = "";
-    }
-
-    async saveAvailabilityOnly() {
-        await this.perform(async () => {
-            await this.request(this.http.put(this.url + "/rounds", { version: this.state.version, rounds: [],
-                unavailablePlayerIds: this.availabilityDraft }));
-            this.cancelAvailability();
-            await this.reload();
-            this.versionChanged.emit(this.state.version);
-            this.notifications.success('Availability saved for future rounds.');
-        });
+    private async refreshEligibility(): Promise<void> {
+        const fresh = await this.request(this.http.get<SettingsState>(this.url + '/round-settings'));
+        if (fresh.version !== this.state?.version) await this.reload();
+        else this.state = fresh;
     }
 
     async removeSelectedRounds() {
@@ -565,6 +748,7 @@ export class TournamentRoundsComponent implements OnInit {
             await this.reload();
             for (const number of numbers) this.updateExpanded(number, false);
             this.versionChanged.emit(this.state.version);
+            await this.closeRoundDialog();
             if (!this.rounds.length) { this.closeManagement(); this.roundsCleared.emit(); }
             this.step = 'rounds';
             this.notifications.success(voidScored ? 'Round ' + numbers[0] + ' voided. Scores retained for review.'
@@ -583,24 +767,120 @@ export class TournamentRoundsComponent implements OnInit {
 
     private returnFromScoring() {
         const number = this.scoreRound?.roundNumber;
+        this.stopScoreGuidance();
         this.scoreEdits = [];
         this.scoreRound = undefined;
         this.step = 'rounds';
         if (number !== undefined) {
             this.updateExpanded(number, true);
-            afterNextRender(() => (this.host.nativeElement as HTMLElement).querySelector<HTMLElement>('#run-round-' + number)?.focus(),
+            afterNextRender(() => (this.host.nativeElement as HTMLElement).querySelector<HTMLElement>('#run-round-' + number)?.focus({ preventScroll: true }),
                 { injector: this.injector });
         }
     }
 
-    async openScores(round: SavedRound): Promise<void> {
-        if (!await this.confirmDiscardScores()) return;
+    async openScores(round: SavedRound, guide = false): Promise<void> {
+        if (this.busy || this.preview.length || this.redrawTransitionPending) return;
+        if (this.scoreRound?.roundNumber !== round.roundNumber && !await this.confirmDiscardScores()) return;
+        this.stopScoreGuidance();
         if (this.managementOpen) this.closeManagement();
         if (this.wizardStep() !== 7) this.runRequested.emit();
+        const guidance = guide ? this.prepareScoreGuidance() : undefined;
         this.updateExpanded(round.roundNumber, true);
-        this.initializeScores(round);
-        afterNextRender(() => (this.host.nativeElement as HTMLElement).querySelector<HTMLElement>('.score-heading')?.focus(),
-            { injector: this.injector });
+        if (this.scoreRound?.roundNumber !== round.roundNumber) this.initializeScores(round);
+        afterNextRender(() => {
+            if (guidance && this.scoreGuidance === guidance)
+                this.scrollFrame = requestAnimationFrame(() => this.guideToScoreField(round.roundNumber, guidance));
+            else if (!guide) this.host.nativeElement.querySelector<HTMLElement>('#round-score-' + round.roundNumber)?.focus({ preventScroll: true });
+        }, { injector: this.injector });
+    }
+
+    continueScoring(round: SavedRound): void { void this.openScores(round, true); }
+
+    private prepareScoreGuidance(): NonNullable<TournamentRoundsComponent['scoreGuidance']> | undefined {
+        const scroller = document.scrollingElement as HTMLElement | null;
+        if (!scroller) return;
+        const start = scroller.scrollTop;
+        const anchor = scroller.style.getPropertyValue('overflow-anchor');
+        const priority = scroller.style.getPropertyPriority('overflow-anchor');
+        // Expanding a card above the footer changes the document height. Keep the
+        // browser from moving the viewport to follow its old scroll anchor.
+        scroller.style.setProperty('overflow-anchor', 'none');
+        const interruption = new AbortController();
+        const cancel = () => this.stopScoreGuidance();
+        for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown', 'resize'])
+            window.addEventListener(type, cancel, { signal: interruption.signal, passive: true, capture: true });
+        const guidance = { scroller, start, release: () => {
+            interruption.abort();
+            if (anchor) scroller.style.setProperty('overflow-anchor', anchor, priority);
+            else scroller.style.removeProperty('overflow-anchor');
+        } };
+        this.scoreGuidance = guidance;
+        return guidance;
+    }
+
+    private guideToScoreField(number: number, guidance: NonNullable<TournamentRoundsComponent['scoreGuidance']>): void {
+        const panel = this.host.nativeElement.querySelector<HTMLElement>('#matchups-' + number);
+        const card = panel?.closest('details');
+        const fields = [...(panel?.querySelectorAll<HTMLInputElement>('.score-inputs input') ?? [])];
+        const field = fields.find(input => input.value === '') ?? fields[0];
+        if (!field || !card?.open) { this.stopScoreGuidance(); return; }
+
+        const { scroller, start } = guidance;
+        const scrollTo = (top: number) => scroller.scrollTo({ top, behavior: 'instant' });
+        const navbar = document.querySelector<HTMLElement>('.league-navigation');
+        const visibleTop = (navbar?.getBoundingClientRect().height ?? 0) + 18;
+        const visibleBottom = scroller.clientHeight - 20;
+        const bounds = field.getBoundingClientRect();
+        const headerTop = card.querySelector('summary')?.getBoundingClientRect().top ?? panel.getBoundingClientRect().top;
+        const relativeTop = bounds.bottom - headerTop <= visibleBottom - visibleTop
+            ? headerTop : bounds.top - 20;
+        const target = Math.max(0, Math.min(scroller.scrollTop + relativeTop - visibleTop,
+            scroller.scrollHeight - scroller.clientHeight));
+        const finish = () => {
+            if (this.scoreGuidance !== guidance) return;
+            this.stopScoreGuidance();
+            field.focus({ preventScroll: true });
+            this.highlightRound(card);
+        };
+        if (Math.abs(target - start) <= 4) { finish(); return; }
+        if (this.reducedMotion()) {
+            scrollTo(target);
+            finish();
+            return;
+        }
+
+        const duration = 1200;
+        const started = performance.now();
+        const scroll = (now: number) => {
+            if (this.scoreGuidance !== guidance || !field.isConnected || !card.open) {
+                this.stopScoreGuidance();
+                return;
+            }
+            const progress = Math.max(0, Math.min(1, (now - started) / duration));
+            const eased = progress * progress * (3 - 2 * progress);
+            scrollTo(start + (target - start) * eased);
+            if (progress < 1) this.scrollFrame = requestAnimationFrame(scroll);
+            else finish();
+        };
+        this.scrollFrame = requestAnimationFrame(scroll);
+    }
+
+    private highlightRound(card: HTMLElement | null): void {
+        if (!card?.animate || this.reducedMotion()) return;
+        this.roundHighlight?.cancel();
+        const accent = getComputedStyle(card).getPropertyValue('--hub-focus').trim() || '#3975ad';
+        this.roundHighlight = card.animate(
+            [{ outline: '2px solid ' + accent, outlineOffset: '2px' }, { outline: '2px solid transparent', outlineOffset: '2px' }],
+            { duration: 1000, easing: 'ease-out' });
+    }
+
+    private stopScoreGuidance(): void {
+        if (this.scrollFrame !== undefined) cancelAnimationFrame(this.scrollFrame);
+        this.scrollFrame = undefined;
+        this.scoreGuidance?.release();
+        this.scoreGuidance = undefined;
+        this.roundHighlight?.cancel();
+        this.roundHighlight = undefined;
     }
 
     private async confirmDiscardScores(): Promise<boolean> {
@@ -609,11 +889,14 @@ export class TournamentRoundsComponent implements OnInit {
         });
     }
 
+    scoresForMatchup(matchup: number): ScoreEdit[] { return this.scoreEdits.filter(score => score.matchup === matchup); }
+
     private initializeScores(round: SavedRound): void {
         this.scoreValidation = '';
         this.step = 'scores';
         try { sessionStorage.setItem(this.activeRoundKey, String(round.roundNumber)); } catch {}
         this.scoreRound = round;
+        this.scoreVersion = this.state.version;
         this.scoreEdits = [];
         for (let index = 0; index < round.teams.length; index += 2) {
             const [first, second] = round.teams.slice(index, index + 2);
@@ -640,7 +923,7 @@ export class TournamentRoundsComponent implements OnInit {
             const number = this.scoreRound!.roundNumber;
             const wasCompleted = this.scoreRound!.status === 'completed';
             await this.request(this.http.put(this.url + '/rounds/' + number + '/scores',
-                { version: this.state!.version, scores: started }));
+                { version: this.scoreVersion, scores: started }));
             await this.reload();
             this.versionChanged.emit(this.state!.version);
             this.returnFromScoring();

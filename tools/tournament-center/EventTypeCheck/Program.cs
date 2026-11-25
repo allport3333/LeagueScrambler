@@ -20,6 +20,11 @@ if (args.SequenceEqual(new[] { "--deletion" }))
     await TournamentDeletionCheck.Run();
     return;
 }
+if (args.SequenceEqual(new[] { "--round-operations" }))
+{
+    await RoundOperationsCheck.Run();
+    return;
+}
 await using var db = new DataContext();
 Assert(await db.Database.SqlQueryRaw<string>("SELECT DB_NAME() AS [Value]").SingleAsync() == "LeagueScramblerDev", "Development database");
 var ownerId = await db.Users.Where(user => user.UserRoleId == 1).Select(user => user.UserId).FirstAsync();
@@ -134,7 +139,7 @@ try
     center.ControllerContext = Identity(ownerId, "Manager");
     var settings = new TournamentRoundSettings
     {
-        BalancePriorities = true, TopPlayerIds = eligible.Take(3).Select(row => row.Id).ToArray(),
+        TopPlayerIds = eligible.Take(3).Select(row => row.Id).ToArray(),
         LowPlayerIds = eligible.Skip(3).Take(3).Select(row => row.Id).ToArray()
     };
     current = await db.TournamentConfigurations.AsNoTracking().SingleAsync(row => row.LeagueId == tournament.ID);
@@ -183,7 +188,7 @@ try
 
     var randomSettings = settings with
     {
-        BalanceGenders = false, BalancePriorities = false, ActiveTeamLimit = 4, AutomaticByes = true,
+        BalanceGenders = false, ActiveTeamLimit = 4, AutomaticByes = true,
         ManualByes = [new(1, eligible[0].Id)]
     };
     var randomRounds = await Generate(randomSettings, eligible.Take(19).ToArray(), Enumerable.Range(1, 5).ToArray(), []);
@@ -236,10 +241,11 @@ try
         pair.First.ScrambleNumber == pair.Second.ScrambleNumber && pair.First.GenerationJson == pair.Second.GenerationJson) &&
         extended.Skip(5).All(round => round.GamesPerMatchup == 2), "Append preserves historical snapshots and scoring formats");
     latestManaged = await Configuration();
+    attendance.ControllerContext = Identity(ownerId, "Manager");
+    Assert(await attendance.SavePresence(tournament.ID, eligible[0].Id, new(false)) is NoContentResult, "Undo check-in for future generation");
     var remaining = eligible.Skip(1).ToArray();
     var upcoming = await Generate(settings, remaining, [6, 7, 8], rounds);
-    Assert(await reopenedCenter.SaveRounds(tournament.ID, new(latestManaged.Version, false, upcoming,
-        UnavailablePlayerIds: [eligible[0].Id])) is OkObjectResult, "Future roster and replacements applied together");
+    Assert(await reopenedCenter.SaveRounds(tournament.ID, new(latestManaged.Version, false, upcoming, PreserveSavedByes: true)) is OkObjectResult, "Future roster and replacements applied together");
     var absent = await SavedRounds();
     var changed = absent.Skip(5).Select(round => round.ScrambleNumber).ToArray();
     Assert(!await db.KingQueenPlayer.AnyAsync(player => player.PlayerId == eligible[0].Id &&
@@ -255,8 +261,7 @@ try
         !await db.ByeRounds.AnyAsync(round => round.LeagueID == tournament.ID && deletedScrambles.Contains(round.ScrambleNumber)),
         "Deleted rounds have no remaining team or bye assignments");
     latestManaged = await Configuration();
-    Assert(await reopenedCenter.SaveRounds(tournament.ID, new(latestManaged.Version, false, [], UnavailablePlayerIds: []))
-        is OkObjectResult, "Participant can rejoin without rewriting existing teams");
+    Assert(await attendance.SavePresence(tournament.ID, eligible[0].Id, present) is NoContentResult, "Participant can rejoin without rewriting existing teams");
     latestManaged = await Configuration();
     var latestAddition = await Generate(extraSettings, eligible, [8, 9], rounds.Concat(upcoming.Where(round => round.RoundNumber == 7)).ToArray());
     Assert(await reopenedCenter.SaveRounds(tournament.ID, new(latestManaged.Version, false, latestAddition,

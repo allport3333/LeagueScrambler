@@ -4,6 +4,9 @@ h1, h2, .summary { text-align: center; }
 .round-list > .saved-round + .saved-round { margin-top: .45rem; }
 .tournament-workspace { max-width: 120rem; margin: 1rem auto; }
 .step-actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; margin-block: .5rem; }
+.preview-actions { gap: .75rem; }
+.manage-round-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: .75rem; }
+.danger-action { color: var(--hub-loss-text, #861d2c); border-color: currentColor; }
 fieldset { min-inline-size: 0; border: 0; padding: 0; }
 .form-grid, .player-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: .75rem; margin-block: .75rem; }
 .form-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
@@ -16,23 +19,23 @@ fieldset { min-inline-size: 0; border: 0; padding: 0; }
 .team legend { font-size: 1rem; }
 .team small { display: block; }
 details, .preview { margin-block: .5rem; }
-.redraw-heading { scroll-margin-top: 5rem; }
-.redraw-flight { position: fixed; inset: 0 auto auto 0; z-index: 1050; pointer-events: none;
-    max-inline-size: calc(100vw - 1rem); padding: .45rem .75rem; border-radius: .45rem;
-    color: var(--hub-action-text, #fff); background: var(--hub-primary-action, #30577e);
-    font-weight: 600; box-shadow: 0 3px 10px #0003; }
-.redraw-arrived { animation: redraw-arrival 550ms ease-out; }
-.redraw-waiting { visibility: hidden; }
-.redraw-revealing { animation: redraw-reveal 200ms ease-out both; }
-@keyframes redraw-reveal { from { opacity: 0; } to { opacity: 1; } }
-@keyframes redraw-arrival {
-    from { box-shadow: 0 0 0 3px var(--hub-focus, #527fb1); }
-    to { box-shadow: 0 0 0 1px transparent; }
+.round-score-heading, .round-feedback { text-align: center; margin: .65rem 0; }
+.round-feedback p { margin: .25rem 0; }
+.inline-game-score { min-width: 0; margin-block-start: .6rem; }
+.inline-game-score legend { font-size: .9rem; }
+.score-inputs input { width: 100%; min-width: 0; min-height: 44px; }
+.inline-round-actions { justify-content: center; }
+.continue-scoring { margin-block: 1.25rem .6rem; }
+.round-matchups { position: relative; }
+.redraw-cover .opponents { visibility: hidden; }
+.inline-redraw .matchup { border-color: var(--hub-focus, #3975ad); }
+.round-shuffle {
+    position: absolute; inset-inline: 0; top: var(--shuffle-offset, 50%); transform: translateY(-50%);
+    display: flex; align-items: center; justify-content: center; gap: .6rem;
+    pointer-events: none; color: var(--hub-focus, #3975ad); font-weight: 600;
 }
-@media (prefers-reduced-motion: reduce) {
-    .redraw-arrived { animation: none; }
-    .redraw-revealing { animation-duration: 1ms; }
-}
+.round-shuffle span { font-size: 1.5rem; animation: round-shuffle .4s ease-in-out both; }
+@keyframes round-shuffle { from, to { transform: translateX(0); } 38% { transform: translateX(.45rem); } 68% { transform: translateX(-.4rem); } }
 details summary { padding: .35rem; cursor: pointer; }
 button { min-height: 44px; padding: .4rem .8rem; border: 1px solid var(--hub-border, #b8c2ce); border-radius: .4rem; color: inherit; background: var(--hub-surface, #fff); }
 button:not(:disabled):hover, button[aria-pressed=true] { background: var(--hub-surface-raised, var(--hub-surface, #eff4fa)); text-decoration: underline; }

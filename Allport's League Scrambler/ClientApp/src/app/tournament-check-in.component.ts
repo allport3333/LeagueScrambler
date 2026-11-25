@@ -7,7 +7,7 @@ import { TournamentNotifications } from './tournament-notifications.service';
 
 interface AttendancePlayer { id: number; firstName: string; lastName: string; present: boolean; }
 interface AttendanceState {
-    mode: number; version: string; unavailableIds?: number[];
+    mode: number; version: string;
     organizers: boolean; roster: AttendancePlayer[];
 }
 
@@ -60,6 +60,7 @@ interface AttendanceState {
                         </label>
                     </div>
                     <p>Directors can record attendance with either option. Players can check themselves in from Home.</p>
+                    @if (state.mode === 3) { <p>Undoing check-in leaves a player eligible until you switch to Use Checked In Players.</p> }
                     @if (hasRounds()) { <p>Changes affect future generation or confirmed replacements. Saved teams and scores stay in place.</p> }
                     <div class="counts" aria-label="Attendance totals">
                         <span>{{ state.roster.length }} registered</span>
@@ -115,8 +116,7 @@ export class TournamentCheckInComponent implements OnInit {
 
     get checkedInOnly() { return this.state?.mode === 1 || this.state?.mode === 2; }
     get eligibleCount() {
-        return this.state?.roster.filter(player => (this.state.mode === 3 || player.present) &&
-            !this.state.unavailableIds?.includes(player.id)).length ?? 0;
+        return this.state?.roster.filter(player => this.state.mode === 3 || player.present).length ?? 0;
     }
     get presentCount() { return this.state?.roster.filter(player => player.present).length ?? 0; }
     get shownPlayers() {

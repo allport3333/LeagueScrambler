@@ -135,10 +135,14 @@ interface TournamentDetails {
                             <app-tournament-participants [leagueId]="leagueId" [tournamentName]="name" />
                         }
                         @if (step === 5) {
+                            @if (pendingRegenerationRound) {
+                                <button type="button" [disabled]="checkIn()?.busy" (click)="goTo(7)">Back to Round {{ pendingRegenerationRound }} Regeneration</button>
+                            }
                             <app-tournament-check-in [leagueId]="leagueId" [hasRounds]="hasRounds" (versionChanged)="details.version = $event" />
                         }
                         @if (step === 3 || step === 4 || step >= 6) {
-                            <app-tournament-rounds [leagueId]="leagueId" [tournamentName]="name" [wizardStep]="step" [initialScoreRound]="initialScoreRound" [initialRunView]="initialRunView"
+                            <app-tournament-rounds [leagueId]="leagueId" [tournamentName]="name" [wizardStep]="step" [initialScoreRound]="initialScoreRound" [initialRunView]="initialRunView" [initialRegenerationRound]="pendingRegenerationRound"
+                                (attendanceRequested)="editAttendanceForRound($event)" (regenerationResumed)="pendingRegenerationRound = undefined"
                                 (versionChanged)="details.version = $event" (roundsSaved)="runTournament()" (roundsCleared)="resetRoundWorkflow()" (runRequested)="runTournament()" (standingsRequested)="openStandings()" (completionChanged)="updateCompletion($event)" />
                         }
                         <div class="actions">
@@ -176,6 +180,7 @@ export class TournamentCenterComponent {
     private readonly route = inject(ActivatedRoute);
     readonly leagueId = Number(this.route.snapshot.paramMap.get('leagueId'));
     readonly initialRunView = this.route.snapshot.queryParamMap.get('runView') ?? this.readRunView();
+    pendingRegenerationRound?: number;
     readonly initialScoreRound = Number(this.route.snapshot.queryParamMap.get('scoreRound')) ||
         (this.initialRunView === 'scores' ? this.readScoreRound() : undefined);
     private readonly url = '/api/tournaments/' + this.leagueId;
@@ -281,6 +286,11 @@ export class TournamentCenterComponent {
         catch { /* Session storage is optional. */ }
     }
 
+    async editAttendanceForRound(round: number): Promise<void> {
+        await this.goTo(5);
+        if (this.step === 5) this.pendingRegenerationRound = round;
+    }
+
     async goTo(step: number) {
         if (step === this.step || step < 1 || step > this.reached || !await this.canLeave()) return;
         this.notifications.dismissSuccess();
@@ -291,6 +301,7 @@ export class TournamentCenterComponent {
         this.rounds()?.discardUnsavedChanges();
         this.error = '';
         this.step = step;
+        if (step !== 5 && step !== 7) this.pendingRegenerationRound = undefined;
         this.rememberStep();
         this.clearReturnContext();
     }

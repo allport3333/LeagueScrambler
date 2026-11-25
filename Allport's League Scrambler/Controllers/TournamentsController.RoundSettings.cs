@@ -75,7 +75,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 return BadRequest(new { message = "Choose at least one initial round." });
             var original = DecodeSettings(details);
             details.RoundSettingsJson = JsonSerializer.Serialize(input.Settings with
-                { UnavailablePlayerIds = original.UnavailablePlayerIds, LastScrambleNumber = original.LastScrambleNumber });
+                {
+                    LastScrambleNumber = original.LastScrambleNumber });
             details.Version = Guid.NewGuid();
             await db.SaveChangesAsync();
             await transaction.CommitAsync();

@@ -80,8 +80,7 @@ namespace Allport_s_League_Scrambler.Controllers
             if (input.Step == 5)
             {
                 var date = config.EventDate.ToDateTime(TimeOnly.MinValue);
-                var unavailable = DecodeSettings(config).UnavailablePlayerIds;
-                var eligibility = Roster(db, leagueId).Where(player => !unavailable.Contains(player.Id));
+                var eligibility = Roster(db, leagueId);
                 if (config.CheckInMode is TournamentCheckInMode.NotConfigured)
                     return BadRequest(new { message = "Choose who can play before continuing." });
                 if (config.CheckInMode != TournamentCheckInMode.Skipped)
@@ -107,6 +106,9 @@ namespace Allport_s_League_Scrambler.Controllers
             if (config == null) return NotFound();
             var membership = await db.PlayersLeagues
                 .Where(row => row.LeagueID == leagueId && row.PlayerID == playerId).ToListAsync();
+            var membershipIds = membership.Select(row => row.Id).ToArray();
+            if (await db.PlayerScore.AnyAsync(score => membershipIds.Contains(score.PlayersLeagueID)))
+                return Conflict(new { message = "This registration has historical scores. Use Checked In Players in Confirm Participants and undo their check-in to keep their history and exclude them from new rounds." });
             db.PlayersLeagues.RemoveRange(membership);
             if (config.RoundSettingsJson != null)
             {

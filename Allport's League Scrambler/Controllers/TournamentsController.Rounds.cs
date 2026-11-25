@@ -17,8 +17,8 @@ namespace Allport_s_League_Scrambler.Controllers
     {
         public sealed record Allocation(int RoundNumber, int[][] Teams, int[] Byes);
         public sealed record SaveRoundsInput(Guid Version, bool AllowHistoricalFallback, Allocation[] Rounds,
-            TournamentRoundSettings AdditionalSettings = null, int[] UnavailablePlayerIds = null,
-            bool PreserveSavedByes = false);
+            TournamentRoundSettings AdditionalSettings = null,
+            bool PreserveSavedByes = false, bool ManuallyEdited = false);
 
         [HttpGet("rounds")]
         public async Task<IActionResult> ReadRounds(int leagueId)
@@ -94,7 +94,7 @@ namespace Allport_s_League_Scrambler.Controllers
         [RequestSizeLimit(262144)]
         public async Task<IActionResult> SaveRounds(int leagueId, [FromBody] SaveRoundsInput input)
         {
-            if (!ModelState.IsValid || input?.Rounds == null || input.Rounds.Length > 30 || (input.Rounds.Length == 0 && (input.UnavailablePlayerIds == null || input.AdditionalSettings != null)) ||
+            if (!ModelState.IsValid || input?.Rounds == null || input.Rounds.Length is < 1 or > 30 ||
                 input.Rounds.Any(round => round == null) ||
                 input.Rounds.Select(round => round.RoundNumber).Distinct().Count() != input.Rounds.Length)
                 return BadRequest(new { message = "Provide one allocation per tournament round." });
@@ -116,17 +116,13 @@ namespace Allport_s_League_Scrambler.Controllers
             var eligible = details.CheckInMode == TournamentCheckInMode.Skipped ? roster :
                 (await db.PlayerSignIn.Where(row => row.LeagueId == leagueId && row.DateTime.Date == date)
                     .Select(row => row.PlayerId).Distinct().ToListAsync()).Where(roster.Contains).ToHashSet();
-            var unavailable = input.UnavailablePlayerIds ?? originalSettings.UnavailablePlayerIds.Intersect(roster).ToArray();
-            if (unavailable.Distinct().Count() != unavailable.Length || unavailable.Any(id => !roster.Contains(id)))
-                return BadRequest(new { message = "Availability must reference distinct registered players." });
-            eligible.ExceptWith(unavailable);
-            if (input.Rounds.Length > 0 && (eligible.Count is < 2 or > 256))
+            var additional = input.AdditionalSettings;
+            if (eligible.Count is < 2 or > 256)
                 return BadRequest(new { message = "Generation requires 2 to 256 eligible participants." });
 
             var roundSet = db.Set<TournamentRound>();
             var current = await roundSet.Where(row => row.LeagueId == leagueId).ToDictionaryAsync(row => row.RoundNumber);
             var requested = input.Rounds.Select(row => row.RoundNumber).ToHashSet();
-            var additional = input.AdditionalSettings;
             var lastRound = current.Keys.DefaultIfEmpty(0).Max();
             var settings = originalSettings;
             if (additional != null)
@@ -145,14 +141,16 @@ namespace Allport_s_League_Scrambler.Controllers
                 return BadRequest(new { message = "Generate all initial rounds together. Use Add Additional Rounds to extend a saved tournament." });
 
             var replacements = current.Values.Where(round => requested.Contains(round.RoundNumber)).ToArray();
+            if (input.ManuallyEdited && (additional != null || replacements.Length != 1 || input.Rounds.Length != 1))
+                return BadRequest(new { message = "Edit proposed teams for one redrawn round at a time." });
             if (replacements.Any(round => round.VoidedAtUtc != null))
                 return Conflict(new { message = "Voided rounds cannot be replaced." });
-            if ((input.PreserveSavedByes || input.UnavailablePlayerIds != null) && additional == null)
+            if (input.PreserveSavedByes && additional == null)
                 settings = settings with { ManualByes = settings.ManualByes.Where(bye => requested.Contains(bye.RoundNumber))
                     .Concat(replacements.SelectMany(round => (SavedManualByeIds(round) ?? Array.Empty<int>())
                         .Select(id => new TournamentBye(round.RoundNumber, id))))
                     .Where(bye => eligible.Contains(bye.PlayerId)).Distinct().ToArray() };
-            settings = settings with { UnavailablePlayerIds = unavailable };
+            settings = settings with { ManualByes = settings.ManualByes.Where(bye => eligible.Contains(bye.PlayerId)).ToArray() };
             var replacedNumbers = replacements.Select(round => round.ScrambleNumber).ToArray();
             if (settings.HistoricalScrambleNumbers.Intersect(replacedNumbers).Any())
                 return Conflict(new { message = "Remove the round you are replacing from strict historical exclusions first." });
@@ -171,7 +169,7 @@ namespace Allport_s_League_Scrambler.Controllers
             var prohibited = historical.SelectMany(team => TeamPairs(team.players)).ToHashSet();
             foreach (var round in input.Rounds)
             {
-                error = ValidateAllocation(round, settings, eligible, prohibited, input.AllowHistoricalFallback);
+                error = ValidateAllocation(round, settings, eligible, prohibited, input.AllowHistoricalFallback, input.ManuallyEdited);
                 if (error != null) return BadRequest(new { message = $"Round {round.RoundNumber}: {error}" });
             }
 
@@ -206,7 +204,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     });
             }
             details.RoundSettingsJson = JsonSerializer.Serialize(originalSettings with
-                { NumberOfRounds = settings.NumberOfRounds, UnavailablePlayerIds = unavailable, LastScrambleNumber = maxNumber });
+                { NumberOfRounds = settings.NumberOfRounds, LastScrambleNumber = maxNumber });
             details.WorkflowStep = 7;
             details.Version = Guid.NewGuid();
             await db.SaveChangesAsync();
@@ -220,7 +218,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 "LeagueHub:Tournament:" + leagueId);
 
         private static string ValidateAllocation(Allocation round, TournamentRoundSettings settings, HashSet<int> eligible,
-            HashSet<(int, int)> prohibited, bool allowFallback)
+            HashSet<(int, int)> prohibited, bool allowFallback, bool manuallyEdited = false)
         {
             if (round.Teams == null || round.Teams.Length is < 2 or > 128 || round.Teams.Any(team => team == null || team.Length == 0) ||
                 round.Byes == null)
@@ -236,14 +234,8 @@ namespace Allport_s_League_Scrambler.Controllers
                 (!settings.AutomaticByes && expectedByes != manual.Count))
                 return "Bye assignments do not match the manual selections and active team capacity.";
             var count = settings.NumberOfTeams ?? 2 * (int)Math.Ceiling(active.Length / (2.0 * settings.MaximumTeamSize.Value));
-            if (count != round.Teams.Length || round.Teams.Max(team => team.Length) - round.Teams.Min(team => team.Length) > 1)
+            if (count != round.Teams.Length || (!manuallyEdited && round.Teams.Max(team => team.Length) - round.Teams.Min(team => team.Length) > 1))
                 return "Team sizes or count do not match the saved settings.";
-            if (settings.BalancePriorities)
-            {
-                var retained = settings.TopPlayerIds.Where(active.Contains).Take(count).ToHashSet();
-                if (round.Teams.Any(team => team.Count(retained.Contains) > 1))
-                    return "Retained top players must be on separate teams.";
-            }
             if (!allowFallback && round.Teams.SelectMany(TeamPairs).Any(prohibited.Contains))
                 return "An assignment contains a strict historical teammate pairing.";
             return null;

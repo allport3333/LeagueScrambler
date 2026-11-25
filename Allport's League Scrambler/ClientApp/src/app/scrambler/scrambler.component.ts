@@ -1,3 +1,4 @@
+import { transferTeamPlayer } from './team-assignment';
 import { renderMatchupPrint } from '../matchup-print';
 import { injectConfirmation } from '../confirmation-dialog';
 import { protectPendingWork } from '../pwa/pending-work.service';
@@ -837,13 +838,8 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         if(this.teamSaveBusy || !this.showTeamSorting)return;
         if(!this.listOfTeams.some(team=>team.sortingId===Number(selectedSortingId)) || Number(selectedSortingId)===currentSortingId)return;
         const currentTeam = this.listOfTeams.find(team => team.sortingId === currentSortingId);
-        if (currentTeam) {
-            currentTeam.players = currentTeam.players.filter(p => p.id !== player.id);
-        }
-
         const newTeam = this.listOfTeams.find(team => team.sortingId === Number(selectedSortingId));
-        if (newTeam) {
-            newTeam.players.push(player);
+        if (currentTeam && newTeam && transferTeamPlayer(currentTeam, newTeam, player.id)) {
             this.queueMatchupLayout();
         }
     }
