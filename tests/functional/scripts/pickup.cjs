@@ -2,9 +2,9 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const {chromium, expect} = require('@playwright/test');
+const {chromium, expect, request} = require('@playwright/test');
+const {withPickupTestHost} = require('../helpers/pickup-test-host.cjs');
 
-const origin = 'https://localhost:5003';
 const token = crypto.randomBytes(5).toString('hex');
 const inbox = path.join(process.env.LOCALAPPDATA, 'LeagueHub', 'PickupTest', 'mail');
 const run = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
@@ -24,7 +24,7 @@ async function api(page, endpoint, method = 'GET', body) {
     }, {endpoint, method, body});
 }
 
-(async () => {
+withPickupTestHost(async origin => {
     const browser = await chromium.launch({channel: 'chrome'});
     const errors = [];
     try {
@@ -48,31 +48,60 @@ async function api(page, endpoint, method = 'GET', body) {
         }
 
         const organizer = await open(1440, 'Organizer');
-        await organizer.getByRole('link', {name: 'Create Pickup Session'}).click();
-        for (const [label, value] of Object.entries({'Session name': values.name, 'Facility name': values.venue,
-            'Street address': values.address, City: values.city, 'State or province': values.region,
-            'ZIP or postal code': values.postalCode, 'Venue time zone': values.timeZone,
-            'Start date and time': values.start, 'End date and time': values.end})) {
-            await organizer.getByLabel(label, {exact: true}).fill(value);
-        }
-        await organizer.getByRole('button', {name: 'Create Pickup Session'}).click();
-        await expect(organizer.getByRole('heading', {name: values.name})).toBeVisible();
-        await expect(organizer.getByText('16 spots open')).toBeVisible();
+
+        const seed = await api(organizer, '/api/pickup/sessions', 'POST', {...values, visibility: 1});
+        assert.equal(seed.status, 201, JSON.stringify(seed));
+        await organizer.getByRole('link', {name: 'Create Pickup Game'}).click();
+        await organizer.getByRole('button', {name: /Fixture Recreation Center/}).first().click();
+        await expect(organizer.getByLabel('Maximum players')).toBeHidden();
+        await expect(organizer.getByLabel('Duration', {exact: true})).toBeHidden();
+        const date = await organizer.getByLabel('Date', {exact: true}).inputValue();
+        await organizer.getByRole('button', {name: 'Create Pickup Game'}).click();
+        await expect(organizer.getByRole('heading', {name: 'Wallyball Pickup'})).toBeVisible();
+        await expect(organizer.getByText('Open Registration', {exact: true})).toBeVisible();
         const sessionUrl = organizer.url();
         const id = sessionUrl.split('/').at(-1);
         const endpoint = '/api/pickup/sessions/' + id;
-        const details = await api(organizer, endpoint);
-        assert.equal(new Intl.DateTimeFormat('en-GB', {timeZone: values.timeZone, hour: '2-digit', minute: '2-digit'}).format(new Date(details.data.startsUtc)), '18:00');
-        assert.equal(details.data.capacity, 16);
+        const details = (await api(organizer, endpoint)).data;
+        assert.equal(details.capacity, null);
+        assert.equal(Date.parse(details.endsUtc) - Date.parse(details.startsUtc), 120 * 60000);
+        assert.equal(Date.parse(details.deadlineUtc), Date.parse(details.startsUtc));
 
+        const mobile = await open(390, 'MobileOrganizer');
+        await mobile.getByRole('link', {name: 'Create Pickup Game'}).click();
+        await mobile.getByRole('button', {name: 'Add New Facility'}).click();
+        await mobile.getByLabel('Facility name').fill('Mobile Facility ' + token);
+        await mobile.getByLabel('City or ZIP code').fill('Fixtureville');
+        await mobile.getByLabel('Start Now').check();
+        assert(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+        await mobile.getByRole('button', {name: 'Create Pickup Game'}).click();
+        await expect(mobile.getByText('Open Registration', {exact: true})).toBeVisible();
+        const immediate = '/api/pickup/sessions/' + mobile.url().split('/').at(-1);
+        const timing = (await api(mobile, immediate)).data;
+        assert.equal(Date.parse(timing.deadlineUtc), Date.parse(timing.endsUtc));
+        await mobile.getByRole('link', {name: 'Create Pickup Game'}).click();
+        await mobile.getByRole('button', {name: new RegExp('Mobile Facility ' + token)}).click();
+        await mobile.getByText('Advanced Options', {exact: true}).click();
+        await mobile.getByLabel('Custom session name').fill('Advanced ' + token);
+        await mobile.getByLabel('Limit number of players').check();
+        await mobile.getByLabel('Maximum players').fill('6');
+        await mobile.getByLabel('Description').fill('Advanced settings fixture');
+        await mobile.getByLabel('Require organizer approval').check();
+        await mobile.getByRole('button', {name: 'Create Pickup Game'}).click();
+        await expect(mobile.getByRole('heading', {name: 'Advanced ' + token})).toBeVisible();
+        const advancedEndpoint = '/api/pickup/sessions/' + mobile.url().split('/').at(-1);
+        const advanced = (await api(mobile, advancedEndpoint)).data;
+        assert.equal(advanced.capacity, 6);
+        assert.equal(advanced.approvalRequired, true);
+        assert.equal(advanced.description, 'Advanced settings fixture');
         const visitor = await open(390);
         await visitor.getByLabel('City or ZIP code').fill(values.postalCode);
         await visitor.locator('select[name=sport]').selectOption('Wallyball');
-        await visitor.getByLabel('Date', {exact: true}).fill(run);
+        await visitor.getByLabel('Date', {exact: true}).fill(date);
         await visitor.getByLabel('Available spots only').check();
         await visitor.getByRole('button', {name: 'Find Games'}).click();
-        await visitor.getByRole('link', {name: 'View Details for ' + values.name}).click();
-        await expect(visitor.getByText('16 spots open')).toBeVisible();
+        await visitor.getByRole('link', {name: 'View Details for Wallyball Pickup'}).and(visitor.locator('a[href="/pickup/' + id + '"]')).click();
+        await expect(visitor.getByText('Open Registration', {exact: true})).toBeVisible();
         const before = new Set(await fs.readdir(inbox));
         const guestEmail = 'guest-' + token + '@example.invalid';
         await visitor.getByRole('button', {name: 'Join Session'}).click();
@@ -101,7 +130,7 @@ async function api(page, endpoint, method = 'GET', body) {
         await expect(organizer.getByText('Guest ' + token + ' · Confirmed')).toBeVisible();
         await visitor.getByRole('button', {name: 'Cancel Registration'}).click();
         await expect(visitor.getByText('Your registration: Cancelled')).toBeVisible();
-        await expect(visitor.getByText('16 spots open')).toBeVisible();
+        await expect(visitor.getByText('Open Registration', {exact: true})).toBeVisible();
 
         const player = await open(1280, 'Player');
         const second = await open(1280, 'Second');
@@ -127,7 +156,7 @@ async function api(page, endpoint, method = 'GET', body) {
         assert.equal((await api(visitor, privateSession)).status, 404);
         assert.equal((await api(second, privateSession)).status, 404);
         assert.equal((await api(visitor, unlisted)).status, 200);
-        const found = await api(visitor, '/api/pickup/sessions?location=' + values.postalCode + '&sport=Wallyball&date=' + run);
+        const found = await api(visitor, '/api/pickup/sessions?location=' + values.postalCode + '&sport=Wallyball&date=' + date);
         assert(found.data.sessions.some(row => row.id === id));
         assert(!found.data.sessions.some(row => row.name === 'Unlisted ' + token || row.name === 'Private ' + token));
 
@@ -148,17 +177,47 @@ async function api(page, endpoint, method = 'GET', body) {
         const results = await Promise.all([player, second].map(page => api(page, finalSpot + '/join', 'POST', {})));
         assert.deepEqual(results.map(result => result.status).sort(), [200, 409]);
         assert.equal((await api(organizer, finalSpot)).data.confirmed, 2);
-        assert.equal((await api(organizer, finalSpot + '/cancel', 'POST', {})).status, 204);
-        assert.equal((await api(second, finalSpot + '/guest', 'POST', values)).status, 400);
+
         const rejected = results[0].status === 409 ? player : second;
-        assert.equal((await api(rejected, finalSpot + '/join', 'POST', {})).status, 409);
+        assert.equal((await api(rejected, finalSpot + '/join?waitlist=true', 'POST', {})).data.registration, 5);
+        assert.equal((await api(organizer, finalSpot + '/leave', 'POST', {})).status, 204);
+        assert.equal((await api(rejected, finalSpot)).data.registration, 2);
+        assert.equal((await api(organizer, finalSpot)).data.confirmed, 2);
+        assert.equal((await api(organizer, finalSpot + '/cancel', 'POST', {})).status, 204);
+        assert.equal((await api(organizer, finalSpot + '/join', 'POST', {})).status, 409);
+
+        // Provision accounts serially so the concurrency test targets Pickup joins.
+        for (let batch = 0; batch < 21; batch++) {
+            const participants = [];
+            try {
+                for (let n = 0; n < 4; n++) {
+                    const ctx = await request.newContext({ignoreHTTPSErrors: true, extraHTTPHeaders: {Origin: origin}});
+                    participants.push(ctx);
+                    const signup = await ctx.post(origin + '/api/login/register', {data: {
+                        email: ['open', token, batch, n].join('-') + '@example.invalid',
+                        password: crypto.randomBytes(20).toString('hex'), firstName: 'Capacity', lastName: 'Fixture'
+                    }});
+                    assert.equal(signup.status(), 200, await signup.text());
+                }
+                await Promise.all(participants.map(async ctx => {
+                    const joined = await ctx.post(origin + endpoint + '/join?waitlist=true', {data: {}});
+                    assert.equal(joined.status(), 200, await joined.text());
+                    assert.equal((await joined.json()).registration, 2);
+                }));
+            } finally {
+                await Promise.all(participants.map(ctx => ctx.dispose()));
+            }
+        }
+        assert.equal((await api(organizer, endpoint)).data.confirmed, 85);
         const original = await api(organizer, endpoint);
-        assert.equal((await api(organizer, endpoint, 'PUT', {...values, description: 'Updated fixture'})).status, 204);
+        assert.equal((await api(organizer, endpoint, 'PUT', {...values, capacity: null, description: 'Updated fixture'})).status, 204);
         assert.equal((await api(organizer, endpoint)).data.description, 'Updated fixture');
         assert.equal(original.data.id, id);
         assert.deepEqual(errors, []);
-        for (const fixture of [endpoint, privateSession, unlisted, approval])
+        for (const fixture of [endpoint, privateSession, unlisted, approval, '/api/pickup/sessions/' + seed.data.id])
             assert.equal((await api(organizer, fixture + '/cancel', 'POST', {})).status, 204);
+        for (const fixture of [immediate, advancedEndpoint])
+            assert.equal((await api(mobile, fixture + '/cancel', 'POST', {})).status, 204);
         console.log('Pickup browser and API checks passed at desktop and mobile widths against the isolated database.');
     } finally { await browser.close(); }
-})().catch(error => { console.error(error); process.exitCode = 1; });
+}).catch(error => { console.error(error); process.exitCode = 1; });

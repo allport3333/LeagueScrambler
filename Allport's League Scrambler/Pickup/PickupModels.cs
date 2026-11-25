@@ -39,7 +39,7 @@ public sealed class PickupSession
     public DateTimeOffset StartsUtc { get; set; }
     public DateTimeOffset EndsUtc { get; set; }
     public DateTimeOffset? DeadlineUtc { get; set; }
-    public int Capacity { get; set; }
+    public int? Capacity { get; set; }
     public bool ApprovalRequired { get; set; }
     public SessionVisibility Visibility { get; set; }
     public SessionState State { get; set; }

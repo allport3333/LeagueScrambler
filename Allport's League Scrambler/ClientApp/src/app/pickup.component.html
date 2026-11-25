@@ -4,7 +4,7 @@
     <nav aria-label="Pickup Games">
       <a routerLink="/pickup">Find Pickup Games</a>
       @if (signedIn | async) {
-        <a routerLink="/pickup/create">Create Pickup Session</a>
+        <a routerLink="/pickup/create">Create Pickup Game</a>
         <a routerLink="/pickup/mine">My Sessions</a>
       }
     </nav>
@@ -14,37 +14,133 @@
   @if (loading) { <p role="status">Loading pickup games…</p> }
   @if (sports && (editing || view === 'create')) {
     @if (signedIn | async) {
-      <section class="panel">
-        <h2>{{ editing ? 'Edit session' : 'Create Pickup Session' }}</h2>
-        <form #sessionForm="ngForm" (ngSubmit)="save()">
-          <div class="fields">
-            <label>Session name<input name="name" required maxlength="100" [(ngModel)]="form.name"></label>
-            <label>Sport<select name="sport" [(ngModel)]="form.sport">@for (sport of sports; track sport) { <option>{{ sport }}</option> }</select></label>
-            <label>Maximum participants<input name="capacity" type="number" min="2" max="100" required [(ngModel)]="form.capacity"></label>
-            <label>Skill level<select name="skill" [(ngModel)]="form.skill"><option value="">Any level</option>@for (level of levels; track level) { <option>{{ level }}</option> }</select></label>
-          </div>
-          <fieldset>
-            <legend>Facility</legend>
-            <div class="fields">
-              <label>Facility name<input required maxlength="100" name="venue" [(ngModel)]="form.venue"></label>
-              <label>Street address<input required maxlength="140" name="address" [(ngModel)]="form.address"></label>
-              <label>City<input required maxlength="80" name="city" [(ngModel)]="form.city"></label>
-              <label>State or province<input required maxlength="50" name="region" [(ngModel)]="form.region"></label>
-              <label>ZIP or postal code<input required maxlength="16" name="postal" [(ngModel)]="form.postalCode"></label>
-              <label>Country<input required maxlength="50" name="country" [(ngModel)]="form.country"></label>
-              <label>Venue time zone<input required maxlength="80" name="zone" [(ngModel)]="form.timeZone" placeholder="America/New_York"></label>
+      <section class="panel create-game">
+        <h2>{{ editing ? 'Edit Pickup Game' : 'Create a Pickup Game' }}</h2>
+        @if (!editing) { <p class="intro">Set up a game in seconds. You can change the details later.</p> }
+        <form (ngSubmit)="save()" novalidate>
+          <div class="creation-grid">
+            <label>Sport
+              <select aria-label="Sport" name="sport" [(ngModel)]="form.sport" (ngModelChange)="clearField('sport')">
+                @for (sport of sports; track sport) { <option>{{ sport }}</option> }
+              </select>
+              @if (fieldErrors['sport']; as message) { <small class="field-error" role="alert">{{ message }}</small> }
+            </label>
+            <div class="facility-picker">
+              @if (selectedVenue; as facility) {
+                <div class="facility-selected">
+                  <span><small>Where are we playing?</small><strong>{{ facility.name }}</strong>
+                    <small>{{ facilityLocation(facility) }} &middot; {{ facility.address ? 'Saved address' : 'Approximate location' }}</small>
+                  </span>
+                  <button type="button" (click)="changeVenue()">Change facility</button>
+                </div>
+              } @else if (newVenue) {
+                <label>Facility name<input name="venue" maxlength="100" [(ngModel)]="form.venue" (ngModelChange)="clearField('venue')"></label>
+                <label>City or ZIP code<input name="location" maxlength="80" [(ngModel)]="form.location" (ngModelChange)="clearField('location')"></label>
+                @if (fieldErrors['location']; as message) { <small class="field-error" role="alert">{{ message }}</small> }
+                <small>Approximate location. Add a street address in Advanced Options if you have one.</small>
+                <button type="button" (click)="changeVenue()">Choose a saved facility</button>
+              } @else {
+                <label>Where are we playing?
+                  <input name="venueSearch" type="search" placeholder="Search saved facilities" maxlength="140"
+                    [ngModel]="venueQuery" (ngModelChange)="venueQuery = $event; searchVenues()">
+                </label>
+                @if (venues.length) {
+                  <ul class="venue-options">
+                    @for (facility of venues; track facility.id) {
+                      <li><button type="button" (click)="chooseVenue(facility)">
+                        <strong>{{ facility.name }}</strong><small>{{ facilityLocation(facility) }} &middot; {{ facility.address ? 'Saved address' : 'Approximate location' }}</small>
+                      </button></li>
+                    }
+                  </ul>
+                } @else if (venueSearchFailed) {
+                  <small>Saved facilities could not be loaded.</small>
+                  <button type="button" (click)="searchVenues()">Retry</button>
+                } @else if (venueQuery) { <small>No saved facilities match.</small> }
+                <button type="button" (click)="addVenue()">Add New Facility</button>
+              }
+              @if (fieldErrors['venue']; as message) { <small class="field-error" role="alert">{{ message }}</small> }
             </div>
-          </fieldset>
-          <div class="fields">
-            <label>Start date and time<input required type="datetime-local" name="start" [(ngModel)]="form.start"></label>
-            <label>End date and time<input required type="datetime-local" name="end" [(ngModel)]="form.end"></label>
-            <label>Registration deadline<input type="datetime-local" name="deadline" [(ngModel)]="form.deadline"></label>
-            <label>Visibility<select name="visibility" [(ngModel)]="form.visibility"><option [ngValue]="0">Public</option><option [ngValue]="1">Unlisted</option><option [ngValue]="2">Private (organizer only)</option></select></label>
+            <label>Date
+              <input type="date" name="date" [(ngModel)]="form.date" [disabled]="form.startNow"
+                (ngModelChange)="scheduleEdited = true; clearField('start')" [attr.aria-invalid]="fieldErrors['start'] ? 'true' : null">
+            </label>
+            <div>
+              <label>Start time
+                <input type="time" name="time" [(ngModel)]="form.time" [disabled]="form.startNow"
+                  (ngModelChange)="scheduleEdited = true; clearField('start')" [attr.aria-invalid]="fieldErrors['start'] ? 'true' : null">
+              </label>
+              @if (!editing) {
+                <label class="choice start-now"><input type="checkbox" name="startNow" [ngModel]="form.startNow"
+                  (ngModelChange)="setStartNow($event)"> Start Now</label>
+              }
+              @if (fieldErrors['start']; as message) { <small class="field-error" role="alert">{{ message }}</small> }
+            </div>
           </div>
-          <label>Description<textarea name="description" maxlength="1200" [(ngModel)]="form.description"></textarea></label>
-          <label>Organizer notes (private)<textarea name="notes" maxlength="700" [(ngModel)]="form.organizerNotes"></textarea></label>
-          <label class="choice"><input type="checkbox" name="approval" [(ngModel)]="form.approvalRequired">Require organizer approval</label>
-          <div class="actions"><button class="primary" [disabled]="busy || sessionForm.invalid">{{ editing ? 'Save session' : 'Create Pickup Session' }}</button>
+          <p class="schedule-summary">
+            {{ selectedVenue ? 'Facility time zone' : 'Device time zone by default' }} &middot; {{ zoneLabel(venueTimeZone) }}
+            @if (endPreview; as end) { <span> &middot; Ends {{ end }}</span> }
+          </p>
+          <details class="advanced" [open]="advancedOpen" (toggle)="advancedOpen = $any($event.target).open">
+            <summary>Advanced Options</summary>
+            <div class="creation-grid">
+            <div>
+              <label>Duration
+                <select aria-label="Duration" name="duration" [(ngModel)]="form.duration" (ngModelChange)="clearField('duration')">
+                  @for (duration of durations; track duration.minutes) { <option [ngValue]="duration.minutes">{{ duration.label }}</option> }
+                  <option [ngValue]="0">Custom Duration</option>
+                </select>
+              </label>
+              @if (form.duration === 0) {
+                <label class="custom-duration">Duration in minutes
+                  <input type="number" min="1" step="1" name="customDuration" [(ngModel)]="form.customDuration" (ngModelChange)="clearField('duration')">
+                </label>
+              }
+              @if (fieldErrors['duration']; as message) { <small class="field-error" role="alert">{{ message }}</small> }
+            </div>
+              <div>
+                <label class="choice"><input type="checkbox" name="limitPlayers" [(ngModel)]="form.limitPlayers"
+                  (ngModelChange)="clearField('capacity')"> Limit number of players</label>
+                @if (form.limitPlayers) {
+                  <label>Maximum players<input type="number" min="2" [max]="capacityMax" step="1" name="capacity"
+                    [(ngModel)]="form.capacity" (ngModelChange)="clearField('capacity')" [attr.aria-invalid]="fieldErrors['capacity'] ? 'true' : null">
+                  </label>
+                  @if (fieldErrors['capacity']; as message) { <small class="field-error" role="alert">{{ message }}</small> }
+                }
+              </div>
+              <label>Custom session name<input name="name" maxlength="100" [placeholder]="form.sport + ' Pickup'" [(ngModel)]="form.name"></label>
+              <label>Skill level<select aria-label="Skill level" name="skill" [(ngModel)]="form.skill"><option value="">Any level</option>
+                @for (level of levels; track level) { <option>{{ level }}</option> }
+              </select></label>
+              <label>Visibility<select aria-label="Visibility" name="visibility" [(ngModel)]="form.visibility" (ngModelChange)="clearField('visibility')">
+                <option [ngValue]="0">Public</option><option [ngValue]="1">Unlisted</option><option [ngValue]="2">Private (organizer only)</option>
+              </select>
+              @if (fieldErrors['visibility']; as message) { <small class="field-error" role="alert">{{ message }}</small> }
+              </label>
+              <label>Registration closes<select aria-label="Registration closes" name="deadlinePolicy" [(ngModel)]="form.deadlinePolicy" (ngModelChange)="clearField('deadline')">
+                <option value="start">When the game starts</option><option value="end">When the game ends (allow late joining)</option>
+                <option value="custom">At a custom deadline before the start</option>
+              </select></label>
+              @if (form.deadlinePolicy === 'custom') {
+                <label>Registration deadline<input type="datetime-local" name="deadline" [(ngModel)]="form.deadline" (ngModelChange)="clearField('deadline')">
+                  @if (fieldErrors['deadline']; as message) { <small class="field-error" role="alert">{{ message }}</small> }
+                </label>
+              }
+              @if (newVenue) {
+                <label>Street address (optional)<input name="address" maxlength="140" [(ngModel)]="form.address"></label>
+                <label>State or province (optional)<input name="region" maxlength="50" [(ngModel)]="form.region"></label>
+                <label>Country<input name="country" maxlength="50" [(ngModel)]="form.country"></label>
+                <label>Facility time zone<select aria-label="Facility time zone" name="zone" [ngModel]="form.timeZone" (ngModelChange)="setZone($event)">
+                  @for (zone of zones; track zone) { <option [value]="zone">{{ zoneLabel(zone) }}</option> }
+                </select></label>
+              }
+            </div>
+            @if (fieldErrors['timeZone']; as message) { <small class="field-error" role="alert">{{ message }}</small> }
+            <label class="choice"><input type="checkbox" name="approval" [(ngModel)]="form.approvalRequired"> Require organizer approval</label>
+            <label>Description<textarea name="description" maxlength="1200" [(ngModel)]="form.description"></textarea></label>
+            <label>Private organizer notes<textarea name="notes" maxlength="700" [(ngModel)]="form.organizerNotes"></textarea></label>
+          </details>
+          <div class="actions create-action">
+            <button class="primary" [disabled]="busy">{{ busy ? 'Saving?' : editing ? 'Save Pickup Game' : 'Create Pickup Game' }}</button>
             @if (editing) { <button type="button" (click)="editing = false">Cancel edit</button> }
           </div>
         </form>
@@ -54,25 +150,36 @@
     <section class="panel details">
       <h2>{{ game.name }}</h2>
       <p>{{ game.sport }} · {{ game.skill || 'Any level' }}</p>
-      <p><strong>{{ game.venue.name }}</strong><br>{{ game.venue.address }}, {{ game.venue.city }}, {{ game.venue.region }} {{ game.venue.postalCode }}, {{ game.venue.country }}</p>
+      <p><strong>{{ game.venue.name }}</strong>
+        @if (game.venue.address) { <br>{{ game.venue.address }} }
+        <br>{{ facilityLocation(game.venue) }} @if (!game.venue.address) { ? Approximate location }
+      </p>
       <p>{{ format(game.startsUtc, game.venue.timeZone) }} to {{ format(game.endsUtc, game.venue.timeZone) }} ({{ game.venue.timeZone }})</p>
       @if (game.deadlineUtc) { <p>Registration closes {{ format(game.deadlineUtc, game.venue.timeZone) }}.</p> }
       <p>Organizer: {{ game.organizer }}</p>
+      @if (game.visibility !== 2) {
+        <button type="button" (click)="copyInvitation()">Copy invitation link</button>
+        @if (shareUrl) {
+          <label class="share-link">Invitation link<input readonly [value]="shareUrl" (focus)="$any($event.target).select()"></label>
+        }
+      }
       @if (game.description) { <p>{{ game.description }}</p> }
-      <p><strong>{{ game.confirmed }} confirmed</strong> · {{ game.capacity - game.confirmed }} spots open</p>
+      <p><strong>{{ game.confirmed }} confirmed</strong>
+        @if (game.capacity != null) { <span> &middot; {{ game.capacity - game.confirmed }} spots open</span> }
+        @else if (game.registrationOpen) { <span> &middot; <strong>Open Registration</strong></span> }
+      </p>
       @if (game.state === 4) { <p role="status">Session cancelled.</p> }
       @if (game.registration != null) { <p role="status">Your registration: <strong>{{ statuses[game.registration] }}</strong></p> }
       @if (registered) {
         <button type="button" [disabled]="busy" (click)="change('leave')">Cancel Registration</button>
       } @else if (game.registration !== 4 && game.registrationOpen) {
-        @if (game.confirmed >= game.capacity) { <p>This session is full.</p> }
-        @else if (signedIn | async) { <button type="button" class="primary" [disabled]="busy" (click)="change('join')">Join Session</button> }
-        @else if (!guestForm) { <button type="button" class="primary" (click)="guestForm = true">Join Session</button> }
+        @if (signedIn | async) { <button type="button" class="primary" [disabled]="busy" (click)="change(sessionFull ? 'join?waitlist=true' : 'join')">{{ joinLabel }}</button> }
+        @else if (!guestForm) { <button type="button" class="primary" (click)="guestForm = true">{{ joinLabel }}</button> }
         @else {
           <form #guest="ngForm" class="guest-form" (ngSubmit)="sendGuestLink()">
             <label>Name<input name="guestName" autocomplete="name" required maxlength="100" [(ngModel)]="join.name"></label>
             <label>Email address<input name="guestEmail" autocomplete="email" type="email" email required maxlength="254" [(ngModel)]="join.email"></label>
-            <button class="primary" [disabled]="busy || guest.invalid">Join Session</button>
+            <button class="primary" [disabled]="busy || guest.invalid">{{ joinLabel }}</button>
           </form>
         }
       } @else if (game.state !== 4) { <p>Registration is closed.</p> }
@@ -96,7 +203,7 @@
           <div class="registration">
             <span>{{ entry.name }} · {{ statuses[entry.state] }}</span>
             @if (entry.state === 1 && game.state === 1) {
-              <button type="button" [disabled]="busy || !game.registrationOpen || game.confirmed >= game.capacity" (click)="change('registrations/' + entry.id, {approve: true})">Approve</button>
+              <button type="button" [disabled]="busy || !game.registrationOpen || sessionFull" (click)="change('registrations/' + entry.id, {approve: true})">Approve</button>
               <button type="button" [disabled]="busy" (click)="change('registrations/' + entry.id, {approve: false})">Decline</button>
             }
           </div>
@@ -123,7 +230,14 @@
             <p>{{ card.sport }} · {{ card.skill || 'Any level' }}</p>
             <p>{{ card.venue }} · {{ card.city }}, {{ card.region }}</p>
             <p>{{ format(card.startsUtc, card.timeZone) }}</p>
-            <p>{{ card.state === 4 ? 'Cancelled' : card.confirmed + ' confirmed · ' + (card.capacity - card.confirmed) + ' spots open' }}</p>
+            <p>
+              @if (card.state === 4) { Cancelled }
+              @else {
+                {{ card.confirmed }} confirmed
+                @if (card.capacity == null) { <span> &middot; <strong>Open Registration</strong></span> }
+                @else { <span> &middot; {{ card.capacity - card.confirmed }} spots open</span> }
+              }
+            </p>
             <a [routerLink]="['/pickup', card.id]">View Details<span class="visually-hidden"> for {{ card.name }}</span></a>
           </article>
         } @empty { <p>No sessions found.</p> }
