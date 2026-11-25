@@ -1,4 +1,9 @@
 using dotenv.net;
+using Allport_s_League_Scrambler.Pickup;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+using System.IO;
 using Allport_s_League_Scrambler.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -24,7 +29,9 @@ namespace Allport_s_League_Scrambler
         public Startup(IConfiguration configuration, IWebHostEnvironment environment)
         {
             var localSettings = System.IO.Path.Combine(environment.ContentRootPath, ".env");
-            if (System.IO.File.Exists(localSettings))
+            if (PickupEnvironment.Requested)
+                PickupEnvironment.Configure(environment);
+            else if (System.IO.File.Exists(localSettings))
                 DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { localSettings }, overwriteExistingVars: false));
             else
                 DotEnv.Load(options: new DotEnvOptions(probeForEnv: true, probeLevelsToSearch: 6, overwriteExistingVars: false));
@@ -51,6 +58,7 @@ namespace Allport_s_League_Scrambler
                     options.Events.OnValidatePrincipal = LeagueAccess.RefreshAccountRole;
                     options.LoginPath = "/"; // Set the login page
                     options.AccessDeniedPath = ""; // Set the access denied page
+                    if (PickupEnvironment.Requested) options.Cookie.Name = ".LeagueHub.PickupDev";
                     options.Cookie.HttpOnly = true; // Ensure cookies are only accessible via HTTP
                     options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Require HTTPS for authentication cookies
                     options.Cookie.SameSite = SameSiteMode.Lax; // Adjust SameSite mode as needed
@@ -68,6 +76,16 @@ namespace Allport_s_League_Scrambler
                 });
 
             services.AddMemoryCache();
+            services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = 429;
+                options.AddPolicy("pickup-guest", context => RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions { PermitLimit = 12, Window = TimeSpan.FromMinutes(5) }));
+            });
+            if (PickupEnvironment.Requested)
+                services.AddDataProtection().SetApplicationName(PickupEnvironment.Database)
+                    .PersistKeysToFileSystem(Directory.CreateDirectory(Path.Combine(PickupEnvironment.LocalDirectory, "keys")));
             services.AddAuthorization(options =>
             {
                 options.AddPolicy("LeagueManagement", policy =>
@@ -117,6 +135,7 @@ namespace Allport_s_League_Scrambler
                 await next();
             });
             app.UseRouting();
+            app.UseRateLimiter();
             // The SPA shell has no identity-dependent content. Controllers and pages
             // still validate the cookie before authorization and endpoint execution.
             app.UseWhen(context => context.GetEndpoint() != null, branch => branch.UseAuthentication());
@@ -146,7 +165,7 @@ namespace Allport_s_League_Scrambler
                 spa.Options.SourcePath = System.IO.Path.Combine(env.ContentRootPath, "ClientApp");
                 spa.Options.DefaultPageStaticFileOptions = PwaStaticFiles();
 
-                if (env.IsDevelopment())
+                if (env.IsDevelopment() && !PickupEnvironment.Requested)
                 {
                     spa.UseAngularCliServer(npmScript: "start");
                 }

@@ -1,0 +1,22 @@
+﻿.pickup { max-width: 70rem; margin: 1rem auto 3rem; padding-inline: 1rem; color: var(--hub-text); }
+header { text-align: center; margin-bottom: 1rem; }
+header nav, .actions, .registration { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
+header nav { justify-content: center; }
+header a { padding: .55rem .25rem; }
+.panel { padding: clamp(.75rem, 2vw, 1.5rem); background: var(--hub-surface); border: 1px solid var(--hub-border); border-radius: .6rem; margin-block: .75rem; }
+.fields, .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: .75rem; }
+.cards .panel { margin: 0; }
+form, label { display: grid; gap: .4rem; min-width: 0; }
+form { gap: .85rem; }
+fieldset { min-width: 0; border: 1px solid var(--hub-border); border-radius: .4rem; padding: .6rem; }
+legend { float: none; width: auto; padding: 0 .35rem; font-size: 1rem; }
+input, select, textarea, button { min-height: 44px; padding: .4rem .7rem; border: 1px solid var(--hub-border); border-radius: .4rem; color: inherit; background: var(--hub-section); max-width: 100%; }
+button { justify-self: start; }
+button:disabled { opacity: .6; }
+.primary { color: var(--hub-action-text, white); background: var(--hub-primary-action, #30577e); }
+.choice { display: flex; align-items: center; gap: .5rem; }
+.choice input { min-height: auto; }
+.guest-form { max-width: 23rem; }
+.feedback { padding: .65rem; border-left: .25rem solid var(--hub-link); }
+.registration { padding-block: .5rem; border-bottom: 1px solid var(--hub-border); overflow-wrap: anywhere; }
+.details { overflow-wrap: anywhere; }

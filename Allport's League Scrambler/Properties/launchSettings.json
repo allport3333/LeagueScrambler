@@ -1,31 +1,14 @@
 {
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iis": {
-      "applicationUrl": "http://localhost/Allport's League Scrambler",
-      "sslPort": 44371
-    },
-    "iisExpress": {
-      "applicationUrl": "http://localhost:58031/",
-      "sslPort": 44371
-    }
-  },
   "profiles": {
-    "IIS Express": {
-      "commandName": "IISExpress",
-      "launchBrowser": true,
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
-    },
-    "Allport_s_League_Scrambler": {
+    "Pickup Development": {
       "commandName": "Project",
       "launchBrowser": true,
+      "launchUrl": "pickup",
+      "applicationUrl": "https://localhost:5002",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": "https://localhost:5001;http://localhost:5000"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "LEAGUE_HUB_PICKUP_DEV": "1"
+      }
     }
   }
 }

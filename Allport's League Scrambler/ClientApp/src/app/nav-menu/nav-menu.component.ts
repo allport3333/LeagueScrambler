@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { ConnectedPosition, Overlay } from '@angular/cdk/overlay';
 import { AppearanceComponent } from '../appearance.component';
@@ -58,6 +59,8 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         ] }
     ];
 
+    pickupEnabled = false;
+
     get primaryDestinations(): NavItem[] {
         const tournament = this.leagues?.find(event => event.id === this.selectedLeagueId && event.eventTypeId === 2);
         const items = this.destinations.filter(item =>
@@ -66,6 +69,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             (!item.roles || item.roles.includes(this.userRole)))
             .filter(item => !item.children || item.children.length)
             .map(item => item.children?.length === 1 ? item.children[0] : item);
+        if (this.pickupEnabled) items.push({ route: '/pickup', label: 'Pickup Games', icon: 'sports_volleyball' });
         if (tournament && this.loggedIn) {
             const standings = items.findIndex(item => item.route === '/standings');
             if (standings >= 0) items[standings] = {
@@ -145,6 +149,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     destinationActive(item: NavLink): boolean {
         const path = this.router.url.split(/[?#]/)[0];
         const route = Array.isArray(item.route) ? item.route.join('/') : item.route;
+        if (route === '/pickup') return path === route || path.startsWith('/pickup/');
         if (path === '/schedule') return route === '/league-dashboard';
         if (path !== route) return false;
         return true;
@@ -235,6 +240,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     selectedLeagueName: string | null = null;
 
     constructor(
+        private http: HttpClient,
         private loginService: LoginService,
         private router: Router,
         private authService: AuthService,
@@ -276,6 +282,8 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     }
 
     ngOnInit() {
+        this.subscriptions.add(this.http.get<string[]>('/api/pickup/catalog').pipe(catchError(() => of(null)))
+            .subscribe(catalog => { this.pickupEnabled = Array.isArray(catalog) && catalog.length > 0; }));
         this.subscriptions.add(this.router.events.subscribe(event => {
             if (event instanceof NavigationStart) { this.collapse(); this.closeEventSelector(false); }
         }));

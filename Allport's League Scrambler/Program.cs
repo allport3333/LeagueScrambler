@@ -15,6 +15,14 @@ namespace Allport_s_League_Scrambler
     {
         public static void Main(string[] args)
         {
+            if (args.Contains("--initialize-pickup"))
+            {
+                if (!Pickup.PickupEnvironment.Requested) throw new InvalidOperationException("Select the Pickup Development profile.");
+                using var host = CreateHostBuilder(Array.Empty<string>()).Build();
+                Pickup.PickupEnvironment.Configure((IWebHostEnvironment)host.Services.GetService(typeof(IWebHostEnvironment)));
+                Pickup.PickupEnvironment.Initialize();
+                return;
+            }
             CreateHostBuilder(args).Build().Run();
         }
 

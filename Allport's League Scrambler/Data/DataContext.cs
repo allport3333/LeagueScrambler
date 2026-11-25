@@ -1,4 +1,5 @@
 using Allport_s_League_Scrambler.Models;
+using Allport_s_League_Scrambler.Pickup;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
@@ -11,6 +12,9 @@ namespace Allport_s_League_Scrambler.Data
     public class DataContext : DbContext
     {
 
+        public DbSet<PickupVenue> PickupVenues { get; set; }
+        public DbSet<PickupSession> PickupSessions { get; set; }
+        public DbSet<PickupRegistration> PickupRegistrations { get; set; }
         public virtual DbSet<Player> Players { get; set; }
         public virtual DbSet<PlayersLeague> PlayersLeagues { get; set; }
         public virtual DbSet<LeagueType> Leagues { get; set; }
@@ -58,6 +62,14 @@ namespace Allport_s_League_Scrambler.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<PickupVenue>().ToTable("PickupVenue", "dbo");
+            var pickup = modelBuilder.Entity<PickupSession>().ToTable("PickupSession", "dbo");
+            pickup.HasOne<User>().WithMany().HasForeignKey(session => session.OrganizerId).OnDelete(DeleteBehavior.Restrict);
+            pickup.HasOne(session => session.Venue).WithMany().HasForeignKey(session => session.VenueId).OnDelete(DeleteBehavior.Restrict);
+            var registration = modelBuilder.Entity<PickupRegistration>().ToTable("PickupRegistration", "dbo");
+            registration.HasOne<PickupSession>().WithMany().HasForeignKey(row => row.SessionId).OnDelete(DeleteBehavior.Restrict);
+            registration.HasOne<User>().WithMany().HasForeignKey(row => row.AccountId).OnDelete(DeleteBehavior.Restrict);
+            registration.HasOne<Player>().WithMany().HasForeignKey(row => row.PlayerId).OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<AccountRecoveryRequest>().HasIndex(request => new { request.UserId, request.CreatedUtc });
             modelBuilder.Entity<Player>().ToTable("Player", "dbo");
             modelBuilder.Entity<LeagueScheduleEvent>().ToTable("LeagueScheduleEvent", "dbo");
