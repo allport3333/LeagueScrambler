@@ -3,17 +3,68 @@
     <span class="session-status" role="status">Checking session...</span>
   }
   @if (authenticationChecked && loggedIn) {
-    <button type="button" mat-button class="league-selector" id="leagueDropdown" [matMenuTriggerFor]="leagueMenu" [title]="selectedLeagueName || 'Select League'">
-      <span class="league-name">{{ selectedLeagueName || 'Select League' }}</span><mat-icon iconPositionEnd aria-hidden="true">arrow_drop_down</mat-icon>
-    </button>
-  }
-  <mat-menu #leagueMenu="matMenu">
-    @for (league of leagues; track league.id) {
-      <button mat-menu-item [class.selected-league]="league.id === selectedLeagueId" (click)="onLeagueChange(league.id)">
-        <mat-icon aria-hidden="true">{{ league.id === selectedLeagueId ? 'check' : 'chevron_right' }}</mat-icon>{{ league.leagueName }}
+    <div class="event-controls">
+      <button #eventTrigger type="button" mat-button class="league-selector" id="leagueDropdown" cdkOverlayOrigin #eventOrigin="cdkOverlayOrigin"
+        aria-haspopup="dialog" [attr.aria-expanded]="eventPopup === 'categories'" [title]="selectedLeagueName || 'Select event'" (click)="toggleEventPopup('categories')">
+        @if (selectedEvent; as selected) { <mat-icon class="event-kind-icon" [attr.aria-label]="eventType(selected).label">{{ eventType(selected).icon }}</mat-icon> }
+        <span class="league-name">{{ selectedLeagueName || 'Select event' }}</span><mat-icon iconPositionEnd aria-hidden="true">arrow_drop_down</mat-icon>
       </button>
-    }
-  </mat-menu>
+      <button #searchTrigger type="button" mat-icon-button class="event-search-trigger" cdkOverlayOrigin #searchOrigin="cdkOverlayOrigin"
+        aria-label="Search events" aria-haspopup="dialog" [attr.aria-expanded]="eventPopup === 'search'" (click)="toggleEventPopup('search')">
+        <mat-icon aria-hidden="true">search</mat-icon>
+      </button>
+    </div>
+    <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="eventPopup === 'search' ? searchOrigin : eventOrigin"
+      [cdkConnectedOverlayOpen]="eventPopup !== null" [cdkConnectedOverlayPositions]="selectorPositions"
+      [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8"
+      (overlayOutsideClick)="onEventPopupOutside($event)" (overlayKeydown)="$event.key === 'Escape' && closeEventSelector()">
+      <section #eventPanel class="event-selector-panel" role="dialog" [attr.aria-label]="eventPopup === 'search' ? 'Find an event' : 'Select league or event'"
+        tabindex="-1" (keydown)="onSelectorKey($event)">
+        @if (eventPopup === 'search') {
+          <label class="event-search"><mat-icon aria-hidden="true">search</mat-icon>
+            <input #eventSearchField type="search" aria-label="Search events" placeholder="Search events"
+              [value]="eventSearch" (input)="eventSearch = $any($event.target).value">
+          </label>
+        }
+        <div class="event-selector-list">
+          @for (group of eventGroups; track group.id) {
+            @if (eventPopup === 'categories') {
+              <div class="event-selector-group" role="group" [attr.aria-label]="group.title">
+                <h2><button type="button" class="event-category" [attr.aria-expanded]="expandedEventType === group.id"
+                  [attr.aria-controls]="'event-category-' + group.id" (click)="toggleEventCategory(group.id)">
+                  <mat-icon aria-hidden="true">{{ group.icon }}</mat-icon><span>{{ group.title }}</span>
+                  <span class="event-count">{{ group.events.length }}</span>
+                  <mat-icon aria-hidden="true">{{ expandedEventType === group.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button></h2>
+                <div [id]="'event-category-' + group.id" [hidden]="expandedEventType !== group.id">
+                  @if (expandedEventType === group.id) {
+                    @for (event of group.events; track event.id) {
+                      <ng-container *ngTemplateOutlet="eventChoice; context: {$implicit: event}"></ng-container>
+                    }
+                  }
+                </div>
+              </div>
+            } @else {
+              @for (event of group.events; track event.id) {
+                <ng-container *ngTemplateOutlet="eventChoice; context: {$implicit: event}"></ng-container>
+              }
+            }
+          } @empty {
+            <p role="status">{{ leagues.length ? 'No events match your search.' : 'You have no accessible events.' }}</p>
+          }
+        </div>
+      </section>
+    </ng-template>
+    <ng-template #eventChoice let-event>
+      <button type="button" class="event-choice" [class.selected-league]="event.id === selectedLeagueId"
+        [attr.aria-current]="event.id === selectedLeagueId ? 'true' : null" (click)="onLeagueChange(event.id)">
+        <span>{{ event.leagueName }}
+          @if (eventPopup === 'search') { <small>{{ eventType(event).label }}</small> }
+        </span>
+        @if (event.id === selectedLeagueId) { <mat-icon aria-hidden="true">check</mat-icon> }
+      </button>
+    </ng-template>
+  }
 
   @if (!compact) {
     <div class="desktop-navigation">

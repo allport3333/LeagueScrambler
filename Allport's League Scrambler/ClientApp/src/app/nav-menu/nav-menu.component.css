@@ -1,9 +1,11 @@
 :host { display: block; }
 .league-navigation { display: flex; align-items: center; gap: 10px; padding: 8px 12px; min-height: 60px; background: var(--hub-nav, #343a40); color: var(--hub-nav-text, #f1f4f8); }
 .inline-navigation { display: grid; grid-template-columns: minmax(max-content, 1fr) max-content minmax(max-content, 1fr); }
-.inline-navigation > :is(.league-selector, .session-status) { grid-column: 1; justify-self: start; }
+.inline-navigation > :is(.event-controls, .session-status) { grid-column: 1; justify-self: start; }
 .league-selector { display: flex; flex: 0 1 180px; min-width: 0; max-width: 180px; padding: 0 10px; min-height: 44px; background: var(--hub-header, #f0f8ff); color: var(--hub-text, #172534); text-align: left; }
-.inline-navigation > .league-selector { width: 180px; }
+.event-controls { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.event-search-trigger { flex: none; min-width: 44px; min-height: 44px; color: var(--hub-nav-text, #f1f4f8); }
+.event-search-trigger:hover, .event-search-trigger[aria-expanded="true"] { background: var(--hub-nav-hover, #47525f); }
 /* TODO(mdc-migration): The following rule targets internal classes of button that may no longer apply for the MDC version. */
 .league-selector ::ng-deep .mdc-button__label { display: flex; align-items: center; flex: 1; min-width: 0; }
 .league-name { display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
@@ -42,3 +44,33 @@
 
 .navigation-link, .menu-trigger { flex-shrink: 0; }
 .nav-width-probe { position: fixed; left: -10000px; top: 0; visibility: hidden; pointer-events: none; white-space: nowrap; width: max-content; }
+
+.event-kind-icon { flex: none; font-size: 18px; width: 18px; height: 18px; }
+.event-selector-panel {
+    width: min(360px, calc(100vw - 24px)); max-height: min(70dvh, 520px); box-sizing: border-box;
+    display: flex; flex-direction: column; padding: .65rem; border: 1px solid var(--hub-border, #b8c6d4);
+    border-radius: 8px; background: var(--hub-surface, #fff); color: var(--hub-text, #243e60);
+    box-shadow: 0 6px 20px #15233533;
+}
+.event-search { display: flex; align-items: center; gap: .45rem; border: 1px solid var(--hub-border, #b8c6d4);
+    border-radius: 5px; padding: 0 .5rem; margin: 0 0 .4rem; }
+.event-search input { min-width: 0; width: 100%; min-height: 42px; border: 0; background: transparent; color: inherit; }
+.event-selector-list { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.event-selector-list p { margin: .5rem; }
+.event-selector-group + .event-selector-group { border-top: 1px solid var(--hub-border, #b8c6d4); }
+.event-selector-group h2 { margin: 0; font: inherit; }
+.event-selector-panel mat-icon { width: 18px; height: 18px; font-size: 18px; flex: none; }
+.event-category, .event-choice {
+    width: 100%; min-height: 44px; display: flex; align-items: center; gap: .5rem;
+    text-align: start; white-space: normal; overflow-wrap: anywhere; border: 0; border-radius: 5px;
+    padding: .45rem .5rem; font: inherit; color: inherit; background: transparent; cursor: pointer;
+}
+.event-category { font-size: .9rem; font-weight: 650; }
+.event-count { margin-inline-start: auto; color: var(--hub-muted, #536478); font-size: .8rem; font-weight: normal; }
+.event-choice { justify-content: space-between; }
+.event-selector-group .event-choice { padding-inline-start: 1.9rem; }
+.event-choice span { min-width: 0; }
+.event-choice small { display: block; color: var(--hub-muted, #536478); font-size: .8rem; }
+.event-selector-panel button:hover, .event-selector-panel .selected-league { background: var(--hub-header, #edf3fa); }
+.event-selector-panel .selected-league { font-weight: 650; color: var(--hub-link, #23466d); }
+.event-selector-panel :is(button, input):focus-visible { outline: 2px solid var(--hub-focus, #35658f); outline-offset: -2px; }

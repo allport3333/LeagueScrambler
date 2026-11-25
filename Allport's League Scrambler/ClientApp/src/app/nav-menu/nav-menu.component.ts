@@ -1,5 +1,5 @@
 import { MatDialog } from '@angular/material/dialog';
-import { Overlay } from '@angular/cdk/overlay';
+import { ConnectedPosition, Overlay } from '@angular/cdk/overlay';
 import { AppearanceComponent } from '../appearance.component';
 import { onLeagueResume } from '../pwa/pending-work.service';
 import { Component, OnInit, OnDestroy, AfterViewInit, DoCheck, ViewChild, ElementRef, NgZone, ChangeDetectionStrategy } from '@angular/core';
@@ -10,6 +10,13 @@ import { LeagueService } from '../services/league.service';
 import { Leagues } from '../data-models/leagues.model';
 import { forkJoin, of, throwError, Subscription } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+
+const eventTypes = [
+    { id: 1, title: 'Leagues', label: 'League', icon: 'groups' },
+    { id: 2, title: 'Tournaments', label: 'Tournament', icon: 'emoji_events' },
+    { id: 3, title: 'Pickup Sessions', label: 'Pickup session', icon: 'sports_volleyball' }
+];
+const unclassified = { id: 0, title: 'Other events', label: 'Event', icon: 'event' };
 
 interface NavLink {
     label: string;
@@ -59,7 +66,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     get primaryDestinations(): NavItem[] {
         const tournament = this.leagues?.find(event => event.id === this.selectedLeagueId && event.eventTypeId === 2);
         const items = this.destinations.filter(item =>
-            (!tournament || !['/sign-in', '/team-scores', '/league-dashboard', '/scrambler'].some(route => route === item.route)) &&
+            (!tournament || (item.label !== 'Manage' && !['/sign-in', '/team-scores', '/league-dashboard', '/scrambler'].some(route => route === item.route))) &&
             (!item.signedInOnly || (this.authenticationChecked && this.loggedIn)) &&
             (!item.roles || item.roles.includes(this.userRole)))
             .filter(item => !item.children || item.children.length)
@@ -69,8 +76,8 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             if (standings >= 0) items[standings] = {
                 label: 'Standings', icon: 'emoji_events', route: '/standings', queryParams: { leagueId: this.selectedLeagueId, tournament: 1 }
             };
-            const organizer = this.userRole === 'Admin' || this.userRole === 'Manager' || tournament.canManageTournament;
-            if (!organizer) items.splice(1, 0, {
+            const organizer = this.userRole === 'Admin' || tournament.canManageTournament;
+            if (!organizer && tournament.canViewTournamentRounds) items.splice(1, 0, {
                 label: 'Matchups', icon: 'view_list', route: ['/tournament', this.selectedLeagueId, 'rounds']
             });
         }
@@ -124,7 +131,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     private measureLayout() {
         const bar = this.navigationBar.nativeElement;
         const style = getComputedStyle(bar);
-        const leading = bar.querySelector('.league-selector, .session-status');
+        const leading = bar.querySelector('.event-controls, .session-status');
         const reserved = (leading?.getBoundingClientRect().width || 0) + 2 * parseFloat(style.columnGap);
         const available = bar.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - reserved;
         // Keep a compact phone header even when the signed-out links happen to fit.
@@ -154,6 +161,69 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     }
     authenticationChecked = false;
     private sessionVersion = 0;
+    private selectionVersion = 0;
+    eventPopup: 'categories' | 'search' | null = null;
+    expandedEventType: number | null = null;
+    eventSearch = '';
+    @ViewChild('eventTrigger', { read: ElementRef }) eventTrigger?: ElementRef<HTMLButtonElement>;
+    @ViewChild('searchTrigger', { read: ElementRef }) searchTrigger?: ElementRef<HTMLButtonElement>;
+    @ViewChild('eventPanel') eventPanel?: ElementRef<HTMLElement>;
+    @ViewChild('eventSearchField') eventSearchField?: ElementRef<HTMLInputElement>;
+    readonly selectorPositions: ConnectedPosition[] = [
+        { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 5 },
+        { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -5 }
+    ];
+
+    eventType(event?: Leagues) { return eventTypes.find(type => type.id === event?.eventTypeId) ?? unclassified; }
+    get selectedEvent() { return this.leagues.find(event => event.id === this.selectedLeagueId); }
+    get eventGroups() {
+        const query = this.eventPopup === 'search' ? this.eventSearch.trim().toLocaleLowerCase() : '';
+        const matching = this.leagues.filter(event => event.leagueName.toLocaleLowerCase().includes(query));
+        return [...eventTypes, unclassified].map(type => ({
+            ...type, events: matching.filter(event => this.eventType(event).id === type.id)
+        })).filter(group => group.events.length);
+    }
+
+    toggleEventPopup(popup: 'categories' | 'search'): void {
+        if (this.eventPopup === popup) { this.closeEventSelector(); return; }
+        this.eventSearch = '';
+        this.expandedEventType = this.selectedEvent ? this.eventType(this.selectedEvent).id : null;
+        this.eventPopup = popup;
+        requestAnimationFrame(() => {
+            if (this.eventPopup !== popup) return;
+            const panel = this.eventPanel?.nativeElement;
+            const target = popup === 'search' ? this.eventSearchField?.nativeElement
+                : panel?.querySelector<HTMLElement>('.event-category[aria-expanded=true]') ?? panel?.querySelector<HTMLElement>('.event-category');
+            (target ?? panel)?.focus({ preventScroll: true });
+        });
+    }
+
+    toggleEventCategory(id: number): void {
+        this.expandedEventType = this.expandedEventType === id ? null : id;
+    }
+
+    onEventPopupOutside(event: MouseEvent): void {
+        if (!(event.target as Element)?.closest('.event-controls')) this.closeEventSelector(false);
+    }
+
+    closeEventSelector(restoreFocus = true): void {
+        if (!this.eventPopup) return;
+        const trigger = this.eventPopup === 'search' ? this.searchTrigger : this.eventTrigger;
+        this.eventPopup = null;
+        if (restoreFocus) trigger?.nativeElement.focus({ preventScroll: true });
+    }
+
+    onSelectorKey(event: KeyboardEvent): void {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+        const panel = this.eventPanel?.nativeElement;
+        const choices = [...(panel?.querySelectorAll<HTMLElement>('input, button') ?? [])];
+        const index = choices.indexOf(event.target as HTMLElement);
+        const next = choices[index + (event.key === 'ArrowDown' ? 1 : -1)];
+        if (next) {
+            event.preventDefault();
+            next.focus();
+        }
+    }
     private subscriptions = new Subscription();
     isExpanded = false;
     loggedIn = false;
@@ -206,10 +276,12 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
 
     ngOnInit() {
         this.subscriptions.add(this.router.events.subscribe(event => {
-            if (event instanceof NavigationStart) { this.collapse(); }
+            if (event instanceof NavigationStart) { this.collapse(); this.closeEventSelector(false); }
+        }));
+        this.subscriptions.add(this.leagueService.authorizedLeagues$.subscribe(leagues => {
+            this.leagues = leagues ?? [];
         }));
         this.subscriptions.add(this.leagueService.selectedLeague$.subscribe(selected => {
-            if (this.loggedIn) this.leagues = this.leagueService.leaguesAvailable;
             this.selectedLeagueId = selected.leagueId;
             this.selectedLeagueName = selected.leagueName;
         }));
@@ -219,9 +291,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             this.loggedIn = state === true;
             this.userRole = '';
             this.playerId = null;
-            if (state === false) {
-                this.leagues = [];
-            }
+            if (state !== true) { this.selectionVersion++; this.closeEventSelector(false); }
             if (state !== true) { return; }
             this.loadSessionContext(version);
         }));
@@ -235,13 +305,16 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             this.loginService.getUsersRole().pipe(catchError(error => fallback(error, { role: '' }))),
             // An unclaimed account legitimately has no player association (404).
             this.loginService.getUsersPlayer().pipe(catchError(error => fallback(error, null))),
-            this.loginService.getUserLeagues().pipe(catchError(error => fallback(error, [])))
+            this.leagueService.getLeagues().pipe(catchError(error => fallback(error, [])))
         ]).subscribe(results => {
             if (version !== this.sessionVersion) { return; }
             this.userRole = results[0].role;
             this.playerId = results[1] ? results[1].playerId : null;
-            this.leagueService.restoreLeagues(results[2]);
-            this.leagues = this.leagueService.leaguesAvailable;
+            const route = this.router.parseUrl(this.router.url);
+            const segments = route.root.children['primary']?.segments;
+            const explicit = segments?.[0]?.path === 'tournament' && segments[1]
+                ? Number(segments[1].path) : Number(route.queryParams.leagueId);
+            this.leagueService.restoreLeagues(results[2], explicit > 0 ? explicit : undefined);
             this.authenticationChecked = true;
         }, error => {
             if (version === this.sessionVersion && (!refreshing || unauthorized(error))) {
@@ -257,14 +330,24 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         this.sessionVersion++;
         this.subscriptions.unsubscribe();
     }
-    onLeagueChange(leagueId: number) {
-        const selectedLeague = this.leagues.find((league) => league.id === leagueId);
-        if (selectedLeague) {
-            this.selectedLeagueId = leagueId; // Update the selected league ID
-            this.selectedLeagueName = selectedLeague.leagueName; // Update the name to display
-            this.leagueService.setSelectedLeague(leagueId); // Update globally
-        } else {
-            console.error('League not found with ID:', leagueId);
+    async onLeagueChange(leagueId: number): Promise<void> {
+        const event = this.leagues.find(league => league.id === leagueId);
+        this.closeEventSelector();
+        if (!event || leagueId === this.selectedLeagueId) return;
+        const version = ++this.selectionVersion;
+        const isTournament = event.eventTypeId === 2;
+        const canManage = this.userRole === 'Admin' || event.canManageTournament;
+        const destination = !isTournament
+            ? this.router.createUrlTree(['/league-dashboard'], { queryParams: { leagueId } })
+            : canManage ? this.router.createUrlTree(['/tournament', leagueId])
+                : event.canViewTournamentRounds ? this.router.createUrlTree(['/tournament', leagueId, 'rounds'])
+                    : this.router.createUrlTree(['/standings'], { queryParams: { leagueId, tournament: 1 } });
+        try {
+            if (await this.router.navigateByUrl(destination) && version === this.selectionVersion &&
+                this.router.url === this.router.serializeUrl(destination) && this.leagues.some(league => league.id === leagueId))
+                this.leagueService.setSelectedLeague(leagueId);
+        } catch {
+            // Keep the previous selection if the destination could not open.
         }
     }
 
@@ -277,7 +360,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     logoutAndNavigate() {
         this.loginService.logout().subscribe(() => {
             this.playerId = null;
-            this.leagues = null;
+            this.leagues = [];
             this.userRole = null;
             this.authService.setLoggedIn(false);
             this.router.navigate(['/']);
