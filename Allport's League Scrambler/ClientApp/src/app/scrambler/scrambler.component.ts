@@ -1,3 +1,5 @@
+import { ScrambleDraftComponent } from './scramble-draft.component';
+import { buildScrambleDraft, ScrambleDraft } from './scramble-draft';
 import { transferTeamPlayer } from './team-assignment';
 import { renderMatchupPrint } from '../matchup-print';
 import { injectConfirmation } from '../confirmation-dialog';
@@ -50,6 +52,8 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     prioritizePreviousTeammates = false;
     allowMinimumRepeats = false;
     generationBusy = false;
+    watchScramble = false;
+    private draftDialog?: MatDialogRef<ScrambleDraftComponent>;
     generationFeedback = '';
     generationResult: ScrambleResult = null;
     // Latest attempt diagnostics are separate from the result belonging to the
@@ -119,14 +123,15 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     async scramblePlayers(requireSelectedHistory = false, allowFallback = this.allowMinimumRepeats): Promise<void> {
-        if(this.generationBusy||this.teamSaveBusy)return;
+        if(this.generationBusy||this.teamSaveBusy||this.draftDialog)return;
         if (!this.teamSize && !this.numberOfTeams) {
             this.generationProblem('Choose the number of teams before scrambling.', 'inputs-changed');
             return;
         }
         if(this.lockedResults&&this.locked){this.showSnackBar('Results are currently locked. Please uncheck lock results to rescramble.');return;}
         if(!await this.confirmWorkspaceChanges(true, !!this.scoringScramble))return;
-        if (this.generationBusy || this.teamSaveBusy) return;
+        if (this.generationBusy || this.teamSaveBusy || this.draftDialog) return;
+        const watch = this.watchScramble;
         const leagueId=this.leagueId,leagueName=this.selectedLeague,signature=this.generationSignature(),version=++this.generationVersion;
         this.strictFailureSignature = null;
         this.generationBusy=true;this.generationAttempt=null;this.generationFeedback='Generating and validating teams...';
@@ -165,6 +170,8 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             if(result.status!=='success'){this.generationFeedback=result.reason+' No new scramble was saved; previous results are unchanged.';this.showSnackBar(result.reason,true);return;}
             const teams:Team[]=result.teams.map((players,index)=>({players:players.map(p=>selected.find(original=>original.id===p.id)),maleCount:players.filter(p=>p.isMale).length,femaleCount:players.filter(p=>!p.isMale).length,
                 kingQueenTeamId:0,kingQueenRoundScores:[],scrambleNumber:null,sortingId:index+1}));
+            const draft = watch ? buildScrambleDraft(teams.map(team => ({id: team.sortingId, playerIds: team.players.map(p => p.id)})),
+                result.byes.map(player => player.id), selected.map(player => ({ id: player.id, name: this.generationPlayerName(player.id), gender: player.gender, isMale: player.isMale })), topIds, lowIds) : undefined;
             let number=0;
             if(this.isActionAllowed){
                 const body:KingQueenTeamsResponse={kingQueenTeams:teams.map(team=>({kingQueenTeam:{id:0,leagueID:0,dateOfTeam:new Date(),kingQueenPlayers:[],scrambleNumber:0,scrambleWithScoresToBeSaved:false,kingQueenRoundScores:[]},players:team.players})),byePlayers:[]};
@@ -181,9 +188,31 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             this.generatedConfiguration = this.updateConfigurationSignature();
             this.locked=this.lockedResults;this.resultsCollapsed=false;this.generationFeedback='';
             if(!this.isActionAllowed)this.generationFeedback='Preview only. Saving requires management access to this league.';
-            this.announceGeneratedScramble();this.revealScrambleResults();this.cdr.detectChanges();
+            this.announceGeneratedScramble();
+            if (draft) this.openScrambleDraft(draft);
+            else this.revealScrambleResults();
+            this.cdr.detectChanges();
         }catch(error){if(version===this.generationVersion){this.generationFeedback=(error&&error.message&&!(error.status)?error.message:'History or generation service is unavailable. Please retry.')+' No new scramble was saved; your selections and previous results are retained.';this.generationProblem(this.generationFeedback);this.showSnackBar(this.generationFeedback,true);}}
         finally{if(version===this.generationVersion){this.generationBusy=false;this.cdr.detectChanges();}}
+    }
+
+    private openScrambleDraft(draft: ScrambleDraft): void {
+        this.draftDialog = this.managementDialog.open(ScrambleDraftComponent, {
+            width: '100vw', height: '100dvh', maxWidth: '100vw', maxHeight: '100dvh',
+            ariaLabelledBy: 'scramble-draft-title', enterAnimationDuration: 0, exitAnimationDuration: 0,
+            data: {
+                draft,
+                save: () => this.saveKingQueenTeams(),
+                print: () => this.printMatchups(),
+                canSave: () => this.canSaveMatchupTeams && !this.isScrambleSaved,
+                canPrint: () => this.canPrintMatchups,
+                saveFeedback: () => this.teamSaveFeedback
+            }
+        });
+        this.draftDialog.afterClosed().subscribe(() => {
+            this.draftDialog = undefined;
+            if (!this.scoreDestroyed) this.revealScrambleResults();
+        });
     }
 
     scoringScramble: KingQueenTeam = null;
@@ -255,7 +284,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();this.scoreEditorLoading=false;this.scoringScramble=null;this.scoreTeams=[];this.scoreSnapshot=null;this.scoreRefreshRequired=false;this.scoreEditorFeedback='';this.mobileScoreMatchIndex=0;
         this.retrievedListOfTeams=[];this.kingQueenRoundScores=[];this.scrambleSelected=false;this.showSaveRoundScores=false;
     }
-    ngOnDestroy():void { this.managementAccess.unsubscribe(); this.scoreListReader?.unsubscribe(); this.generationVersion++; clearTimeout(this.scrambleNoticeTimer); if(this.existingPlayerBrowserRef)this.existingPlayerBrowserRef.close(); if(this.matchupResizeObserver)this.matchupResizeObserver.disconnect();if(this.matchupLayoutFrame!==null)cancelAnimationFrame(this.matchupLayoutFrame); if(this.matchupsDialogRef)this.matchupsDialogRef.close(); this.scoreDestroyed=true;if(this.playerEditRef)this.playerEditRef.close();if(this.playerImportRef)this.playerImportRef.close();this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();if(this.scoreSaver)this.scoreSaver.unsubscribe(); }
+    ngOnDestroy():void { this.managementAccess.unsubscribe(); this.scoreListReader?.unsubscribe(); this.generationVersion++; clearTimeout(this.scrambleNoticeTimer); if(this.existingPlayerBrowserRef)this.existingPlayerBrowserRef.close(); if(this.matchupResizeObserver)this.matchupResizeObserver.disconnect();if(this.matchupLayoutFrame!==null)cancelAnimationFrame(this.matchupLayoutFrame); if(this.matchupsDialogRef)this.matchupsDialogRef.close(); this.scoreDestroyed=true;this.draftDialog?.close();if(this.playerEditRef)this.playerEditRef.close();if(this.playerImportRef)this.playerImportRef.close();this.scoreVersion++;if(this.scoreReader)this.scoreReader.unsubscribe();if(this.scoreSaver)this.scoreSaver.unsubscribe(); }
     refreshSavedScoreIds():void {
         if(!this.scoringScramble||this.scoreSaveBusy)return;
         this.verifySavedScores();

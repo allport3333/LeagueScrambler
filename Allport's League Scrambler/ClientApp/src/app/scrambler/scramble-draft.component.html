@@ -1,0 +1,107 @@
+﻿<main class="draft-stage" #stage [class.draft-complete]="finished && !reallocating" [class.reallocating]="reallocating"
+    [style.--pool-slot-height.px]="poolSlotHeight" [style.--assignment-height.px]="assignmentHeight"
+    [style.--assignment-font.px]="assignmentFont" [style.--heading-font.px]="headingFont">
+    <header class="draft-header">
+        <h2 id="scramble-draft-title">Watch the Scramble</h2>
+        <div class="draft-progress">
+            <strong>Players assigned: {{ cursor }} / {{ draft.queue.length }}</strong>
+            <progress [value]="cursor" [max]="draft.queue.length" aria-label="Players assigned"></progress>
+            <span>{{ remaining }} remaining</span>
+        </div>
+        <button type="button" (click)="dialog.close()" aria-label="Exit presentation">Exit</button>
+    </header>
+    <section class="waiting" aria-label="Waiting players" [style.height.px]="waitingHeight"
+        [attr.aria-hidden]="finished ? true : null">
+        <div class="pool-details">
+            <strong>Player pool</strong>
+            <span>{{ visible }} visible &middot; {{ remaining - visible }} waiting</span>
+        </div>
+        <div class="pool" [style.--pool-columns]="poolColumns">
+            @for (entry of pool; track $index) {
+                <div class="pool-slot">
+                    @if (entry) {
+                        @for (player of [entry.player]; track player.id) {
+                            <span class="pool-player" [class.top]="player.top" [class.in-flight]="moving?.player.id === player.id"
+                                [attr.data-pool]="player.id" [title]="player.name">
+                                @if (player.top) { <span aria-label="Top Player">&#9733;</span> }
+                                <span class="name">{{ player.name }}</span>
+                            </span>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    </section>
+    <section class="board" #board aria-label="Scramble matchups">
+        @if (pages[page]; as current) {
+            <div class="matchup-board" [style.--columns]="current.columns">
+                @for (window of current.windows; track window.matchup.id + ':' + window.start) {
+                    <article class="matchup" [class.opposing-highlight]="opposingHighlight === window.matchup.id"
+                        [attr.data-matchup]="window.matchup.id">
+                        <h3>{{ window.matchup.label }}
+                            @if (window.start || window.split) {
+                                <small> &middot; roster {{ window.start + 1 }}&ndash;{{ window.end }}</small>
+                            }
+                        </h3>
+                        <div class="sides" [class.has-opponent]="window.matchup.teams.length === 2">
+                            @for (team of window.matchup.teams; track team.id) {
+                                <section class="destination" [class.receiving]="highlighted === team.id" [attr.data-team]="team.id">
+                                    <h4>{{ team.label }}</h4>
+                                    <ul [style.--roster-columns]="rosterColumns">
+                                        @for (player of team.players; track player.id; let index = $index) {
+                                            @if (index >= window.start && index < window.end) {
+                                                <li class="assignment" [class.filled]="revealed(player.id)" [class.draft-female]="revealed(player.id) && player.gender === 'female'"
+                                                    [class.draft-male]="revealed(player.id) && player.gender === 'male'" [attr.data-slot]="player.id">
+                                                    @if (revealed(player.id)) {
+                                                        @if (player.top) { <span aria-label="Top Player" class="top-mark">&#9733;</span> }
+                                                        <span class="name" [title]="player.name">{{ player.name }}</span>
+                                                    }
+                                                </li>
+                                            }
+                                        }
+                                    </ul>
+                                </section>
+                            }
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+    <footer class="playback">
+        <div class="playback-status">
+            <span>{{ draft.matchupCount }} matchups
+                @if (pages.length > 1) { &middot; View {{ page + 1 }} / {{ pages.length }} }
+            </span>
+            @if (moving; as entry) { <strong class="current" [title]="entry.player.name">{{ entry.player.name }}</strong> }
+            <span role="status">{{ status }}</span>
+        </div>
+        <div class="controls">
+            @if (finished) {
+                @if (pages.length > 1) {
+                    <button type="button" [disabled]="reallocating || page === 0" (click)="page = page - 1">Previous view</button>
+                    <button type="button" [disabled]="reallocating || page + 1 === pages.length" (click)="page = page + 1">Next view</button>
+                }
+                <button type="button" data-replay [disabled]="saving || reallocating" (click)="replay()">Replay Scramble</button>
+                <button type="button" class="primary" [disabled]="saving || !actions.canSave()" (click)="save()">Save Scramble</button>
+                <button type="button" [disabled]="!actions.canPrint()" (click)="actions.print()">Print Matchups</button>
+                @if (actions.saveFeedback()) { <span role="status">{{ actions.saveFeedback() }}</span> }
+            } @else {
+                <label>Speed
+                    <select [value]="speed" (change)="speed = $any($event.target).value">
+                        <option>Slow</option><option>Normal</option><option>Fast</option>
+                    </select>
+                </label>
+                <button type="button" data-pause (click)="pauseOrResume()">{{ paused ? 'Resume' : 'Pause' }}</button>
+                <button type="button" (click)="skip()">Skip Animation</button>
+            }
+            @if (fullscreenSupported) {
+                <button type="button" (click)="toggleFullscreen()">{{ fullscreen ? 'Exit Fullscreen' : 'Fullscreen' }}</button>
+            }
+        </div>
+    </footer>
+    <div #ghost class="flight" [hidden]="!moving" [class.top]="moving?.player.top" aria-hidden="true">
+        @if (moving?.player.top) { <span>&#9733;</span> }
+        <span class="name">{{ moving?.player.name }}</span>
+    </div>
+</main>

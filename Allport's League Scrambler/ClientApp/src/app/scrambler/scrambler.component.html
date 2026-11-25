@@ -264,10 +264,17 @@ Apply Top Players (Male Standings)
     </ul>
   </section>
 }
+<ng-template #watchScrambleOption>
+  <div class="watch-scramble-option">
+    <mat-checkbox [(ngModel)]="watchScramble" [disabled]="generationBusy" aria-describedby="watch-scramble-description">Watch the Scramble</mat-checkbox>
+    <p id="watch-scramble-description" class="workspace-help">Watch players move into their teams as the scramble is revealed.</p>
+  </div>
+</ng-template>
 @if (hideInputOptions) {
   <div class="text-center mt-3">
+    <ng-container *ngTemplateOutlet="watchScrambleOption"></ng-container>
     @if (!lockedResults) {
-      <button style="margin-top:10px; margin-left: 10px" (click)="scramblePlayers(false)" [disabled]="generationBusy" mat-raised-button color="primary">Scramble Players</button>
+      <button style="margin-top:10px; margin-left: 10px" (click)="scramblePlayers(false)" [disabled]="generationBusy" mat-raised-button color="primary">{{ watchScramble ? 'Scramble & Watch' : 'Scramble Players' }}</button>
     }
     <div class="mt-2">
       <mat-checkbox [(ngModel)]="completeRandom"> Completely Random?</mat-checkbox>
@@ -277,6 +284,7 @@ Apply Top Players (Male Standings)
 </div>
 </div>
 <div class="scramble-generate-area">@if (!hideInputOptions) {
+  <ng-container *ngTemplateOutlet="watchScrambleOption"></ng-container>
   <div class="progression-actions"><button (click)="scramblePlayers(false)"
     mat-raised-button
     class="scramble-button primary-action"
@@ -286,7 +294,7 @@ Apply Top Players (Male Standings)
                             [ngClass]="{'enabled' : selectedList && selectedList.length > 0,
                                             'disabled': !selectedList || selectedList.length === 0
                                             }">
-    Scramble Players
+    {{ watchScramble ? 'Scramble & Watch' : 'Scramble Players' }}
   </button>@if (!selectedList.length) {
   <p class="workspace-help">Select players before scrambling.</p>
   }@if (locked) {
