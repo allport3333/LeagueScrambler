@@ -9,29 +9,31 @@
     } @empty {
       @if (!busy && !error) { <p>No tournament rounds have been saved yet.</p> }
     }
-  } @else if (wizardStep() === 7 && view !== 'complete' && !managementOpen) {
-    <nav aria-label="Run Tournament" class="step-actions">
-    <button type="button" [attr.aria-pressed]="step === 'rounds'" (click)="changeRunView('rounds')">Matchups & Printing</button>
-    @if (tournamentComplete) {
-      <button type="button" [attr.aria-pressed]="step === 'complete'" (click)="changeRunView('complete')">Final Standings</button>
-    }
-    @if (rounds.length && !managementOpen) { <button type="button" [disabled]="hasUnsavedChanges" (click)="openManagement()">Manage Existing Rounds</button> }
-    <button type="button" [attr.aria-pressed]="step === 'scores'" [disabled]="!rounds.length" (click)="openRememberedScores()">Scores</button>
-  </nav>
   }
   @if (error) { <p role="alert">{{ error }}</p> }
-  @if (notice && noticeView === view) { <p role="status">{{ notice }}</p> }
   @if (busy) { <p role="status">Working…</p> }
   @if (state; as data) {
-@if (wizardStep() === 7 && view !== 'complete') {
-      @if (rounds.length) { <p class="summary">{{ completed }} of {{ data.settings.numberOfRounds }} rounds completed</p> }
-      <details class="roster-summary">
-        <summary>Participants and saved rounds</summary>
-        <p>{{ data.roster.length }} registered · {{ data.presentIds.length }} checked in · {{ eligible.length }} eligible · {{ rounds.length }} saved rounds</p>
-      </details>
+    @if (wizardStep() === 7) {
+      <h2>Run Tournament</h2>
+      <p class="summary">{{ completed }} of {{ data.settings.numberOfRounds }} rounds completed</p>
     }
     <fieldset [disabled]="busy">
-      @if (!managementOpen && view === 'configuration') {
+      @if (wizardStep() === 7 && rounds.length) {
+        <div class="step-actions" role="group" aria-label="Tournament actions">
+          <button type="button" [attr.aria-expanded]="managementOpen" [disabled]="hasUnsavedChanges"
+            (click)="managementOpen ? closeManagement() : openManagement()">Manage Rounds</button>
+          @if (activeRounds.length) {
+            <button type="button" [attr.aria-expanded]="printingOpen" (click)="printingOpen = !printingOpen">Print Rounds</button>
+          }
+          @if (nextRound; as round) {
+            <button type="button" class="primary" [disabled]="additionalSettings || availabilityDraft || !!preview.length"
+              (click)="openScores(round)">Continue: Enter Round {{ round.roundNumber }} Scores</button>
+          } @else if (completed) {
+            <button type="button" class="primary" (click)="standingsRequested.emit()">View Standings</button>
+          }
+        </div>
+      }
+      @if (view === 'configuration' && (!managementOpen || additionalSettings)) {
         <h2>{{ additionalSettings ? 'Add Additional Rounds' : 'Team & Round Setup' }}</h2>
         <div class="settings-grid">
           <section class="settings-card">
@@ -188,7 +190,8 @@
               </div>
               <p>Changes apply to the next generation. The saved round stays as it is.</p>
               @if (selectedByeRound?.status === 'unplayed') {
-                <button type="button" (click)="previewByeReplacement()">Preview Replacement for Round {{ byeRound }}</button>
+                <button #redrawBye type="button" [attr.aria-busy]="redrawTrigger === redrawBye"
+                  (click)="previewByeReplacement(redrawBye)">{{ redrawTrigger === redrawBye ? 'Generating preview…' : 'Redraw Round Teams for Round ' + byeRound }}</button>
               }
             }
           }
@@ -217,7 +220,7 @@
       </ng-template>
       @if (additionalSettings) {
         @if (editSettings.historicalScrambleNumbers.length) {
-          <label class="choice"><input type="checkbox" [ngModel]="fallback" (ngModelChange)="fallback = $event; preview = []">
+          <label class="choice"><input type="checkbox" [ngModel]="fallback" (ngModelChange)="fallback = $event; cancelPreview()">
             If strict avoidance is impossible, allow the minimum-repeat fallback
           </label>
         }
@@ -235,10 +238,15 @@
               }
             </ul>
       </ng-template>
-      @if (managementOpen) {
+      @if (managementOpen && !additionalSettings) {
+        <section class="run-panel" aria-label="Manage Rounds">
         <h2>Manage Existing Rounds</h2>
         <div class="step-actions">
-          <button type="button" (click)="closeManagement()">Back to Tournament</button>
+          <button type="button" (click)="closeManagement()">{{ wizardStep() === 7 ? 'Close Round Management' : 'Back to Tournament' }}</button>
+          @if (wizardStep() === 7) {
+            <button type="button" [disabled]="dirty || remainingRounds < 1 || !!preview.length || !!availabilityDraft"
+              (click)="openAdditionalRounds()">Add Additional Rounds</button>
+          }
           @if (!availabilityDraft) { <button type="button" class="primary" (click)="beginAvailability()">Update Remaining Players</button> }
         </div>
         @if (availabilityDraft) {
@@ -250,7 +258,7 @@
             <p>Uses your saved team structure and generation preferences. Each round keeps its saved games per matchup.</p>
             <ng-container *ngTemplateOutlet="availabilityEditor"></ng-container>
             @if (editSettings.historicalScrambleNumbers.length) {
-              <label class="choice"><input type="checkbox" [ngModel]="fallback" (ngModelChange)="fallback = $event; preview = []"> Allow the minimum-repeat fallback if strict avoidance is impossible</label>
+              <label class="choice"><input type="checkbox" [ngModel]="fallback" (ngModelChange)="fallback = $event; cancelPreview()"> Allow the minimum-repeat fallback if strict avoidance is impossible</label>
             }
             <div class="step-actions">
               <button type="button" class="primary" [disabled]="!unplayedRounds.length || eligible.length < 2" (click)="propose()">Preview Updated Rounds</button>
@@ -260,7 +268,7 @@
           </section>
         } @else {
           @if (editSettings.historicalScrambleNumbers.length) {
-            <label class="choice"><input type="checkbox" [ngModel]="fallback" (ngModelChange)="fallback = $event; preview = []"> Allow the minimum-repeat fallback if strict avoidance is impossible</label>
+            <label class="choice"><input type="checkbox" [ngModel]="fallback" (ngModelChange)="fallback = $event; cancelPreview()"> Allow the minimum-repeat fallback if strict avoidance is impossible</label>
           }
           <div class="step-actions">
             <button type="button" [disabled]="!removalSelection.size" (click)="removeRequest = {numbers: selectedRemovalNumbers, voidScored: false}">Delete Selected Rounds ({{ removalSelection.size }})</button>
@@ -289,29 +297,43 @@
               } @else if (round.status === "unplayed") {
                 <div class="step-actions">
                   <label class="choice"><input type="checkbox" [checked]="removalSelection.has(round.roundNumber)" (change)="$any($event.target).checked ? removalSelection.add(round.roundNumber) : removalSelection.delete(round.roundNumber)"> Select for deletion</label>
-                  <button type="button" [disabled]="dirty" (click)="propose(round.roundNumber)">Redraw Round Teams</button>
+                  <button #redrawManaged type="button" [disabled]="dirty" [attr.aria-busy]="redrawTrigger === redrawManaged"
+                    (click)="propose(round.roundNumber, redrawManaged)">{{ redrawTrigger === redrawManaged ? 'Generating preview…' : 'Redraw Round Teams' }}</button>
                   <button type="button" (click)="removeRequest = {numbers: [round.roundNumber], voidScored: false}">Delete Round</button>
                 </div>
               } @else {
                 <div class="step-actions">
-                  <button type="button" (click)="closeManagement(); openScores(round)">Edit Scores</button>
+                  <button type="button" [disabled]="!!preview.length" (click)="openScores(round)">{{ roundAction(round) }}</button>
                   @if (canVoid) { <button type="button" (click)="removeRequest = {numbers: [round.roundNumber], voidScored: true}">Void Round</button> }
                 </div>
               }
-              <ng-container *ngTemplateOutlet="roundTeams; context: {$implicit: round}"></ng-container>
+              @if (wizardStep() !== 7 || round.status === 'voided') {
+                <ng-container *ngTemplateOutlet="roundTeams; context: {$implicit: round}"></ng-container>
+              }
             </details>
           } @empty { <p>No saved rounds.</p> }
         }
+        </section>
       }
         @if (preview.length) {
           <section class="preview">
-            <h3>{{ additionalSettings ? 'Proposed Additional Rounds' : managementOpen ? 'Proposed Updated Rounds' : 'Proposed Rounds' }}</h3>
+            @if (redrawRound; as number) {
+              <div class="redraw-flight" hidden aria-hidden="true">New Round {{ number }} Teams</div>
+            }
+            <div [class.redraw-waiting]="redrawState === 'animating'" [class.redraw-revealing]="redrawState === 'revealing'"
+              [attr.inert]="redrawTransitionPending ? '' : null" (animationend)="finishRedrawReveal()">
+            @if (redrawRound; as number) {
+              <h3 class="redraw-heading" tabindex="-1">New Team Assignments</h3>
+              <p>Redrawing Round {{ number }} may change every matchup in this round. Saved teams stay in place until you confirm.</p>
+            } @else {
+              <h3>{{ additionalSettings ? 'Proposed Additional Rounds' : managementOpen ? 'Proposed Updated Rounds' : 'Proposed Rounds' }}</h3>
+            }
             <p>{{ repeats }} teammate repeat occurrences relative to saved and previewed rounds.</p>
             @if (relaxedRounds.length) { <p>Historical fallback used in rounds {{ relaxedRounds.join(', ') }}.</p> }
             @if (additionalSettings) { <p>Saving appends these rounds. Existing assignments and scores stay in place.</p> }
             @else { <p>Saving replaces only the listed unplayed rounds. Other rounds keep their assignments and scores.</p> }
             @for (round of preview; track round.roundNumber) {
-              <details>
+              <details [open]="!!redrawRound">
                 <summary>Round {{ round.roundNumber }}</summary>
                 <div class="matchup-grid">
                   @for (team of round.teams; track $index; let index = $index) {
@@ -337,105 +359,15 @@
                 }
               </details>
             }
-            <button type="button" class="primary" (click)="saveRounds()">{{ additionalSettings ? 'Save Additional Rounds' : managementOpen ? 'Apply Changes' : 'Save Proposed Rounds' }}</button>
-            <button type="button" (click)="preview = []">Discard Preview</button>
+            <div [class.redraw-waiting]="redrawTransitionPending">
+              <button type="button" class="primary" (click)="saveRounds()">{{ redrawRound ? 'Save New Round Teams' : additionalSettings ? 'Save Additional Rounds' : managementOpen ? 'Apply Changes' : 'Save Proposed Rounds' }}</button>
+              <button type="button" (click)="cancelPreview()">{{ redrawRound ? 'Cancel' : 'Discard Preview' }}</button>
+            </div>
+            </div>
           </section>
         }
-      @if (!managementOpen && view === 'rounds') {
-                <h2>{{ wizardStep() === 6 ? 'Generate & Preview Tournament' : 'Run Tournament' }}</h2>
-        @if (wizardStep() === 6) {
-          <dl class="overview">
-            <div><dt>Participants</dt><dd>{{ data.roster.length }} registered · {{ eligible.length }} eligible</dd></div>
-            <div><dt>Rounds</dt><dd>{{ completed }} of {{ data.settings.numberOfRounds }} completed</dd></div>
-            <div><dt>Generation mode</dt><dd>{{ data.settings.balanceGenders ? 'Balanced teams' : 'Completely random' }} · {{ data.settings.minimizeRepeats ? 'Minimize repeats' : 'Allow repeats' }}</dd></div>
-            <div><dt>Format</dt><dd>{{ rounds.length ? (gamesPerMatchupSummary || "No active") : data.settings.gamesPerMatchup }} games per matchup · {{ data.settings.maximumTeamSize ? 'Up to ' + data.settings.maximumTeamSize + ' per team' : data.settings.numberOfTeams + ' teams' }}</dd></div>
-          </dl>
-        }
-        @if (!data.mode) { <p>Choose an eligibility mode in Confirm Participants before generating rounds.</p> }
-        @if (!settingsSaved || dirty) { <p>Save team and round settings before generating.</p> }
-        @if (data.settings.historicalScrambleNumbers.length) {
-          <label class="choice"><input type="checkbox" [ngModel]="fallback" (ngModelChange)="fallback = $event; preview = []">
-            If strict avoidance is impossible, allow the minimum-repeat fallback
-          </label>
-        }
-@if (tournamentComplete) {
-          <section class="completion-banner">
-            <strong>Tournament complete</strong>
-            <button type="button" class="primary" (click)="standingsRequested.emit()">View Final Standings</button>
-          </section>
-        }
-        <div class="step-actions">
-          @if (!preview.length && (!rounds.length || hasUnplayed )) {
-            <button type="button" [class.primary]="wizardStep() === 6 || !rounds.length" [disabled]="!settingsSaved || dirty || !data.mode || eligible.length < 2" (click)="propose()">
-              {{ rounds.length ? 'Preview All Unplayed Rounds' : 'Generate Tournament Rounds' }}
-            </button>
-          }
-          @if (nextRound; as round) { @if (wizardStep() === 7) {
-            <button type="button" class="primary" (click)="openScores(round)">Continue: Enter Round {{ round.roundNumber }} Scores</button>
-          } }
-        </div>
-        @if (rounds.length && wizardStep() === 7) {
-          <details class="print-options">
-            <summary>Printing options</summary>
-            <div class="print-toolbar">
-              <ng-container *ngTemplateOutlet="printLayout"></ng-container>
-              <label>Current round
-                <select class="form-control" [ngModel]="currentPrintRound?.roundNumber" (ngModelChange)="printRoundNumber = $event">
-                  @for (round of activeRounds; track round.roundNumber) { <option [ngValue]="round.roundNumber">Round {{ round.roundNumber }}</option> }
-                </select>
-              </label>
-              <button type="button" [disabled]="!currentPrintRound" (click)="currentPrintRound && print([currentPrintRound])">Print Current Round</button>
-              <button type="button" (click)="print(activeRounds)">Print All Rounds</button>
-              <button type="button" [disabled]="!printSelection.size" aria-describedby="print-selection" (click)="print(roundsForPrinting)">Print Selected Rounds</button>
-            </div>
-            <small id="print-selection">{{ printSelection.size }} selected. Select rounds in the list to print a subset.</small>
-          </details>
-        }
-        @for (round of activeRounds; track round.roundNumber) {
-          <details class="saved-round">
-            <summary class="round-header">
-              <span class="round-title">Round {{ round.roundNumber }}</span>
-              <span class="round-state" [attr.data-status]="round.status">{{ roundStatus(round) }}</span>
-              <span class="round-count">{{ matchupCount(round.teams.length) }} matchups · {{ round.teams.length }} teams</span>
-              @if (wizardStep() === 7) {
-                <label class="choice print-check" (click)="$event.stopPropagation()">
-                  <input type="checkbox" [checked]="printSelection.has(round.roundNumber)"
-                    (change)="$any($event.target).checked ? printSelection.add(round.roundNumber) : printSelection.delete(round.roundNumber)"> Select for Printing
-                </label>
-              }
-            </summary>
-            <ng-container *ngTemplateOutlet="roundTeams; context: {$implicit: round}"></ng-container>
-            <div class="step-actions">
-              <button type="button" class="primary" (click)="openScores(round)">{{ roundAction(round) }}</button>
-              @if (wizardStep() === 7) { <button type="button" (click)="print([round])">Print Round {{ round.roundNumber }}</button> }
-              @if (round.status === 'unplayed' && !dirty) { <button type="button" (click)="propose(round.roundNumber)">Preview Replacement</button> }
-            </div>
-          </details>
-        }
-      }
-      @if (!managementOpen && view === 'complete') {
-        <h2>Tournament Complete</h2>
-        <p class="summary">{{ completed }} of {{ data.settings.numberOfRounds }} rounds completed.</p>
-        <app-league-standings [fixedLeagueId]="leagueId()" />
-        <details class="completed-actions">
-          <summary>Matchups, scores, and printing</summary>
-          <ng-container *ngTemplateOutlet="printLayout"></ng-container>
-          <div class="step-actions">
-            <button type="button" (click)="print(activeRounds)">Print Tournament Results</button>
-            <button type="button" (click)="step = 'rounds'">Review Matchups</button>
-            <button type="button" (click)="openRememberedScores()">Review or Correct Scores</button>
-            <button type="button" (click)="openManagement()">Manage Existing Rounds</button>
-          </div>
-        </details>
-      }
       @if (!managementOpen && view === 'scores' && scoreRound) {
-        <h2>Round {{ scoreRound.roundNumber }} Scores</h2>
-        @if (scoreFeedback; as feedback) {
-          <div class="score-feedback" role="status">
-            <strong>{{ feedback.title }}</strong>
-            <div>{{ feedback.message }}</div>
-          </div>
-        }
+        <section class="run-panel" aria-label="Round scores"><h2 class="score-heading" tabindex="-1">Round {{ scoreRound.roundNumber }} Scores</h2>
         <label>Round
           <select class="form-control" [ngModel]="scoreRound" (ngModelChange)="openScores($event)">
             @for (round of activeRounds; track round.roundNumber) { <option [ngValue]="round">Round {{ round.roundNumber }}</option> }
@@ -453,7 +385,86 @@
             </fieldset>
           }
         </div>
-        <button type="button" class="primary" (click)="saveScores()">Save Round Scores</button>
+        @if (scoreValidation) { <p role="alert">{{ scoreValidation }}</p> }
+        <div class="step-actions">
+          <button type="button" class="primary" (click)="saveScores()">Save Round Scores</button>
+          <button type="button" (click)="closeScores()">Back to Rounds</button>
+        </div>
+        </section>
+      }
+      @if (!managementOpen && view === 'rounds') {
+        @if (wizardStep() === 6) {
+          <h2>Generate & Preview Tournament</h2>
+          <dl class="overview">
+            <div><dt>Participants</dt><dd>{{ data.roster.length }} registered · {{ eligible.length }} eligible</dd></div>
+            <div><dt>Rounds</dt><dd>{{ completed }} of {{ data.settings.numberOfRounds }} completed</dd></div>
+            <div><dt>Generation mode</dt><dd>{{ data.settings.balanceGenders ? 'Balanced teams' : 'Completely random' }} · {{ data.settings.minimizeRepeats ? 'Minimize repeats' : 'Allow repeats' }}</dd></div>
+            <div><dt>Format</dt><dd>{{ rounds.length ? (gamesPerMatchupSummary || "No active") : data.settings.gamesPerMatchup }} games per matchup · {{ data.settings.maximumTeamSize ? 'Up to ' + data.settings.maximumTeamSize + ' per team' : data.settings.numberOfTeams + ' teams' }}</dd></div>
+          </dl>
+        }
+        @if (!data.mode) { <p>Choose an eligibility mode in Confirm Participants before generating rounds.</p> }
+        @if (!settingsSaved || dirty) { <p>Save team and round settings before generating.</p> }
+        @if (data.settings.historicalScrambleNumbers.length) {
+          <label class="choice"><input type="checkbox" [ngModel]="fallback" (ngModelChange)="fallback = $event; cancelPreview()">
+            If strict avoidance is impossible, allow the minimum-repeat fallback
+          </label>
+        }
+        @if (!preview.length && (!rounds.length || hasUnplayed)) {
+          <div class="step-actions">
+            <button type="button" [class.primary]="wizardStep() === 6 || !rounds.length" [disabled]="!settingsSaved || dirty || !data.mode || eligible.length < 2" (click)="propose()">
+              {{ rounds.length ? 'Preview All Unplayed Rounds' : 'Generate Tournament Rounds' }}
+            </button>
+          </div>
+        }
+      }
+      @if (wizardStep() === 7 && activeRounds.length && printingOpen) {
+          <section class="run-panel print-options" aria-label="Print Rounds">
+            <div class="print-toolbar">
+              <ng-container *ngTemplateOutlet="printLayout"></ng-container>
+              <label>Current round
+                <select class="form-control" [ngModel]="currentPrintRound?.roundNumber" (ngModelChange)="printRoundNumber = $event">
+                  @for (round of activeRounds; track round.roundNumber) { <option [ngValue]="round.roundNumber">Round {{ round.roundNumber }}</option> }
+                </select>
+              </label>
+              <button type="button" [disabled]="!currentPrintRound" (click)="currentPrintRound && print([currentPrintRound])">Print Current Round</button>
+              <button type="button" (click)="print(activeRounds)">Print All Rounds</button>
+              <button type="button" [disabled]="!roundsForPrinting.length" aria-describedby="print-selection" (click)="print(roundsForPrinting)">Print Selected Rounds</button>
+            </div>
+            <small id="print-selection">{{ printSelection.size }} selected. Select rounds in the list to print a subset.</small>
+          </section>
+      }
+      @if (wizardStep() === 7 || (!managementOpen && view === 'rounds')) {
+        <section class="round-list" aria-label="Saved tournament rounds">
+        @for (round of (wizardStep() === 7 ? rounds : activeRounds); track round.roundNumber) {
+          <details class="saved-round" [open]="expandedRounds.has(round.roundNumber)"
+            (toggle)="updateExpanded(round.roundNumber, $any($event.target).open)">
+            <summary class="round-header" [id]="'run-round-' + round.roundNumber">
+              <span class="round-title">Round {{ round.roundNumber }}</span>
+              <span class="round-state" [attr.data-status]="round.status">{{ roundStatus(round) }}</span>
+              <span class="round-count">{{ matchupCount(round.teams.length) }} matchups · {{ round.teams.length }} teams</span>
+              @if (wizardStep() === 7 && round.status !== 'voided') {
+                <label class="choice print-check" (click)="$event.stopPropagation()">
+                  <input type="checkbox" [checked]="printSelection.has(round.roundNumber)"
+                    (change)="$any($event.target).checked ? printSelection.add(round.roundNumber) : printSelection.delete(round.roundNumber)"> Select for Printing
+                </label>
+              }
+            </summary>
+            <ng-container *ngTemplateOutlet="roundTeams; context: {$implicit: round}"></ng-container>
+            @if (round.status !== 'voided') {
+            <div class="step-actions">
+              <button type="button" class="primary" [disabled]="additionalSettings || !!availabilityDraft || !!preview.length"
+                (click)="openScores(round)">{{ roundAction(round) }}</button>
+              @if (wizardStep() === 7) { <button type="button" (click)="print([round])">Print Round {{ round.roundNumber }}</button> }
+              @if (round.status === 'unplayed' && !dirty) {
+                <button #redrawSaved type="button" [disabled]="managementOpen || !!additionalSettings || hasUnsavedChanges"
+                  [attr.aria-busy]="redrawTrigger === redrawSaved"
+                  (click)="propose(round.roundNumber, redrawSaved)">{{ redrawTrigger === redrawSaved ? 'Generating preview…' : 'Redraw Round Teams' }}</button>
+              }
+            </div>
+            }
+          </details>
+        } @empty { @if (!busy && wizardStep() === 7) { <p class="summary">No active rounds have been saved yet.</p> } }
+        </section>
       }
     </fieldset>
   }

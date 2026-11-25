@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, OnInit, 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { TournamentNotifications } from './tournament-notifications.service';
 
 interface AttendancePlayer { id: number; firstName: string; lastName: string; present: boolean; }
 interface AttendanceState {
@@ -91,7 +92,6 @@ interface AttendanceState {
                     </ul>
             }
             @if (loading) { <p role="status">Loading check-in…</p> }
-            @if (notice) { <p role="status">{{ notice }}</p> }
             @if (error) { <p role="alert">{{ error }}</p> }
         </main>
     `
@@ -107,7 +107,7 @@ export class TournamentCheckInComponent implements OnInit {
     loading = true;
     busy = false;
     error = '';
-    notice = '';
+    private readonly notifications = inject(TournamentNotifications);
     filter = '';
     attendanceFilter = 'all';
 
@@ -132,7 +132,7 @@ export class TournamentCheckInComponent implements OnInit {
 
     async load() {
         this.loading = true;
-        this.error = this.notice = '';
+        this.error = '';
         try {
             this.state = await this.request(this.http.get<AttendanceState>(this.url));
             this.versionChanged.emit(this.state.version);
@@ -155,21 +155,22 @@ export class TournamentCheckInComponent implements OnInit {
     }
 
     async setPresence(player: AttendancePlayer) {
-        await this.change('/players/' + player.id, { present: !player.present }, player.present ? 'Check-in removed.' : 'Check-in confirmed.');
+        await this.change('/players/' + player.id, { present: !player.present }, player.present ? 'Player check-in removed.' : 'Player checked in.');
     }
 
     private async change(path: string, input: object, notice: string): Promise<boolean> {
         if (this.busy) return false;
         this.busy = true;
-        this.error = this.notice = '';
+        this.error = '';
         try {
             await this.request(this.http.put(this.url + path, input));
             await this.load();
             if (this.error) return false;
-            this.notice = notice;
+            this.notifications.success(notice);
             return true;
         } catch (error) {
-            this.error = error.error?.message || 'The check-in change could not be saved.';
+            if (!this.destroy.destroyed)
+                this.notifications.error(error.error?.message || 'The check-in change could not be saved.');
             return false;
         } finally { this.busy = false; }
     }

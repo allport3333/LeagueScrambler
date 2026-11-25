@@ -17,7 +17,6 @@ namespace Allport_s_League_Scrambler.Controllers
     {
         public sealed record RemoveRoundsInput(Guid Version, int[] RoundNumbers, bool VoidScored = false);
 
-        [Authorize(Policy = "LeagueManagement")]
         [HttpPost("rounds/remove")]
         [SameOrigin]
         public async Task<IActionResult> RemoveRounds(int leagueId, [FromBody] RemoveRoundsInput input)

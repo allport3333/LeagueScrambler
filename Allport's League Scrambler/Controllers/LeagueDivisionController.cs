@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Security;
 using Allport_s_League_Scrambler.Models;
@@ -47,7 +48,7 @@ namespace Allport_s_League_Scrambler.Controllers
         [Authorize(Policy = "LeagueManagement")]
         public IActionResult Add([FromBody] AddLeagueDivisionRequest request)
         {
-            var context = new DataContext();
+            using var context = new DataContext();
 
             if (request == null)
             {
@@ -69,10 +70,14 @@ namespace Allport_s_League_Scrambler.Controllers
                 return BadRequest(new { message = "Name is required." });
             }
 
+            using var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
             if (!LeagueAccess.CanManage(User, context, request.LeagueId))
             {
                 return Forbid();
             }
+
+            if (!context.Leagues.Any(league => league.ID == request.LeagueId))
+                return NotFound("League not found.");
 
             // Optional: prevent duplicates by Code per league
             var exists = context.LeagueDivision
@@ -93,6 +98,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             context.LeagueDivision.Add(newDivision);
             context.SaveChanges();
+            transaction.Commit();
 
             return Ok(new { message = "Division added." });
         }

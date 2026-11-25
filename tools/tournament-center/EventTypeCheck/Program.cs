@@ -15,6 +15,11 @@ using Microsoft.EntityFrameworkCore;
 
 Environment.SetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION",
     "Server=lpc:localhost;Database=LeagueScramblerDev;Integrated Security=True;Encrypt=Optional;TrustServerCertificate=False");
+if (args.SequenceEqual(new[] { "--deletion" }))
+{
+    await TournamentDeletionCheck.Run();
+    return;
+}
 await using var db = new DataContext();
 Assert(await db.Database.SqlQueryRaw<string>("SELECT DB_NAME() AS [Value]").SingleAsync() == "LeagueScramblerDev", "Development database");
 var ownerId = await db.Users.Where(user => user.UserRoleId == 1).Select(user => user.UserId).FirstAsync();

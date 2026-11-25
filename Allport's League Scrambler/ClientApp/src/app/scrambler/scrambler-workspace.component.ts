@@ -1,9 +1,15 @@
-import { Component, Injectable, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Injectable, ChangeDetectionStrategy, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
 import { catchError, filter, map, switchMap, take } from 'rxjs/operators';
 import { AuthService } from '../auth.service';
 import { LoginService } from '../services/login.service';
+
+export function requireSignedInTournament() {
+    const router = inject(Router);
+    return inject(AuthService).isLoggedIn$.pipe(take(1),
+        map(signedIn => signedIn || router.createUrlTree(['/access-denied'])));
+}
 
 @Injectable({ providedIn: 'root' })
 export class LeagueManagementGuard  {

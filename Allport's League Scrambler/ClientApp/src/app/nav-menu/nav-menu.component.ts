@@ -37,7 +37,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     // Presentation metadata only: these are the existing routes and visibility rules.
     readonly destinations: NavItem[] = [
         { route: '/', label: 'Home', icon: 'home' },
-        { route: '/tournament', label: 'Tournament Center', icon: 'emoji_events', roles: ['Admin', 'Manager'], signedInOnly: true },
+        { route: '/tournament', label: 'Tournament Center', icon: 'emoji_events', signedInOnly: true },
         { route: '/scrambler', label: 'Scrambler', icon: 'shuffle', roles: ['Admin', 'Manager'] },
         { route: '/team-scores', label: 'Teams & Scores', icon: 'group', roles: ['Admin', 'Manager'] },
         { route: '/league-dashboard', label: 'League Dashboard', icon: 'dashboard', roles: ['Admin', 'Manager', 'Player'] },
@@ -58,20 +58,18 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
 
     get primaryDestinations(): NavItem[] {
         const tournament = this.leagues?.find(event => event.id === this.selectedLeagueId && event.eventTypeId === 2);
-        const manageCurrent = tournament && (this.userRole === 'Admin' || tournament.canManageTournament);
         const items = this.destinations.filter(item =>
             (!tournament || !['/sign-in', '/team-scores', '/league-dashboard', '/scrambler'].some(route => route === item.route)) &&
             (!item.signedInOnly || (this.authenticationChecked && this.loggedIn)) &&
             (!item.roles || item.roles.includes(this.userRole)))
             .filter(item => !item.children || item.children.length)
-            .map(item => item.children?.length === 1 ? item.children[0] :
-                item.route === '/tournament' && manageCurrent ? { ...item, route: ['/tournament', tournament.id] } : item);
+            .map(item => item.children?.length === 1 ? item.children[0] : item);
         if (tournament && this.loggedIn) {
             const standings = items.findIndex(item => item.route === '/standings');
             if (standings >= 0) items[standings] = {
                 label: 'Standings', icon: 'emoji_events', route: '/standings', queryParams: { leagueId: this.selectedLeagueId, tournament: 1 }
             };
-            const organizer = this.userRole === 'Admin' || this.userRole === 'Manager';
+            const organizer = this.userRole === 'Admin' || this.userRole === 'Manager' || tournament.canManageTournament;
             if (!organizer) items.splice(1, 0, {
                 label: 'Matchups', icon: 'view_list', route: ['/tournament', this.selectedLeagueId, 'rounds']
             });

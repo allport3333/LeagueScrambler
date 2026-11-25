@@ -468,6 +468,28 @@ input {
 .red-snackbar {
   @include mat.snack-bar-overrides((container-color: #fff0f1, supporting-text-color: #861d2c, button-color: #861d2c));
 }
+.tournament-success-snackbar {
+  @include mat.snack-bar-overrides((
+    container-color: var(--hub-win-surface, #e7f4eb),
+    supporting-text-color: var(--hub-win-text, #16472b),
+    button-color: var(--hub-win-text, #16472b)
+  ));
+}
+.cdk-global-overlay-wrapper:has(> .cdk-overlay-pane > mat-snack-bar-container),
+.cdk-global-overlay-wrapper:has(> .cdk-overlay-pane > mat-dialog-container) {
+  align-items: center !important;
+  justify-content: center !important;
+}
+.cdk-global-overlay-wrapper > .cdk-overlay-pane:has(> mat-snack-bar-container) {
+  max-inline-size: calc(100vw - 24px);
+}
+.mat-mdc-snack-bar-container .mdc-snackbar__surface {
+  max-block-size: calc(100dvh - 24px);
+  overflow: auto;
+}
+.cdk-overlay-pane.mat-mdc-dialog-panel {
+  max-block-size: calc(100dvh - 24px);
+}
 .custom-dialog {
   @include mat.dialog-overrides((container-shape: 6px, subhead-color: var(--hub-heading, #293d69)));
 }

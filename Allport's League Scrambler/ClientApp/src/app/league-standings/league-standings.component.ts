@@ -63,7 +63,7 @@ export class LeagueStandingsComponent implements OnInit {
         const step = Number(this.route.snapshot.queryParamMap.get('returnStep'));
         const runView = this.route.snapshot.queryParamMap.get('returnView');
         return { query: manager ? { scoreRound: scoreRound > 0 ? scoreRound : undefined,
-            step: step > 0 ? step : undefined, runView: runView === 'rounds' ? runView : undefined } : undefined, label: 'Back to ' + name + (manager ? '' : ' Matchups'),
+            step: step > 0 ? step : undefined, runView: ['rounds', 'scores', 'management', 'complete'].includes(runView) ? runView : undefined } : undefined, label: 'Back to ' + name + (manager ? '' : ' Matchups'),
             route: manager ? ['/tournament', event.id] : ['/tournament', event.id, 'rounds'] };
     }
     sortDirection: 'asc' | 'desc' = 'asc';

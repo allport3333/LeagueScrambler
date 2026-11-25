@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Subject, catchError, firstValueFrom, of, switchMap, timer } from 'rxjs';
 import { PlayerService } from './services/player.service';
+import { TournamentNotifications } from './tournament-notifications.service';
 
 interface NameMatch extends Participant { exact: boolean; isMale: boolean; }
 interface Participant { id: number; firstName: string; lastName: string; present?: boolean; }
@@ -13,6 +14,7 @@ interface Participant { id: number; firstName: string; lastName: string; present
     changeDetection: ChangeDetectionStrategy.Eager,
     imports: [FormsModule, ExistingPlayerBrowserComponent],
     styles: [`
+        h2, .participant-count { text-align: center; }
         .actions, li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
         li, li span { min-width: 0; overflow-wrap: anywhere; }
         ul { list-style: none; margin: 8px 0; padding: 0; }
@@ -27,9 +29,8 @@ interface Participant { id: number; firstName: string; lastName: string; present
     `],
     template: `
         <h2>Manage Participants</h2>
-        <p>{{ roster.length }} registered · {{ checkedIn }} checked in · {{ eligible }} eligible</p>
+        <p class="participant-count">{{ roster.length }} registered · {{ checkedIn }} checked in · {{ eligible }} eligible</p>
         @if (error) { <p role="alert">{{ error }}</p> }
-        @if (notice) { <p role="status">{{ notice }}</p> }
         <div class="sections">
             <section>
                 <h3>Add Participants</h3>
@@ -83,6 +84,7 @@ export class TournamentParticipantsComponent implements OnInit {
     readonly leagueId = input.required<number>();
     readonly tournamentName = input.required<string>();
     private readonly http = inject(HttpClient);
+    private readonly notifications = inject(TournamentNotifications);
     private readonly players = inject(PlayerService);
     private readonly destroy = inject(DestroyRef);
     roster: Participant[] = [];
@@ -100,7 +102,6 @@ export class TournamentParticipantsComponent implements OnInit {
     mode = 0;
     busy = false;
     error = '';
-    notice = '';
     get hasUnsavedChanges() { return !!(this.firstName.trim() || this.lastName.trim() || this.gender); }
     get checkedIn() { return this.roster.filter(player => player.present).length; }
     private unavailableIds: number[] = [];
@@ -109,9 +110,13 @@ export class TournamentParticipantsComponent implements OnInit {
 
     ngOnInit() {
         this.pickerData = { leagueId: this.leagueId(), leagueName: this.tournamentName(),
-            onAdded: result => {
+            onAdded: (result, reconciled) => {
+                if (this.destroy.destroyed) return;
                 if (!this.hasPlayer(result.player.id)) this.roster = [...this.roster, result.player];
-                void this.reload().catch(() => {});
+                if (!reconciled && !result.alreadyMember) this.notifications.success('Participant added to the tournament.');
+                void this.reload().catch(() => {
+                    if (!this.destroy.destroyed) this.notifications.error('The participant list could not be refreshed.');
+                });
             }
         };
         this.nameChanges.pipe(switchMap(names =>
@@ -122,7 +127,7 @@ export class TournamentParticipantsComponent implements OnInit {
             this.matchError = matches ? '' : 'Could not check for existing players.';
             this.matches = matches ?? [];
         });
-        void this.perform(() => this.reload());
+        void this.perform(() => this.reload(), true);
     }
 
     private request<T>(observable: import('rxjs').Observable<T>) {
@@ -150,10 +155,10 @@ export class TournamentParticipantsComponent implements OnInit {
 
     async addMatch(match: NameMatch) {
         await this.perform(async () => {
-            await this.request(this.players.addExistingLeaguePlayer(this.leagueId(), this.tournamentName(), match.id, 0));
+            const result = await this.request(this.players.addExistingLeaguePlayer(this.leagueId(), this.tournamentName(), match.id, 0));
             await this.reload();
             this.picker()?.load();
-            this.notice = 'Existing player added.';
+            if (!result?.alreadyMember) this.notifications.success('Participant added to the tournament.');
         });
     }
 
@@ -176,7 +181,7 @@ export class TournamentParticipantsComponent implements OnInit {
             this.picker()?.load();
             this.firstName = this.lastName = this.gender = '';
             this.reviewName();
-            this.notice = 'New player registered and added.';
+            this.notifications.success('New player registered and added to the tournament.');
         });
     }
 
@@ -185,16 +190,21 @@ export class TournamentParticipantsComponent implements OnInit {
             await this.request(this.http.delete('/api/tournaments/' + this.leagueId() + '/participants/' + player.id));
             await this.reload();
             this.picker()?.load();
-            this.notice = 'Participant removed from this tournament.';
+            this.notifications.success('Participant removed from the tournament.');
         });
     }
 
-    private async perform(action: () => Promise<void>) {
+    private async perform(action: () => Promise<void>, inlineError = false) {
         if (this.busy) return;
         this.busy = true;
-        this.error = this.notice = '';
+        this.error = '';
         try { await action(); }
-        catch (error) { this.error = error.error?.message || 'Could not update tournament participants. Try again.'; }
+        catch (error) {
+            const message = error.error?.message || 'Could not update tournament participants. Try again.';
+            if (this.destroy.destroyed) return;
+            if (inlineError) this.error = message;
+            else this.notifications.error(message);
+        }
         finally { this.busy = false; }
     }
 }

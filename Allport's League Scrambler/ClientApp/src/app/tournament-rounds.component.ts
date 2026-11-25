@@ -1,14 +1,16 @@
-import { LeagueStandingsComponent } from './league-standings/league-standings.component';
 import { MatchupPrintSheetComponent, MatchupPrintSixComponent } from './matchup-print-sheet.component';
 import { renderMatchupPrint } from './matchup-print';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject, input, OnInit, output } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, inject, Injector, input, NgZone, OnInit, output } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { generateTournament, TournamentAllocation, TournamentSettings } from './tournament-generation';
 import { pairKey, ScramblePlayer } from './scrambler/scramble-engine';
+import { TournamentNotifications } from './tournament-notifications.service';
+import { moveToRedrawPreview } from './tournament-redraw-transition';
+import { injectConfirmation } from './confirmation-dialog';
 
 interface Player { id: number; firstName: string; lastName: string; }
 interface SettingsState {
@@ -33,7 +35,7 @@ interface ScoreEdit {
 @Component({
     selector: 'app-tournament-rounds',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, NgTemplateOutlet, MatchupPrintSheetComponent, MatchupPrintSixComponent, LeagueStandingsComponent],
+    imports: [FormsModule, NgTemplateOutlet, MatchupPrintSheetComponent, MatchupPrintSixComponent],
     templateUrl: './tournament-rounds.component.html',
     styleUrl: './tournament-rounds.component.css'
 })
@@ -54,7 +56,12 @@ export class TournamentRoundsComponent implements OnInit {
     readonly versionChanged = output<string>();
     teamBySize = true;
     private readonly http = inject(HttpClient);
+    private readonly notifications = inject(TournamentNotifications);
+    private readonly confirm = injectConfirmation();
     private readonly host = inject(ElementRef<HTMLElement>);
+    private readonly injector = inject(Injector);
+    private readonly zone = inject(NgZone);
+    private readonly changeDetector = inject(ChangeDetectorRef);
     private readonly destroy = inject(DestroyRef);
     state?: SettingsState;
     rounds: SavedRound[] = [];
@@ -80,6 +87,13 @@ export class TournamentRoundsComponent implements OnInit {
         return this.state.mode === 3 ? this.state.roster : this.state.roster.filter(player => this.state.presentIds.includes(player.id));
     }
     preview: TournamentAllocation[] = [];
+    redrawRound?: number;
+    redrawTrigger?: EventTarget | null;
+    private stopRedrawTransition?: () => void;
+    redrawState: 'idle' | 'loading' | 'animating' | 'revealing' | 'ready' = 'idle';
+    get redrawTransitionPending(): boolean {
+        return this.redrawState === 'loading' || this.redrawState === 'animating' || this.redrawState === 'revealing';
+    }
     additionalSettings?: TournamentSettings;
     readonly tournamentRoundLimit = 30;
     get editSettings() { return this.additionalSettings ?? this.state?.settings; }
@@ -94,9 +108,7 @@ export class TournamentRoundsComponent implements OnInit {
     get gamesPerMatchupSummary() {
         return [...new Set(this.activeRounds.map(round => round.gamesPerMatchup))].sort((a, b) => a - b).join(", ");
     }
-    notice = '';
     private savedSettings?: TournamentSettings;
-    noticeView = '';
     error = '';
     busy = false;
     dirty = false;
@@ -106,7 +118,18 @@ export class TournamentRoundsComponent implements OnInit {
     repeats = 0;
     relaxedRounds: number[] = [];
     step = 'rounds';
+    readonly expandedRounds = new Set<number>();
+    printingOpen = false;
+    updateExpanded(round: number, open: boolean): void {
+        if (open) this.expandedRounds.add(round);
+        else this.expandedRounds.delete(round);
+        try { sessionStorage.setItem(this.expandedRoundsKey, [...this.expandedRounds].join(',')); }
+        catch { /* Session storage is optional. */ }
+    }
+    private get expandedRoundsKey() { return 'league-hub-tournament-expanded-rounds-' + this.leagueId(); }
+    get resumeView(): string { return this.managementOpen ? 'management' : this.step; }
     get view(): string {
+        if (this.additionalSettings) return 'configuration';
         switch (this.wizardStep()) {
             case 3: return 'configuration';
             case 4: return 'priorities';
@@ -138,11 +161,11 @@ export class TournamentRoundsComponent implements OnInit {
             playing: round.teams.reduce((count, team) => count + team.players.length, 0), totalByes: round.byes.length };
     }
 
-    async previewByeReplacement() {
+    async previewByeReplacement(trigger: EventTarget | null) {
         const round = this.selectedByeRound;
         if (round?.status !== 'unplayed' || this.busy) return;
         if (this.dirty && !(await this.saveSettings())) return;
-        await this.propose(round.roundNumber);
+        await this.propose(round.roundNumber, trigger);
         if (this.preview.length) {
             this.step = 'rounds';
             this.runRequested.emit();
@@ -175,7 +198,7 @@ export class TournamentRoundsComponent implements OnInit {
             this.step = view;
         }
         this.dirty = false;
-        this.preview = [];
+        this.cancelPreview();
     }
 
     roundStatus(round: SavedRound) {
@@ -184,27 +207,12 @@ export class TournamentRoundsComponent implements OnInit {
     byeRound = 1;
     scoreRound?: SavedRound;
     scoreEdits: ScoreEdit[] = [];
-    scoreFeedback?: { title: string; message: string };
-    private progression?: ReturnType<typeof setTimeout>;
+    scoreValidation = '';
     private get activeRoundKey() { return 'league-hub-tournament-score-round-' + this.leagueId(); }
     get tournamentComplete() {
         return this.activeRounds.length > 0 && this.completed === this.activeRounds.length;
     }
 
-    constructor() { this.destroy.onDestroy(() => this.clearScoreFeedback()); }
-
-    clearScoreFeedback() {
-        clearTimeout(this.progression);
-        this.progression = undefined;
-        this.scoreFeedback = undefined;
-    }
-
-    openRememberedScores() {
-        let number: number;
-        try { number = Number(sessionStorage.getItem(this.activeRoundKey)); } catch {}
-        const round = this.activeRounds.find(item => item.roundNumber === number) ?? this.nextRound ?? this.activeRounds[0];
-        if (round) this.openScores(round);
-    }
     printSelection = new Set<number>();
     printRounds: SavedRound[] = [];
 
@@ -235,6 +243,15 @@ export class TournamentRoundsComponent implements OnInit {
     get hasUnplayed(): boolean { return this.rounds.some(round => round.status === 'unplayed'); }
 
     async ngOnInit(): Promise<void> {
+        this.destroy.onDestroy(() => this.stopRedrawTransition?.());
+        if (!this.readOnly()) {
+            try {
+                for (const value of (sessionStorage.getItem(this.expandedRoundsKey) ?? '').split(',')) {
+                    const round = Number(value);
+                    if (Number.isInteger(round) && round > 0) this.expandedRounds.add(round);
+                }
+            } catch { /* Session storage is optional. */ }
+        }
         await this.perform(async () => {
             if (this.readOnly()) {
                 const result = await this.request(this.http.get<{name: string; rounds: SavedRound[]}>(this.url + '/rounds'));
@@ -242,12 +259,12 @@ export class TournamentRoundsComponent implements OnInit {
                 this.rounds = result.rounds;
             } else {
                 await this.reload();
-                if (this.rounds.length) this.step = this.initialRunView() === 'rounds' ? 'rounds' :
-                    this.tournamentComplete ? 'complete' : 'rounds';
                 const requestedRound = this.activeRounds.find(round => round.roundNumber === this.initialScoreRound());
-                if (requestedRound && this.wizardStep() === 7) this.openScores(requestedRound);
+                if (requestedRound && this.wizardStep() === 7) await this.openScores(requestedRound);
             }
-        });
+        }, true);
+        if (!this.readOnly() && !this.error && this.wizardStep() === 7 && this.initialRunView() === 'management' && this.rounds.length)
+            this.openManagement();
     }
 
     private request<T>(value: import('rxjs').Observable<T>): Promise<T> {
@@ -271,12 +288,17 @@ export class TournamentRoundsComponent implements OnInit {
         this.dirty = false;
     }
 
-    private async perform(action: () => Promise<void>): Promise<void> {
+    private async perform(action: () => Promise<void>, inlineError = false): Promise<void> {
         if (this.busy) return;
         this.busy = true;
-        this.error = this.notice = '';
+        this.error = '';
         try { await action(); }
-        catch (error) { this.error = error.error?.message || error.message || 'The tournament request could not be completed.'; }
+        catch (error) {
+            if (this.destroy.destroyed) return;
+            const message = error.error?.message || error.message || 'The tournament request could not be completed.';
+            if (inlineError) this.error = message;
+            else this.notifications.error(message);
+        }
         finally { this.busy = false; }
     }
 
@@ -289,7 +311,7 @@ export class TournamentRoundsComponent implements OnInit {
 
     markEdited(): void {
         if (!this.additionalSettings) this.dirty = true;
-        this.preview = [];
+        this.cancelPreview();
     }
 
     setPriority(id: number, priority: string): void {
@@ -319,7 +341,7 @@ export class TournamentRoundsComponent implements OnInit {
         return this.editSettings.manualByes.some(bye => bye.playerId === id && bye.roundNumber === this.byeRound);
     }
 
-    async saveSettings(): Promise<boolean> {
+    async saveSettings(notify = true): Promise<boolean> {
         if (this.busy || !this.state || this.additionalSettings) return false;
         let success = false;
         await this.perform(async () => {
@@ -331,8 +353,7 @@ export class TournamentRoundsComponent implements OnInit {
             this.settingsSaved = true;
             this.savedSettings = structuredClone(state.settings);
             this.dirty = false;
-            this.notice = 'Tournament settings saved.';
-            this.noticeView = this.view;
+            if (notify) this.notifications.success(this.wizardStep() === 4 ? 'Player priorities and byes saved.' : 'Tournament settings saved.');
             success = true;
         });
         return success;
@@ -343,6 +364,7 @@ export class TournamentRoundsComponent implements OnInit {
         await this.perform(async () => {
             await this.reload();
             if (!this.rounds.length || this.remainingRounds < 1) return;
+            this.closeManagement();
             const seed = this.state.additionalDefaults ?? this.state.settings;
             const rosterIds = new Set(this.state.roster.map(player => player.id));
             const historyIds = new Set(this.history.map(row => row.scrambleNumber));
@@ -375,11 +397,18 @@ export class TournamentRoundsComponent implements OnInit {
         this.teamBySize = this.state.settings.maximumTeamSize !== null;
     }
 
-    async propose(single?: number): Promise<void> {
+    async propose(single?: number, trigger?: EventTarget | null): Promise<void> {
+        if (this.busy || this.redrawTransitionPending) return;
+        this.stopRedrawTransition?.();
+        this.redrawState = single === undefined ? 'idle' : 'loading';
+        this.redrawTrigger = trigger;
         await this.perform(async () => {
             const state = this.state!;
             let settings = this.editSettings;
             this.preview = [];
+            this.redrawRound = undefined;
+            if (single !== undefined && !this.unplayedRounds.some(round => round.roundNumber === single))
+                throw new Error('Only an unplayed round can be redrawn.');
             if (!this.additionalSettings && (!this.settingsSaved || this.dirty)) throw new Error('Save your tournament settings before generating rounds.');
             if (this.additionalSettings && (!this.additionalRoundNumbers.length ||
                 !Number.isInteger(settings.gamesPerMatchup) || settings.gamesPerMatchup < 1 || settings.gamesPerMatchup > 9))
@@ -401,31 +430,80 @@ export class TournamentRoundsComponent implements OnInit {
             const prohibited = new Set<string>();
             for (const team of state.history.filter(team => settings.historicalScrambleNumbers.includes(team.scrambleNumber)))
                 team.playerIds.forEach((id, index) => team.playerIds.slice(index + 1).forEach(other => prohibited.add(pairKey(id, other))));
+            if (trigger && window.requestAnimationFrame) {
+                await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+                if (this.destroy.destroyed) return;
+            }
             const result = await generateTournament(settings, this.eligible, pending, preserved, [...prohibited], this.fallback);
+            if (this.destroy.destroyed) return;
+            const source = trigger instanceof HTMLElement && trigger.isConnected ? trigger.getBoundingClientRect() : undefined;
+            if (single !== undefined && result.rounds.length) this.redrawState = 'animating';
             this.preview = result.rounds;
             this.repeats = result.repeats;
             this.relaxedRounds = result.relaxedRounds;
             this.previewVersion = state.version;
+            this.redrawRound = single;
+            if (single !== undefined && this.preview.length) {
+                afterNextRender(() => {
+                    const host = this.host.nativeElement as HTMLElement;
+                    const preview = host.querySelector<HTMLElement>('.preview');
+                    const heading = preview?.querySelector<HTMLElement>('.redraw-heading');
+                    const card = preview?.querySelector<HTMLElement>('.redraw-flight');
+                    if (preview && heading && card) {
+                        this.stopRedrawTransition = this.zone.runOutsideAngular(() =>
+                            moveToRedrawPreview(preview, heading, card, source, animate => this.zone.run(() => {
+                                if (this.destroy.destroyed || !this.preview.length) return;
+                                if (animate) {
+                                    this.redrawState = 'revealing';
+                                    this.changeDetector.markForCheck();
+                                }
+                                else this.finishRedrawReveal();
+                            })));
+                    } else this.redrawState = 'idle';
+                }, { injector: this.injector });
+            }
         });
+        this.redrawTrigger = undefined;
+        if (this.redrawState === 'loading') this.redrawState = 'idle';
+    }
+
+    finishRedrawReveal(): void {
+        if (this.redrawState !== 'animating' && this.redrawState !== 'revealing') return;
+        this.redrawState = 'ready';
+        this.changeDetector.markForCheck();
+        afterNextRender(() => (this.host.nativeElement as HTMLElement).querySelector<HTMLElement>('.redraw-heading')
+            ?.focus({ preventScroll: true }), { injector: this.injector });
+    }
+
+    cancelPreview(): void {
+        this.stopRedrawTransition?.();
+        this.redrawState = 'idle';
+        this.preview = [];
     }
 
     async saveRounds(): Promise<void> {
+        if (this.redrawTransitionPending) return;
+        this.stopRedrawTransition?.();
         await this.perform(async () => {
+            const count = this.preview.length;
+            const redrawRound = this.redrawRound;
+            const updating = this.rounds.length > 0;
             const additionalSettings = this.additionalSettings && { ...this.additionalSettings,
                 manualByes: this.additionalSettings.manualByes.filter(bye => this.additionalRoundNumbers.includes(bye.roundNumber)) };
             await this.request(this.http.put(this.url + '/rounds',
                 { version: this.previewVersion, allowHistoricalFallback: this.fallback, rounds: this.preview, additionalSettings,
                     unavailablePlayerIds: this.availabilityDraft, preserveSavedByes: this.managementOpen }));
             this.availabilityDraft = undefined;
-            this.preview = [];
+            this.cancelPreview();
             if (additionalSettings) {
                 this.cancelAdditionalRounds();
                 this.step = 'rounds';
             }
             await this.reload();
             this.versionChanged.emit(this.state!.version);
-            this.notice = additionalSettings ? 'Additional rounds saved.' : 'Tournament rounds saved.';
-            this.noticeView = 'rounds';
+            this.notifications.success(additionalSettings ? (count === 1 ? 'One additional round added.' : count + ' additional rounds added.')
+                : redrawRound !== undefined ? 'Round ' + redrawRound + ' teams updated.'
+                : updating ? 'Upcoming tournament rounds updated.' : 'Tournament rounds generated successfully.');
             if (this.managementOpen) { this.closeManagement(); this.step = "rounds"; }
             this.roundsSaved.emit();
         });
@@ -451,18 +529,18 @@ export class TournamentRoundsComponent implements OnInit {
             const roster = new Set(this.state.roster.map(player => player.id));
             this.availabilityFilter = "";
             this.availabilityDraft = this.savedUnavailable.filter(id => roster.has(id));
-            this.preview = [];
+            this.cancelPreview();
         });
     }
 
     updateAvailability(id: number, unavailable: boolean) {
         this.availabilityDraft = unavailable ? [...this.availabilityDraft, id] : this.availabilityDraft.filter(player => player !== id);
-        this.preview = [];
+        this.cancelPreview();
     }
 
     cancelAvailability() {
         this.availabilityDraft = undefined;
-        this.preview = [];
+        this.cancelPreview();
         this.error = "";
     }
 
@@ -473,8 +551,7 @@ export class TournamentRoundsComponent implements OnInit {
             this.cancelAvailability();
             await this.reload();
             this.versionChanged.emit(this.state.version);
-            this.notice = "Availability saved for future generation.";
-            this.noticeView = this.view;
+            this.notifications.success('Availability saved for future rounds.');
         });
     }
 
@@ -486,11 +563,12 @@ export class TournamentRoundsComponent implements OnInit {
             this.removeRequest = undefined;
             this.removalSelection.clear();
             await this.reload();
+            for (const number of numbers) this.updateExpanded(number, false);
             this.versionChanged.emit(this.state.version);
             if (!this.rounds.length) { this.closeManagement(); this.roundsCleared.emit(); }
-            this.step = this.tournamentComplete ? "complete" : "rounds";
-            this.notice = voidScored ? "Round voided. Its scores are retained for review." : "Selected rounds deleted.";
-            this.noticeView = this.view;
+            this.step = 'rounds';
+            this.notifications.success(voidScored ? 'Round ' + numbers[0] + ' voided. Scores retained for review.'
+                : numbers.length === 1 ? 'Round ' + numbers[0] + ' deleted.' : numbers.length + ' rounds deleted.');
         });
     }
 
@@ -498,21 +576,41 @@ export class TournamentRoundsComponent implements OnInit {
         return round.status === 'completed' ? 'Edit Scores' : round.status === 'partial' ? 'Continue Scoring' : 'Enter Scores';
     }
 
-    changeRunView(view: 'rounds' | 'complete') {
-        if (this.busy || (this.hasUnsavedScores && !window.confirm('Discard unsaved score changes?'))) return;
-        if (this.hasUnsavedScores && this.scoreRound) this.initializeScores(this.scoreRound);
-        this.clearScoreFeedback();
-        this.step = view;
+    async closeScores() {
+        if (this.busy || !await this.confirmDiscardScores()) return;
+        this.returnFromScoring();
     }
 
-    openScores(round: SavedRound): void {
-        if (this.hasUnsavedScores && !window.confirm('Discard unsaved score changes?')) return;
+    private returnFromScoring() {
+        const number = this.scoreRound?.roundNumber;
+        this.scoreEdits = [];
+        this.scoreRound = undefined;
+        this.step = 'rounds';
+        if (number !== undefined) {
+            this.updateExpanded(number, true);
+            afterNextRender(() => (this.host.nativeElement as HTMLElement).querySelector<HTMLElement>('#run-round-' + number)?.focus(),
+                { injector: this.injector });
+        }
+    }
+
+    async openScores(round: SavedRound): Promise<void> {
+        if (!await this.confirmDiscardScores()) return;
+        if (this.managementOpen) this.closeManagement();
         if (this.wizardStep() !== 7) this.runRequested.emit();
+        this.updateExpanded(round.roundNumber, true);
         this.initializeScores(round);
+        afterNextRender(() => (this.host.nativeElement as HTMLElement).querySelector<HTMLElement>('.score-heading')?.focus(),
+            { injector: this.injector });
+    }
+
+    private async confirmDiscardScores(): Promise<boolean> {
+        return !this.hasUnsavedScores || await this.confirm({
+            title: 'Unsaved scores', message: 'Discard unsaved score changes?', action: 'Discard', tone: 'danger'
+        });
     }
 
     private initializeScores(round: SavedRound): void {
-        this.clearScoreFeedback();
+        this.scoreValidation = '';
         this.step = 'scores';
         try { sessionStorage.setItem(this.activeRoundKey, String(round.roundNumber)); } catch {}
         this.scoreRound = round;
@@ -531,40 +629,22 @@ export class TournamentRoundsComponent implements OnInit {
     }
 
     async saveScores(): Promise<void> {
+        const started = this.scoreEdits.filter(score => score.points !== null || score.opponentPoints !== null);
+        this.scoreValidation = '';
+        if (!started.length || started.some(score => !Number.isInteger(score.points) || !Number.isInteger(score.opponentPoints) ||
+            score.points! < 0 || score.opponentPoints! < 0)) {
+            this.scoreValidation = 'Enter a nonnegative whole-number score for both teams in each game you started.';
+            return;
+        }
         await this.perform(async () => {
-            const started = this.scoreEdits.filter(score => score.points !== null || score.opponentPoints !== null);
-            if (!started.length || started.some(score => !Number.isInteger(score.points) || !Number.isInteger(score.opponentPoints) ||
-                score.points! < 0 || score.opponentPoints! < 0))
-                throw new Error('Enter a nonnegative whole-number score for both teams in each game you started.');
             const number = this.scoreRound!.roundNumber;
             const wasCompleted = this.scoreRound!.status === 'completed';
             await this.request(this.http.put(this.url + '/rounds/' + number + '/scores',
                 { version: this.state!.version, scores: started }));
             await this.reload();
             this.versionChanged.emit(this.state!.version);
-            const saved = this.rounds.find(round => round.roundNumber === number)!;
-            this.initializeScores(saved);
-            if (wasCompleted) {
-                this.scoreFeedback = { title: 'Score corrections saved.', message: 'Standings now reflect the corrected result.' };
-                return;
-            }
-            if (saved.status !== 'completed') {
-                this.scoreFeedback = { title: 'Round scores saved.', message: 'You can enter the remaining scores when they are ready.' };
-                return;
-            }
-            const next = this.nextRound;
-            this.scoreFeedback = this.tournamentComplete
-                ? { title: 'Tournament Complete!', message: 'All rounds are scored. Opening the final standings.' }
-                : { title: 'Round ' + number + ' Complete!', message: next
-                    ? 'All scores saved. Continuing to Round ' + next.roundNumber + ' of ' + this.state!.settings.numberOfRounds + '.'
-                    : 'All saved rounds are scored. Open tournament setup to generate the remaining rounds.' };
-            if (this.tournamentComplete || next) {
-                this.progression = setTimeout(() => {
-                    if (this.view !== 'scores' || this.scoreRound?.roundNumber !== number) return;
-                    if (next) this.openScores(next);
-                    else { this.clearScoreFeedback(); this.step = 'complete'; }
-                }, 2200);
-            }
+            this.returnFromScoring();
+            this.notifications.success('Round ' + number + (wasCompleted ? ' score corrections saved.' : ' scores saved.'));
         });
     }
 
@@ -572,7 +652,7 @@ export class TournamentRoundsComponent implements OnInit {
         if (!rounds.length) return;
         this.printRounds = rounds;
         const popup = window.open('', '_blank', 'width=800,height=600');
-        if (!popup) { this.error = 'Allow popups to preview and print the round assignments.'; return; }
+        if (!popup) { this.notifications.error('Allow popups to preview and print the round assignments.'); return; }
         setTimeout(() => {
             const printContent = this.host.nativeElement.querySelector('.tournament-print');
             if (!printContent || popup.closed) return;

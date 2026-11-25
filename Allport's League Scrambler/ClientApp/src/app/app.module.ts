@@ -24,7 +24,7 @@ import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
 import { HomeComponent } from './home/home.component';
 import { ScramblerComponent } from './scrambler/scrambler.component';
-import { LeagueManagementGuard, ScramblerWorkspaceComponent, WorkspaceRouteComponent, LeagueManagementDeniedComponent } from './scrambler/scrambler-workspace.component';
+import { LeagueManagementGuard, ScramblerWorkspaceComponent, WorkspaceRouteComponent, LeagueManagementDeniedComponent, requireSignedInTournament } from './scrambler/scrambler-workspace.component';
 import { FetchDataComponent } from './fetch-data/fetch-data.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -49,6 +49,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarContainer, MatSnackBarModule } from '@angular/material/snack-bar';
+import { LeagueHubSnackBar } from './league-hub-snack-bar';
 import { MatSortModule } from '@angular/material/sort';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatTableModule } from '@angular/material/table';
@@ -161,8 +162,8 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
             { path: 'change-email', data: { mode: 'email-change' }, loadComponent: () => import('./account-recovery.component').then(m => m.AccountRecoveryComponent) },
             { path: 'recovery-review', data: { mode: 'review' }, loadComponent: () => import('./account-recovery.component').then(m => m.AccountRecoveryComponent) },
             { path: 'access-denied', component: LeagueManagementDeniedComponent },
-            { path: 'tournament', canActivate: [LeagueManagementGuard], loadComponent: () => import('./tournament-landing.component').then(m => m.TournamentLandingComponent) },
-            { path: 'tournament/:leagueId', data: { tournamentContext: true }, canDeactivate: [(component: { canLeave(): boolean }) => component.canLeave()], canActivate: [LeagueManagementGuard], loadComponent: () => import('./tournament-center.component').then(m => m.TournamentCenterComponent) },
+            { path: 'tournament', canActivate: [requireSignedInTournament], loadComponent: () => import('./tournament-landing.component').then(m => m.TournamentLandingComponent) },
+            { path: 'tournament/:leagueId', data: { tournamentContext: true }, canDeactivate: [(component: { canLeave(): Promise<boolean> }) => component.canLeave()], canActivate: [requireSignedInTournament], loadComponent: () => import('./tournament-center.component').then(m => m.TournamentCenterComponent) },
             { path: 'tournament/:leagueId/rounds', data: { tournamentContext: true }, loadComponent: () => import('./tournament-matchups.component').then(m => m.TournamentMatchupsComponent) },
             { path: 'tournament/:leagueId/check-in', redirectTo: ({ params }) => inject(Router).createUrlTree(['/'], { queryParams: { leagueId: params['leagueId'] }, fragment: 'attendance' }), pathMatch: 'full' },
             { path: '', component: HomeComponent, pathMatch: 'full' },
@@ -187,5 +188,5 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
             ] }
         ], {}),
         ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production }),
-        BrowserAnimationsModule], providers: [{ provide: RouteReuseStrategy, useClass: TournamentRouteReuse }, { provide: APP_ID, useValue: 'ng-cli-universal' }, MatSnackBar, AuthService, provideHttpClient(withXhr(), withInterceptorsFromDi())] })
+        BrowserAnimationsModule], providers: [{ provide: RouteReuseStrategy, useClass: TournamentRouteReuse }, { provide: APP_ID, useValue: 'ng-cli-universal' }, { provide: MatSnackBar, useClass: LeagueHubSnackBar }, AuthService, provideHttpClient(withXhr(), withInterceptorsFromDi())] })
 export class AppModule { }

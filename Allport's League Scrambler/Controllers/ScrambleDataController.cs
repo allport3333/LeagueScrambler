@@ -336,7 +336,8 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
-        [Authorize(Policy = "LeagueManagement")]
+        [Authorize]
+        [SameOrigin]
         public IActionResult AddPlayer([FromBody] Player player, string leagueName, [FromQuery] int leagueDivisionId = 0, [FromQuery] bool existingOnly = false, [FromQuery] int expectedLeagueId = 0)
         {
             var context = new DataContext();
@@ -359,6 +360,8 @@ namespace Allport_s_League_Scrambler.Controllers
             }
 
             if (!LeagueAccess.CanManage(User, context, existingLeague.ID))
+                return Forbid();
+            if (!User.IsInRole("Admin") && !User.IsInRole("Manager") && (!existingOnly || existingLeague.EventTypeId != 2))
                 return Forbid();
 
             if (existingOnly && (player.Id <= 0 || leagueDivisionId < 0 || expectedLeagueId != existingLeague.ID))
@@ -477,7 +480,7 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpGet("AvailableLeaguePlayers/{leagueId:int}")]
-        [Authorize(Policy = "LeagueManagement")]
+        [Authorize]
         public IActionResult AvailableLeaguePlayers(int leagueId, [FromQuery] int? memberPlayerId = null, [FromQuery] bool includeMembers = false, [FromQuery] bool membersOnly = false)
         {
             using (var context = new DataContext())
@@ -834,6 +837,8 @@ namespace Allport_s_League_Scrambler.Controllers
         {
             using (var context = new DataContext())
             {
+                // Keep the event lookup valid until the legacy team writes commit.
+                using var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
                 // 1) Check that the league exists
                 var existingLeague = context.Leagues
                     .FirstOrDefault(x => x.LeagueName == leagueName);
@@ -879,6 +884,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     // Keep track of all created teams
                     createdTeams.Add(newTeam);
                 }
+                transaction.Commit();
                 return Ok(createdTeams);
             }
         }
@@ -1235,12 +1241,13 @@ namespace Allport_s_League_Scrambler.Controllers
         [SameOrigin]
         public async Task<IActionResult> SaveCreatedTeamScores([FromBody] List<TeamScoreDto> scores)
         {
-            var context = new DataContext();
+            await using var context = new DataContext();
             if (scores == null || !scores.Any())
             {
                 return BadRequest("No scores provided.");
             }
 
+            await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
             // Verify every requested league and existing team before any writes.
             if (scores.Any(sc => sc.LeagueId <= 0 ||
                 !LeagueAccess.CanManage(User, context, sc.LeagueId) ||
@@ -1385,8 +1392,9 @@ namespace Allport_s_League_Scrambler.Controllers
                         rs.RoundScore,
                         rs.RoundWon
                     }).ToList()
-                });
+                }).ToList();
 
+                await transaction.CommitAsync();
                 return Ok(new
                 {
                     LatestScrambleNumber = latestScrambleNumber,
@@ -2211,12 +2219,14 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpPost("[action]/{leagueName}")]
-        [Authorize(Policy = "LeagueManagement")]
         [SameOrigin]
+        [Authorize]
         public async Task<IActionResult> AddNewLeague(string leagueName, [FromQuery] int eventTypeId = 1, [FromQuery] DateOnly? eventDate = null)
         {
             if (!LeagueAccess.TryGetAccountId(User, out var ownerId))
                 return Forbid();
+            var isAdmin = User.IsInRole("Admin");
+            if (eventTypeId != 2 && !isAdmin && !User.IsInRole("Manager")) return Forbid();
 
             leagueName = leagueName?.Trim();
             if (!ModelState.IsValid || string.IsNullOrEmpty(leagueName) || leagueName.Length > 50)
@@ -2224,6 +2234,14 @@ namespace Allport_s_League_Scrambler.Controllers
 
             await using var context = new DataContext();
             await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+            if (eventTypeId == 2)
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "DECLARE @r int; EXEC @r=sys.sp_getapplock @Resource='LeagueHub:TournamentCreation', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=10000; IF @r<0 THROW 51000, 'Tournament creation is busy. Please retry.', 1;");
+                if (!isAdmin && await context.TournamentConfigurations.CountAsync(config => config.OwnerUserId == ownerId &&
+                    context.Leagues.Any(league => league.ID == config.LeagueId && league.EventTypeId == 2)) >= TournamentsController.OwnedTournamentLimit)
+                    return Conflict(new { message = "You have reached your limit of 3 tournaments. Contact an administrator if you need an existing tournament removed." });
+            }
             if (!await context.EventTypes.AnyAsync(type => type.ID == eventTypeId))
                 return BadRequest(new { message = "Choose a valid event type." });
             if (eventTypeId == 2 && !eventDate.HasValue)

@@ -24,6 +24,10 @@ namespace Allport_s_League_Scrambler.Controllers
         public async Task<IActionResult> ReadRounds(int leagueId)
         {
             await using var db = new DataContext();
+            var name = await db.Leagues.Where(row => row.ID == leagueId && row.EventTypeId == 2)
+                .Select(row => row.LeagueName).SingleOrDefaultAsync();
+            if (name == null)
+                return NotFound(new { message = "Tournament not found. It may have been deleted." });
             if (!LeagueAccess.CanManage(User, db, leagueId) &&
                 (!LeagueAccess.TryGetAccountId(User, out var accountId) ||
                  !await db.UsersPlayer.AnyAsync(link => link.UserId == accountId &&
@@ -45,7 +49,7 @@ namespace Allport_s_League_Scrambler.Controllers
             return Ok(new
             {
                 details.Version,
-                name = await db.Leagues.Where(row => row.ID == leagueId).Select(row => row.LeagueName).SingleAsync(),
+                name,
                 settingsSaved = details.RoundSettingsJson != null,
                 canVoid = manage && User.IsInRole("Admin"),
                 rounds = rounds.Select(round =>
@@ -85,7 +89,6 @@ namespace Allport_s_League_Scrambler.Controllers
         private static int[] SavedManualByeIds(TournamentRound round) =>
             SavedGenerationSettings(round)?.ManualByes?.Where(bye => bye.RoundNumber == round.RoundNumber).Select(bye => bye.PlayerId).ToArray();
 
-        [Authorize(Policy = "LeagueManagement")]
         [HttpPut("rounds")]
         [SameOrigin]
         [RequestSizeLimit(262144)]

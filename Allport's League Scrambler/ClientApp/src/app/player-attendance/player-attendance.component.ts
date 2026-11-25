@@ -1,10 +1,11 @@
 import { injectConfirmation } from '../confirmation-dialog';
 import { onLeagueResume, protectPendingWork } from '../pwa/pending-work.service';
-import {Component, Input, OnInit, OnChanges, OnDestroy, ChangeDetectionStrategy} from '@angular/core';
+import {Component, inject, Input, OnInit, OnChanges, OnDestroy, ChangeDetectionStrategy} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {map, Subscription} from 'rxjs';
 import {AuthService} from '../auth.service';
 import {PlayerService} from '../services/player.service';
+import {TournamentNotifications} from '../tournament-notifications.service';
 @Component({
     selector: 'app-player-attendance', templateUrl: './player-attendance.component.html', styleUrls: ['./player-attendance.component.css'],
     changeDetection: ChangeDetectionStrategy.Eager,
@@ -14,6 +15,7 @@ export class PlayerAttendanceComponent implements OnInit,OnChanges,OnDestroy {
  @Input() playerId:number;@Input() leagueId:number; @Input() tournament = false;
  authenticated:boolean=null;state:any=null;loading=false;busy=false;error='';
  private readonly confirmAction=injectConfirmation();
+ private readonly tournamentNotifications=inject(TournamentNotifications);
  private authSubscription:Subscription;private request:Subscription;private mutation:Subscription;private version=0;private key='';
  constructor(private auth:AuthService,private players:PlayerService, private http:HttpClient){ protectPendingWork(() => this.busy); onLeagueResume(() => { if (!this.loading && !this.busy) this.load(true); }); }
  get unavailableText():string {const reason=this.state&&this.state.reason||'Attendance is currently unavailable.';const day=/^Sign in is available on ([A-Za-z]+) only\.$/.exec(reason);return day?'League sign in opens '+day[1]:reason;}
@@ -33,8 +35,16 @@ export class PlayerAttendanceComponent implements OnInit,OnChanges,OnDestroy {
   const contextVersion=this.version;
   if(remove&&(!await this.confirmAction({title:'Remove sign-in',message:this.tournament ? 'Remove your check-in for the selected tournament?' : 'Remove your league night sign-in for the selected league?',action:'Remove sign-in',tone:'danger'})||contextVersion!==this.version||this.busy||!this.state?.canRemove))return;
   this.busy=true;this.error='';const version=this.version;
-  this.mutation=this.changeAttendance(remove).subscribe(()=>{if(version===this.version)this.load(true);},error=>{
+  this.mutation=this.changeAttendance(remove).subscribe(()=>{
+   if(version!==this.version)return;
+   if(this.tournament)this.tournamentNotifications.success(remove?'Tournament check-in removed.':'Checked in for the tournament.');
+   this.load(true);
+  },error=>{
    if(version!==this.version)return;this.busy=false;
+   if(this.tournament){
+    this.tournamentNotifications.error(error.error?.message || 'Unable to update tournament check-in. Try again.');
+    this.load(true);return;
+   }
    if(error.status===409||error.status===423){this.load(true);return;}
    this.state=null;this.error=error.status===401?'Your session has expired. Sign in again.':'Unable to update attendance. Please refresh its status and retry.';
   });

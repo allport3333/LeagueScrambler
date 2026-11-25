@@ -16,15 +16,14 @@ namespace Allport_s_League_Scrambler.Controllers
     {
         public record DetailsInput(string Name, DateOnly EventDate, string Description, string Location, Guid? Version);
 
-        [Authorize(Policy = "LeagueManagement")]
         [HttpGet]
         public async Task<IActionResult> Read(int leagueId)
         {
             await using var db = new DataContext();
-            if (!LeagueAccess.CanManage(User, db, leagueId)) return Forbid();
             var name = await db.Leagues.Where(league => league.ID == leagueId && league.EventTypeId == 2)
                 .Select(league => league.LeagueName).SingleOrDefaultAsync();
             if (name == null) return NotFound();
+            if (!LeagueAccess.CanManage(User, db, leagueId)) return Forbid();
             var details = await db.TournamentConfigurations.AsNoTracking().SingleOrDefaultAsync(row => row.LeagueId == leagueId);
             var participants = await db.PlayersLeagues.Where(row => row.LeagueID == leagueId)
                 .Select(row => row.PlayerID).Distinct().CountAsync();
@@ -41,7 +40,6 @@ namespace Allport_s_League_Scrambler.Controllers
             return Ok(new { name, details, participants, hasRounds, status });
         }
 
-        [Authorize(Policy = "LeagueManagement")]
         [HttpPut("details")]
         [SameOrigin]
         public async Task<IActionResult> SaveDetails(int leagueId, [FromBody] DetailsInput input)

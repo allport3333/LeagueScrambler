@@ -357,6 +357,7 @@ namespace Allport_s_League_Scrambler.Controllers
             if (request == null || string.IsNullOrWhiteSpace(request.TeamName))
                 return BadRequest("Enter a team name.");
             using var _context = new DataContext();
+            using var transaction = _context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
             if (!LeagueAccess.CanManage(User, _context, request.LeagueId))
                 return Forbid();
             if (!_context.Leagues.Any(league => league.ID == request.LeagueId))
@@ -380,6 +381,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
             _context.LeagueTeam.Add(newTeam);
             _context.SaveChanges();
+            transaction.Commit();
 
             // Return the newly created row (with its ID)
             return Ok(newTeam);

@@ -16,7 +16,6 @@ namespace Allport_s_League_Scrambler.Controllers
         public sealed record MatchScore(int TeamId, int OpponentId, int Game, int Points, int OpponentPoints);
         public sealed record SaveScoresInput(Guid Version, MatchScore[] Scores);
 
-        [Authorize(Policy = "LeagueManagement")]
         [HttpPut("rounds/{roundNumber:int}/scores")]
         [SameOrigin]
         public async Task<IActionResult> SaveScores(int leagueId, int roundNumber, [FromBody] SaveScoresInput input)

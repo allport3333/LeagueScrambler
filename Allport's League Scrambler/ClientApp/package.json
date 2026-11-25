@@ -6,6 +6,7 @@
     "ng": "ng",
     "start": "node tools/start-angular.cjs",
     "build": "ng build",
+    "restore:publish": "node tools/restore-for-publish.cjs",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "npm --prefix ../../tests/functional run test:readonly"

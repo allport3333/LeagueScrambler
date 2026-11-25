@@ -1,4 +1,7 @@
 h1, h2, .summary { text-align: center; }
+.run-panel { margin-block: .75rem; padding: clamp(.6rem, 2vw, 1rem); border: 1px solid var(--hub-border, #b8c2ce);
+    border-radius: .5rem; background: var(--hub-section, var(--hub-surface, #fff)); }
+.round-list > .saved-round + .saved-round { margin-top: .45rem; }
 .tournament-workspace { max-width: 120rem; margin: 1rem auto; }
 .step-actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; margin-block: .5rem; }
 fieldset { min-inline-size: 0; border: 0; padding: 0; }
@@ -13,6 +16,23 @@ fieldset { min-inline-size: 0; border: 0; padding: 0; }
 .team legend { font-size: 1rem; }
 .team small { display: block; }
 details, .preview { margin-block: .5rem; }
+.redraw-heading { scroll-margin-top: 5rem; }
+.redraw-flight { position: fixed; inset: 0 auto auto 0; z-index: 1050; pointer-events: none;
+    max-inline-size: calc(100vw - 1rem); padding: .45rem .75rem; border-radius: .45rem;
+    color: var(--hub-action-text, #fff); background: var(--hub-primary-action, #30577e);
+    font-weight: 600; box-shadow: 0 3px 10px #0003; }
+.redraw-arrived { animation: redraw-arrival 550ms ease-out; }
+.redraw-waiting { visibility: hidden; }
+.redraw-revealing { animation: redraw-reveal 200ms ease-out both; }
+@keyframes redraw-reveal { from { opacity: 0; } to { opacity: 1; } }
+@keyframes redraw-arrival {
+    from { box-shadow: 0 0 0 3px var(--hub-focus, #527fb1); }
+    to { box-shadow: 0 0 0 1px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .redraw-arrived { animation: none; }
+    .redraw-revealing { animation-duration: 1ms; }
+}
 details summary { padding: .35rem; cursor: pointer; }
 button { min-height: 44px; padding: .4rem .8rem; border: 1px solid var(--hub-border, #b8c2ce); border-radius: .4rem; color: inherit; background: var(--hub-surface, #fff); }
 button:not(:disabled):hover, button[aria-pressed=true] { background: var(--hub-surface-raised, var(--hub-surface, #eff4fa)); text-decoration: underline; }
@@ -22,11 +42,6 @@ button:disabled { opacity: .6; }
 .tournament-print { display: none; }
 .priority-player { background: var(--hub-female, #f6deeb); color: var(--hub-female-foreground, #633551); }
 .priority-player.male { background: var(--hub-male, #dcecf8); color: var(--hub-male-foreground, #244058); }
-.score-feedback { padding: 1rem; margin-block: .75rem; border-radius: .45rem; border: 1px solid var(--hub-border, #54806a); color: var(--hub-win-text, #20543e); background: var(--hub-win-surface, #e6f5ec); }
-
-.roster-summary { max-width: 36rem; margin-inline: auto; }
-.roster-summary p { margin: .4rem .5rem; }
-.completion-banner { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; padding: .75rem; border: 1px solid var(--hub-border, #b8c2ce); border-radius: .4rem; }
 .matchup-print-layout { display: grid; gap: .25rem; max-width: 17rem; margin: .5rem; }
 .form-grid label { align-content: start; }
 

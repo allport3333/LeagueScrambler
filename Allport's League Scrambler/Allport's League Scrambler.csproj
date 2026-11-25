@@ -112,9 +112,12 @@
   </Target>
 
   <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">
-    <!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" Condition="'$(SkipFrontendBuild)' != 'true'" />
-    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build -- --configuration=production" Condition="'$(SkipFrontendBuild)' != 'true'" />
+    <!-- FolderProfile always builds a fresh browser bundle. -->
+    <Error Condition="'$(PublishProfileName)' == 'FolderProfile' And '$(SkipFrontendBuild)' == 'true'"
+           Text="FolderProfile requires a fresh Angular production build." />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run restore:publish" Condition="'$(SkipFrontendBuild)' != 'true'" />
+    <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build -- --configuration=production --delete-output-path"
+          Condition="'$(SkipFrontendBuild)' != 'true'" />
     <Error Condition="!Exists('$(SpaRoot)dist\browser\index.html')" Text="Build the Angular production browser assets before publishing." />
 
     <!-- Include the newly-built files in the publish output -->

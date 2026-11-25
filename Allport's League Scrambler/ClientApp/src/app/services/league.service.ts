@@ -63,6 +63,21 @@ export class LeagueService {
             return this.leaguesAvailable;
         }));
     }
+
+    removeDeletedTournament(id: number): void {
+        const index = this.leaguesAvailable.findIndex(league => league.id === id);
+        if (index !== -1) this.leaguesAvailable.splice(index, 1);
+        try {
+            if (sessionStorage.getItem(this.selectionKey) === String(id)) sessionStorage.removeItem(this.selectionKey);
+            sessionStorage.removeItem('league-hub-tournament-step:' + id);
+            sessionStorage.removeItem('league-hub-tournament-score-round-' + id);
+            sessionStorage.removeItem('league-hub-tournament-run-view-' + id);
+            sessionStorage.removeItem('league-hub-tournament-expanded-rounds-' + id);
+        } catch { /* Session storage is optional. */ }
+        if (this.selectedLeagueSource.getValue().leagueId === id) {
+            this.selectedLeagueSource.next({ leagueId: null, leagueName: null });
+        }
+    }
     // Set the selected league globally
     setSelectedLeague(leagueId: number) {
 

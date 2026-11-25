@@ -16,7 +16,6 @@ namespace Allport_s_League_Scrambler.Controllers
     {
         public sealed record RoundSettingsInput(Guid Version, TournamentRoundSettings Settings);
 
-        [Authorize(Policy = "LeagueManagement")]
         [HttpGet("round-settings")]
         public async Task<IActionResult> ReadRoundSettings(int leagueId)
         {
@@ -46,7 +45,6 @@ namespace Allport_s_League_Scrambler.Controllers
             });
         }
 
-        [Authorize(Policy = "LeagueManagement")]
         [HttpPut("round-settings")]
         [SameOrigin]
         public async Task<IActionResult> SaveRoundSettings(int leagueId, [FromBody] RoundSettingsInput input)

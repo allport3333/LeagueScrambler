@@ -21,7 +21,7 @@ import { LeagueService } from '../services/league.service';
     imports: [FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, PageLoadingComponent]
 })
 export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
-    @Input() embeddedData?: {leagueId: number; leagueName: string; onAdded: (result: any) => void};
+    @Input() embeddedData?: {leagueId: number; leagueName: string; onAdded: (result: any, reconciled: boolean) => void};
     players: any[] = [];
     filteredPlayers: any[] = [];
     divisions: any[] = [];
@@ -130,13 +130,15 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
         });
     }
 
-    private confirm(result: any): void {
-        this.data.onAdded(result);
+    private confirm(result: any, reconciled = false): void {
+        this.data.onAdded(result, reconciled);
         if (this.closed) return;
         this.pending.delete(result.player.id);
         this.players = this.players.filter(p => p.id !== result.player.id); this.filter();
-        this.notice = result.player.firstName + ' ' + result.player.lastName + (result.alreadyMember ? ' is already in ' : ' added to ') + (this.data.team?.name || this.data.leagueName) + '.';
-        clearTimeout(this.noticeTimer); this.noticeTimer = setTimeout(() => this.notice = '', 4000);
+        if (!this.embeddedData) {
+            this.notice = result.player.firstName + ' ' + result.player.lastName + (result.alreadyMember ? ' is already in ' : ' added to ') + (this.data.team?.name || this.data.leagueName) + '.';
+            clearTimeout(this.noticeTimer); this.noticeTimer = setTimeout(() => this.notice = '', 4000);
+        }
         const index = this.focusAfterAdd.get(result.player.id); this.focusAfterAdd.delete(result.player.id);
         if (index !== undefined) setTimeout(() => {
             if (this.closed || document.activeElement !== document.body) return;
@@ -149,7 +151,7 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
         // A timeout/conflict can follow a committed write by this or another admin.
         // Confirm current membership by ID before removing a failed button.
         this.service.leaguePlayerMembership(this.data.leagueId, player.id).pipe(timeout(15000)).subscribe(result => {
-            if (result && result.leagueId === this.data.leagueId && result.player && result.player.id === player.id) this.confirm(result);
+            if (result && result.leagueId === this.data.leagueId && result.player && result.player.id === player.id) this.confirm(result, true);
             else this.failed(player);
         }, () => this.failed(player));
     }

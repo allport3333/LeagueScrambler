@@ -15,8 +15,8 @@ namespace Allport_s_League_Scrambler.Controllers
     public partial class TournamentsController
     {
         public sealed record WorkflowInput(int Step);
+        public const int OwnedTournamentLimit = 3;
 
-        [Authorize(Policy = "LeagueManagement")]
         [HttpGet("~/api/tournaments")]
         [HttpGet("~/api/tournaments/managed")]
         public async Task<IActionResult> ListManaged()
@@ -28,6 +28,9 @@ namespace Allport_s_League_Scrambler.Controllers
                 (isAdmin || db.TournamentConfigurations.Any(config => config.LeagueId == row.ID && config.OwnerUserId == account)))
                 .OrderBy(row => row.LeagueName).ToListAsync();
             var ids = events.Select(row => row.ID).ToArray();
+            if (!isAdmin) Response.Headers["X-Owned-Tournament-Count"] = events.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            Response.Headers["X-Tournaments-Exist"] =
+                (events.Count != 0 || await db.Leagues.AnyAsync(row => row.EventTypeId == 2)) ? "true" : "false";
             var settings = await db.TournamentConfigurations.AsNoTracking().Where(row => ids.Contains(row.LeagueId))
                 .ToDictionaryAsync(row => row.LeagueId);
             var rosterSizes = await db.PlayersLeagues.Where(row => ids.Contains(row.LeagueID))
@@ -35,6 +38,10 @@ namespace Allport_s_League_Scrambler.Controllers
                 .ToDictionaryAsync(row => row.id, row => row.count);
             var rounds = (await db.TournamentRounds.AsNoTracking().Where(row => ids.Contains(row.LeagueId) && row.VoidedAtUtc == null).ToListAsync())
                 .ToLookup(row => row.LeagueId);
+            var legacyScrambles = await db.KingQueenTeam.Where(team => ids.Contains(team.LeagueID) && team.ScrambleWithScoresToBeSaved &&
+                !db.TournamentRounds.Any(round => round.LeagueId == team.LeagueID && round.ScrambleNumber == team.ScrambleNumber))
+                .GroupBy(team => team.LeagueID).Select(group => new { id = group.Key, count = group.Select(team => team.ScrambleNumber).Distinct().Count() })
+                .ToDictionaryAsync(row => row.id, row => row.count);
             var teams = (await db.KingQueenTeam.AsNoTracking().Where(team => ids.Contains(team.LeagueID) &&
                 db.TournamentRounds.Any(round => round.LeagueId == team.LeagueID && round.ScrambleNumber == team.ScrambleNumber))
                 .Include(team => team.KingQueenRoundScores).ToListAsync()).ToLookup(team => (team.LeagueID, team.ScrambleNumber));
@@ -47,11 +54,11 @@ namespace Allport_s_League_Scrambler.Controllers
                     teams[(row.ID, round.ScrambleNumber)], round.GamesPerMatchup));
                 var status = Services.TournamentMatchupResults.TournamentStatus(total, generated, completed, config?.WorkflowStep ?? 1);
                 return new { row.ID, row.LeagueName, row.EventTypeId, eventDate = config?.EventDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
-                    participants = rosterSizes.GetValueOrDefault(row.ID), total, generated, completed, status };
+                    participants = rosterSizes.GetValueOrDefault(row.ID), total, generated, completed, status,
+                    workflowStep = config?.WorkflowStep ?? 1, legacyScrambles = legacyScrambles.GetValueOrDefault(row.ID) };
             }));
         }
 
-        [Authorize(Policy = "LeagueManagement")]
         [HttpPut("workflow")]
         [SameOrigin]
         public async Task<IActionResult> Advance(int leagueId, [FromBody] WorkflowInput input)
@@ -88,7 +95,6 @@ namespace Allport_s_League_Scrambler.Controllers
             await tx.CommitAsync();
             return Ok(new { step = config.WorkflowStep });
         }
-        [Authorize(Policy = "LeagueManagement")]
         [HttpDelete("participants/{playerId:int}")]
         [SameOrigin]
         public async Task<IActionResult> RemoveParticipant(int leagueId, int playerId)

@@ -17,7 +17,6 @@ namespace Allport_s_League_Scrambler.Controllers
         public sealed record RegistrationInput(string FirstName, string LastName, string Gender, int[] ReviewedMatches, bool ConfirmExact);
 
         [HttpGet("participant-matches")]
-        [Authorize(Policy = "LeagueManagement")]
         public async Task<IActionResult> FindParticipantMatches(int leagueId, string firstName, string lastName)
         {
             if (!ValidNames(firstName, lastName)) return BadRequest();
@@ -28,7 +27,6 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("participants/register")]
         [SameOrigin]
-        [Authorize(Policy = "LeagueManagement")]
         public async Task<IActionResult> RegisterParticipant(int leagueId, [FromBody] RegistrationInput input)
         {
             if (!ModelState.IsValid || input == null || !ValidNames(input.FirstName, input.LastName) ||

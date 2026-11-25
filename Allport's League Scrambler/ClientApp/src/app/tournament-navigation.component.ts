@@ -1,48 +1,26 @@
-import { NgTemplateOutlet } from '@angular/common';
-import { Component, inject, input } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
-import { LeagueService } from './services/league.service';
+import { Component } from '@angular/core';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
     selector: 'app-tournament-navigation',
-    imports: [RouterLink, NgTemplateOutlet],
+    imports: [RouterLink, RouterLinkActive],
     styles: [`
-        nav { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 14px; margin: .5rem 0 1rem; }
-        a, span { display: inline-flex; align-items: center; min-height: 44px; }
-        span { color: var(--hub-muted, #536478); }
-        details { display: none; margin: .5rem 0 1rem; }
-        summary { cursor: pointer; min-height: 44px; padding: .55rem; text-align: center; border: 1px solid var(--hub-border, #bcc6d2); border-radius: .4rem; }
-        @media (max-width: 720px) {
-            nav.desktop { display: none; }
-            details { display: block; }
-            details nav { flex-direction: column; gap: 0; padding-inline: .6rem; }
-        }
+        nav { display: flex; justify-content: center; flex-wrap: wrap; gap: .35rem; margin: .6rem 0 1rem; }
+        a { display: inline-flex; align-items: center; min-height: 44px; padding: .35rem .7rem; border: 1px solid var(--hub-border, #bcc6d2); border-radius: .45rem; text-align: center; }
+        a { color: var(--hub-text, #26354a); background: var(--hub-surface, #fff); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        a:focus-visible { outline: 2px solid var(--hub-focus, #1c5d9b); outline-offset: 2px; }
+        a.active { color: var(--hub-action-text, #fff); background: var(--hub-primary-action, #30577e); border-color: transparent; }
     `],
     template: `
-        <nav class="desktop" aria-label="Tournament Center views">
-            <ng-container *ngTemplateOutlet="links"></ng-container>
+        <nav aria-label="Tournament Center views">
+            <a routerLink="/tournament" [queryParams]="{view: 'current'}" routerLinkActive="active"
+                [routerLinkActiveOptions]="{exact: true}" ariaCurrentWhenActive="page">Current Tournament</a>
+            <a routerLink="/tournament" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
+                ariaCurrentWhenActive="page">Manage Tournaments</a>
+            <a routerLink="/tournament" [queryParams]="{view: 'create'}" routerLinkActive="active"
+                [routerLinkActiveOptions]="{exact: true}" ariaCurrentWhenActive="page">Create Tournament</a>
         </nav>
-        <details #menu>
-            <summary>Tournament menu</summary>
-            <nav aria-label="Tournament Center views" (click)="menu.open = false">
-                <ng-container *ngTemplateOutlet="links"></ng-container>
-            </nav>
-        </details>
-        <ng-template #links>
-            @if (!leagueId() && currentTournamentId; as id) { <a [routerLink]="['/tournament', id]">Current Tournament</a> }
-            @else if (!leagueId()) { <span aria-disabled="true">Current Tournament</span> }
-            <a routerLink="/tournament">Manage Tournaments</a>
-            <a routerLink="/tournament" [queryParams]="{view: 'create'}">Create Tournament</a>
-        </ng-template>
     `
 })
-export class TournamentNavigationComponent {
-    readonly leagueId = input<number>();
-    private readonly leagues = inject(LeagueService);
-    private readonly selected = toSignal(this.leagues.selectedLeague$);
-    get currentTournamentId(): number | undefined {
-        return this.leagueId() ?? this.leagues.leaguesAvailable.find(
-            event => event.id === this.selected()?.leagueId && event.canManageTournament)?.id;
-    }
-}
+export class TournamentNavigationComponent {}

@@ -64,7 +64,7 @@ export class IndividualTeamScoresComponent implements OnInit {
     // Fetch team scores for the selected date and league
     getTeamScores() {
         if (!this.selectedDate || !this.selectedLeague) {
-            this.snackBar.open('Select a league and a date.', 'Close', { duration: 3000 });
+            this.snackBar.open('Select a league and a date.', 'Close', { duration: 0 });
             return;
         }
 
@@ -78,7 +78,7 @@ export class IndividualTeamScoresComponent implements OnInit {
 
     loadAvailableDates() {
         if (!this.selectedLeague) {
-            this.snackBar.open('Select a league.', 'Close', { duration: 3000 });
+            this.snackBar.open('Select a league.', 'Close', { duration: 0 });
             return;
         }
 

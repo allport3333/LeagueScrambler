@@ -214,9 +214,12 @@ namespace Allport_s_League_Scrambler.Controllers
             if (request == null || request.LeagueId <= 0)
                 return BadRequest("Invalid league.");
 
-            var _context = new DataContext();
+            using var _context = new DataContext();
+            using var transaction = _context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
             if (!LeagueAccess.CanManage(User, _context, request.LeagueId))
                 return Forbid();
+            if (!_context.Leagues.Any(league => league.ID == request.LeagueId))
+                return NotFound("League not found.");
 
             // Get the latest sign-in date for the specified league
             var latestDate = _context.PlayerSignIn
@@ -265,6 +268,7 @@ namespace Allport_s_League_Scrambler.Controllers
             _context.SaveChanges();
 
             //}
+            transaction.Commit();
             return Ok(request.Locked);
 
         }
@@ -613,19 +617,25 @@ namespace Allport_s_League_Scrambler.Controllers
                 case 1:
                     break;
                 case 2:
-                    leagues = leagues.Where(league => _context.UserLeagues.Any(
+                    leagues = leagues.Where(league => (league.EventTypeId == 2 &&
+                        _context.TournamentConfigurations.Any(config => config.LeagueId == league.ID && config.OwnerUserId == userId)) ||
+                        _context.UserLeagues.Any(
                         link => link.UserId == userId && link.LeagueTypeId == league.ID));
                     break;
                 case 3:
                     // Registration and claiming are separate. An unlinked account has
                     // no league memberships until an authorized profile link exists.
-                    leagues = leagues.Where(league => _context.UsersPlayer.Any(link =>
+                    leagues = leagues.Where(league => (league.EventTypeId == 2 &&
+                        _context.TournamentConfigurations.Any(config => config.LeagueId == league.ID && config.OwnerUserId == userId)) ||
+                        _context.UsersPlayer.Any(link =>
                         link.UserId == userId && _context.Players.Any(player => player.Id == link.PlayerId) &&
                         _context.PlayersLeagues.Any(membership =>
                             membership.PlayerID == link.PlayerId && membership.LeagueID == league.ID)));
                     break;
                 default:
-                    return NotFound(new { message = "No linked leagues found for this user." });
+                    leagues = leagues.Where(league => league.EventTypeId == 2 &&
+                        _context.TournamentConfigurations.Any(config => config.LeagueId == league.ID && config.OwnerUserId == userId));
+                    break;
             }
 
             var userLeagues = await leagues.OrderByDescending(league => league.ID).Select(league => new
@@ -635,8 +645,7 @@ namespace Allport_s_League_Scrambler.Controllers
                     _context.UsersPlayer.Any(link => link.UserId == userId && _context.PlayersLeagues.Any(member =>
                         member.LeagueID == league.ID && member.PlayerID == link.PlayerId)),
                 CanManageTournament = league.EventTypeId == 2 && (userData.UserRoleId == 1 ||
-                    (userData.UserRoleId == 2 && _context.TournamentConfigurations.Any(config =>
-                        config.LeagueId == league.ID && config.OwnerUserId == userId)))
+                    _context.TournamentConfigurations.Any(config => config.LeagueId == league.ID && config.OwnerUserId == userId))
             }).ToListAsync();
             return Ok(userLeagues);
         }

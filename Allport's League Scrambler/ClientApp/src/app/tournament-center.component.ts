@@ -1,15 +1,16 @@
 import { TournamentDatePipe } from './tournament-date.pipe';
-import { TournamentNavigationComponent } from './tournament-navigation.component';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { LeagueService } from './services/league.service';
 import { TournamentCheckInComponent } from './tournament-check-in.component';
 import { TournamentParticipantsComponent } from './tournament-participants.component';
 import { TournamentRoundsComponent } from './tournament-rounds.component';
+import { TournamentNotifications } from './tournament-notifications.service';
+import { injectConfirmation } from './confirmation-dialog';
 
 interface TournamentDetails {
     eventDate: string;
@@ -22,15 +23,25 @@ interface TournamentDetails {
 @Component({
     selector: 'app-tournament-center',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, TournamentParticipantsComponent, TournamentCheckInComponent, TournamentRoundsComponent, TournamentNavigationComponent, TournamentDatePipe],
+    imports: [FormsModule, RouterLink, TournamentParticipantsComponent, TournamentCheckInComponent, TournamentRoundsComponent, TournamentDatePipe],
     styles: [`
-        main { padding: 16px; max-width: 100rem; margin: auto; }
-        header { text-align: center; margin-bottom: 16px; overflow-wrap: anywhere; }
-        .workflow { display: grid; grid-template-columns: minmax(145px, 178px) minmax(0, 1fr); gap: 16px; }
+        main { padding: 0 clamp(.5rem, 1.5vw, 1.5rem); max-width: 110rem; margin: .75rem auto; }
+        .workspace { --workspace-padding: clamp(.75rem, 1.4vw, 1.5rem); border: 1px solid var(--hub-border, #bcc6d2);
+            border-radius: .85rem; background: var(--hub-surface, #fff); }
+        header { text-align: center; padding: var(--workspace-padding) var(--workspace-padding) .3rem;
+            overflow-wrap: anywhere; border-bottom: 1px solid var(--hub-border, #bcc6d2); }
+        h1 { margin: 0 0 .35rem; }
+        .workspace-links { display: flex; flex-wrap: wrap; justify-content: center; column-gap: .85rem; }
+        .center-return { display: inline-flex; align-items: center; min-height: 44px; color: var(--hub-link, #245587); text-decoration: underline; }
+        .workflow { display: grid; grid-template-columns: minmax(145px, 178px) minmax(0, 1fr);
+            gap: var(--workspace-padding); padding: var(--workspace-padding); align-items: start; }
+        .wizard-steps { align-self: stretch; padding-inline-end: .65rem; border-inline-end: 1px solid var(--hub-border, #bcc6d2); }
+        .workspace-message { padding-inline: var(--workspace-padding); }
         .step-content { min-width: 0; width: 100%; margin-inline: auto; }
         .step-content.compact { max-width: 50rem; }
         .step-content.configuration { max-width: 65rem; }
         .step-content > h2, .generation-note { text-align: center; }
+        .step-content > h2 { margin-top: 0; }
         .header-meta { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: .5rem .75rem; }
         .tournament-status { border-radius: 1rem; padding: .15rem .55rem; border: 1px solid var(--hub-border, #bcc6d2); font-size: .9rem; }
         .step-label { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: .4rem; align-items: start; }
@@ -51,7 +62,12 @@ interface TournamentDetails {
         .standings-link { color: var(--hub-link, #245587); background: transparent; border: 0; text-decoration: underline; }
         :is(button, input, textarea, a):focus-visible { outline: 2px solid var(--hub-focus, #1c5d9b); outline-offset: 2px; }
         @media(max-width: 720px) {
-            .workflow { display: block; }
+            main { margin-block: .45rem; }
+            .workspace { --workspace-padding: .65rem; }
+            h1 { font-size: clamp(1.55rem, 6.5vw, 2rem); }
+            .workspace-links { gap: 0 .6rem; }
+            .center-return, .standings-link { padding-inline: .15rem; font-size: .875rem; }
+            .workflow { display: block; padding-inline: .5rem; }
             .wizard-steps { display: none; }
             .mobile-step { display: grid; }
             .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem; }
@@ -62,17 +78,22 @@ interface TournamentDetails {
     `],
     template: `
         <main>
+          <div class="workspace">
             <header>
                 <h1>{{ name || 'Tournament Center' }}</h1>
                 <div class="header-meta">
                 @if (details.eventDate) { <time [attr.datetime]="details.eventDate">{{ details.eventDate | tournamentDate }}</time> }
                 @if (status) { <span class="tournament-status">{{ completed ? 'Completed' : status }}</span> }
-                @if (name) { <button type="button" class="standings-link" [disabled]="navigationBusy" (click)="openStandings()">View Standings</button> }
                 </div>
-                <app-tournament-navigation [leagueId]="name ? leagueId : undefined" />
+                <div class="workspace-links">
+                    <a class="center-return" routerLink="/tournament" [queryParams]="{view: 'current'}">Back to Tournament Center</a>
+                    @if (name && !(step === 7 && completed)) {
+                        <button type="button" class="standings-link" [disabled]="navigationBusy" (click)="openStandings()">View Standings</button>
+                    }
+                </div>
             </header>
             @if (loading) { <p role="status">Loading tournament…</p> }
-            @if (error) { <p role="alert">{{ error }}</p> }
+            @if (error) { <p class="workspace-message" role="alert">{{ error }}</p> }
             @if (name) {
                 <div class="workflow">
                     <nav class="wizard-steps" aria-label="Tournament setup steps">
@@ -137,11 +158,14 @@ interface TournamentDetails {
                     </section>
                 </div>
             }
+          </div>
         </main>
     `
 })
 export class TournamentCenterComponent {
     private readonly http = inject(HttpClient);
+    private readonly notifications = inject(TournamentNotifications);
+    private readonly confirm = injectConfirmation();
     private readonly destroy = inject(DestroyRef);
     private readonly leagueService = inject(LeagueService);
     private readonly router = inject(Router);
@@ -151,8 +175,9 @@ export class TournamentCenterComponent {
     private readonly rounds = viewChild(TournamentRoundsComponent);
     private readonly route = inject(ActivatedRoute);
     readonly leagueId = Number(this.route.snapshot.paramMap.get('leagueId'));
-    readonly initialRunView = this.route.snapshot.queryParamMap.get('runView') ?? undefined;
-    readonly initialScoreRound = Number(this.route.snapshot.queryParamMap.get('scoreRound')) || undefined;
+    readonly initialRunView = this.route.snapshot.queryParamMap.get('runView') ?? this.readRunView();
+    readonly initialScoreRound = Number(this.route.snapshot.queryParamMap.get('scoreRound')) ||
+        (this.initialRunView === 'scores' ? this.readScoreRound() : undefined);
     private readonly url = '/api/tournaments/' + this.leagueId;
     readonly labels = ['Tournament Details', 'Manage Participants', 'Team & Round Setup', 'Player Priorities & Byes',
         'Confirm Participants', 'Generate & Preview Tournament', 'Run Tournament'];
@@ -172,7 +197,7 @@ export class TournamentCenterComponent {
         const rounds = this.rounds();
         const round = rounds?.view === 'scores' ? rounds.scoreRound?.roundNumber : undefined;
         return { leagueId: this.leagueId, tournament: 1, returnStep: this.step, returnRound: round,
-            returnView: this.step === 7 ? rounds?.view : undefined };
+            returnView: this.step === 7 ? rounds?.resumeView : undefined };
     }
 
     constructor() {
@@ -188,7 +213,9 @@ export class TournamentCenterComponent {
                 ? requestedStep : this.reached;
             this.rememberStep();
             this.leagueService.selectNavigationLeague(this.leagueId).pipe(takeUntilDestroyed(this.destroy)).subscribe();
-        }).catch(() => this.error = 'This tournament is unavailable to your account.')
+        }).catch(error => this.error = error.status === 404
+            ? 'Tournament not found. It may have been deleted.'
+            : 'This tournament is unavailable to your account.')
             .finally(() => this.loading = false);
     }
 
@@ -222,9 +249,26 @@ export class TournamentCenterComponent {
         }
     }
 
-    canLeave(): boolean {
-        return !this.navigationBusy &&
-            (!this.hasUnsavedChanges || window.confirm('Discard unsaved tournament changes?'));
+    async canLeave(): Promise<boolean> {
+        if (this.navigationBusy) return false;
+        if (this.hasUnsavedChanges && !await this.confirm({
+            title: 'Unsaved changes', message: 'Discard unsaved tournament changes?', action: 'Discard', tone: 'danger'
+        })) return false;
+        if (this.step === 7 && this.rounds()) {
+            try { sessionStorage.setItem(this.runViewStorageKey, this.rounds().resumeView); }
+            catch { /* Session storage is optional. */ }
+        }
+        return true;
+    }
+
+    private get runViewStorageKey() { return 'league-hub-tournament-run-view-' + this.leagueId; }
+    private readRunView(): string | undefined {
+        try { return sessionStorage.getItem(this.runViewStorageKey) ?? undefined; }
+        catch { return undefined; }
+    }
+    private readScoreRound(): number | undefined {
+        try { return Number(sessionStorage.getItem('league-hub-tournament-score-round-' + this.leagueId)) || undefined; }
+        catch { return undefined; }
     }
 
     private get stepStorageKey() { return 'league-hub-tournament-step:' + this.leagueId; }
@@ -237,8 +281,9 @@ export class TournamentCenterComponent {
         catch { /* Session storage is optional. */ }
     }
 
-    goTo(step: number) {
-        if (step === this.step || step < 1 || step > this.reached || !this.canLeave()) return;
+    async goTo(step: number) {
+        if (step === this.step || step < 1 || step > this.reached || !await this.canLeave()) return;
+        this.notifications.dismissSuccess();
         if (this.step === 1 && this.savedDetails) {
             this.draftName = this.name;
             this.details = { ...this.savedDetails, version: this.details.version };
@@ -250,12 +295,9 @@ export class TournamentCenterComponent {
         this.clearReturnContext();
     }
 
-    returnToRun() {
-        this.goTo(7);
-        if (this.step === 7) {
-            const workspace = this.rounds();
-            workspace?.changeRunView(workspace.tournamentComplete ? 'complete' : 'rounds');
-        }
+    async returnToRun() {
+        await this.goTo(7);
+        if (this.step === 7) this.rounds()?.closeScores();
     }
 
     updateCompletion(complete: boolean) {
@@ -265,8 +307,7 @@ export class TournamentCenterComponent {
 
     resetRoundWorkflow() {
         this.hasRounds = this.completed = false;
-        this.reached = 6;
-        this.step = Math.min(this.step, 6);
+        this.reached = this.step === 7 ? 7 : 6;
         this.status = "Ready";
         this.rememberStep();
     }
@@ -291,12 +332,14 @@ export class TournamentCenterComponent {
     async advance() {
         if (this.saving || this.participants()?.busy) return;
         if (this.step === 2 && this.participants()?.hasUnsavedChanges &&
-            !window.confirm('Discard the unfinished player registration?')) return;
+            !await this.confirm({ title: 'Unfinished registration', message: 'Discard the unfinished player registration?',
+                action: 'Discard', tone: 'danger' })) return;
         this.saving = true;
         this.error = '';
         try {
             if (this.step === 1 && (!this.details.eventDate || !this.draftName.trim())) {
-                throw new Error('Enter a tournament name and date.');
+                this.error = 'Enter a tournament name and date.';
+                return;
             }
             if (this.step === 1 && (this.detailsChanged || !this.details.version)) {
                 const saved = await this.request(this.http.put<{name: string; details: TournamentDetails}>(this.url + '/details',
@@ -308,16 +351,21 @@ export class TournamentCenterComponent {
                 if (renamed) this.leagueService.getLeagues().pipe(takeUntilDestroyed(this.destroy))
                     .subscribe({ next: () => this.leagueService.setSelectedLeague(this.leagueId), error: () => {} });
             }
-            if ((this.step === 3 || this.step === 4) && !(await this.rounds()?.saveSettings())) return;
+            if ((this.step === 3 || this.step === 4) && !(await this.rounds()?.saveSettings(false))) return;
             if (this.step === 5 && !(await this.checkIn()?.saveEligibility())) return;
             const result = await this.request(this.http.put<{step: number}>(this.url + '/workflow', { step: this.step }));
+            const messages = ['Tournament details saved.', 'Tournament roster confirmed.', 'Tournament settings saved.',
+                'Player priorities and byes saved.', 'Participant eligibility confirmed.'];
+            const message = messages[this.step - 1];
+            if (message) this.notifications.success(message);
             this.reached = Math.max(this.reached, result.step);
             this.step++;
             this.rememberStep();
             this.clearReturnContext();
             if (!this.hasRounds && this.step === 6) this.status = 'Ready';
         } catch (error) {
-            this.error = error.error?.message || (error.status ? 'Could not save this step. Reload the tournament and try again.' : error.message);
+            if (!this.destroy.destroyed)
+                this.notifications.error(error.error?.message || 'Could not save this step. Reload the tournament and try again.');
         } finally { this.saving = false; }
     }
 }
