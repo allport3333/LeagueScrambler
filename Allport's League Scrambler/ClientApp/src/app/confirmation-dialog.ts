@@ -9,6 +9,7 @@ export interface Confirmation {
     title: string;
     message: string;
     action?: string;
+    dismiss?: string;
     tone?: 'success' | 'danger';
     details?: { label: string; value: string | number }[];
     confirmName?: string;
@@ -42,7 +43,7 @@ export interface Confirmation {
             }
         </mat-dialog-content>
         <mat-dialog-actions align="end">
-            <button mat-button mat-dialog-close type="button" cdkFocusInitial>{{ data.action ? 'Cancel' : 'Close' }}</button>
+            <button mat-button mat-dialog-close type="button" cdkFocusInitial>{{ data.dismiss || (data.action ? 'Cancel' : 'Close') }}</button>
             @if (data.action) {
             <button mat-raised-button type="button" [mat-dialog-close]="true"
                 [disabled]="data.confirmName !== undefined && typedName !== data.confirmName"

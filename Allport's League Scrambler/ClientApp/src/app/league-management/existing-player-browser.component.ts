@@ -7,11 +7,18 @@ import { MatSelectModule } from '@angular/material/select';
 import { PageLoadingComponent } from '../page-loading.component';
 import { Component, ElementRef, Inject, Input, Optional, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { timeout } from 'rxjs/operators';
 import { PlayerService } from '../services/player.service';
 import { StatisticsService } from '../services/statistics.service';
 import { LeagueService } from '../services/league.service';
+
+export interface PickupBrowserPlayer { id: number; firstName: string; lastName: string; isMale: boolean | null; alreadyAdded: boolean; }
+
+export interface PickupPlayerBrowser {
+    load: () => Observable<{players: PickupBrowserPlayer[]}>;
+    add: (id: number) => Observable<unknown>;
+}
 
 @Component({
     selector: 'app-existing-player-browser',
@@ -45,7 +52,7 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.data = this.embeddedData ?? this.data;
         this.divisionId = this.data.divisionId || 0;
-        if (!this.embeddedData) this.contextReader = this.leagueService.selectedLeague$.subscribe(context => {
+        if (!this.embeddedData && !this.data.pickup) this.contextReader = this.leagueService.selectedLeague$.subscribe(context => {
             if (context.leagueId !== this.data.leagueId) this.dialogRef.close();
         });
         if (this.data.team) {
@@ -57,6 +64,15 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
     load(): void {
         if (this.reader) this.reader.unsubscribe();
         this.loading = true; this.error = ''; this.players = []; this.filter();
+        const pickup: PickupPlayerBrowser | undefined = this.data.pickup;
+        if (pickup) {
+            this.reader = pickup.load().pipe(timeout(20000)).subscribe(response => {
+                this.players = response.players;
+                this.loading = false;
+                this.filter();
+            }, () => this.loadFailed());
+            return;
+        }
         this.reader = this.service.availableLeaguePlayers(this.data.leagueId).pipe(timeout(20000)).subscribe(response => {
             if (!response || !Array.isArray(response.players) || !Array.isArray(response.divisions)) { this.loadFailed(); return; }
             this.players = response.players;
@@ -73,16 +89,28 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
             return (this.gender === 'all' || (this.gender === 'men' ? p.isMale === true : p.isMale === false)) && words.every(word => name.indexOf(word) >= 0);
         });
     }
+    get availableCount(): number { return this.players.filter(player => !player.alreadyAdded).length; }
     setGender(gender: string): void { this.gender = gender; this.filter(); }
     trackPlayer(index: number, player: any): number { return player.id; }
     add(player: any): void {
-        if (this.closed || this.blocked || this.loading || (this.data.team ? this.pending.size > 0 : this.pending.has(player.id)) || !this.players.some(p => p.id === player.id)) return;
+        if (player.alreadyAdded || this.closed || this.blocked || this.loading || (this.data.team ? this.pending.size > 0 : this.pending.has(player.id)) || !this.players.some(p => p.id === player.id)) return;
         if (this.divisionId && !this.divisions.some(d => d.id === this.divisionId)) { this.error = 'Select an available division.'; return; }
         const divisionId = this.divisionId, leagueId = this.data.leagueId, leagueName = this.data.leagueName;
         const active = document.activeElement;
         if (active && active.getAttribute('data-player-id') === String(player.id))
             this.focusAfterAdd.set(player.id, Array.prototype.indexOf.call(this.element.nativeElement.querySelectorAll('.available-player'), active));
         this.pending.add(player.id); this.error = '';
+        const pickup: PickupPlayerBrowser | undefined = this.data.pickup;
+        if (pickup) {
+            pickup.add(player.id).subscribe({
+                next: () => this.confirm({player}),
+                error: response => {
+                    this.failed(player);
+                    this.error = response.error?.message || this.error;
+                }
+            });
+            return;
+        }
         // Writes intentionally finish even if the dialog closes. The callback updates
         // the owning league's roster only while that league is still selected.
         if (this.data.team) {
@@ -134,7 +162,9 @@ export class ExistingPlayerBrowserComponent implements OnInit, OnDestroy {
         this.data.onAdded(result, reconciled);
         if (this.closed) return;
         this.pending.delete(result.player.id);
-        this.players = this.players.filter(p => p.id !== result.player.id); this.filter();
+        if (this.data.pickup) result.player.alreadyAdded = true;
+        else this.players = this.players.filter(p => p.id !== result.player.id);
+        this.filter();
         if (!this.embeddedData) {
             this.notice = result.player.firstName + ' ' + result.player.lastName + (result.alreadyMember ? ' is already in ' : ' added to ') + (this.data.team?.name || this.data.leagueName) + '.';
             clearTimeout(this.noticeTimer); this.noticeTimer = setTimeout(() => this.notice = '', 4000);

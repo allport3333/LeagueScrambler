@@ -1,4 +1,4 @@
-﻿import { AsyncPipe } from '@angular/common';
+﻿import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -18,7 +18,7 @@ interface Venue {
 }
 interface Session extends Omit<SessionCard, 'venue' | 'city' | 'region' | 'timeZone'> {
     venue: Venue; organizer: string; description?: string; organizerNotes?: string; deadlineUtc?: string;
-    approvalRequired: boolean; visibility: number; owner: boolean; registration: number | null;
+    approvalRequired: boolean; visibility: number; owner: boolean; canReopen: boolean; registration: number | null;
     registrationOpen: boolean; registrations?: {id: string; name: string; state: number}[];
 }
 const deviceZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -33,7 +33,7 @@ const emptyForm = () => ({
 @Component({
     selector: 'app-pickup',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, RouterLink, AsyncPipe, PickupWorkspaceComponent],
+    imports: [FormsModule, RouterLink, AsyncPipe, NgTemplateOutlet, PickupWorkspaceComponent],
     templateUrl: './pickup.component.html',
     styleUrl: './pickup.component.css'
 })
@@ -45,7 +45,7 @@ export class PickupComponent implements OnInit {
     private readonly notifications = inject(TournamentNotifications);
     readonly durations = [{minutes: 60, label: '1 hour'}, {minutes: 90, label: '1.5 hours'},
         {minutes: 120, label: '2 hours'}, {minutes: 180, label: '3 hours'}];
-    readonly zones = [...new Set([deviceZone, 'America/New_York', 'America/Chicago', 'America/Denver',
+    readonly zones = [...new Set([deviceZone, 'America/Detroit', 'America/New_York', 'America/Chicago', 'America/Denver',
         'America/Los_Angeles', 'UTC', ...(Intl.supportedValuesOf?.('timeZone') ?? [])])];
     readonly signedIn = inject(AuthService).isLoggedIn$;
     readonly levels = ['Beginner', 'Intermediate', 'Advanced', 'All levels'];
@@ -61,6 +61,7 @@ export class PickupComponent implements OnInit {
     advancedOpen = false;
     scheduleEdited = false;
     fieldErrors: Record<string, string> = {};
+    resume?: {id: string; name: string};
     shareUrl = '';
     private venueRequest = 0;
     join = { name: '', email: '' };
@@ -124,6 +125,31 @@ export class PickupComponent implements OnInit {
         catch { this.error = 'Pickup Games is unavailable here.'; this.loading = false; return false; }
     }
 
+    private async loadResume(request: number): Promise<void> {
+        this.resume = undefined;
+        try {
+            const id = sessionStorage.getItem('pickup-current-session');
+            if (!id) return;
+            const sessions = await firstValueFrom(this.http.get<{id: string; name: string}[]>('/api/pickup/selector'));
+            if (request === this.request) this.resume = sessions.find(session => session.id === id);
+        } catch { /* Discovery remains available when signed out or storage is unavailable. */ }
+    }
+
+    sessionTime(game: Session): string {
+        const zone = game.venue.timeZone;
+        const time = new Intl.DateTimeFormat(undefined, {timeZone: zone, timeStyle: 'short'});
+        return this.format(game.startsUtc, zone) + ' to ' + time.format(new Date(game.endsUtc));
+    }
+
+    venueZoneLabel(venue: Venue): string {
+        const zone = venue.timeZone;
+        if (zone === 'America/Detroit' || (zone === 'America/New_York' && /^(MI|Michigan)$/i.test(venue.region)))
+            return 'Detroit (Eastern Time)';
+        const name = new Intl.DateTimeFormat(undefined, {timeZone: zone, timeZoneName: 'longGeneric'})
+            .formatToParts(new Date()).find(part => part.type === 'timeZoneName')?.value;
+        return name || this.zoneLabel(zone);
+    }
+
     async load(page = 0): Promise<void> {
         const request = ++this.request;
         this.loading = true;
@@ -132,10 +158,15 @@ export class PickupComponent implements OnInit {
         try {
             if (this.id) {
                 const session = await firstValueFrom(this.http.get<Session>(this.sessionUrl()));
-                if (request === this.request) this.session = session;
+                if (request === this.request) {
+                    this.session = session;
+                    if (session.owner && [1, 2].includes(session.state)) {
+                        try { sessionStorage.setItem('pickup-current-session', session.id); } catch { /* Optional resume. */ }
+                    }
+                }
             } else if (this.view === 'mine') {
                 this.sessions = await firstValueFrom(this.http.get<SessionCard[]>('/api/pickup/mine'));
-            } else if (!this.view) {
+            } else if (this.view === 'find') {
                 let params = new HttpParams().set('page', page);
                 for (const [key, value] of Object.entries(this.filters)) if (value) params = params.set(key, value);
                 const result = await firstValueFrom(this.http.get<{sessions: SessionCard[]; hasMore: boolean}>('/api/pickup/sessions', {params}));
@@ -143,6 +174,8 @@ export class PickupComponent implements OnInit {
                     this.sessions = result.sessions;
                     this.hasMore = result.hasMore;
                 }
+            } else if (!this.view) {
+                await this.loadResume(request);
             }
         } catch (error) {
             if (request === this.request) this.error = error.status === 404 ? 'This session is unavailable.' :

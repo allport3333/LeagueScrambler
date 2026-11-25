@@ -8,13 +8,13 @@
   <div class="gender-filters" role="group" aria-label="Filter players by gender">@for (option of ['all','men','women']; track option) {
     <button mat-stroked-button type="button" [attr.aria-pressed]="gender === option" [class.gender-selected]="gender === option" (click)="setGender(option)">{{ option === 'all' ? 'All' : option === 'men' ? 'Men' : 'Women' }}</button>
   }</div>
-  @if (!data.team && !embeddedData) { <mat-form-field appearance="outline" class="browser-division"><mat-label>Add to Division</mat-label><mat-select [(ngModel)]="divisionId" [disabled]="loading || blocked"><mat-option [value]="0">No Division</mat-option>@for (division of divisions; track division) {
+  @if (!data.team && !data.pickup && !embeddedData) { <mat-form-field appearance="outline" class="browser-division"><mat-label>Add to Division</mat-label><mat-select [(ngModel)]="divisionId" [disabled]="loading || blocked"><mat-option [value]="0">No Division</mat-option>@for (division of divisions; track division) {
   <mat-option [value]="division.id">{{ division.name || division.code }}</mat-option>
 }</mat-select></mat-form-field> }
 </div>
 </div>
 <div class="browser-meta">@if (!loading) {
-  <p class="browser-count" aria-live="polite">{{ players.length }} available &middot; {{ filteredPlayers.length }} shown</p>
+  <p class="browser-count" aria-live="polite">{{ availableCount }} available &middot; {{ filteredPlayers.length }} shown</p>
   }@if (!embeddedData) { <p class="browser-notice" role="status" aria-live="polite">{{ notice }}</p> }</div>
   @if (error) {
     <div class="browser-error" role="alert">{{ error }} @if (!players.length && !blocked) {
@@ -26,7 +26,7 @@
       <app-page-loading label="Loading available players"></app-page-loading>
     }
     @if (!loading && !blocked && !players.length && (data.team || !error)) {
-      <p class="browser-empty">{{ data.team ? 'All eligible league players are already assigned to teams.' : 'All available players are already in this league.' }}</p>
+      <p class="browser-empty">{{ data.team ? 'All eligible league players are already assigned to teams.' : data.pickup ? 'No League Hub players are available.' : 'All available players are already in this league.' }}</p>
     }
     @if (!loading && players.length && !filteredPlayers.length) {
       <p class="browser-empty">{{ data.team ? 'No eligible players match your search or filter.' : 'No players match your search.' }}</p>
@@ -34,8 +34,9 @@
     @if (!loading) {
       <div class="available-player-grid">
         @for (player of filteredPlayers; track trackPlayer($index, player)) {
-          <button mat-button type="button" class="available-player" [attr.data-player-id]="player.id" [class.male]="player.isMale === true" [class.female]="player.isMale === false" [disabled]="pending.has(player.id) || blocked || (data.team && pending.size > 0)" [attr.aria-label]="'Add '+player.firstName+' '+player.lastName+' to '+(data.team?.name || data.leagueName)" (click)="add(player)"><span>{{ player.firstName }} {{ player.lastName }}</span>@if (pending.has(player.id)) {
+          <button mat-button type="button" class="available-player" [attr.data-player-id]="player.id" [class.male]="player.isMale === true" [class.female]="player.isMale === false" [disabled]="player.alreadyAdded || pending.has(player.id) || blocked || (data.team && pending.size > 0)" [attr.aria-label]="(player.alreadyAdded ? 'Already Added: ' : 'Add ')+player.firstName+' '+player.lastName+' to '+(data.team?.name || data.leagueName)" (click)="add(player)"><span>{{ player.firstName }} {{ player.lastName }}</span>@if (pending.has(player.id)) {
           <small>Adding...</small>
+        } @else if (player.alreadyAdded) { <small>Already Added</small>
         }</button>
       }
     </div>

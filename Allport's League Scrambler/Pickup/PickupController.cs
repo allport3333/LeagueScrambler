@@ -101,7 +101,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
         return Ok(new {
             session.Id, session.Name, session.Sport, session.Venue, session.StartsUtc, session.EndsUtc, session.DeadlineUtc,
             session.LocalDate, session.Description, session.Skill, session.Capacity, session.Visibility, session.State,
-            session.ApprovalRequired, organizer, owner,
+            session.ApprovalRequired, organizer, owner, canReopen = CanReopen(session),
             organizerNotes = owner ? session.OrganizerNotes : null,
             confirmed = await Confirmed(db, id),
             registrationOpen = RegistrationOpen(session),
@@ -311,7 +311,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     }
 
     private bool IsOwner(PickupSession s) => LeagueAccess.TryGetAccountId(User, out var account) && account == s.OrganizerId;
-    private bool CanRead(PickupSession s) => s != null && (IsOwner(s) ||
+    private bool CanRead(PickupSession s) => s != null && (IsOwner(s) || CanReopen(s) ||
         (s.Visibility != SessionVisibility.Private && s.State != SessionState.Draft));
 
     private static async Task<List<object>> Cards(DataContext db, IQueryable<PickupSession> sessions) =>
@@ -391,6 +391,8 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
             if (!TryZone(input.TimeZone, out _, out var zoneId)) return new("timeZone", "Choose a valid time zone.");
             var address = input.Address?.Trim() ?? "";
             var region = input.Region?.Trim() ?? "";
+            if (zoneId == "America/New_York" && (region.Equals("MI", StringComparison.OrdinalIgnoreCase) ||
+                region.Equals("Michigan", StringComparison.OrdinalIgnoreCase))) zoneId = "America/Detroit";
             var country = string.IsNullOrWhiteSpace(input.Country) ? "US" : input.Country.Trim();
             venue = await db.PickupVenues.FirstOrDefaultAsync(v => v.Name == name && v.Address == address &&
                 v.City == city && v.Region == region && v.PostalCode == postalCode &&

@@ -7,6 +7,8 @@ import { generateScramble, pairKey, PairFrequency } from './scrambler/scramble-e
 import { buildScrambleDraft } from './scrambler/scramble-draft';
 import { ScrambleDraftComponent, scrambleDraftDialogOptions } from './scrambler/scramble-draft.component';
 import { renderLargeMatchupPrint } from './matchup-large-print';
+import { ExistingPlayerBrowserComponent, PickupPlayerBrowser, PickupBrowserPlayer } from './league-management/existing-player-browser.component';
+import { injectConfirmation } from './confirmation-dialog';
 import { TournamentNotifications } from './tournament-notifications.service';
 
 interface Participant { id: string; playerId: number | null; name: string; gender: string | null; }
@@ -19,7 +21,7 @@ interface Workspace {
     players: Registration[] | null; checkedInOnly: boolean; playing: number; gamesPlayed: number; gameSets: number;
     myRegistrationId: string | null; sets: GameSet[] | null;
 }
-interface SessionSummary { id: string; name: string; state: number; owner: boolean; confirmed: number; visibility: number; organizerNotes?: string; }
+interface SessionSummary { id: string; name: string; state: number; owner: boolean; confirmed: number; visibility: number; organizerNotes?: string; canReopen: boolean; startsUtc: string; endsUtc: string; deadlineUtc?: string; }
 
 @Component({
     selector: 'app-pickup-workspace',
@@ -33,27 +35,26 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
     @Input({required: true}) statuses: string[] = [];
     @Output() sessionUpdated = new EventEmitter<void>();
     @Output() editSettings = new EventEmitter<void>();
+    @Output() viewDetails = new EventEmitter<void>();
     @Output() invite = new EventEmitter<void>();
 
     private readonly http = inject(HttpClient);
     private readonly dialogs = inject(MatDialog);
+    private readonly ask = injectConfirmation();
+    private playerBrowser?: MatDialogRef<ExistingPlayerBrowserComponent>;
     private readonly notifications = inject(TournamentNotifications);
     private dialog?: MatDialogRef<ScrambleDraftComponent>;
     private currentId?: string;
     private request = 0;
-    private optionsRequest = 0;
     data?: Workspace;
     tab = 'Players';
     busy = false;
     error = '';
-    addOpen = false;
-    addSearch = '';
-    addPage = 0;
-    addMore = false;
-    addOptions: {id: number; name: string}[] = [];
-    selected = new Set<number>();
     guestName = '';
-    confirm: 'cancel' | 'complete' | null = null;
+    guestOpen = false;
+    reschedule = false;
+    reopenNow = false;
+    reopenStart = '';
     priority: Record<string, string> = {};
     options = { teamCount: 2, maxTeamSize: 4, balanced: true, history: 'none', games: 1, watch: false };
     preview?: Board;
@@ -72,17 +73,16 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
             this.dialog?.close();
             this.currentId = this.session.id;
             this.data = undefined;
-            this.tab = this.session.owner ? 'Players' : 'Teams & Scores';
+            this.tab = this.session.owner || this.session.canReopen ? this.savedTab() : 'Teams & Scores';
             this.busy = false;
             this.error = '';
             this.open.clear();
             this.preview = undefined;
             this.scoring = this.editing = undefined;
             this.priority = {};
-            this.addOpen = false;
-            this.selected.clear();
-            this.confirm = null;
-            ++this.optionsRequest;
+            this.playerBrowser?.close();
+            this.guestOpen = this.reschedule = this.reopenNow = false;
+            this.reopenStart = '';
         }
         void this.load();
     }
@@ -90,13 +90,30 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
     ngOnDestroy(): void {
         this.currentId = undefined;
         ++this.request;
-        ++this.optionsRequest;
+        this.playerBrowser?.close();
         this.dialog?.close();
+    }
+
+    selectTab(tab: string): void {
+        this.tab = tab;
+        try { sessionStorage.setItem('pickup-tab-' + this.session.id, tab); } catch { /* Optional resume. */ }
+    }
+
+    private savedTab(): string {
+        try {
+            const tab = sessionStorage.getItem('pickup-tab-' + this.session.id);
+            if (tab === 'Session Settings') return tab;
+            if (tab === 'Teams & Scores' || (tab === 'Scramble Teams' && this.active)) return tab;
+        } catch { /* Optional resume. */ }
+        return this.session.state === 4 ? 'Session Settings' : 'Players';
     }
 
     get active(): boolean { return this.session.owner && (this.session.state === 1 || this.session.state === 2); }
     get eligible(): Registration[] { return (this.data?.players ?? []).filter(p => this.playing(p)); }
     private get endpoint(): string { return '/api/pickup/sessions/' + this.session.id; }
+
+    get participants(): Registration[] { return (this.data?.players ?? []).filter(player => player.state !== 0); }
+    get verifying(): Registration[] { return (this.data?.players ?? []).filter(player => player.state === 0); }
 
     playing(player: Registration): boolean {
         return player.state === 2 && (player.playing ?? !this.data?.checkedInOnly);
@@ -134,46 +151,71 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
         return error?.error?.message || 'The Pickup workspace could not complete that action. Try again.';
     }
 
-    async browse(page = 0): Promise<void> {
-        this.addOpen = true;
-        const request = ++this.optionsRequest;
-        try {
-            const result = await firstValueFrom(this.http.get<{players: {id: number; name: string}[]; hasMore: boolean}>(
-                this.endpoint + '/player-options', {params: {q: this.addSearch, page}}));
-            if (request !== this.optionsRequest) return;
-            this.addOptions = result.players;
-            this.addMore = result.hasMore;
-            this.addPage = page;
-        } catch (error) {
-            if (request === this.optionsRequest) this.error = this.message(error);
-        }
-    }
-
-    selectPlayer(id: number, selected: boolean): void {
-        if (selected) this.selected.add(id);
-        else this.selected.delete(id);
+    browse(): void {
+        if (!this.active || this.playerBrowser) return;
+        const endpoint = this.endpoint;
+        const sessionId = this.currentId;
+        const pickup: PickupPlayerBrowser = {
+            load: () => this.http.get<{players: PickupBrowserPlayer[]}>(endpoint + '/player-options'),
+            add: id => this.http.post(endpoint + '/players', {playerIds: [id]})
+        };
+        this.playerBrowser = this.dialogs.open(ExistingPlayerBrowserComponent, {
+            width: 'min(1100px, calc(100vw - 16px))', maxWidth: 'calc(100vw - 16px)', maxHeight: 'calc(100dvh - 16px)',
+            data: {leagueName: this.session.name, pickup, onAdded: () => {
+                if (sessionId !== this.currentId) return;
+                this.preview = undefined;
+                this.sessionUpdated.emit();
+                void this.load();
+            }}
+        });
+        this.playerBrowser.afterClosed().subscribe(() => { this.playerBrowser = undefined; });
     }
 
     readonly clearGuest = () => { this.guestName = ''; };
 
     onTeam(roster: Participant[], id: string): boolean { return roster.some(player => player.id === id); }
 
-    finish(): void {
-        const complete = this.confirm === 'complete';
-        void this.mutate(complete ? '/lifecycle' : '/cancel', {complete}, 'POST', () => {
-            this.confirm = null;
-            this.preview = undefined;
-            this.scoring = this.editing = undefined;
-            this.tab = 'Teams & Scores';
-            this.notifications.success(complete ? 'Pickup session completed.' : 'Pickup session cancelled.');
+    get rescheduleRequired(): boolean {
+        return Date.parse(this.session.endsUtc) <= Date.now() ||
+            Date.parse(this.session.deadlineUtc ?? this.session.startsUtc) <= Date.now();
+    }
+
+    async reopen(): Promise<void> {
+        if ((this.rescheduleRequired || this.reschedule) && !this.reopenNow && !this.reopenStart) {
+            this.error = 'Choose a new start time or Start Now.';
+            return;
+        }
+        if (!await this.ask({title: 'Reopen Pickup Session?', action: 'Reopen Session',
+            message: 'Restore registration and management for this session. Previous teams, scores and attendance will be kept.'})) return;
+        await this.mutate('/reopen', {
+            startNow: this.reopenNow, start: this.reschedule || this.rescheduleRequired ? this.reopenStart : null
+        }, 'POST', () => {
+            this.reschedule = this.reopenNow = false;
+            this.reopenStart = '';
+            this.notifications.success('Pickup session reopened.');
         });
     }
 
-    addPlayers(): void {
-        void this.mutate('/players', {playerIds: [...this.selected], guestName: this.guestName}, 'POST', () => {
-            this.selected.clear();
-            this.guestName = '';
-            this.addOpen = false;
+    async cancelSession(): Promise<void> {
+        if (!await this.ask({title: 'Cancel Pickup Session?', action: 'Cancel Session', dismiss: 'Keep Session', tone: 'danger',
+            message: 'This will cancel the session and prevent new players from joining. You can reopen it later.'})) return;
+        await this.mutate('/cancel', {}, 'POST', () => {
+            this.preview = undefined;
+            this.scoring = this.editing = undefined;
+            this.notifications.success('Pickup session cancelled.');
+        });
+    }
+
+    startPlaying(): void { void this.mutate('/lifecycle', {complete: false}); }
+
+    async completeSession(): Promise<void> {
+        if (!await this.ask({title: 'Complete Pickup Session?', action: 'Complete Session',
+            message: 'Finish play and keep this session?s teams, results, and attendance.'})) return;
+        await this.mutate('/lifecycle', {complete: true}, 'POST', () => {
+            this.preview = undefined;
+            this.scoring = this.editing = undefined;
+            this.selectTab('Teams & Scores');
+            this.notifications.success('Pickup session completed.');
         });
     }
 
@@ -264,7 +306,7 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
         void this.mutate('/sets', {teams: board.teams.map(team => team.map(p => p.id)), byes: board.byes.map(p => p.id),
             gamesPerMatchup: board.gamesPerMatchup, options: board.options}, 'POST', () => {
             this.preview = undefined;
-            this.tab = 'Teams & Scores';
+            this.selectTab('Teams & Scores');
             this.notifications.success('Teams saved to this pickup session.');
         }).then(() => {
             const last = this.data?.sets?.at(-1);

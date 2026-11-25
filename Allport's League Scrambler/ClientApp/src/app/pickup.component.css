@@ -15,11 +15,11 @@ button { justify-self: start; }
 button:disabled { opacity: .6; }
 .primary { color: var(--hub-action-text, white); background: var(--hub-primary-action, #30577e); }
 .choice { display: flex; align-items: center; gap: .5rem; }
-.choice input { min-height: auto; }
+.choice > input[type="checkbox"] { width: auto; min-height: auto; padding: 0; flex: 0 0 auto; }
 .guest-form { max-width: 23rem; }
 .feedback { padding: .65rem; border-left: .25rem solid var(--hub-link); }
 .registration { padding-block: .5rem; border-bottom: 1px solid var(--hub-border); overflow-wrap: anywhere; }
-.details { overflow-wrap: anywhere; }
+.details :is(.session-heading, .session-details) { overflow-wrap: anywhere; }
 .details h2, .session-state { text-align: center; }
 .session-state { color: var(--hub-muted); font-weight: 600; }
 
@@ -45,3 +45,19 @@ button:disabled { opacity: .6; }
     .creation-grid { grid-template-columns: minmax(0, 1fr); }
     .create-action .primary { width: 100%; }
 }
+
+.pickup-home-link { display: inline-block; margin-block-end: .35rem; }
+.pickup-landing { text-align: center; max-width: 54rem; margin: auto; }
+.landing-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: .75rem; }
+.landing-links a, .landing-resume { display: block; font-weight: 650; }
+.landing-resume { padding: .8rem; margin: 1rem auto; border-radius: .55rem; background: var(--hub-primary-action, #30577e); color: var(--hub-action-text, white); max-width: 23rem; }
+.landing-resume small { display: block; }
+.session-heading { text-align: center; }
+.session-heading h1 { font-size: clamp(1.6rem, 4vw, 2.25rem); margin-block-end: .35rem; }
+.session-heading p { margin-block-end: .45rem; }
+.session-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem .9rem; }
+.session-state { padding: .15rem .6rem; background: var(--hub-section); border: 1px solid var(--hub-border); border-radius: 2rem; }
+.session-details { border-top: 1px solid var(--hub-border); padding-block: .55rem; margin-block-start: .65rem; }
+.session-details p { margin: .35rem 0; }
+.session-details summary { font-weight: 600; }
+.registration-note { color: var(--hub-muted); font-size: .9rem; margin: .45rem 0; }

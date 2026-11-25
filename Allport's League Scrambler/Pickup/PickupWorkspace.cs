@@ -55,24 +55,55 @@ public sealed partial class PickupController
     }
 
     [Authorize, HttpGet("sessions/{id:guid}/player-options")]
-    public async Task<IActionResult> PlayerOptions(Guid id, string q, int page = 0)
+    public async Task<IActionResult> PlayerOptions(Guid id)
     {
         if (!PickupEnvironment.Requested) return NotFound();
-        if (q?.Length > 100 || page is < 0 or > 1000) return BadRequest();
         await using var db = new DataContext();
         var session = await db.PickupSessions.FindAsync(id);
         if (session == null || !IsOwner(session)) return NotFound();
-        var options = db.Players.AsNoTracking().Where(p => !db.PickupRegistrations.Any(r =>
-            r.SessionId == id && (r.PlayerId == p.Id || db.UsersPlayer.Any(u => u.PlayerId == p.Id && u.UserId == r.AccountId))));
-        if (!string.IsNullOrWhiteSpace(q))
-        {
-            var term = q.Trim();
-            options = options.Where(p => (p.FirstName + " " + p.LastName).Contains(term));
-        }
-        var rows = await options.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ThenBy(p => p.Id).Skip(page * 40).Take(41)
-            .Select(p => new { p.Id, name = p.FirstName + " " + p.LastName }).ToListAsync();
-        return Ok(new { players = rows.Take(40), hasMore = rows.Count > 40 });
+        var players = await db.Players.AsNoTracking().OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ThenBy(p => p.Id)
+            .Select(p => new {
+                p.Id, p.FirstName, p.LastName, p.Gender,
+                alreadyAdded = db.PickupRegistrations.Any(r => r.SessionId == id &&
+                    (r.PlayerId == p.Id || db.UsersPlayer.Any(u => u.PlayerId == p.Id && u.UserId == r.AccountId)))
+            }).ToListAsync();
+        return Ok(new { players = players.Select(p => new { p.Id, p.FirstName, p.LastName, p.alreadyAdded,
+            isMale = string.Equals(p.Gender, "Male", StringComparison.OrdinalIgnoreCase) ? (bool?)true
+                : string.Equals(p.Gender, "Female", StringComparison.OrdinalIgnoreCase) ? false : null }) });
     }
+
+    [Authorize, SameOrigin, HttpPost("sessions/{id:guid}/reopen")]
+    public Task<IActionResult> Reopen(Guid id, ReopenInput input) => WithSession(id, async (db, session) =>
+    {
+        if (!IsOwner(session) && !User.IsInRole("Admin")) return NotFound();
+        if (session.State != SessionState.Cancelled) return ConflictMessage("Only cancelled sessions can be reopened.");
+        var now = DateTimeOffset.UtcNow;
+        if (input.StartNow || !string.IsNullOrWhiteSpace(input.Start))
+        {
+            var venue = await db.PickupVenues.FindAsync(session.VenueId);
+            if (venue == null || !TryZone(venue.TimeZone, out var zone, out _))
+                return Invalid("This session needs a valid venue time zone.");
+            DateTimeOffset start;
+            if (input.StartNow) start = now;
+            else if (!TryLocalTime(input.Start, zone, out start) || start <= now)
+                return Invalid("Choose a future start time or Start Now.");
+            var duration = session.EndsUtc - session.StartsUtc;
+            if (duration <= TimeSpan.Zero || duration > DateTimeOffset.MaxValue - start)
+                return Invalid("The session duration cannot fit at that start time.");
+            var lateJoining = session.DeadlineUtc > session.StartsUtc;
+            session.StartsUtc = start;
+            session.EndsUtc = start.Add(duration);
+            session.DeadlineUtc = input.StartNow || lateJoining ? session.EndsUtc : start;
+            session.LocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(start, zone).DateTime);
+        }
+        else if (session.EndsUtc <= now || (session.DeadlineUtc ?? session.StartsUtc) <= now)
+            return Invalid("Update the start time or choose Start Now before reopening.");
+        session.State = SessionState.Published;
+        return NoContent();
+    });
+
+    private bool CanReopen(PickupSession session) => session?.State == SessionState.Cancelled &&
+        (IsOwner(session) || User.IsInRole("Admin"));
 
     [Authorize, SameOrigin, HttpPost("sessions/{id:guid}/players")]
     public Task<IActionResult> AddPlayers(Guid id, PlayerInput input) => Operate(id, async (db, session) =>
@@ -228,6 +259,7 @@ public sealed partial class PickupController
     public sealed record PlayerInput(int[] PlayerIds, [StringLength(100)] string GuestName);
     public sealed record AttendanceInput(Guid? PlayerId, bool All, bool Playing, bool? CheckedInOnly);
     public sealed record LifecycleInput(bool Complete);
+    public sealed record ReopenInput(bool StartNow, string Start);
     public sealed record GameOptions(int TeamCount, int MaxTeamSize, bool Balanced, string History, Guid[] Top, Guid[] Low, bool AllowMinimumRepeats);
     public sealed record SetInput(Guid[][] Teams, Guid[] Byes, int GamesPerMatchup, GameOptions Options);
     public sealed record TeamInput(int Version, Guid[][] Teams);

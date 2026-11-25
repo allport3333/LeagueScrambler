@@ -2,12 +2,12 @@
   @if (!authenticationChecked) {
     <span class="session-status" role="status">Checking session...</span>
   }
-  @if (authenticationChecked && loggedIn) {
+  @if (authenticationChecked && (loggedIn || pickupEnabled)) {
     <div class="event-controls">
       <button #eventTrigger type="button" mat-button class="league-selector" id="leagueDropdown" cdkOverlayOrigin #eventOrigin="cdkOverlayOrigin"
-        aria-haspopup="dialog" [attr.aria-expanded]="eventPopup === 'categories'" [title]="activeEventName" (click)="toggleEventPopup('categories')">
-        @if (selectedEvent; as selected) { <mat-icon class="event-kind-icon" [attr.aria-label]="eventType(selected).label">{{ eventType(selected).icon }}</mat-icon> }
-        <span class="league-name">{{ activeEventName }}</span><mat-icon iconPositionEnd aria-hidden="true">arrow_drop_down</mat-icon>
+        aria-haspopup="dialog" [attr.aria-expanded]="eventPopup === 'categories'" [title]="inPickup ? 'Pickup Games' : (selectedLeagueName || 'Select event')" (click)="toggleEventPopup('categories')">
+        @if (inPickup) { <mat-icon class="event-kind-icon" aria-hidden="true">sports_volleyball</mat-icon> } @else if (selectedEvent; as selected) { <mat-icon class="event-kind-icon" [attr.aria-label]="eventType(selected).label">{{ eventType(selected).icon }}</mat-icon> }
+        <span class="league-name">{{ inPickup ? 'Pickup Games' : (selectedLeagueName || 'Select event') }}</span><mat-icon iconPositionEnd aria-hidden="true">arrow_drop_down</mat-icon>
       </button>
       <button #searchTrigger type="button" mat-icon-button class="event-search-trigger" cdkOverlayOrigin #searchOrigin="cdkOverlayOrigin"
         aria-label="Search events" aria-haspopup="dialog" [attr.aria-expanded]="eventPopup === 'search'" (click)="toggleEventPopup('search')">
@@ -33,7 +33,7 @@
                 <h2><button type="button" class="event-category" [attr.aria-expanded]="expandedEventType === group.id"
                   [attr.aria-controls]="'event-category-' + group.id" (click)="toggleEventCategory(group.id)">
                   <mat-icon aria-hidden="true">{{ group.icon }}</mat-icon><span>{{ group.title }}</span>
-                  <span class="event-count">{{ group.events.length }}</span>
+                  @if (group.id !== 3) { <span class="event-count">{{ group.events.length }}</span> }
                   <mat-icon aria-hidden="true">{{ expandedEventType === group.id ? 'expand_less' : 'expand_more' }}</mat-icon>
                 </button></h2>
                 <div [id]="'event-category-' + group.id" [hidden]="expandedEventType !== group.id">
@@ -41,11 +41,25 @@
                     @for (event of group.events; track event.id) {
                       <ng-container *ngTemplateOutlet="eventChoice; context: {$implicit: event}"></ng-container>
                     }
-                    @if (group.id === 3 && pickupEnabled) {
-                      @if (!group.events.length) { <p class="event-empty">No upcoming or active sessions.</p> }
-                      <a class="event-choice" routerLink="/pickup" (click)="closeEventSelector()">
-                        <mat-icon aria-hidden="true">sports_volleyball</mat-icon><span>Find Pickup Games</span>
-                      </a>
+                    @if (group.id === 3) {
+                      <div class="tournament-event-actions">
+                        <a class="event-choice" routerLink="/pickup" (click)="closeEventSelector()">
+                          <mat-icon aria-hidden="true">sports_volleyball</mat-icon><span>Pickup Games</span>
+                        </a>
+                        @if (loggedIn) {
+                          <a class="event-choice create-tournament" routerLink="/pickup/create" (click)="closeEventSelector()">
+                            <mat-icon aria-hidden="true">add</mat-icon><span>Create Pickup Game</span>
+                          </a>
+                          <a class="event-choice" routerLink="/pickup/mine" (click)="closeEventSelector()">
+                            <mat-icon aria-hidden="true">event</mat-icon><span>My Pickup Sessions</span>
+                          </a>
+                          @if (pickupResumeId) {
+                            <a class="event-choice" [routerLink]="['/pickup', pickupResumeId]" (click)="closeEventSelector()">
+                              <mat-icon aria-hidden="true">play_arrow</mat-icon><span>Continue Pickup Session</span>
+                            </a>
+                          }
+                        }
+                      </div>
                     }
                     @if (group.id === 2) {
                       @if (!group.events.length) { <p class="event-empty">No tournaments yet.</p> }
@@ -67,18 +81,18 @@
               }
             }
           } @empty {
-            <p role="status">{{ leagues.length ? 'No events match your search.' : 'You have no accessible events.' }}</p>
+            @if (!(pickupEnabled && eventPopup === 'categories')) { <p role="status">{{ leagues.length ? 'No events match your search.' : 'You have no accessible events.' }}</p> }
           }
         </div>
       </section>
     </ng-template>
     <ng-template #eventChoice let-event>
-      <button type="button" class="event-choice" [class.selected-league]="event.id === selectedEventId"
-        [attr.aria-current]="event.id === selectedEventId ? 'true' : null" (click)="chooseEvent(event.id)">
+      <button type="button" class="event-choice" [class.selected-league]="event.id === selectedLeagueId"
+        [attr.aria-current]="event.id === selectedLeagueId ? 'true' : null" (click)="onLeagueChange(event.id)">
         <span>{{ event.leagueName }}
           @if (eventPopup === 'search') { <small>{{ eventType(event).label }}</small> }
         </span>
-        @if (event.id === selectedEventId) { <mat-icon aria-hidden="true">check</mat-icon> }
+        @if (event.id === selectedLeagueId) { <mat-icon aria-hidden="true">check</mat-icon> }
       </button>
     </ng-template>
   }

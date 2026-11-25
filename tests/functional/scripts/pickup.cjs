@@ -79,7 +79,8 @@ withPickupTestHost(async origin => {
         const immediate = '/api/pickup/sessions/' + mobile.url().split('/').at(-1);
         const timing = (await api(mobile, immediate)).data;
         assert.equal(Date.parse(timing.deadlineUtc), Date.parse(timing.endsUtc));
-        await mobile.getByRole('link', {name: 'Create Pickup Game'}).click();
+        await mobile.locator('#leagueDropdown').click();
+        await mobile.getByRole('dialog', {name: 'Select league or event'}).getByRole('link', {name: 'Create Pickup Game'}).click();
         await mobile.getByRole('button', {name: new RegExp('Mobile Facility ' + token)}).click();
         await mobile.getByText('Advanced Options', {exact: true}).click();
         await mobile.getByLabel('Custom session name').fill('Advanced ' + token);
@@ -95,6 +96,7 @@ withPickupTestHost(async origin => {
         assert.equal(advanced.approvalRequired, true);
         assert.equal(advanced.description, 'Advanced settings fixture');
         const visitor = await open(390);
+        await visitor.getByRole('link', {name: 'Find Pickup Games', exact: true}).click();
         await visitor.getByLabel('City or ZIP code').fill(values.postalCode);
         await visitor.locator('select[name=sport]').selectOption('Wallyball');
         await visitor.getByLabel('Date', {exact: true}).fill(date);
@@ -109,6 +111,10 @@ withPickupTestHost(async origin => {
         await visitor.getByLabel('Email address', {exact: true}).fill(guestEmail);
         await visitor.getByRole('button', {name: 'Join Session'}).click();
         await expect(visitor.getByRole('status')).toContainText('Check your email');
+        await organizer.reload();
+        await expect(organizer.getByRole('heading', {name: 'Pending Verification'})).toBeVisible();
+        await expect(organizer.locator('.verification-list')).toContainText('Guest ' + token);
+        await expect(organizer.locator('.player-line').filter({hasText: 'Guest ' + token})).toHaveCount(0);
         const raw = (await Promise.all((await fs.readdir(inbox)).filter(file => !before.has(file)).map(file =>
             fs.readFile(path.join(inbox, file), 'utf8')))).find(message => message.includes(guestEmail));
         assert(raw, 'Local mail delivery missing');
@@ -127,7 +133,7 @@ withPickupTestHost(async origin => {
         assert.equal(publicDetail.data.registrations, null);
         assert.equal(publicDetail.data.confirmed, 1);
         await organizer.reload();
-        await expect(organizer.getByText('Guest ' + token + ' · Confirmed')).toBeVisible();
+        await expect(organizer.locator('.player-line').filter({hasText: 'Guest ' + token}).getByText('Playing', {exact: true})).toBeVisible();
         await visitor.getByRole('button', {name: 'Cancel Registration'}).click();
         await expect(visitor.getByText('Your registration: Cancelled')).toBeVisible();
         await expect(visitor.getByText('Open Registration', {exact: true})).toBeVisible();
