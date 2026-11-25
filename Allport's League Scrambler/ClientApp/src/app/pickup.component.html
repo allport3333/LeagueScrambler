@@ -149,6 +149,7 @@
   } @else if (session; as game) {
     <section class="panel details">
       <h2>{{ game.name }}</h2>
+      <p class="session-state">{{ ['Draft', 'Published', 'In Progress', 'Completed', 'Cancelled'][game.state] }}</p>
       <p>{{ game.sport }} · {{ game.skill || 'Any level' }}</p>
       <p><strong>{{ game.venue.name }}</strong>
         @if (game.venue.address) { <br>{{ game.venue.address }} }
@@ -158,7 +159,7 @@
       @if (game.deadlineUtc) { <p>Registration closes {{ format(game.deadlineUtc, game.venue.timeZone) }}.</p> }
       <p>Organizer: {{ game.organizer }}</p>
       @if (game.visibility !== 2) {
-        <button type="button" (click)="copyInvitation()">Copy invitation link</button>
+        @if (!game.owner || shareUrl) { <button type="button" (click)="copyInvitation()">Copy invitation link</button> }
         @if (shareUrl) {
           <label class="share-link">Invitation link<input readonly [value]="shareUrl" (focus)="$any($event.target).select()"></label>
         }
@@ -184,32 +185,8 @@
         }
       } @else if (game.state !== 4) { <p>Registration is closed.</p> }
     </section>
-    @if (game.owner) {
-      <section class="panel">
-        <h2>Manage session</h2>
-        @if (game.organizerNotes) { <p>{{ game.organizerNotes }}</p> }
-        @if (game.state === 1) {
-          <div class="actions">
-            <button type="button" (click)="edit(game)">Edit session</button>
-            @if (confirmCancel) {
-              <span>Cancel this session for everyone?</span>
-              <button type="button" [disabled]="busy" (click)="change('cancel')">Confirm Cancellation</button>
-              <button type="button" (click)="confirmCancel = false">Keep Session</button>
-            } @else { <button type="button" (click)="confirmCancel = true">Cancel Session</button> }
-          </div>
-        }
-        <h3>Registrations</h3>
-        @for (entry of game.registrations; track entry.id) {
-          <div class="registration">
-            <span>{{ entry.name }} · {{ statuses[entry.state] }}</span>
-            @if (entry.state === 1 && game.state === 1) {
-              <button type="button" [disabled]="busy || !game.registrationOpen || sessionFull" (click)="change('registrations/' + entry.id, {approve: true})">Approve</button>
-              <button type="button" [disabled]="busy" (click)="change('registrations/' + entry.id, {approve: false})">Decline</button>
-            }
-          </div>
-        } @empty { <p>No confirmed registrations or pending requests.</p> }
-      </section>
-    }
+    <app-pickup-workspace [session]="game" [statuses]="statuses" (sessionUpdated)="load()"
+      (editSettings)="edit(game)" (invite)="copyInvitation()"></app-pickup-workspace>
   } @else if (sports && !id) {
     @if (!view) {
       <p>Find a recreational game near you and join a session.</p>

@@ -8,6 +8,7 @@ export const scrambleDraftDialogOptions = {
 };
 
 export interface ScrambleDraftData {
+    pickup?: string;
     tournament?: { name: string; roundNumber: number; proposed: boolean };
     draft: ScrambleDraft;
     save?: () => Promise<void>;

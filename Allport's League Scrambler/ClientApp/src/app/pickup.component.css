@@ -20,6 +20,8 @@ button:disabled { opacity: .6; }
 .feedback { padding: .65rem; border-left: .25rem solid var(--hub-link); }
 .registration { padding-block: .5rem; border-bottom: 1px solid var(--hub-border); overflow-wrap: anywhere; }
 .details { overflow-wrap: anywhere; }
+.details h2, .session-state { text-align: center; }
+.session-state { color: var(--hub-muted); font-weight: 600; }
 
 .create-game { max-width: 44rem; margin-inline: auto; }
 .create-game h2, .intro { text-align: center; }

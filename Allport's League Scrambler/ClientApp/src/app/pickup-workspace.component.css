@@ -1,0 +1,23 @@
+.workspace { margin-block-start: 1rem; }
+.session-counts, .workspace-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem; align-items: center; }
+.session-counts { text-align: center; gap: clamp(.5rem, 3vw, 2rem); margin-block: 0 1rem; }
+.session-counts strong { display: block; font-size: 1.45em; }
+.workspace-actions { margin-block: .7rem; }
+.workspace-actions button[aria-pressed=true] { background: var(--hub-primary-action, #30577e); color: var(--hub-action-text, white); }
+.workspace-fields, .pickup-matchups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: .8rem; margin-block: .75rem; }
+.workspace-fields label, .score-fields label { min-width: 0; }
+.picker, .game-set, .pickup-matchup { min-width: 0; border: 1px solid var(--hub-border, currentColor); border-radius: .6rem; padding: .65rem; margin-block: .5rem; }
+.pickup-matchup h4, .game-set h4 { text-align: center; margin-block: 0 .5rem; }
+.pickup-matchup h5 { margin-block: .25rem; font-size: 1em; }
+.pickup-matchup ul { padding-inline-start: 1.1rem; }
+.pickup-matchup li { overflow-wrap: anywhere; margin-block-end: .25rem; }
+.player-line, .priority-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; align-items: center; padding: .4rem 0; border-bottom: 1px solid var(--hub-border, currentColor); }
+.player-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); max-height: 15rem; overflow: auto; margin-block: .6rem; gap: .3rem; }
+.opponents, .score-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+.score-fields { padding: .45rem; min-width: 0; border: 1px solid var(--hub-border, currentColor); }
+.score-fields input, .pickup-matchup select { width: 100%; }
+.workspace button { max-width: 100%; }
+@media (max-width: 480px) {
+  .workspace-actions { justify-content: start; }
+  .workspace-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

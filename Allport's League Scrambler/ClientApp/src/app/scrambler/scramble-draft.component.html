@@ -5,6 +5,8 @@
         <h2 id="scramble-draft-title">
             @if (actions.tournament; as tournament) {
                 {{ tournament.name }}<small class="draft-round-title">Round {{ tournament.roundNumber }} Draw</small>
+            } @else if (actions.pickup) {
+                {{ actions.pickup }}<small class="draft-round-title">Watch the Scramble</small>
             } @else { Watch the Scramble }
         </h2>
         <div class="draft-progress">
@@ -89,6 +91,8 @@
                 <button type="button" data-replay [disabled]="saving || reallocating" (click)="replay()">{{ actions.tournament ? 'Replay Draw' : 'Replay Scramble' }}</button>
                 @if (actions.tournament; as tournament) {
                     <button type="button" class="primary" (click)="dialog.close()">{{ tournament.proposed ? 'Review Proposed Teams' : 'Back to Round' }}</button>
+                } @else if (actions.pickup) {
+                    <button type="button" class="primary" (click)="dialog.close()">Review Proposed Teams</button>
                 } @else {
                     <button type="button" class="primary" [disabled]="saving || !actions.canSave?.()" (click)="save()">Save Scramble</button>
                     @if (actions.print; as print) {

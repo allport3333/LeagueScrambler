@@ -5,7 +5,7 @@ import { AppearanceComponent } from '../appearance.component';
 import { onLeagueResume } from '../pwa/pending-work.service';
 import { Component, OnInit, OnDestroy, AfterViewInit, DoCheck, ViewChild, ElementRef, NgZone, ChangeDetectionStrategy } from '@angular/core';
 import { LoginService } from '../services/login.service';
-import { NavigationStart, Router } from '@angular/router';
+import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { LeagueService } from '../services/league.service';
 import { Leagues } from '../data-models/leagues.model';
@@ -179,14 +179,45 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -5 }
     ];
 
-    eventType(event?: Leagues) { return eventTypes.find(type => type.id === event?.eventTypeId) ?? unclassified; }
-    get selectedEvent() { return this.leagues.find(event => event.id === this.selectedLeagueId); }
+    private pickupEvents: {id: string; leagueName: string; eventTypeId: number}[] = [];
+    private pickupContext?: {id: string; leagueName: string; eventTypeId: number};
+    private pickupRequest = 0;
+    private get pickupId(): string | undefined {
+        const segments = this.router.parseUrl(this.router.url).root.children['primary']?.segments;
+        const id = segments?.[0]?.path === 'pickup' ? segments[1]?.path : undefined;
+        return id && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) ? id : undefined;
+    }
+
+    private refreshPickup(): void {
+        const version = ++this.pickupRequest;
+        if (!this.pickupEnabled || !this.loggedIn) return;
+        const id = this.pickupId;
+        if (this.pickupContext?.id !== id) this.pickupContext = undefined;
+        this.subscriptions.add(this.http.get<{id: string; name: string}[]>('/api/pickup/selector')
+            .pipe(catchError(() => of([]))).subscribe(events => {
+                if (version !== this.pickupRequest) return;
+                this.pickupEvents = events.map(event => ({id: event.id, leagueName: event.name, eventTypeId: 3}));
+            }));
+        if (id) this.subscriptions.add(this.http.get<{id: string; name: string}>('/api/pickup/sessions/' + id)
+            .pipe(catchError(() => of(null))).subscribe(event => {
+                if (version === this.pickupRequest) this.pickupContext = event ? {id: event.id, leagueName: event.name, eventTypeId: 3} : undefined;
+            }));
+    }
+
+    get selectedEventId(): number | string | null { return this.pickupId ?? this.selectedLeagueId; }
+    get activeEventName(): string { return this.selectedEvent?.leagueName ?? this.selectedLeagueName ?? 'Select event'; }
+
+    eventType(event?: {eventTypeId?: number}) { return eventTypes.find(type => type.id === event?.eventTypeId) ?? unclassified; }
+    get selectedEvent() {
+        return this.pickupId ? this.pickupContext ?? this.pickupEvents.find(event => event.id === this.pickupId)
+            : this.leagues.find(event => event.id === this.selectedLeagueId);
+    }
     get eventGroups() {
         const query = this.eventPopup === 'search' ? this.eventSearch.trim().toLocaleLowerCase() : '';
-        const matching = this.leagues.filter(event => event.leagueName.toLocaleLowerCase().includes(query));
+        const matching = [...this.leagues, ...this.pickupEvents].filter(event => event.leagueName.toLocaleLowerCase().includes(query));
         return [...eventTypes, unclassified].map(type => ({
             ...type, events: matching.filter(event => this.eventType(event).id === type.id)
-        })).filter(group => group.events.length || (this.eventPopup === 'categories' && group.id === 2));
+        })).filter(group => group.events.length || (this.eventPopup === 'categories' && (group.id === 2 || group.id === 3 && this.pickupEnabled)));
     }
 
     toggleEventPopup(popup: 'categories' | 'search'): void {
@@ -283,9 +314,10 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
 
     ngOnInit() {
         this.subscriptions.add(this.http.get<string[]>('/api/pickup/catalog').pipe(catchError(() => of(null)))
-            .subscribe(catalog => { this.pickupEnabled = Array.isArray(catalog) && catalog.length > 0; }));
+            .subscribe(catalog => { this.pickupEnabled = Array.isArray(catalog) && catalog.length > 0; this.refreshPickup(); }));
         this.subscriptions.add(this.router.events.subscribe(event => {
             if (event instanceof NavigationStart) { this.collapse(); this.closeEventSelector(false); }
+            if (event instanceof NavigationEnd) this.refreshPickup();
         }));
         this.subscriptions.add(this.leagueService.authorizedLeagues$.subscribe(leagues => {
             this.leagues = leagues ?? [];
@@ -300,9 +332,13 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             this.loggedIn = state === true;
             this.userRole = '';
             this.playerId = null;
-            if (state !== true) { this.selectionVersion++; this.closeEventSelector(false); }
+            if (state !== true) {
+                this.selectionVersion++; this.pickupRequest++; this.pickupEvents = []; this.pickupContext = undefined;
+                this.closeEventSelector(false);
+            }
             if (state !== true) { return; }
             this.loadSessionContext(version);
+            this.refreshPickup();
         }));
     }
 
@@ -339,10 +375,16 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         this.sessionVersion++;
         this.subscriptions.unsubscribe();
     }
+    chooseEvent(id: number | string): void {
+        if (typeof id === 'number') { void this.onLeagueChange(id); return; }
+        this.closeEventSelector();
+        if (id !== this.pickupId) void this.router.navigate(['/pickup', id]);
+    }
+
     async onLeagueChange(leagueId: number): Promise<void> {
         const event = this.leagues.find(league => league.id === leagueId);
         this.closeEventSelector();
-        if (!event || leagueId === this.selectedLeagueId) return;
+        if (!event || leagueId === this.selectedLeagueId && !this.pickupId) return;
         const version = ++this.selectionVersion;
         const isTournament = event.eventTypeId === 2;
         const canManage = this.userRole === 'Admin' || event.canManageTournament;

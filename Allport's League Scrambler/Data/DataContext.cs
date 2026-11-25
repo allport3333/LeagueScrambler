@@ -12,6 +12,7 @@ namespace Allport_s_League_Scrambler.Data
     public class DataContext : DbContext
     {
 
+        public DbSet<PickupGameSet> PickupGameSets { get; set; }
         public DbSet<PickupVenue> PickupVenues { get; set; }
         public DbSet<PickupSession> PickupSessions { get; set; }
         public DbSet<PickupRegistration> PickupRegistrations { get; set; }
@@ -66,6 +67,8 @@ namespace Allport_s_League_Scrambler.Data
             var pickup = modelBuilder.Entity<PickupSession>().ToTable("PickupSession", "dbo");
             pickup.HasOne<User>().WithMany().HasForeignKey(session => session.OrganizerId).OnDelete(DeleteBehavior.Restrict);
             pickup.HasOne(session => session.Venue).WithMany().HasForeignKey(session => session.VenueId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<PickupGameSet>().ToTable("PickupGameSet", "dbo").HasOne<PickupSession>().WithMany()
+                .HasForeignKey(set => set.SessionId).OnDelete(DeleteBehavior.Restrict);
             var registration = modelBuilder.Entity<PickupRegistration>().ToTable("PickupRegistration", "dbo");
             registration.HasOne<PickupSession>().WithMany().HasForeignKey(row => row.SessionId).OnDelete(DeleteBehavior.Restrict);
             registration.HasOne<User>().WithMany().HasForeignKey(row => row.AccountId).OnDelete(DeleteBehavior.Restrict);

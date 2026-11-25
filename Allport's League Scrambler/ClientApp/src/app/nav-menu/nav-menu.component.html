@@ -5,9 +5,9 @@
   @if (authenticationChecked && loggedIn) {
     <div class="event-controls">
       <button #eventTrigger type="button" mat-button class="league-selector" id="leagueDropdown" cdkOverlayOrigin #eventOrigin="cdkOverlayOrigin"
-        aria-haspopup="dialog" [attr.aria-expanded]="eventPopup === 'categories'" [title]="selectedLeagueName || 'Select event'" (click)="toggleEventPopup('categories')">
+        aria-haspopup="dialog" [attr.aria-expanded]="eventPopup === 'categories'" [title]="activeEventName" (click)="toggleEventPopup('categories')">
         @if (selectedEvent; as selected) { <mat-icon class="event-kind-icon" [attr.aria-label]="eventType(selected).label">{{ eventType(selected).icon }}</mat-icon> }
-        <span class="league-name">{{ selectedLeagueName || 'Select event' }}</span><mat-icon iconPositionEnd aria-hidden="true">arrow_drop_down</mat-icon>
+        <span class="league-name">{{ activeEventName }}</span><mat-icon iconPositionEnd aria-hidden="true">arrow_drop_down</mat-icon>
       </button>
       <button #searchTrigger type="button" mat-icon-button class="event-search-trigger" cdkOverlayOrigin #searchOrigin="cdkOverlayOrigin"
         aria-label="Search events" aria-haspopup="dialog" [attr.aria-expanded]="eventPopup === 'search'" (click)="toggleEventPopup('search')">
@@ -41,6 +41,12 @@
                     @for (event of group.events; track event.id) {
                       <ng-container *ngTemplateOutlet="eventChoice; context: {$implicit: event}"></ng-container>
                     }
+                    @if (group.id === 3 && pickupEnabled) {
+                      @if (!group.events.length) { <p class="event-empty">No upcoming or active sessions.</p> }
+                      <a class="event-choice" routerLink="/pickup" (click)="closeEventSelector()">
+                        <mat-icon aria-hidden="true">sports_volleyball</mat-icon><span>Find Pickup Games</span>
+                      </a>
+                    }
                     @if (group.id === 2) {
                       @if (!group.events.length) { <p class="event-empty">No tournaments yet.</p> }
                       <div class="tournament-event-actions">
@@ -67,12 +73,12 @@
       </section>
     </ng-template>
     <ng-template #eventChoice let-event>
-      <button type="button" class="event-choice" [class.selected-league]="event.id === selectedLeagueId"
-        [attr.aria-current]="event.id === selectedLeagueId ? 'true' : null" (click)="onLeagueChange(event.id)">
+      <button type="button" class="event-choice" [class.selected-league]="event.id === selectedEventId"
+        [attr.aria-current]="event.id === selectedEventId ? 'true' : null" (click)="chooseEvent(event.id)">
         <span>{{ event.leagueName }}
           @if (eventPopup === 'search') { <small>{{ eventType(event).label }}</small> }
         </span>
-        @if (event.id === selectedLeagueId) { <mat-icon aria-hidden="true">check</mat-icon> }
+        @if (event.id === selectedEventId) { <mat-icon aria-hidden="true">check</mat-icon> }
       </button>
     </ng-template>
   }

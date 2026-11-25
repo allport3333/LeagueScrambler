@@ -25,9 +25,19 @@ Pickup uses Windows integrated authentication for local SQL Server. Its authenti
 - Guest registration uses name and email. A 20-minute single-use link uses a random token stored only as a hash. The token is delivered in the URL fragment so the opening GET never receives it. A POST verifies the link, then an expiring HttpOnly cookie scoped to that session's API grants access to view or cancel that registration. It cannot authenticate a user to League Hub. The guest endpoints have an IP limit and link issuance also has a per-contact cooldown. Existing account matching never assigns guest ownership to an account.
 - The shared `TransactionalMail` service handles local mail. Password recovery and email change remain separate. The Angular route uses existing themes and global navigation. PWA API requests remain network-only.
 
+## Playing a session
+
+The selector lists the signed-in organizer's or participant's active and upcoming sessions. The Pickup URL holds the active Pickup context and the existing league selection is retained. Discover and My Sessions provide other entry points.
+
+The Players workspace keeps attendance on registrations. Confirmed participants are playing by default, or organizers may switch to checked-in only. Add Players browses existing player records or adds a session-only walk-in. The regular Scrambler engine runs on the selected playing roster, with a limit of 80 per draw. Prior saved Pickup teams supply only session-local teammate history. Watch the Scramble and landscape team printing use the existing shared presentation and renderer.
+
+Each saved Game Set has a stable ID and ordinal, a version, a timestamp, and a snapshot of team members, byes, generation options and matchup game count. With scores stored independently on the set, unplayed games have no entry. Team edits are locked once a score exists. Confirmed participants can view their assignments and saved results. A session can be completed without teams or scores. Pickup writes never use the league standings or tournament score stores.
+
 ## API
 
 `GET /api/pickup/catalog` provides the sport catalog and enables Pickup navigation. Authenticated `GET /venues` searches reusable facilities. `GET /sessions` is paginated discovery, `GET /sessions/{id}` is detail, and authenticated `GET /mine` lists the current account's organized or joined sessions. The prefix on each is `/api/pickup`.
+
+`GET /selector` returns upcoming or active account sessions. `GET /sessions/{id}/workspace` returns permission-scoped roster and game sets. Organizer writes under the session include `players`, `attendance`, `lifecycle`, `sets` and versioned set `scores` and `teams` edits.
 
 `POST /sessions` creates a session, `PUT /sessions/{id}` updates it, and `POST /sessions/{id}/cancel` cancels it. Session-scoped POST actions are `join`, `guest`, `verify`, `leave`, and `registrations/{registrationId}` for an organizer decision. Public payloads include counts and the organizer's display name; the organizer's private notes and participant names are owner-only.
 
@@ -40,9 +50,10 @@ From the Pickup worktree root, apply the additive migration only after the backu
 ```powershell
 sqlcmd -S lpc:localhost -d LeagueScramblerDev -E -C -b -i tools/pickup/001-PickupFoundation.sql
 sqlcmd -S lpc:localhost -d LeagueScramblerDev -E -C -b -i tools/pickup/002-PickupUnlimitedCapacity.sql
+sqlcmd -S lpc:localhost -d LeagueScramblerDev -E -C -b -i tools/pickup/003-PickupWorkspace.sql
 ```
 
-Require exit code 0 and the corresponding verification receipt for each migration. The second migration permits NULL in PickupSession.Capacity and preserves existing numeric limits. For an older disposable database, apply that same migration to LeagueScramblerPickupTest before running the test harness. Existing SQL add-ons use schema-object checks to record and detect application. This script verifies the three tables and key constraints on rerun and leaves the existing EF migration history untouched. Filtered indexes require the explicit SQL session settings included in the script.
+Require exit code 0 and the corresponding verification receipt for each migration. The second migration permits NULL in PickupSession.Capacity and preserves existing numeric limits. The third adds Pickup-only attendance columns and a separate PickupGameSet table. For an older disposable database, apply the second and third migrations to LeagueScramblerPickupTest before running the test harness. Existing SQL add-ons use schema-object checks to record and detect application. This script verifies the three tables and key constraints on rerun and leaves the existing EF migration history untouched. Filtered indexes require the explicit SQL session settings included in the script.
 
 Keep future changes backward compatible while both apps share the database. Avoid resetting shared Development. A genuinely breaking change must use a temporary restored copy until the schemas can be reconciled. The old `LeagueScramblerPickupDev` remains an unused fallback, and its synthetic fixtures should stay separate.
 
@@ -55,13 +66,14 @@ Build the Pickup web project in Release and build its Angular frontend, then run
 ```powershell
 npm.cmd --prefix tests/functional ci
 node tests/functional/scripts/pickup.cjs
+node tests/functional/scripts/pickup-workspace.cjs
 ```
 
 ## Roadmap
 
 - [x] Phase 1 · Discovery, venue entry, session creation and management, one-click account join, guest verification, capacity and approval.
 - [ ] Phase 2 · Waitlist offers, private invites, verified account linking, and registration management enhancements.
-- [ ] Phase 3 · Session-scoped check-in and QR codes. Existing `PlayerSignIn` assumes a league ID so it is not used for Pickup.
-- [ ] Phase 4 · Adapt the checked-in roster to the existing Scrambler and Watch the Scramble input types. Guest registrations need session-scoped roster IDs until linked to global players.
-- [ ] Phase 5 · Session-local games, score entry and history. Existing fixed-team and K/Q score storage is tied to league IDs and is not written by Pickup.
+- [x] Phase 3: Lightweight attendance, confirmed playing roster and walk-in guests. QR check-in remains a follow-up.
+- [x] Phase 4: Existing Scrambler and Watch the Scramble, with session-local history.
+- [x] Phase 5: Saved game sets, optional score entry, team edits, and session history.
 - [ ] Phase 6 · Notifications, moderation, retention, external mail verification and release security review.

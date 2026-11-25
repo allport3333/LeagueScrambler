@@ -21,7 +21,7 @@ using Microsoft.Data.SqlClient;
 namespace Allport_s_League_Scrambler.Pickup;
 
 [ApiController, Route("api/pickup"), RequestSizeLimit(8192)]
-public sealed class PickupController(TransactionalMail mail) : ControllerBase
+public sealed partial class PickupController(TransactionalMail mail) : ControllerBase
 {
     private static readonly string[] Sports = ["Wallyball", "Volleyball", "Basketball", "Pickleball", "Soccer", "Other"];
 
@@ -58,7 +58,7 @@ public sealed class PickupController(TransactionalMail mail) : ControllerBase
         await using var db = new DataContext();
         var now = DateTimeOffset.UtcNow;
         var sessions = db.PickupSessions.AsNoTracking().Include(s => s.Venue)
-            .Where(s => s.Visibility == SessionVisibility.Public && s.State == SessionState.Published && s.EndsUtc > now && (s.StartsUtc > now || s.DeadlineUtc > now));
+            .Where(s => s.Visibility == SessionVisibility.Public && (s.State == SessionState.Published || s.State == SessionState.InProgress) && s.EndsUtc > now && (s.StartsUtc > now || s.DeadlineUtc > now));
         if (!string.IsNullOrWhiteSpace(location))
         {
             var value = location.Trim();
@@ -90,12 +90,12 @@ public sealed class PickupController(TransactionalMail mail) : ControllerBase
         if (!PickupEnvironment.Requested) return NotFound();
         await using var db = new DataContext();
         var session = await db.PickupSessions.AsNoTracking().Include(s => s.Venue).SingleOrDefaultAsync(s => s.Id == id);
-        if (!CanRead(session)) return NotFound();
+        var mine = await FindRegistration(db, id);
+        if (!CanRead(session, mine)) return NotFound();
         var owner = IsOwner(session);
         var registrations = owner ? await db.PickupRegistrations.AsNoTracking().Where(r => r.SessionId == id &&
             (r.State == RegistrationState.Confirmed || r.State == RegistrationState.PendingApproval || r.State == RegistrationState.Waitlisted))
             .Select(r => new { r.Id, r.Name, r.State }).ToListAsync() : null;
-        var mine = await FindRegistration(db, id);
         var organizer = await db.Users.Where(u => u.UserId == session.OrganizerId)
             .Select(u => u.FirstName + " " + u.LastName).SingleAsync();
         return Ok(new {
@@ -128,7 +128,7 @@ public sealed class PickupController(TransactionalMail mail) : ControllerBase
     public Task<IActionResult> Edit(Guid id, SessionInput input) => WithSession(id, async (db, session) =>
     {
         if (!IsOwner(session)) return NotFound();
-        if (session.State != SessionState.Published) return ConflictMessage("This session can no longer be edited.");
+        if (session.State is not (SessionState.Published or SessionState.InProgress)) return ConflictMessage("This session can no longer be edited.");
         var confirmed = await Confirmed(db, id);
         if (input.Capacity is { } limit && limit < confirmed)
             return Invalid(new InputError("capacity", "The limit cannot be lower than the confirmed registrations."));
@@ -159,13 +159,24 @@ public sealed class PickupController(TransactionalMail mail) : ControllerBase
         row ??= await db.PickupRegistrations.SingleOrDefaultAsync(r => r.SessionId == id && r.EmailKey == key);
         if (row != null && row.AccountId != account)
             return ConflictMessage("This session already has a guest request for this email. Use the guest verification link to manage it.");
+        var player = await db.UsersPlayer.Where(p => p.UserId == account).OrderBy(p => p.UsersPlayerId)
+            .Select(p => (int?)p.PlayerId).FirstOrDefaultAsync();
+        if (row == null && player.HasValue)
+        {
+            var direct = await db.PickupRegistrations.Where(r => r.SessionId == id && r.PlayerId == player).ToListAsync();
+            if (direct.Count != 0)
+            {
+                if (direct.Count != 1 || direct[0].AccountId.HasValue) return ConflictMessage("This player already has a registration.");
+                row = direct[0];
+                row.AccountId = account;
+                row.EmailKey = key;
+            }
+        }
         if (row?.State is RegistrationState.Confirmed or RegistrationState.PendingApproval or RegistrationState.Waitlisted) return Ok(new { registration = row.State });
         if (row?.State == RegistrationState.Declined) return ConflictMessage("This registration was declined.");
         if (await CannotJoin(db, session, waitlist) is { } blocked) return blocked;
         if (row == null)
         {
-            var player = await db.UsersPlayer.Where(p => p.UserId == account).OrderBy(p => p.UsersPlayerId)
-                .Select(p => (int?)p.PlayerId).FirstOrDefaultAsync();
             row = new PickupRegistration { Id = Guid.NewGuid(), SessionId = id, AccountId = account, PlayerId = player,
                 EmailKey = key, Name = (user.FirstName + " " + user.LastName).Trim(), CreatedUtc = DateTimeOffset.UtcNow };
             db.PickupRegistrations.Add(row);
@@ -250,8 +261,8 @@ public sealed class PickupController(TransactionalMail mail) : ControllerBase
     [SameOrigin, HttpPost("sessions/{id:guid}/leave")]
     public Task<IActionResult> Leave(Guid id) => WithSession(id, async (db, session) =>
     {
-        if (!CanRead(session)) return NotFound();
         var row = await FindRegistration(db, id);
+        if (!CanRead(session, row)) return NotFound();
         if (row == null) return NotFound();
         if (session.EndsUtc <= DateTimeOffset.UtcNow || session.State == SessionState.Completed)
             return ConflictMessage("Past registrations are preserved.");
@@ -293,6 +304,7 @@ public sealed class PickupController(TransactionalMail mail) : ControllerBase
         var session = await db.PickupSessions.SingleOrDefaultAsync(s => s.Id == id);
         if (session == null) return NotFound();
         var result = await work(db, session);
+        if (result is StatusCodeResult { StatusCode: >= 400 } or ObjectResult { StatusCode: >= 400 }) return result;
         await db.SaveChangesAsync();
         await transaction.CommitAsync();
         return result;
@@ -321,7 +333,7 @@ public sealed class PickupController(TransactionalMail mail) : ControllerBase
 
     private static Task<int> Confirmed(DataContext db, Guid id) => db.PickupRegistrations.CountAsync(r =>
         r.SessionId == id && r.State == RegistrationState.Confirmed);
-    private static bool RegistrationOpen(PickupSession s) => s.State == SessionState.Published &&
+    private static bool RegistrationOpen(PickupSession s) => (s.State is SessionState.Published or SessionState.InProgress) &&
         s.EndsUtc > DateTimeOffset.UtcNow && (s.DeadlineUtc ?? s.StartsUtc) > DateTimeOffset.UtcNow;
     private async Task<IActionResult> CannotJoin(DataContext db, PickupSession s, bool allowWaitlist = false) =>
         !RegistrationOpen(s) ? ConflictMessage("Registration is closed for this session.") :

@@ -1,0 +1,252 @@
+@if (error) { <p class="feedback" role="alert">{{ error }}</p> }
+@if (data; as workspace) {
+  @if (session.owner || workspace.sets) {
+    <section class="panel workspace">
+      <div class="session-counts" aria-label="Session summary">
+        <span><strong>{{ session.confirmed }}</strong> Registered Players</span>
+        <span><strong>{{ workspace.playing }}</strong> Playing Today</span>
+        <span><strong>{{ workspace.gamesPlayed }}</strong> Games Played</span>
+      </div>
+      @if (session.owner) {
+        <nav class="workspace-actions" aria-label="Pickup workspace">
+          <button type="button" [attr.aria-pressed]="tab === 'Players'" (click)="tab = 'Players'">Players</button>
+          @if (active) {
+            <button type="button" [attr.aria-pressed]="tab === 'Scramble Teams'" (click)="tab = 'Scramble Teams'">Scramble Teams</button>
+          }
+          <button type="button" [attr.aria-pressed]="tab === 'Teams & Scores'" (click)="tab = 'Teams & Scores'">Teams &amp; Scores</button>
+          @if (session.visibility !== 2) {
+            <button type="button" (click)="invite.emit()">Invite Players</button>
+          }
+          <button type="button" [attr.aria-pressed]="tab === 'Session Settings'" (click)="tab = 'Session Settings'">Session Settings</button>
+        </nav>
+        @if (active && session.state === 1) {
+          <div class="actions"><button type="button" class="primary" [disabled]="busy" (click)="mutate('/lifecycle', {complete: false})">Start Playing</button></div>
+        }
+      }
+
+      @if (tab === 'Players' && session.owner) {
+        <h3>Players</h3>
+        @if (active) {
+          <div class="workspace-actions">
+            <button type="button" (click)="browse()" [disabled]="busy">Add Players</button>
+            <button type="button" (click)="setAttendance({all: true, playing: true})"
+              [disabled]="busy || !session.confirmed">Mark All Playing</button>
+            <label class="choice"><input type="checkbox" [checked]="workspace.checkedInOnly" [disabled]="busy"
+              (change)="setAttendance({checkedInOnly: $any($event.target).checked})"> Checked-in players only</label>
+          </div>
+          @if (addOpen) {
+            <div class="picker">
+              <label>Find existing players<input type="search" maxlength="100" [(ngModel)]="addSearch" (keyup.enter)="browse()"></label>
+              <button type="button" (click)="browse()">Search</button>
+              <div class="player-options">
+                @for (player of addOptions; track player.id) {
+                  <label class="choice"><input type="checkbox" [checked]="selected.has(player.id)"
+                    (change)="selectPlayer(player.id, $any($event.target).checked)">{{ player.name }}</label>
+                } @empty { <p>No matching players available.</p> }
+              </div>
+              <div class="workspace-actions">
+                <button type="button" [disabled]="addPage === 0" (click)="browse(addPage - 1)">Previous</button>
+                <button type="button" [disabled]="!addMore" (click)="browse(addPage + 1)">Next</button>
+                <button type="button" class="primary" [disabled]="busy || !selected.size" (click)="addPlayers()">Add Selected ({{ selected.size }})</button>
+              </div>
+              <label>Walk-in guest name<input maxlength="100" [(ngModel)]="guestName"></label>
+              <div class="workspace-actions">
+                <button type="button" [disabled]="busy || !guestName.trim()" (click)="mutate('/players', {guestName}, 'POST', clearGuest)">Add Walk-in Guest</button>
+                <button type="button" (click)="addOpen = false">Close Player Picker</button>
+              </div>
+            </div>
+          }
+        }
+        @for (player of workspace.players; track player.id) {
+          <div class="player-line">
+            <span>{{ player.name }} &middot; {{ statuses[player.state] }}
+              @if (player.state === 2) { &middot; {{ playing(player) ? 'Playing' : 'Not Playing' }} }
+            </span>
+            @if (active && player.state === 2) {
+              <button type="button" [disabled]="busy" [attr.aria-label]="'Mark ' + player.name + (playing(player) ? ' not playing' : ' playing')"
+                (click)="setAttendance({playerId: player.id, playing: !playing(player)})">{{ playing(player) ? 'Mark Not Playing' : 'Mark Playing' }}</button>
+            }
+            @if (active && player.state === 1) {
+              <button type="button" [disabled]="busy" (click)="mutate('/registrations/' + player.id, {approve: true})">Approve</button>
+              <button type="button" [disabled]="busy" (click)="mutate('/registrations/' + player.id, {approve: false})">Decline</button>
+            }
+          </div>
+        } @empty { <p>No players have joined yet.</p> }
+      }
+
+      @if (tab === 'Scramble Teams' && active) {
+        <h3>Scramble Teams</h3>
+        <p>{{ eligible.length }} playing participants. Up to 80 can play in one draw.</p>
+        @if (eligible.length > 80) {
+          <button type="button" (click)="tab = 'Players'">Choose Playing Participants</button>
+        }
+        <div class="workspace-fields">
+          <label>Team count (0 for automatic)<input type="number" min="0" max="80" step="2" [(ngModel)]="options.teamCount"></label>
+          <label>Maximum team size<input type="number" min="1" max="80" [(ngModel)]="options.maxTeamSize"></label>
+          <label>Games per matchup<input type="number" min="1" max="20" [(ngModel)]="options.games"></label>
+          <label>Team balance<select [(ngModel)]="options.balanced"><option [ngValue]="true">Balanced</option><option [ngValue]="false">Completely random</option></select></label>
+          <label>Previous pickup teammates<select [(ngModel)]="options.history">
+            <option value="none">Ignore</option><option value="minimize">Minimize repeats</option><option value="strict">Strictly avoid repeats</option>
+          </select></label>
+          <label class="choice"><input type="checkbox" [(ngModel)]="options.watch"> Watch the Scramble</label>
+        </div>
+        <details>
+          <summary>Top and Low Player priorities</summary>
+          @for (player of eligible; track player.id) {
+            <label class="priority-row">{{ player.name }}
+              <select [ngModel]="priority[player.id] || ''" (ngModelChange)="priority[player.id] = $event">
+                <option value="">Regular</option><option value="top">Top</option><option value="low">Low</option>
+              </select>
+            </label>
+          }
+        </details>
+        <div class="workspace-actions">
+          <button type="button" class="primary" [disabled]="busy" (click)="generate()">{{ workspace.gameSets ? 'Generate Next Teams' : 'Generate Teams' }}</button>
+          @if (options.history === 'strict' && strictFallback) {
+            <button type="button" [disabled]="busy" (click)="generate(true)">Try Minimum Repeats</button>
+          }
+        </div>
+        @for (warning of warnings; track $index) { <p>{{ warning }}</p> }
+        @if (preview; as result) {
+          <h4>Proposed Teams</h4>
+          <div class="pickup-matchups">
+            @for (pair of matchups(result.teams); track $index; let i = $index) {
+              <article class="pickup-matchup">
+                <h4>Matchup {{ i + 1 }}</h4>
+                <div class="opponents">
+                  @for (roster of [pair.first, pair.second]; track $index) {
+                    <section><h5>Team {{ i * 2 + $index + 1 }}</h5><ul>@for (player of roster; track player.id) { <li>{{ player.name }}</li> }</ul></section>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+          @if (result.byes.length) {
+            <p>Sitting out: @for (player of result.byes; track player.id) { {{ player.name }}{{ $last ? '' : ', ' }} }</p>
+          }
+          <div class="workspace-actions">
+            <button type="button" class="primary" [disabled]="busy" (click)="saveTeams()">Save Teams to Pickup Session</button>
+            <button type="button" (click)="preview = undefined">Discard Preview</button>
+          </div>
+        }
+      }
+
+      @if (tab === 'Teams & Scores') {
+        <h3>Teams &amp; Scores</h3>
+        @if (active) {
+          <button type="button" (click)="tab = 'Scramble Teams'">{{ workspace.gameSets ? 'Generate Next Teams' : 'Scramble Teams' }}</button>
+        }
+        @for (set of workspace.sets; track set.id) {
+          <article class="game-set">
+            <h4><button type="button" [attr.aria-expanded]="open.has(set.id)" (click)="toggleSet(set.id)">Game Set {{ set.number }}</button></h4>
+            @if (open.has(set.id)) {
+              @if (workspace.myRegistrationId; as mine) {
+                @for (roster of set.board.teams; track $index) {
+                  @if (onTeam(roster, mine)) { <p><strong>Your assignment: Team {{ $index + 1 }}</strong></p> }
+                }
+                @if (onTeam(set.board.byes, mine)) { <p><strong>Your assignment: Sitting out</strong></p> }
+              }
+              <div class="workspace-actions">
+                <button type="button" (click)="print(set)">Print Teams</button>
+                @if (active) {
+                  <button type="button" (click)="startScores(set)">{{ set.scores.length ? 'Edit Scores' : 'Enter Scores' }}</button>
+                  <button type="button" [disabled]="set.scores.length > 0" (click)="startTeams(set)">Manage Teams</button>
+                }
+              </div>
+              <div class="pickup-matchups">
+                @for (pair of matchups(editing?.id === set.id ? teamEdits : set.board.teams); track $index; let i = $index) {
+                  <article class="pickup-matchup">
+                    <h4>Matchup {{ i + 1 }}</h4>
+                    <div class="opponents">
+                      @for (roster of [pair.first, pair.second]; track $index; let side = $index) {
+                        <section>
+                          <h5>Team {{ i * 2 + side + 1 }}</h5>
+                          <ul>
+                            @for (player of roster; track player.id) {
+                              <li>{{ player.name }}
+                                @if (editing?.id === set.id) {
+                                  <select #teamChoice [attr.aria-label]="'Assigned team for ' + player.name" [value]="i * 2 + side"
+                                    (change)="move(player, i * 2 + side, +teamChoice.value, teamChoice)">
+                                    @for (team of teamEdits; track $index) {
+                                      <option [value]="$index" [selected]="$index === i * 2 + side">Team {{ $index + 1 }}</option>
+                                    }
+                                  </select>
+                                }
+                              </li>
+                            }
+                          </ul>
+                        </section>
+                      }
+                    </div>
+                    @if (scoring?.id === set.id) {
+                      @for (score of scoreRows(i + 1); track score.game) {
+                        <fieldset class="score-fields">
+                          <legend>Game {{ score.game }}</legend>
+                          <label>Team {{ i * 2 + 1 }} score<input type="number" min="0" [(ngModel)]="score.first"></label>
+                          <label>Team {{ i * 2 + 2 }} score<input type="number" min="0" [(ngModel)]="score.second"></label>
+                        </fieldset>
+                      }
+                    } @else {
+                      @if (savedScores(set, i + 1).length) {
+                        @for (game of results(set, i + 1); track game.game) {
+                          <p>Game {{ game.game }} &middot; @if (game.score; as score) { {{ score.first }} &ndash; {{ score.second }} } @else { Unscored }</p>
+                        }
+                      } @else { <p>Unscored</p> }
+                    }
+                  </article>
+                }
+              </div>
+              @if (set.board.byes.length) {
+                <p>Sitting out: @for (player of set.board.byes; track player.id) { {{ player.name }}{{ $last ? '' : ', ' }} }</p>
+              }
+              @if (scoring?.id === set.id) {
+                <div class="workspace-actions">
+                  <button type="button" class="primary" [disabled]="busy" (click)="saveScores()">Save Scores</button>
+                  <button type="button" (click)="scoring = undefined">Cancel Score Edits</button>
+                </div>
+              }
+              @if (editing?.id === set.id) {
+                <div class="workspace-fields">
+                  @for (swapSide of ['first', 'second']; track swapSide) {
+                    <label>Swap {{ swapSide }} player
+                      <select [ngModel]="swapSide === 'first' ? swapFirst : swapSecond"
+                        (ngModelChange)="swapSide === 'first' ? swapFirst = $event : swapSecond = $event">
+                        <option value="">Choose a player</option>
+                        @for (player of teamEdits.flat(); track player.id) { <option [value]="player.id">{{ player.name }}</option> }
+                      </select>
+                    </label>
+                  }
+                  <button type="button" (click)="swap()">Swap Players</button>
+                </div>
+                <div class="workspace-actions">
+                  <button type="button" class="primary" [disabled]="busy" (click)="saveTeamEdits()">Save Team Changes</button>
+                  <button type="button" (click)="editing = undefined">Cancel Team Edits</button>
+                </div>
+              }
+            }
+          </article>
+        } @empty {
+          <p>{{ active && session.confirmed ? 'Ready to play? Scramble your players into teams.' : 'No game sets yet.' }}</p>
+        }
+      }
+      @if (tab === 'Session Settings' && session.owner) {
+        <h3>Session Settings</h3>
+        @if (session.organizerNotes) { <p>{{ session.organizerNotes }}</p> }
+        @if (active) {
+          <div class="workspace-actions">
+            <button type="button" (click)="editSettings.emit()">Edit Session</button>
+            <button type="button" (click)="confirm = 'complete'">Complete Session</button>
+            <button type="button" (click)="confirm = 'cancel'">Cancel Session</button>
+          </div>
+          @if (confirm) {
+            <div class="workspace-actions">
+              <span>{{ confirm === 'complete' ? 'Complete this session and retain its history?' : 'Cancel this session for everyone?' }}</span>
+              <button type="button" [disabled]="busy" (click)="finish()">Confirm {{ confirm === 'complete' ? 'Completion' : 'Cancellation' }}</button>
+              <button type="button" (click)="confirm = null">Keep Session Open</button>
+            </div>
+          }
+        }
+      }
+    </section>
+  }
+}

@@ -40,6 +40,7 @@ public sealed class PickupSession
     public DateTimeOffset EndsUtc { get; set; }
     public DateTimeOffset? DeadlineUtc { get; set; }
     public int? Capacity { get; set; }
+    public bool CheckedInOnly { get; set; }
     public bool ApprovalRequired { get; set; }
     public SessionVisibility Visibility { get; set; }
     public SessionState State { get; set; }
@@ -58,6 +59,7 @@ public sealed class PickupRegistration
     public int? PlayerId { get; set; }
     [Required, MaxLength(64)] public string EmailKey { get; set; }
     [Required, MaxLength(100)] public string Name { get; set; }
+    public bool? Playing { get; set; }
     public RegistrationState State { get; set; }
     public DateTimeOffset CreatedUtc { get; set; }
     public DateTimeOffset? VerifiedUtc { get; set; }
@@ -65,4 +67,16 @@ public sealed class PickupRegistration
     public DateTimeOffset? VerificationExpiresUtc { get; set; }
     [MaxLength(64)] public string AccessHash { get; set; }
     public DateTimeOffset? AccessExpiresUtc { get; set; }
+}
+
+[Index(nameof(SessionId), nameof(Number), IsUnique = true)]
+public sealed class PickupGameSet
+{
+    public Guid Id { get; set; }
+    public Guid SessionId { get; set; }
+    public int Number { get; set; }
+    public DateTimeOffset CreatedUtc { get; set; }
+    [ConcurrencyCheck] public int Version { get; set; }
+    [Required] public string BoardJson { get; set; }
+    [Required] public string ScoresJson { get; set; }
 }

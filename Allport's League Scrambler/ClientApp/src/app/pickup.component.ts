@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { PickupWorkspaceComponent } from './pickup-workspace.component';
 import { AuthService } from './auth.service';
 import { TournamentNotifications } from './tournament-notifications.service';
 
@@ -32,7 +33,7 @@ const emptyForm = () => ({
 @Component({
     selector: 'app-pickup',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, RouterLink, AsyncPipe],
+    imports: [FormsModule, RouterLink, AsyncPipe, PickupWorkspaceComponent],
     templateUrl: './pickup.component.html',
     styleUrl: './pickup.component.css'
 })
@@ -355,11 +356,9 @@ export class PickupComponent implements OnInit {
             await firstValueFrom(this.http.post(this.sessionUrl('/' + action), data));
             await this.load();
             if (action === 'leave') this.notice = 'Registration cancelled.';
-            if (action === 'cancel') { this.confirmCancel = false; this.notice = 'Session cancelled.'; }
         });
     }
 
-    confirmCancel = false;
     get registered(): boolean { return [1, 2, 5].includes(this.session?.registration); }
     get sessionFull(): boolean { return this.session?.capacity != null && this.session.confirmed >= this.session.capacity; }
     get joinLabel(): string { return this.sessionFull ? 'Join Waitlist' : 'Join Session'; }
