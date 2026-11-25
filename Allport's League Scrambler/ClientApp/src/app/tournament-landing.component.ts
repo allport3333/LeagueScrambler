@@ -51,7 +51,8 @@ interface DeletionPreview { name: string; eventDate?: string; participants: numb
         .list-heading span { color: var(--hub-muted, #536478); }
         .empty { max-width: 31rem; margin: .75rem auto 0; text-align: center; padding: clamp(1rem, 4vw, 1.65rem); }
         .empty h2 { font-size: 1.35rem; margin: .35rem 0; }
-        .empty .primary { margin-top: 1rem; }
+        .empty > .primary { margin-top: 1rem; }
+        .empty .actions { justify-content: center; gap: 12px; margin-top: 1rem; padding-top: 0; }
         .trophy { font-size: 1.8rem; }
 
         :is(button, a, input):focus-visible { outline: 2px solid var(--hub-focus, #1c5d9b); outline-offset: 2px; }
@@ -106,8 +107,10 @@ interface DeletionPreview { name: string; eventDate?: string; participants: numb
                         <section class="empty">
                             <h2>No current tournament</h2>
                             <p>Open a tournament you manage or create a new one.</p>
-                            <a class="primary" routerLink="/tournament">Manage Tournaments</a>
-                            <a class="primary" routerLink="/tournament" [queryParams]="{view: 'create'}">Create Tournament</a>
+                            <div class="actions">
+                                <a class="primary" routerLink="/tournament">Manage Tournaments</a>
+                                <a class="primary" routerLink="/tournament" [queryParams]="{view: 'create'}">Create Tournament</a>
+                            </div>
                         </section>
                     }
                 } @else {
