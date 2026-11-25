@@ -1,9 +1,11 @@
 <section class="tournament-workspace">
   @if (readOnly()) {
     <h1>{{ publicName || 'Tournament Matchups' }}</h1>
+    @if (activeRounds.length) { <ng-container *ngTemplateOutlet="watchOpeningPreference"></ng-container> }
     @for (round of activeRounds; track round.roundNumber) {
       <details>
-        <summary>Round {{ round.roundNumber }}</summary>
+        <summary (click)="watchOpeningRound($event, round)">Round {{ round.roundNumber }}</summary>
+        <div class="step-actions"><button type="button" (click)="watchSavedDraw(round)">Watch Draw</button></div>
         <ng-container *ngTemplateOutlet="roundTeams; context: {$implicit: round}"></ng-container>
       </details>
     } @empty {
@@ -181,6 +183,7 @@
               @if (selectedByeRound?.status === 'unplayed') {
                 <button #redrawBye type="button" [disabled]="!!preview.length" [attr.aria-busy]="redrawTrigger === redrawBye"
                   (click)="previewByeReplacement(redrawBye)">{{ redrawTrigger === redrawBye ? 'Generating preview…' : 'Redraw Round Teams for Round ' + byeRound }}</button>
+                <button type="button" [disabled]="!!preview.length" (click)="previewByeReplacement(null, true)">Redraw &amp; Watch</button>
               }
               <section class="saved-bye-matchups">
                 <ng-container *ngTemplateOutlet="roundContent; context: {$implicit: selectedByeRound}"></ng-container>
@@ -225,6 +228,7 @@
       @if (wizardStep() !== 7 && managementOpen && !additionalSettings) {
         <section class="run-panel" aria-label="Manage Rounds">
         <h2>Manage Existing Rounds</h2>
+        <ng-container *ngTemplateOutlet="watchOpeningPreference"></ng-container>
         <div class="step-actions"><button type="button" (click)="closeManagement()">Back to Tournament</button></div>
           @if (editSettings.historicalScrambleNumbers.length) {
             <label class="choice"><input type="checkbox" [disabled]="inlinePreviews.size > 0" [ngModel]="fallback" (ngModelChange)="fallback = $event; cancelPreview()"> Allow the minimum-repeat fallback if strict avoidance is impossible</label>
@@ -244,7 +248,7 @@
           @for (round of rounds; track round.roundNumber) {
             <details class="saved-round" [open]="expandedRounds.has(round.roundNumber)"
               (toggle)="updateExpanded(round.roundNumber, $any($event.target).open)">
-              <summary class="round-header" [attr.aria-label]="'View Round ' + round.roundNumber + ', ' + roundStatus(round)">
+              <summary class="round-header" (click)="watchOpeningRound($event, round)" [attr.aria-label]="'View Round ' + round.roundNumber + ', ' + roundStatus(round)">
                 <span class="round-title">Round {{ round.roundNumber }}</span>
                 <span class="round-state" [attr.data-status]="round.status">{{ roundStatus(round) }}</span>
                 <span class="round-count">{{ matchupCount(round.teams.length) }} matchups &middot; {{ round.teams.length }} teams &middot; {{ playingCount(round) }} playing &middot; {{ round.byes.length }} byes</span>
@@ -259,6 +263,7 @@
                   <label class="choice"><input type="checkbox" [checked]="removalSelection.has(round.roundNumber)" (change)="$any($event.target).checked ? removalSelection.add(round.roundNumber) : removalSelection.delete(round.roundNumber)"> Select for deletion</label>
                   <button #redrawManaged type="button" [disabled]="dirty || !!preview.length" [attr.aria-busy]="redrawTrigger === redrawManaged"
                     (click)="propose(round.roundNumber, redrawManaged)">{{ redrawTrigger === redrawManaged ? 'Generating preview…' : 'Redraw Round Teams' }}</button>
+                  <button type="button" [disabled]="dirty || !!preview.length" (click)="propose(round.roundNumber, null, undefined, true)">Redraw &amp; Watch</button>
                   <button type="button" [disabled]="!!preview.length" (click)="removeRequest = {numbers: [round.roundNumber], voidScored: false}">Delete Round</button>
                 </div>
               } @else if (round.status !== "unplayed") {
@@ -266,6 +271,9 @@
                   <button type="button" [disabled]="!!preview.length" (click)="openScores(round)">{{ roundAction(round) }}</button>
                   @if (canVoid) { <button type="button" (click)="removeRequest = {numbers: [round.roundNumber], voidScored: true}">Void Round</button> }
                 </div>
+              }
+              @if (round.status !== 'voided' && !replacingRounds.has(round.roundNumber)) {
+                <div class="step-actions"><button type="button" (click)="watchSavedDraw(round)">Watch Draw</button></div>
               }
               @if (wizardStep() !== 7 || round.status === 'voided') {
                 <ng-container *ngTemplateOutlet="roundContent; context: {$implicit: round}"></ng-container>
@@ -285,6 +293,7 @@
             @for (round of preview; track round.roundNumber) {
               <details>
                 <summary>Round {{ round.roundNumber }}</summary>
+                <div class="step-actions"><button type="button" (click)="watchProposedDraw(round.roundNumber)">Watch Draw</button></div>
                 <div class="matchup-grid">
                   @for (team of round.teams; track $index; let index = $index) {
                     @if (index % 2 === 0 && round.teams[index + 1]; as opponent) {
@@ -358,10 +367,11 @@
       }
       @if (wizardStep() === 7 || (!managementOpen && view === 'rounds')) {
         <section class="round-list" aria-label="Saved tournament rounds">
+        @if (activeRounds.length) { <ng-container *ngTemplateOutlet="watchOpeningPreference"></ng-container> }
         @for (round of (wizardStep() === 7 ? rounds : activeRounds); track round.roundNumber) {
           <details class="saved-round" [open]="expandedRounds.has(round.roundNumber)"
             (toggle)="updateExpanded(round.roundNumber, $any($event.target).open)">
-            <summary class="round-header" [id]="'run-round-' + round.roundNumber">
+            <summary class="round-header" [id]="'run-round-' + round.roundNumber" (click)="watchOpeningRound($event, round)">
               <span class="round-title">Round {{ round.roundNumber }}</span>
               <span class="round-state" [attr.data-status]="round.status">{{ roundStatus(round) }}</span>
               <span class="round-count">{{ matchupCount(round.teams.length) }} matchups · {{ round.teams.length }} teams</span>
@@ -380,6 +390,7 @@
                 <button type="button" class="primary" [disabled]="additionalSettings || !!preview.length"
                   (click)="openScores(round)">{{ roundAction(round) }}</button>
               }
+              <button type="button" (click)="watchSavedDraw(round)">Watch Draw</button>
               @if (wizardStep() === 7) { <button type="button" (click)="print([round])">Print Round {{ round.roundNumber }}</button> }
               @if (wizardStep() === 7 && (round.status === 'unplayed' || canVoid)) {
                 <button type="button" [disabled]="hasUnsavedChanges" (click)="openRoundManager(round)">Manage Round</button>
@@ -403,6 +414,10 @@
     </fieldset>
   }
 </section>
+
+<ng-template #watchOpeningPreference>
+  <label class="choice"><input type="checkbox" [(ngModel)]="watchWhenOpening"> Watch Draw when opening rounds</label>
+</ng-template>
 
 <ng-template #manageRoundDialog>
   <h2 mat-dialog-title>{{ teamEditor ? (teamEditor.preview ? 'Edit Proposed Teams' : 'Modify Teams Manually') :
@@ -437,6 +452,7 @@
       } @else if (round.status === 'unplayed') {
         <div class="manage-round-actions">
           <button type="button" [disabled]="busy" (click)="redrawManagedRound()">Redraw Round Teams</button>
+          <button type="button" [disabled]="busy" (click)="redrawManagedRound(true)">Redraw &amp; Watch</button>
           <button type="button" [disabled]="busy" (click)="editSavedTeams(round)">Modify Teams Manually</button>
           <button type="button" [disabled]="busy" (click)="openRegeneration()">Regenerate This and Following Unplayed Rounds</button>
           <button type="button" class="danger-action" [disabled]="busy"
@@ -487,6 +503,7 @@
             @if (proposing && !redrawTransitionPending) {
               <div class="step-actions preview-actions inline-round-actions">
                 <button type="button" class="primary" (click)="saveRounds()">Save New Round Teams</button>
+                <button type="button" (click)="watchProposedDraw(round.roundNumber)">Watch Draw</button>
                 @if (redrawRound) { <button type="button" (click)="editPreviewTeams()">Modify Teams Manually</button> }
                 <button type="button" (click)="cancelInlinePreview()">Cancel</button>
               </div>
@@ -537,6 +554,9 @@
     <select class="form-control" [(ngModel)]="matchupPrintLayout">
       <option [ngValue]="6">Six matchups</option>
       <option [ngValue]="2">Two matchups</option>
+      <option [ngValue]="'landscape-large'">Landscape Large (2 matchups per page)</option>
+      <option [ngValue]="'landscape-balanced'">Landscape Balanced (4 matchups per page, recommended)</option>
+      <option [ngValue]="'landscape-compact'">Landscape Compact (6 matchups per page)</option>
     </select>
   </label>
 </ng-template>

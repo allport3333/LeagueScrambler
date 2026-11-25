@@ -2,7 +2,11 @@
     [style.--pool-slot-height.px]="poolSlotHeight" [style.--assignment-height.px]="assignmentHeight"
     [style.--assignment-font.px]="assignmentFont" [style.--heading-font.px]="headingFont">
     <header class="draft-header">
-        <h2 id="scramble-draft-title">Watch the Scramble</h2>
+        <h2 id="scramble-draft-title">
+            @if (actions.tournament; as tournament) {
+                {{ tournament.name }}<small class="draft-round-title">Round {{ tournament.roundNumber }} Draw</small>
+            } @else { Watch the Scramble }
+        </h2>
         <div class="draft-progress">
             <strong>Players assigned: {{ cursor }} / {{ draft.queue.length }}</strong>
             <progress [value]="cursor" [max]="draft.queue.length" aria-label="Players assigned"></progress>
@@ -32,7 +36,7 @@
             }
         </div>
     </section>
-    <section class="board" #board aria-label="Scramble matchups">
+    <section class="board" #board [attr.aria-label]="actions.tournament ? 'Tournament matchups' : 'Scramble matchups'">
         @if (pages[page]; as current) {
             <div class="matchup-board" [style.--columns]="current.columns">
                 @for (window of current.windows; track window.matchup.id + ':' + window.start) {
@@ -82,10 +86,16 @@
                     <button type="button" [disabled]="reallocating || page === 0" (click)="page = page - 1">Previous view</button>
                     <button type="button" [disabled]="reallocating || page + 1 === pages.length" (click)="page = page + 1">Next view</button>
                 }
-                <button type="button" data-replay [disabled]="saving || reallocating" (click)="replay()">Replay Scramble</button>
-                <button type="button" class="primary" [disabled]="saving || !actions.canSave()" (click)="save()">Save Scramble</button>
-                <button type="button" [disabled]="!actions.canPrint()" (click)="actions.print()">Print Matchups</button>
-                @if (actions.saveFeedback()) { <span role="status">{{ actions.saveFeedback() }}</span> }
+                <button type="button" data-replay [disabled]="saving || reallocating" (click)="replay()">{{ actions.tournament ? 'Replay Draw' : 'Replay Scramble' }}</button>
+                @if (actions.tournament; as tournament) {
+                    <button type="button" class="primary" (click)="dialog.close()">{{ tournament.proposed ? 'Review Proposed Teams' : 'Back to Round' }}</button>
+                } @else {
+                    <button type="button" class="primary" [disabled]="saving || !actions.canSave?.()" (click)="save()">Save Scramble</button>
+                    @if (actions.print; as print) {
+                        <button type="button" [disabled]="!actions.canPrint?.()" (click)="print()">Print Matchups</button>
+                    }
+                    @if (actions.saveFeedback?.(); as feedback) { <span role="status">{{ feedback }}</span> }
+                }
             } @else {
                 <label>Speed
                     <select [value]="speed" (change)="speed = $any($event.target).value">

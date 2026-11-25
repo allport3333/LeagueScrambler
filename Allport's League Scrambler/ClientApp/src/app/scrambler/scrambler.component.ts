@@ -1,7 +1,8 @@
-import { ScrambleDraftComponent } from './scramble-draft.component';
+import { ScrambleDraftComponent, scrambleDraftDialogOptions } from './scramble-draft.component';
 import { buildScrambleDraft, ScrambleDraft } from './scramble-draft';
 import { transferTeamPlayer } from './team-assignment';
 import { renderMatchupPrint } from '../matchup-print';
+import { isLandscapePrintMode, renderLargeMatchupPrint } from '../matchup-large-print';
 import { injectConfirmation } from '../confirmation-dialog';
 import { protectPendingWork } from '../pwa/pending-work.service';
 import { LeaguePlayerEditComponent } from '../league-management/player-management-dialogs.component';
@@ -198,8 +199,7 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
     private openScrambleDraft(draft: ScrambleDraft): void {
         this.draftDialog = this.managementDialog.open(ScrambleDraftComponent, {
-            width: '100vw', height: '100dvh', maxWidth: '100vw', maxHeight: '100dvh',
-            ariaLabelledBy: 'scramble-draft-title', enterAnimationDuration: 0, exitAnimationDuration: 0,
+            ...scrambleDraftDialogOptions,
             data: {
                 draft,
                 save: () => this.saveKingQueenTeams(),
@@ -3385,6 +3385,24 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
     printMatchups(): void {
         if (!this.canPrintMatchups) { this.showSnackBar('Save or cancel team changes before printing matchups.'); return; }
+        if (isLandscapePrintMode(this.selectedMatchupsPerPage)) {
+            const popup = window.open('', '_blank', 'width=1000,height=700');
+            if (!popup) { this.showSnackBar('Allow popups to preview and print matchups.'); return; }
+            renderLargeMatchupPrint(popup, 'Matchups & Scores', [{
+                teams: this.listOfTeams.map(team => ({
+                    players: team.players,
+                    scores: team.kingQueenRoundScores?.filter(score => score.roundScore != null).map(score => ({
+                        game: score.roundId, points: score.roundScore
+                    }))
+                })),
+                byes: this.byePlayers,
+                games: this.selectedRounds,
+                court: index => this.getMatchCourt(this.listOfTeams[index])
+            }], this.selectedMatchupsPerPage);
+            popup.focus();
+            popup.print();
+            return;
+        }
         let printContent = '';
 
         if (this.selectedMatchupsPerPage == '2') {

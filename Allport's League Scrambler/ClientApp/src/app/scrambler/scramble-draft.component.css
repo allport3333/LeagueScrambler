@@ -8,6 +8,7 @@
 .draft-stage:fullscreen { height: 100dvh; }
 .draft-header { display: flex; align-items: center; gap: 8px 18px; }
 .draft-header h2 { margin: 0; font-size: clamp(18px, 2.3vw, 34px); line-height: 1.1; }
+.draft-round-title { display: block; font-size: .68em; margin-top: .2em; }
 .draft-header > button { margin-inline-start: auto; }
 .draft-progress { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 12px; font-size: clamp(12px, 1.3vw, 16px); }
 progress { width: clamp(56px, 13vw, 230px); height: .55rem; accent-color: var(--draft-accent); }

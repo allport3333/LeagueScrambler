@@ -6,6 +6,8 @@ const serveAsset = require('./fixture-asset.cjs');
 
 const origin = 'https://localhost:5001';
 const out = process.env.LEAGUE_TEST_OUT;
+const drawOnly = process.argv.includes('--watch-draw');
+const largePrintOnly = process.argv.includes('--large-print');
 const layoutOnly = process.argv.includes('--workspace-layout');
 const notificationsOnly = process.argv.includes('--notifications');
 const visualPolish = process.argv.includes('--visual-polish');
@@ -36,7 +38,7 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
     fs.mkdirSync(out, { recursive: true });
     const browser = await chromium.launch({ channel: 'chrome' });
     try {
-        for (const theme of priorityOnly ? ['classic'] : scoreGuidance ? ['classic', 'charcoal'] : ['classic', 'navy', 'charcoal']) {
+        for (const theme of (priorityOnly || largePrintOnly || drawOnly) ? ['classic'] : scoreGuidance ? ['classic', 'charcoal'] : ['classic', 'navy', 'charcoal']) {
             const context = await browser.newContext({
                 serviceWorkers: 'block', reducedMotion: 'no-preference', viewport: { width: 1440, height: 960 }
             });
@@ -58,6 +60,7 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                 team.players = roster.filter((_, playerIndex) => playerIndex % round.teams.length === index);
             });
             let roundSettings = priorityOnly ? { ...settings, maximumTeamSize: null, numberOfTeams: 4 } : structuredClone(settings);
+            const redrawRequests = [];
             let generatedWrites = 0;
             let savedScores = 0;
             let present = true;
@@ -100,7 +103,8 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                     if (endpoint === '/api/tournament-attendance/133/players/1') present = body.present;
                     else if (endpoint.endsWith('/round-settings')) roundSettings = body.settings;
                     else if (endpoint.endsWith('/rounds')) {
-                        if (visualPolish && rejectRedraw) return route.fulfill({ status: 409, json: { message: 'Fixture rejected redraw.' } });
+                        if (drawOnly) redrawRequests.push(body);
+                        if ((visualPolish || drawOnly) && rejectRedraw) return route.fulfill({ status: 409, json: { message: 'Fixture rejected redraw.' } });
                         generatedWrites++;
                         const updated = body.rounds.map(round => ({
                             ...round, status: 'unplayed', gamesPerMatchup: roundSettings.gamesPerMatchup,
@@ -109,7 +113,7 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                                 players: members.map(id => roster.find(player => player.id === id))
                             }))
                         }));
-                        if (layoutOnly || visualPolish || priorityOnly) {
+                        if (layoutOnly || visualPolish || priorityOnly || drawOnly) {
                             const updatedNumbers = new Set(updated.map(round => round.roundNumber));
                             rounds = [...rounds.filter(round => !updatedNumbers.has(round.roundNumber)), ...updated]
                                 .sort((a, b) => a.roundNumber - b.roundNumber);
@@ -253,6 +257,240 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
                     await expect(workspace.locator('#matchups-7 input').first()).not.toBeFocused();
                 }
                 assert.deepEqual(errors, []);
+                await context.close();
+                continue;
+            }
+            if (drawOnly) {
+                rounds = [1, 2, 3].map(number => ({
+                    ...defaultRounds[number - 1],
+                    teams: [
+                        {id: number * 100, players: roster.slice(number - 1, number + 2), scores: number === 1 ? [{game: 1, points: 21}] : []},
+                        {id: number * 100 + 1, players: roster.slice(number + 2, number + 5), scores: number === 1 ? [{game: 1, points: 17}] : []}
+                    ],
+                    byes: [roster[number + 5]]
+                }));
+                const workspace = page.locator('app-tournament-center');
+                const draw = page.locator('app-scramble-draft');
+                const card = number => workspace.locator('#run-round-' + number).locator('..');
+                const expand = async number => {
+                    const item = card(number);
+                    if (await item.getAttribute('open') === null) await item.locator('summary').click();
+                    return item;
+                };
+                const checkHeading = async number => {
+                    await expect(draw.getByRole('heading', {name: name + ' Round ' + number + ' Draw'})).toBeVisible();
+                    await expect(draw.getByRole('button', {name: 'Save Scramble'})).toHaveCount(0);
+                };
+                const reveal = async () => {
+                    await draw.getByRole('button', {name: 'Skip Animation'}).click();
+                    await expect(draw.getByRole('button', {name: 'Replay Draw'})).toBeEnabled();
+                    return draw.locator('.destination').evaluateAll(teams => Object.fromEntries(teams.map(team =>
+                        [team.dataset.team, [...team.querySelectorAll('.filled')].map(player => Number(player.dataset.slot))])));
+                };
+                const back = async proposed => {
+                    await draw.getByRole('button', {name: proposed ? 'Review Proposed Teams' : 'Back to Round'}).click();
+                    await expect(draw).toHaveCount(0);
+                };
+                await page.goto(origin + '/tournament/133?step=7');
+                const first = await expand(1);
+                await expect(draw).toHaveCount(0);
+                await first.getByRole('button', {name: 'Watch Draw', exact: true}).click();
+                await checkHeading(1);
+                await draw.locator('select').selectOption('Slow');
+                await draw.getByRole('button', {name: 'Pause', exact: true}).click();
+                await expect(draw.getByRole('button', {name: 'Resume'})).toBeVisible();
+                await draw.locator('select').selectOption('Fast');
+                await draw.getByRole('button', {name: 'Resume'}).click();
+                await draw.locator('select').selectOption('Normal');
+                const fullscreen = draw.getByRole('button', {name: 'Fullscreen', exact: true});
+                if (await fullscreen.count()) {
+                    await fullscreen.click();
+                    await expect(draw.getByRole('button', {name: 'Exit Fullscreen', exact: true})).toBeVisible();
+                    await draw.getByRole('button', {name: 'Exit Fullscreen', exact: true}).click();
+                }
+                const original = {'0': [7], '1': [1,2,3], '2': [4,5,6]};
+                assert.deepEqual(await reveal(), original);
+                await draw.getByRole('button', {name: 'Replay Draw'}).click();
+                assert.deepEqual(await reveal(), original);
+                await back(false);
+                await first.getByRole('button', {name: 'Manage Round'}).click();
+                await expect(page.getByRole('dialog').getByRole('button', {name: 'Redraw & Watch', exact: true})).toHaveCount(0);
+                await page.getByRole('dialog').getByRole('button', {name: 'Close', exact: true}).click();
+
+                const second = await expand(2);
+                await second.locator('summary').click();
+                await workspace.getByRole('checkbox', {name: 'Watch Draw when opening rounds'}).check();
+                await page.setViewportSize({width: 390, height: 844});
+                await second.locator('summary').click();
+                await checkHeading(2);
+                await expect(draw.locator('.draft-stage')).toBeInViewport();
+                await draw.screenshot({path: path.join(out, 'watch-draw-mobile.png')});
+                await draw.getByRole('button', {name: 'Exit presentation'}).click();
+                await expect(draw).toHaveCount(0);
+                await expect(second).toHaveAttribute('open', '');
+                await workspace.getByRole('checkbox', {name: 'Watch Draw when opening rounds'}).uncheck();
+                await page.setViewportSize({width: 1920, height: 1080});
+                await page.emulateMedia({reducedMotion: 'reduce'});
+
+                async function redraw(watch) {
+                    await second.getByRole('button', {name: 'Manage Round'}).click();
+                    await page.getByRole('dialog').getByRole('button', {name: watch ? 'Redraw & Watch' : 'Redraw Round Teams', exact: true}).click();
+                    if (watch) await checkHeading(2);
+                    else {
+                        await expect(second.getByText('Unsaved Team Preview')).toBeVisible();
+                        await expect(draw).toHaveCount(0);
+                    }
+                }
+                await redraw(false);
+                await second.getByRole('button', {name: 'Cancel', exact: true}).click();
+                await redraw(true);
+                await reveal();
+                await back(true);
+                await second.getByRole('button', {name: 'Cancel', exact: true}).click();
+                assert.equal(redrawRequests.length, 0);
+                assert.deepEqual(rounds[0].teams.map(team => team.scores), [[{game: 1, points: 21}], [{game: 1, points: 17}]]);
+
+                await redraw(true);
+                const proposed = await reveal();
+                await draw.screenshot({path: path.join(out, 'watch-draw-redraw.png')});
+                await draw.getByRole('button', {name: 'Replay Draw'}).click();
+                assert.deepEqual(await reveal(), proposed);
+                await back(true);
+                rejectRedraw = true;
+                await second.getByRole('button', {name: 'Save New Round Teams'}).click();
+                await expect(page.getByText('Fixture rejected redraw.')).toBeVisible();
+                await expect(second.getByText('Unsaved Team Preview')).toBeVisible();
+                rejectRedraw = false;
+                await second.getByRole('button', {name: 'Save New Round Teams'}).click();
+                await expect(second.getByText('Unsaved Team Preview')).toHaveCount(0);
+                const committed = redrawRequests.at(-1);
+                assert.equal(committed.version, details.version);
+                assert.equal(committed.rounds[0].roundNumber, 2);
+                assert.deepEqual(committed.rounds[0].teams, Object.entries(proposed).filter(([id]) => id !== '0').map(([, ids]) => ids));
+                assert.deepEqual(committed.rounds[0].byes, proposed['0'] ?? []);
+                assert.equal(rounds.length, 3);
+
+                rounds = [];
+                await page.goto(origin + '/tournament/133?step=6');
+                await workspace.getByRole('button', {name: 'Generate Tournament Rounds'}).click();
+                const preview = workspace.locator('.preview');
+                const priorWrites = redrawRequests.length;
+                for (const number of [1, 2]) {
+                    const proposedRound = preview.locator('details').nth(number - 1);
+                    if (await proposedRound.getAttribute('open') === null) await proposedRound.locator('summary').click();
+                    await proposedRound.getByRole('button', {name: 'Watch Draw', exact: true}).click();
+                    await checkHeading(number);
+                    const assignments = await reveal();
+                    assert.equal(new Set(Object.values(assignments).flat()).size, roster.length);
+                    await back(true);
+                }
+                assert.equal(redrawRequests.length, priorWrites);
+                await preview.getByRole('button', {name: 'Save Proposed Rounds'}).click();
+                await expect(workspace.locator('#run-round-1')).toBeVisible();
+                assert.equal(redrawRequests.length, priorWrites + 1);
+                assert.deepEqual(errors, []);
+                console.log('Tournament Watch Draw saved, proposed and redraw flows passed.');
+                await context.close();
+                continue;
+            }
+            if (largePrintOnly) {
+                rounds = [1, 2, 3, 4, 6, 10].map((count, index) => {
+                    const number = index + 1;
+                    return ({
+                    ...defaultRounds[0], roundNumber: number, gamesPerMatchup: number === 3 ? 8 : 2,
+                    teams: Array.from({ length: count * 2 }, (_, team) => ({
+                        id: number * 100 + team,
+                        players: Array.from({ length: number === 3 && team < 2 ? 9 : 4 - team % 2 }, (_, player) => ({
+                            ...roster[(team * 4 + player) % roster.length],
+                            ...(number === 3 && team === 0 && player === 0 ? {
+                                firstName: 'Alexandria Catherine Elizabeth', lastName: 'Montgomery-Smith-Rodriguez-Washington-Sutherland',
+                                isSub: true
+                            } : {})
+                        })),
+                        scores: number === 1 ? [{game: 1, points: team ? 18 : 21}, {game: 2, points: team ? 21 : 0}]
+                            : team === 0 ? [{game: 1, points: 21}] : []
+                    })),
+                    byes: number === 3 ? [{ firstName: 'Fixture', lastName: 'Bye' }] : []
+                }); });
+                await page.goto(origin + '/tournament/133?step=7');
+                const workspace = page.locator('app-tournament-center');
+                await workspace.getByRole('button', { name: 'Print Rounds', exact: true }).click();
+                const panel = workspace.getByRole('region', { name: 'Print Rounds' });
+                const layout = panel.getByLabel('Matchups per printed page');
+                await expect(layout.locator('option:checked')).toHaveText('Six matchups');
+                const open = async button => {
+                    const pending = page.waitForEvent('popup');
+                    await button.click();
+                    const popup = await pending;
+                    await expect(popup.getByRole('heading', { name, exact: true }).first()).toBeVisible();
+                    return popup;
+                };
+                const all = panel.getByRole('button', { name: 'Print All Rounds' });
+                const verifyPdf = async (popup, file, format, landscape) => {
+                    const pdf = await popup.pdf({ path: path.join(out, file + '.pdf'), format, preferCSSPageSize: true });
+                    const sheets = [...pdf.toString('latin1').matchAll(/\/MediaBox\s*\[0 0 ([\d.]+) ([\d.]+)\]/g)];
+                    assert(sheets.length && sheets.every(([, width, height]) => (Number(width) > Number(height)) === landscape));
+                    return sheets.length;
+                };
+                for (const [option, css, mode] of [
+                    ['Six matchups', '.printed-matchup', 'six'], ['Two matchups', '.print-team', 'two']
+                ]) {
+                    await layout.selectOption({label: option});
+                    const popup = await open(all);
+                    await expect(popup.locator(css)).toHaveCount(rounds.reduce((count, round) => count + round.teams.length, 0) / (mode === 'six' ? 2 : 1));
+                    await verifyPdf(popup, 'tournament-' + mode, 'Letter', false);
+                    await popup.close();
+                }
+                await layout.selectOption({label: 'Landscape Large (2 matchups per page)'});
+                const card = number => workspace.locator('#run-round-' + number).locator('..');
+                if (await card(1).getAttribute('open') === null) await card(1).locator('summary').click();
+                let popup = await open(card(1).getByRole('button', { name: 'Print Round 1' }));
+                await expect(popup.locator('.large-matchup')).toHaveCount(1);
+                assert.deepEqual(await popup.locator('.large-scores tbody tr').first().locator('td').allTextContents(), ['21','0','21']);
+                assert.equal(await verifyPdf(popup, 'tournament-single-letter', 'Letter', true), 1);
+                await popup.close();
+                await card(2).getByRole('checkbox', { name: 'Select for Printing' }).check();
+                popup = await open(panel.getByRole('button', { name: 'Print Selected Rounds' }));
+                await expect(popup.locator('.large-matchup')).toHaveCount(2);
+                assert.equal(await verifyPdf(popup, 'tournament-pair-a4', 'A4', true), 1);
+                await popup.close();
+                popup = await open(panel.getByRole('button', { name: 'Print Current Round' }));
+                await expect(popup.locator('.round-number')).not.toHaveCount(0);
+                await popup.close();
+                popup = await open(all);
+                await expect(popup.locator('.large-matchup')).toHaveCount(26);
+                await expect(popup.getByText('Game 8').first()).toBeVisible();
+                await expect(popup.getByText('Fixture Bye')).toBeVisible();
+                await expect(popup.getByText('(Sub)', { exact: true })).toBeVisible();
+                assert.equal(await popup.locator('.large-roster td').first().evaluate(el => getComputedStyle(el).fontSize), '20px');
+                const pages = await verifyPdf(popup, 'tournament-large-letter', 'Letter', true);
+                await verifyPdf(popup, 'tournament-large-a4', 'A4', true);
+                // Simulate a printer that forces portrait, without changing application CSS.
+                await popup.addStyleTag({content: '@page {size: portrait}'});
+                await verifyPdf(popup, 'tournament-portrait-override', 'A4', false);
+                assert(pages > 5);
+                await popup.close();
+                for (const [mode, capacity, font] of [['large', 2, 15], ['balanced', 4, 13], ['compact', 6, 11]]) {
+                    await layout.selectOption({label: 'Landscape ' + mode[0].toUpperCase() + mode.slice(1) + ' (' + capacity + ' matchups per page' + (mode === 'balanced' ? ', recommended)' : ')')});
+                    for (const [number, count] of [[2, 2], [4, 4], [5, 6], [6, 10]]) {
+                        const roundCard = card(number);
+                        if (await roundCard.getAttribute('open') === null) await roundCard.locator('summary').click();
+                        popup = await open(roundCard.getByRole('button', {name: 'Print Round ' + number, exact: true}));
+                        await expect(popup.locator('.large-matchup')).toHaveCount(count);
+                        const size = await popup.locator('.large-roster td').first().evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+                        assert(Math.abs(size - font * 4 / 3) < .01);
+                        for (const format of ['Letter', 'A4'])
+                            assert.equal(await verifyPdf(popup, 'tournament-' + mode + '-' + count + '-' + format.toLowerCase(), format, true),
+                                Math.ceil(count / capacity), mode + ' ' + count + ' ' + format);
+                        await popup.close();
+                    }
+                    popup = await open(all);
+                    await expect(popup.locator('.large-matchup')).toHaveCount(26);
+                    for (const format of ['Letter', 'A4'])
+                        await verifyPdf(popup, 'tournament-' + mode + '-all-' + format.toLowerCase(), format, true);
+                    await popup.close();
+                }
+                console.log('Tournament portrait and landscape modes, round controls, and Letter/A4 page counts passed.');
                 await context.close();
                 continue;
             }
@@ -928,7 +1166,7 @@ const defaultRounds = [1, 2, 3, 4, 5].map(roundNumber => ({
             assert.deepEqual(errors, []);
             await context.close();
         }
-        if (!priorityOnly && !scoreGuidance) console.log(visualPolish ? 'Inline redraw, inline scoring, and attendance return passed in three themes.' :
+        if (!drawOnly && !largePrintOnly && !priorityOnly && !scoreGuidance) console.log(visualPolish ? 'Inline redraw, inline scoring, and attendance return passed in three themes.' :
             notificationsOnly ? 'Tournament popup, timing, dismissal, validation, error, and confirmation checks passed in three themes.' :
             layoutOnly ? 'Run Tournament dashboard, round management, scoring, printing, and redraw checks passed.' :
             'Tournament setup, preview/save, scores, printing, check-in, participant matchups and 390px layouts passed in three themes.');

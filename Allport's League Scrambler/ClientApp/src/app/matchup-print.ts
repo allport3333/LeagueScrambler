@@ -1,3 +1,24 @@
+export interface MatchupPrintPlayer {
+    firstName: string;
+    lastName: string;
+    isSub?: boolean;
+    isSubScore?: boolean;
+}
+export interface MatchupPrintTeam {
+    kingQueenTeamId?: number;
+    players: MatchupPrintPlayer[];
+    scores?: {game: number; points: number}[];
+}
+
+export function matchupScore(team: MatchupPrintTeam | undefined, game: number): number | undefined {
+    return team?.scores?.find(score => score.game === game)?.points;
+}
+
+export function matchupTotal(team: MatchupPrintTeam | undefined): number | undefined {
+    const scores = team?.scores;
+    return scores?.length ? scores.reduce((sum, score) => sum + score.points, 0) : undefined;
+}
+
 export function renderMatchupPrint(window: Window, title: string, content: string, styles = ''): void {
     window.document.open();
     window.document.write(`<!doctype html>

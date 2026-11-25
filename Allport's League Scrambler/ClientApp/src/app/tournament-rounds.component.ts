@@ -1,5 +1,8 @@
 import { MatchupPrintSheetComponent, MatchupPrintSixComponent } from './matchup-print-sheet.component';
+import { ScrambleDraftComponent, ScrambleDraftData, scrambleDraftDialogOptions } from './scrambler/scramble-draft.component';
+import { buildScrambleDraft } from './scrambler/scramble-draft';
 import { renderMatchupPrint } from './matchup-print';
+import { isLandscapePrintMode, LandscapePrintMode, renderLargeMatchupPrint } from './matchup-large-print';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { afterNextRender, ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, inject, Injector, input, OnInit, output, TemplateRef, viewChild } from '@angular/core';
@@ -13,7 +16,7 @@ import { pairKey, ScramblePlayer } from './scrambler/scramble-engine';
 import { TournamentNotifications } from './tournament-notifications.service';
 import { injectConfirmation } from './confirmation-dialog';
 
-interface Player { id: number; firstName: string; lastName: string; }
+interface Player { id: number; firstName: string; lastName: string; isMale?: boolean; gender?: string; }
 interface SettingsState {
     version: string; mode: number; roster: (Player & ScramblePlayer)[]; presentIds: number[];
     history: {scrambleNumber: number; dateOfTeam: string; playerIds: number[]}[];
@@ -55,7 +58,7 @@ export class TournamentRoundsComponent implements OnInit {
     readonly roundsCleared = output<void>();
     readonly runRequested = output<void>();
     readonly completionChanged = output<boolean>();
-    matchupPrintLayout: 2 | 6 = 6;
+    matchupPrintLayout: 2 | 6 | LandscapePrintMode = 6;
     publicName = '';
     readonly versionChanged = output<string>();
     teamBySize = true;
@@ -63,6 +66,8 @@ export class TournamentRoundsComponent implements OnInit {
     private readonly notifications = inject(TournamentNotifications);
     private readonly dialogs = inject(MatDialog);
     private readonly manageTemplate = viewChild<TemplateRef<unknown>>('manageRoundDialog');
+    private drawDialog?: MatDialogRef<ScrambleDraftComponent>;
+    watchWhenOpening = false;
     private manageDialog?: MatDialogRef<unknown>;
     managedRound?: SavedRound;
     teamEditor?: { teams: EditableMatchupTeam[]; preview: boolean; version?: string };
@@ -135,6 +140,50 @@ export class TournamentRoundsComponent implements OnInit {
         try { sessionStorage.setItem(this.expandedRoundsKey, [...this.expandedRounds].join(',')); }
         catch { /* Session storage is optional. */ }
     }
+    watchOpeningRound(event: MouseEvent, round: SavedRound): void {
+        const summary = event.currentTarget as HTMLElement;
+        if (!this.watchWhenOpening || (summary.parentElement as HTMLDetailsElement).open ||
+            (event.target as Element).closest('input, label, button') || this.hasUnsavedScores) return;
+        this.watchSavedDraw(round);
+    }
+
+    watchSavedDraw(round: SavedRound): void {
+        if (round.status === 'voided' || this.busy) return;
+        this.openDraw(round.roundNumber, round.teams.map(team => team.players.map(player => player.id)),
+            round.byes.map(player => player.id), [...round.teams.flatMap(team => team.players), ...round.byes], false);
+    }
+
+    watchProposedDraw(roundNumber: number): void {
+        const proposal = this.preview.find(round => round.roundNumber === roundNumber);
+        if (proposal) this.openDraw(roundNumber, proposal.teams, proposal.byes, this.state.roster, true);
+    }
+
+    private openDraw(roundNumber: number, teams: readonly (readonly number[])[], byes: readonly number[],
+        players: readonly Player[], proposed: boolean): void {
+        if (this.drawDialog || this.destroy.destroyed) return;
+        try {
+            if (!teams.length || teams.length % 2 !== 0) throw new Error('The round must have complete matchups.');
+            const identities = new Map(players.map(player => [player.id, player]));
+            for (const player of this.state?.roster ?? []) identities.set(player.id, player);
+            const participants = [...new Set([...teams.flat(), ...byes])].map(id => {
+                const player = identities.get(id);
+                if (!player) throw new Error('The round contains a player missing from the roster.');
+                return { id, name: this.playerName(player), isMale: player.isMale, gender: player.gender };
+            });
+            const settings = proposed ? this.editSettings : this.state?.settings;
+            const data: ScrambleDraftData = {
+                draft: buildScrambleDraft(teams.map((playerIds, index) => ({ id: index + 1, playerIds })), byes,
+                    participants, settings?.topPlayerIds ?? [], settings?.lowPlayerIds ?? []),
+                tournament: { name: this.tournamentName() || this.publicName || 'Tournament', roundNumber, proposed }
+            };
+            const dialog = this.dialogs.open(ScrambleDraftComponent, { ...scrambleDraftDialogOptions, data });
+            this.drawDialog = dialog;
+            dialog.afterClosed().subscribe(() => { if (this.drawDialog === dialog) this.drawDialog = undefined; });
+        } catch (error) {
+            this.notifications.error('Could not show Round ' + roundNumber + ' Draw. ' + error.message);
+        }
+    }
+
     private get expandedRoundsKey() { return 'league-hub-tournament-expanded-rounds-' + this.leagueId(); }
     get resumeView(): string { return this.managementOpen ? 'management' : this.step; }
     get view(): string {
@@ -170,11 +219,11 @@ export class TournamentRoundsComponent implements OnInit {
             playing: round.teams.reduce((count, team) => count + team.players.length, 0), totalByes: round.byes.length };
     }
 
-    async previewByeReplacement(trigger: EventTarget | null) {
+    async previewByeReplacement(trigger: EventTarget | null, watch = false) {
         const round = this.selectedByeRound;
         if (round?.status !== 'unplayed' || this.busy) return;
         if (this.dirty && !(await this.saveSettings())) return;
-        await this.propose(round.roundNumber, trigger);
+        await this.propose(round.roundNumber, trigger, undefined, watch);
         if (this.preview.length) {
             this.step = 'rounds';
             this.runRequested.emit();
@@ -250,7 +299,10 @@ export class TournamentRoundsComponent implements OnInit {
 
     async ngOnInit(): Promise<void> {
         this.destroy.onDestroy(() => { this.clearRedrawAnimations(); this.stopScoreGuidance(); });
-        this.destroy.onDestroy(() => this.manageDialog?.close());
+        this.destroy.onDestroy(() => {
+            this.manageDialog?.close();
+            this.drawDialog?.close();
+        });
         if (!this.readOnly()) {
             try {
                 for (const value of (sessionStorage.getItem(this.expandedRoundsKey) ?? '').split(',')) {
@@ -411,8 +463,8 @@ export class TournamentRoundsComponent implements OnInit {
         this.teamBySize = this.state.settings.maximumTeamSize !== null;
     }
 
-    async propose(single?: number, trigger?: EventTarget | null, fromRound?: number): Promise<void> {
-        if (this.busy || this.redrawTransitionPending || this.hasUnsavedScores) return;
+    async propose(single?: number, trigger?: EventTarget | null, fromRound?: number, watch = false): Promise<void> {
+        if (this.busy || this.drawDialog || this.redrawTransitionPending || this.hasUnsavedScores || (watch && this.preview.length)) return;
         this.clearRedrawAnimations();
         this.redrawState = single === undefined ? 'idle' : 'loading';
 
@@ -469,7 +521,13 @@ export class TournamentRoundsComponent implements OnInit {
             this.previewVersion = state.version;
             this.redrawRound = single;
             if (this.replacingRounds.size) {
-                await this.revealRedrawnMatchups();
+                if (watch && single !== undefined) {
+                    this.updateInlinePreviews();
+                    this.redrawState = 'ready';
+                    this.watchProposedDraw(single);
+                } else {
+                    await this.revealRedrawnMatchups();
+                }
                 if (!this.destroy.destroyed && this.replacingRounds.size) this.redrawState = 'ready';
             }
         });
@@ -653,11 +711,11 @@ export class TournamentRoundsComponent implements OnInit {
         await closed;
     }
 
-    async redrawManagedRound(): Promise<void> {
+    async redrawManagedRound(watch = false): Promise<void> {
         const number = this.managedRound?.roundNumber;
         if (!number) return;
         await this.closeRoundDialog();
-        if (!this.destroy.destroyed) await this.propose(number);
+        if (!this.destroy.destroyed) await this.propose(number, undefined, undefined, watch);
     }
 
     async regenerateManagedRounds(): Promise<void> {
@@ -933,9 +991,17 @@ export class TournamentRoundsComponent implements OnInit {
 
     print(rounds: SavedRound[]): void {
         if (!rounds.length) return;
-        this.printRounds = rounds;
         const popup = window.open('', '_blank', 'width=800,height=600');
         if (!popup) { this.notifications.error('Allow popups to preview and print the round assignments.'); return; }
+        if (isLandscapePrintMode(this.matchupPrintLayout)) {
+            renderLargeMatchupPrint(popup, this.tournamentName() || 'Matchups & Scores', rounds.map(round => ({
+                roundNumber: round.roundNumber, teams: round.teams, byes: round.byes, games: round.gamesPerMatchup
+            })), this.matchupPrintLayout);
+            popup.focus();
+            popup.print();
+            return;
+        }
+        this.printRounds = rounds;
         setTimeout(() => {
             const printContent = this.host.nativeElement.querySelector('.tournament-print');
             if (!printContent || popup.closed) return;

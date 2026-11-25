@@ -7,7 +7,7 @@ const teams=()=>Array.from({length:12},(_,i)=>({players:players.slice(i*2,i*2+2)
 const hash=content=>crypto.createHash('sha256').update(content).digest('hex');
 const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.env.LEAGUE_PRINT_BASELINE):path.resolve(__dirname,'../scrambler-workspace-evidence/print-baseline.json');
 (async()=>{
- browser=await chromium.launch(['scoring-defaults','navigation'].includes(mode) ? {channel:'msedge'} : {});const context=await browser.newContext({serviceWorkers:'block',hasTouch:mode==='navigation',viewport:{width:1920,height:1080}});const errors=[],writes=[],checks=[];let failNextSave=false,navigationRole='Admin',navigationSignedIn=true;let fixtureScoreFailure=false,fixtureSubFailure=false,fixtureReadFailure=false,fixtureOdd=false,fixtureEmpty=false;const savedScores=new Map(),savedSubs=new Map(),savedAssignments=new Map();let scoreSaveRequests=0;let defaultsSaved=false, defaultsSavedTeams=[], defaultsSecondEmpty=false, defaultsSecondDelay=false;let nextScoreId=9000;
+ browser=await chromium.launch(['scoring-defaults','navigation'].includes(mode) ? {channel:'msedge'} : mode==='large-print' ? {channel:'chrome'} : {});const context=await browser.newContext({serviceWorkers:'block',hasTouch:mode==='navigation',viewport:{width:1920,height:1080}});const errors=[],writes=[],checks=[];let failNextSave=false,navigationRole='Admin',navigationSignedIn=true;let fixtureScoreFailure=false,fixtureSubFailure=false,fixtureReadFailure=false,fixtureOdd=false,fixtureEmpty=false;const savedScores=new Map(),savedSubs=new Map(),savedAssignments=new Map();let scoreSaveRequests=0;let defaultsSaved=false, defaultsSavedTeams=[], defaultsSecondEmpty=false, defaultsSecondDelay=false;let nextScoreId=9000;
  await context.route('**/*',async route=>{
   let u;try{u=assertLocalUrl(route.request().url());}catch{
    const asset=new URL(route.request().url());
@@ -159,6 +159,85 @@ const printBaselinePath=process.env.LEAGUE_PRINT_BASELINE?path.resolve(process.e
    await render.screenshot({path:path.join(out,`print-${count}-${label}.png`),fullPage:true});const pdf=await render.pdf({path:path.join(out,`print-${count}-${label}.pdf`),format:'A4',preferCSSPageSize:true,printBackground:true});
    result[count]={htmlHash:hash(html.replace(/ _ngcontent[^=\s]*=""/g,'')),pixels:hash(fs.readFileSync(path.join(out,`print-${count}-${label}.png`))),pages:(pdf.toString('latin1').match(/\/Type\s*\/Page\b/g)||[]).length};await render.close();
   }fs.writeFileSync(path.join(out,'print-'+label+'-metadata.json'),JSON.stringify(result,null,2));return result;
+ }
+ if (mode === 'large-print') {
+  const defaultLayout = await evaluate(c => c.selectedMatchupsPerPage);
+  await seed();
+  const results = page.locator('.compact-results');
+  const print = results.getByRole('button', {name: 'Print Matchups', exact: true});
+  await expect(print).toBeDisabled();
+  await evaluate((c, layout) => {
+   c.selectedMatchupsPerPage = layout;
+   c.listOfTeams = Array.from({length:20}, (_, index) => ({
+    ...c.listOfTeams[index % c.listOfTeams.length], kingQueenTeamId: 201 + index,
+    players: Array.from({length:4 - index % 2}, (_, player) => ({
+     id: 1000 + 4 * index + player, firstName: 'Fixture', lastName: 'Player ' + (4 * index + player + 1)
+    }))
+   }));
+   c.listOfTeams[0].players.push({...c.listOfTeams[0].players[0],id:3000,firstName:'Alexandria Catherine Elizabeth',lastName:'Montgomery-Smith-Rodriguez-Washington-Sutherland',isSub:true});
+   c.listOfTeams[0].kingQueenRoundScores = [{roundId:1,roundScore:21},{roundId:2,roundScore:0},{roundId:8,roundScore:16}];
+   c.byePlayers = [{id:3001,firstName:'Fixture',lastName:'Bye'}];
+   c.rememberSavedTeams();
+  }, defaultLayout);
+  await expect(print).toBeEnabled();
+  await results.getByRole('button', {name: 'View Matchups', exact: true}).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('textbox', {name: 'Court', exact: true}).first().fill('4');
+  await dialog.getByRole('button', {name: 'Close matchups', exact: true}).click();
+  await expect(print).toBeEnabled();
+  await results.getByText('Print Settings', {exact:true}).click();
+  const layouts = results.locator('.results-print-controls mat-select').first();
+  await expect(layouts).toContainText('6 Matchups');
+  const specialTeam = await evaluate(c => c.listOfTeams[0]);
+  for (const name of ['2 Matchups','4 Matchups','6 Matchups',/Landscape Large/,/Landscape Balanced/,/Landscape Compact/]) {
+   await layouts.click();
+   await page.getByRole('option',{name,exact:true}).click();
+   const large = typeof name !== 'string';
+   const modeName = large ? name.source.split(' ')[1].toLowerCase() : name[0];
+   for (const stress of large ? [true, false] : [true]) {
+   await evaluate((c, {specialTeam, stress}) => {
+    c.listOfTeams[0].players = stress ? specialTeam.players : specialTeam.players.slice(0, -1);
+    c.listOfTeams[0].kingQueenRoundScores = stress ? specialTeam.kingQueenRoundScores : specialTeam.kingQueenRoundScores.slice(0, -1);
+    c.rememberSavedTeams();
+   }, {specialTeam, stress});
+   const html = await evaluate(c => {
+    let result = '';
+    const original = window.open;
+    window.open = () => ({document:{open(){},write(value){result=value;},close(){}},focus(){},print(){},close(){}});
+    try { c.printMatchups(); } finally { window.open = original; }
+    return result;
+   });
+   assert(html);
+   const popup = await context.newPage();
+   await popup.setContent(html);
+   if (large) {
+    await expect(popup.locator('.large-matchup')).toHaveCount(10);
+    await expect(popup.getByText('Fixture Bye')).toBeVisible();
+    await expect(popup.getByText('Court 4', {exact:true})).toBeVisible();
+    if (stress) {
+     await expect(popup.getByText('(Sub)', {exact:true})).toBeVisible();
+     await expect(popup.getByText('Game 8')).toBeVisible();
+    }
+    await expect(popup.locator('.large-matchup').first().locator('.large-scores').last().locator('tbody tr').first().locator('td').last()).toHaveText(stress ? '37' : '21');
+    await expect(popup.locator('.large-matchup').first().locator('.large-scores').first().locator('tbody tr').first().locator('td').nth(1)).toHaveText('0');
+   } else {
+    await expect(popup.locator('.large-matchup')).toHaveCount(0);
+    await expect(popup.getByText('Bye Players', {exact:true})).toBeVisible();
+   }
+   for (const format of large ? ['Letter','A4'] : ['Letter']) {
+    const pdf = await popup.pdf({format,preferCSSPageSize:true,path:path.join(out, 'scrambler-' + modeName + (large ? (stress ? '-overflow-' : '-') + format.toLowerCase() : '') + '.pdf')});
+    const sheets = [...pdf.toString('latin1').matchAll(/\/MediaBox\s*\[0 0 ([\d.]+) ([\d.]+)\]/g)];
+    assert(sheets.length && sheets.every(([, w, h]) => (Number(w) > Number(h)) === large));
+    if (large && !stress) assert.equal(sheets.length, {large:5, balanced:3, compact:2}[modeName], modeName + ' ' + format);
+   }
+   await popup.close();
+   }
+  }
+  assert.equal(writes.length,0);
+  assert.deepEqual(errors, []);
+  await browser.close();
+  console.log('Scrambler print layouts, saved guard and Large Print PDFs passed.');
+  return;
  }
  if(mode==='court-print'){
   await seed();await evaluate(c=>c.rememberSavedTeams());const summary=page.locator('.compact-results');await summary.getByRole('button',{name:'View Matchups',exact:true}).click();const modal=page.getByRole('dialog'),courts=modal.getByRole('textbox',{name:'Court',exact:true});await courts.nth(0).fill('4');await courts.nth(1).fill('9');await courts.nth(2).fill('2');await expect(modal.getByRole('button',{name:'Print Matchups',exact:true})).toBeEnabled();await expect(modal.locator('.modal-print-button')).toHaveClass(/mat-(mdc-)?raised-button/);await page.waitForTimeout(300);const style=await modal.locator('.modal-print-button').evaluate(e=>({border:getComputedStyle(e).borderStyle,height:e.getBoundingClientRect().height}));assert.equal(style.border,'solid');assert(style.height>=40);await modal.getByRole('button',{name:'Close matchups',exact:true}).click();await summary.getByRole('button',{name:'View Matchups',exact:true}).click();await expect(courts.first()).toHaveValue('4');

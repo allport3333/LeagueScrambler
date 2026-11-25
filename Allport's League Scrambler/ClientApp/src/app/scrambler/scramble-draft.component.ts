@@ -2,13 +2,19 @@ import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, E
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { DraftMatchup, DraftReveal, ScrambleDraft } from './scramble-draft';
 
+export const scrambleDraftDialogOptions = {
+    width: '100vw', height: '100dvh', maxWidth: '100vw', maxHeight: '100dvh',
+    ariaLabelledBy: 'scramble-draft-title', enterAnimationDuration: 0, exitAnimationDuration: 0
+};
+
 export interface ScrambleDraftData {
+    tournament?: { name: string; roundNumber: number; proposed: boolean };
     draft: ScrambleDraft;
-    save: () => Promise<void>;
-    print: () => void;
-    canSave: () => boolean;
-    canPrint: () => boolean;
-    saveFeedback: () => string;
+    save?: () => Promise<void>;
+    print?: () => void;
+    canSave?: () => boolean;
+    canPrint?: () => boolean;
+    saveFeedback?: () => string;
 }
 
 interface MatchupWindow {
@@ -320,7 +326,7 @@ export class ScrambleDraftComponent implements AfterViewInit, OnDestroy {
     }
 
     async save(): Promise<void> {
-        if (!this.finished || this.saving || !this.actions.canSave()) return;
+        if (!this.finished || this.saving || !this.actions.canSave?.() || !this.actions.save) return;
         this.saving = true;
         try { await this.actions.save(); }
         finally { this.saving = false; if (!this.destroyed) this.changeDetector.detectChanges(); }

@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
-interface PrintPlayer { firstName: string; lastName: string; }
-interface PrintTeam { kingQueenTeamId?: number; players: PrintPlayer[]; scores?: { game: number; points: number }[]; }
+import { MatchupPrintPlayer as PrintPlayer, MatchupPrintTeam as PrintTeam, matchupScore, matchupTotal } from './matchup-print';
 
 @Component({
     selector: 'app-matchup-print-sheet',
@@ -16,11 +15,8 @@ export class MatchupPrintSheetComponent {
     @Input() title = '';
     @Input() roundNumber?: number;
 
-    scoreAt(team: number, game: number) { return this.listOfTeams[team]?.scores?.find(score => score.game === game)?.points; }
-    total(team: number) {
-        const scores = this.listOfTeams[team]?.scores;
-        return scores?.length ? scores.reduce((sum, score) => sum + score.points, 0) : undefined;
-    }
+    scoreAt(team: number, game: number) { return matchupScore(this.listOfTeams[team], game); }
+    total(team: number) { return matchupTotal(this.listOfTeams[team]); }
 }
 
 @Component({
