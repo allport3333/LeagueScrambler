@@ -146,6 +146,7 @@ const legacy = { id: 40, leagueName: 'Legacy Competition', eventTypeId: null };
             if (role === 'Admin' || (role === 'Player' && width === 390)) {
                 if (width < 500) await searchTrigger.tap();
                 else await searchTrigger.click();
+                await expect(field).toBeFocused();
                 await field.fill('wALLyBaLl');
                 await expect(search.locator('.event-choice')).toContainText('Tournament');
                 await field.press('ArrowDown');

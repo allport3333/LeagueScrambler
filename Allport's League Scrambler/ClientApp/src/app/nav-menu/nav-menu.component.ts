@@ -192,6 +192,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         requestAnimationFrame(() => {
             if (this.eventPopup !== popup) return;
             const panel = this.eventPanel?.nativeElement;
+            if (panel?.contains(document.activeElement)) return;
             const target = popup === 'search' ? this.eventSearchField?.nativeElement
                 : panel?.querySelector<HTMLElement>('.event-category[aria-expanded=true]') ?? panel?.querySelector<HTMLElement>('.event-category');
             (target ?? panel)?.focus({ preventScroll: true });
