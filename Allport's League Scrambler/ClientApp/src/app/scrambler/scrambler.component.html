@@ -907,7 +907,36 @@ Apply Top Players (Male Standings)
 @if (managementAccessLoading || leagueCreationPending) {
   <app-page-loading [label]="leagueCreationPending ? 'Creating and selecting league' : 'Loading league management'"></app-page-loading>
 }
-@if (canCreateLeague) {<mat-card [hidden]="managementAccessLoading || leagueCreationPending" appearance="outlined" class="management-workspace"><h1>Player and League Management</h1><mat-tab-group class="management-tabs compact-tabs" [(selectedIndex)]="managementTabIndex" (selectedTabChange)="revealManagementTab(managementWorkspace)" mat-align-tabs="center" [mat-stretch-tabs]="false" [disablePagination]="true">@if (isActionAllowed) {<mat-tab label="Edit / Remove Players"><div class="management-players-section">
+@if (canCreateLeague) {<mat-card [hidden]="managementAccessLoading || leagueCreationPending" appearance="outlined" class="management-workspace">@if (creatingLeague) {
+<h1>Create League</h1>
+  <div class="management-create-league">
+    <mat-card appearance="outlined" class="setup-card">
+    <h3>Create an Event</h3>
+    <form class="setup-form" [formGroup]="LeagueForm" (ngSubmit)="addLeague(+eventType.value, eventDate.value)">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Event Name</mat-label>
+        <input matInput type="text" formControlName="newLeagueName" maxlength="50" required />
+      </mat-form-field>
+      <label>Event Type
+        <select #eventType class="form-control" (change)="creationError = ''">
+          <option value="1">League</option>
+          <option value="2">Tournament</option>
+          <option value="3">Pickup</option>
+        </select>
+      </label>
+      <label [hidden]="eventType.value !== '2'">Tournament Date
+        <input #eventDate type="date" class="form-control" [required]="eventType.value === '2'" (input)="creationError = ''" />
+      </label>
+      <button mat-raised-button color="primary" [disabled]="LeagueForm.invalid || leagueCreationPending || (eventType.value === '2' && !eventDate.value)">
+        {{ eventType.value === '2' ? 'Create Tournament' : eventType.value === '3' ? 'Create Pickup Event' : 'Create League' }}
+      </button>
+    </form>
+    @if (creationError) { <p role="alert">{{ creationError }}</p> }
+  </mat-card>
+
+  </div>
+} @else {
+<h1>Player and League Management</h1><mat-tab-group class="management-tabs compact-tabs" [(selectedIndex)]="managementTabIndex" (selectedTabChange)="revealManagementTab(managementWorkspace)" mat-align-tabs="center" [mat-stretch-tabs]="false" [disablePagination]="true">@if (isActionAllowed) {<mat-tab label="Edit / Remove Players"><div class="management-players-section">
   <mat-card appearance="outlined" class="management-form-card management-roster-card">
     <h2>Current League Players</h2><p class="management-context">{{ selectedLeague || 'Select a league to manage its players.' }}</p>
     <div class="management-roster-tools"><div class="roster-search-row"><mat-form-field appearance="outline" class="roster-search"><mat-label>Search current league players</mat-label><input matInput [(ngModel)]="managementRosterSearch" (ngModelChange)="showAllManagementPlayers=false" placeholder="Player name"></mat-form-field></div><div class="roster-filter-row"><mat-form-field appearance="outline" class="roster-division-filter"><mat-label>Filter division</mat-label><mat-select [(ngModel)]="managementRosterDivision" (selectionChange)="showAllManagementPlayers=true"><mat-option value="all">All divisions</mat-option><mat-option value="0">No Division</mat-option>@for (d of leagueDivisionsForSelectedLeague; track d) {
@@ -1071,7 +1100,7 @@ Apply Top Players (Male Standings)
     </mat-card>
   </div>
 </mat-tab>}<mat-tab label="League Setup"><div class="management-setup-grid">
-    @if (!isActionAllowed) { <p class="text-center">Select a league to configure it, or open Create League.</p> }
+    @if (!isActionAllowed) { <p class="text-center">Select a league to configure it, or choose Create League from the event selector.</p> }
   @if (isActionAllowed) {
     <mat-card appearance="outlined" class="setup-card">
       <h3>Add Division</h3>
@@ -1119,35 +1148,10 @@ Apply Top Players (Male Standings)
     <ng-template matTabContent><app-account-recovery [embeddedReview]="true" /></ng-template>
   </mat-tab>
 }
-<mat-tab label="Create League">
-  <div class="management-create-league">
-    <mat-card appearance="outlined" class="setup-card">
-    <h3>Create an Event</h3>
-    <form class="setup-form" [formGroup]="LeagueForm" (ngSubmit)="addLeague(+eventType.value, eventDate.value)">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Event Name</mat-label>
-        <input matInput type="text" formControlName="newLeagueName" maxlength="50" required />
-      </mat-form-field>
-      <label>Event Type
-        <select #eventType class="form-control" (change)="creationError = ''">
-          <option value="1">League</option>
-          <option value="2">Tournament</option>
-          <option value="3">Pickup</option>
-        </select>
-      </label>
-      <label [hidden]="eventType.value !== '2'">Tournament Date
-        <input #eventDate type="date" class="form-control" [required]="eventType.value === '2'" (input)="creationError = ''" />
-      </label>
-      <button mat-raised-button color="primary" [disabled]="LeagueForm.invalid || leagueCreationPending || (eventType.value === '2' && !eventDate.value)">
-        {{ eventType.value === '2' ? 'Create Tournament' : eventType.value === '3' ? 'Create Pickup Event' : 'Create League' }}
-      </button>
-    </form>
-    @if (creationError) { <p role="alert">{{ creationError }}</p> }
-  </mat-card>
 
-  </div>
-</mat-tab>
-</mat-tab-group></mat-card>
+</mat-tab-group>
+}
+</mat-card>
 } @else if (!managementAccessLoading) {
   <p class="text-center" role="status">Sign in with a league manager or administrator account to manage leagues.</p>
 }

@@ -205,12 +205,16 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
 
     eventType(event?: {eventTypeId?: number}) { return eventTypes.find(type => type.id !== 3 && type.id === event?.eventTypeId) ?? unclassified; }
     get selectedEvent() { return this.leagues.find(event => event.id === this.selectedLeagueId); }
+    get canCreateLeague(): boolean {
+        return this.loggedIn && (this.userRole === 'Admin' || this.userRole === 'Manager');
+    }
+
     get eventGroups() {
         const query = this.eventPopup === 'search' ? this.eventSearch.trim().toLocaleLowerCase() : '';
         const matching = this.leagues.filter(event => event.leagueName.toLocaleLowerCase().includes(query));
         return [...eventTypes, unclassified].map(type => ({
             ...type, events: matching.filter(event => this.eventType(event).id === type.id)
-        })).filter(group => group.events.length || (this.eventPopup === 'categories' && (group.id === 2 && this.loggedIn || group.id === 3 && this.pickupEnabled)));
+        })).filter(group => group.events.length || (this.eventPopup === 'categories' && (group.id === 1 && this.canCreateLeague || group.id === 2 && this.loggedIn || group.id === 3 && this.pickupEnabled)));
     }
 
     toggleEventPopup(popup: 'categories' | 'search'): void {

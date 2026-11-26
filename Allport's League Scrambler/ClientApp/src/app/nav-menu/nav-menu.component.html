@@ -41,6 +41,13 @@
                     @for (event of group.events; track event.id) {
                       <ng-container *ngTemplateOutlet="eventChoice; context: {$implicit: event}"></ng-container>
                     }
+                    @if (group.id === 1 && canCreateLeague) {
+                      <div class="tournament-event-actions">
+                        <a class="event-choice create-tournament" routerLink="/league-management" [queryParams]="{view: 'create'}" (click)="closeEventSelector()">
+                          <mat-icon aria-hidden="true">add</mat-icon><span>Create League</span>
+                        </a>
+                      </div>
+                    }
                     @if (group.id === 3) {
                       <div class="tournament-event-actions">
                         @if (loggedIn) {
@@ -88,8 +95,8 @@
     </ng-template>
     <ng-template #eventChoice let-event>
       <button type="button" class="event-choice" [class.selected-league]="event.id === selectedLeagueId"
-        [attr.aria-current]="event.id === selectedLeagueId ? 'true' : null" (click)="onLeagueChange(event.id)">
-        <span>{{ event.leagueName }}
+        [title]="event.leagueName" [attr.aria-current]="event.id === selectedLeagueId ? 'true' : null" (click)="onLeagueChange(event.id)">
+        <span class="event-choice-name">{{ event.leagueName }}
           @if (eventPopup === 'search') { <small>{{ eventType(event).label }}</small> }
         </span>
         @if (event.id === selectedLeagueId) { <mat-icon aria-hidden="true">check</mat-icon> }

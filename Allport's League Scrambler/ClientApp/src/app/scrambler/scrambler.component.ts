@@ -547,6 +547,10 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         return this.userRole === 'Admin' || this.userRole === 'Manager';
     }
 
+    get creatingLeague(): boolean {
+        return this.router.parseUrl(this.router.url).queryParams['view'] === 'create';
+    }
+
     revealManagementTab(workspace: HTMLElement): void {
         requestAnimationFrame(() => {
             workspace.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
@@ -1509,7 +1513,11 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
             if (this.createdLeagueId !== null && this.createdLeagueId === this.leagueId) {
                 this.createdLeagueId = null;
                 this.leagueCreationPending = false;
-                if (access.canManage) this.managementTabIndex = 4;
+                if (access.canManage) {
+                    this.managementTabIndex = 4;
+                    if (this.workspaceSection === 'league-management' && this.creatingLeague)
+                        void this.router.navigate(['/league-management'], {replaceUrl: true});
+                }
                 else this.creationError = 'League created. Its management access could not be loaded.';
             }
         }));

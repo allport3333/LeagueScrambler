@@ -1,20 +1,28 @@
 ﻿const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { chromium, expect } = require('@playwright/test');
 const serveAsset = require('./fixture-asset.cjs');
 
 const origin = 'https://localhost:5001';
-const league = { id: 37, leagueName: 'Test League Fixture', eventTypeId: 1 };
+const league = { id: 37, leagueName: 'Test League Fixture with a Long Name for the Event Selector', eventTypeId: 1 };
 
 (async () => {
     const browser = await chromium.launch({channel: 'chrome'});
     try {
         for (const [width, role] of [[375, ''], [390, 'Player'], [430, 'Admin'], [1366, ''], [1366, 'Manager'], [1920, 'Admin']]) {
+            const theme = width === 430 ? 'navy' : width === 1366 && role ? 'charcoal' : 'classic';
             const context = await browser.newContext({serviceWorkers: 'block', hasTouch: width < 500, viewport: {width, height: 850}});
             const events = [league];
             const decisions = [];
             let reviewRequests = 0;
-            await context.addInitScript(() => sessionStorage.setItem('league-hub-selected-league', '37'));
+            await context.addInitScript(theme => {
+                localStorage.setItem('league-hub-appearance', theme);
+                sessionStorage.setItem('league-hub-selected-league', '37');
+            }, theme);
             await context.route('**/*', async route => {
+                if (new URL(route.request().url()).hostname === 'fonts.gstatic.com' &&
+                    !new URL(route.request().url()).pathname.includes('/materialicons/')) return route.abort();
                 if (await serveAsset(route)) return;
                 const url = new URL(route.request().url());
                 const endpoint = url.pathname.toLowerCase();
@@ -38,6 +46,7 @@ const league = { id: 37, leagueName: 'Test League Fixture', eventTypeId: 1 };
                     data = {id: 42, leagueName: 'New League Fixture', eventTypeId: 1};
                     events.push(data);
                 } else if (method !== 'GET') return route.abort();
+                else if (endpoint === '/api/pickup/catalog') data = ['Wallyball'];
                 else if (endpoint.endsWith('/isauthenticated')) data = !!role;
                 else if (endpoint.endsWith('/getusersrole')) data = {role};
                 else if (endpoint.endsWith('/getusersplayer')) data = {playerId: 1};
@@ -96,8 +105,8 @@ const league = { id: 37, leagueName: 'Test League Fixture', eventTypeId: 1 };
                 await expect(management.getByRole('heading', {name: 'Player and League Management'})).toBeVisible();
                 const tab = name => management.getByRole('tab', {name, exact: true});
                 const labels = await management.getByRole('tab').allTextContents();
-                assert.deepEqual(labels.slice(-2).map(label => label.trim()), role === 'Admin'
-                    ? ['Recovery Review', 'Create League'] : ['League Setup', 'Create League']);
+                assert.equal(labels.at(-1).trim(), role === 'Admin' ? 'Recovery Review' : 'League Setup');
+                await expect(tab('Create League')).toHaveCount(0);
                 if (role === 'Admin') {
                     assert.equal(reviewRequests, 0);
                     await tab('Recovery Review').click();
@@ -121,12 +130,50 @@ const league = { id: 37, leagueName: 'Test League Fixture', eventTypeId: 1 };
                     }
                     assert.deepEqual(decisions.map(decision => decision.approve), [true, false]);
                 } else assert.equal(reviewRequests, 0);
-                await tab('Create League').click();
+                const selector = page.locator('#leagueDropdown');
+                await expect(selector).toHaveAttribute('title', league.leagueName);
+                const triggerWidth = (await selector.boundingBox()).width;
+                assert(triggerWidth > 180 && triggerWidth <= 217, String(triggerWidth));
+                await selector.click();
+                const eventsMenu = page.getByRole('dialog', {name: 'Select league or event'});
+                const leagues = eventsMenu.getByRole('group', {name: 'Leagues', exact: true});
+                const choice = leagues.getByRole('button', {name: league.leagueName});
+                await expect(choice).toHaveAttribute('title', league.leagueName);
+                await expect(choice).toHaveAttribute('aria-current', 'true');
+                const create = leagues.getByRole('link', {name: 'Create League', exact: true});
+                assert(await create.evaluate(el => el.compareDocumentPosition(el.closest('[role=group]').querySelector('button[aria-current]')) & Node.DOCUMENT_POSITION_PRECEDING));
+                const box = await eventsMenu.boundingBox();
+                assert(box.x >= 0 && box.x + box.width <= width + 1 && box.width >= Math.min(431, width - 25), JSON.stringify(box));
+                if (process.env.LEAGUE_TEST_OUT) {
+                    fs.mkdirSync(process.env.LEAGUE_TEST_OUT, {recursive: true});
+                    await page.evaluate(() => document.fonts.ready);
+                    await page.screenshot({path: path.join(process.env.LEAGUE_TEST_OUT, width + '-' + role + '-' + theme + '.png')});
+                }
+                await create.click();
+                await expect(page).toHaveURL(origin + '/league-management?view=create');
+                await expect(management.getByRole('heading', {name: 'Create League', exact: true})).toBeVisible();
+                await expect(management.getByRole('tab')).toHaveCount(0);
                 await management.getByLabel('Event Name').fill('New League Fixture');
                 await management.getByRole('button', {name: 'Create League', exact:true}).click();
                 await expect(tab('League Setup')).toHaveAttribute('aria-selected', 'true');
                 await expect(management.getByText('Selected league: New League Fixture')).toBeVisible();
                 assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+                for (const [group, title, destination] of [
+                    ['Tournaments', 'Create Tournament', '/tournament?view=create'],
+                    ['Pickup Games', 'Create Pickup Game', '/pickup/create']
+                ]) {
+                    await selector.click();
+                    await eventsMenu.getByRole('button', {name: new RegExp('^' + group)}).click();
+                    await eventsMenu.getByRole('link', {name: title, exact: true}).click();
+                    await expect(page).toHaveURL(origin + destination);
+                }
+            } else {
+                if (role) {
+                    await page.locator('#leagueDropdown').click();
+                    await expect(page.getByRole('link', {name: 'Create League', exact: true})).toHaveCount(0);
+                } else await expect(page.locator('#leagueDropdown')).toHaveCount(0);
+                await page.goto(origin + '/league-management?view=create');
+                await expect(page.getByRole('heading', {name: 'Access denied'})).toBeVisible();
             }
             await page.goto(origin + '/recovery-review');
             await expect(page.getByRole('heading', {name: 'Account Recovery Review'})).toBeVisible();

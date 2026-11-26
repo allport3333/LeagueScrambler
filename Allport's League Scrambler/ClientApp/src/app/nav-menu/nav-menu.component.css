@@ -2,7 +2,7 @@
 .league-navigation { display: flex; align-items: center; gap: 10px; padding: 8px 12px; min-height: 60px; background: var(--hub-nav, #343a40); color: var(--hub-nav-text, #f1f4f8); }
 .inline-navigation { display: grid; grid-template-columns: minmax(max-content, 1fr) max-content minmax(max-content, 1fr); }
 .inline-navigation > :is(.event-controls, .session-status) { grid-column: 1; justify-self: start; }
-.league-selector { display: flex; flex: 0 1 180px; min-width: 0; max-width: 180px; padding: 0 10px; min-height: 44px; background: var(--hub-header, #f0f8ff); color: var(--hub-text, #172534); text-align: left; }
+.league-selector { display: flex; flex: 0 1 216px; min-width: 0; width: 216px; max-width: 100%; padding: 0 10px; min-height: 44px; background: var(--hub-header, #f0f8ff); color: var(--hub-text, #172534); text-align: left; }
 .event-controls { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .event-search-trigger { flex: none; min-width: 44px; min-height: 44px; color: var(--hub-nav-text, #f1f4f8); }
 .event-search-trigger:hover, .event-search-trigger[aria-expanded="true"] { background: var(--hub-nav-hover, #47525f); }
@@ -47,7 +47,7 @@
 
 .event-kind-icon { flex: none; font-size: 18px; width: 18px; height: 18px; }
 .event-selector-panel {
-    width: min(360px, calc(100vw - 24px)); max-height: min(70dvh, 520px); box-sizing: border-box;
+    width: min(432px, calc(100vw - 24px)); max-height: min(70dvh, 520px); box-sizing: border-box;
     display: flex; flex-direction: column; padding: .65rem; border: 1px solid var(--hub-border, #b8c6d4);
     border-radius: 8px; background: var(--hub-surface, #fff); color: var(--hub-text, #243e60);
     box-shadow: 0 6px 20px #15233533;
@@ -74,6 +74,7 @@
 .create-tournament { font-weight: 650; color: var(--hub-link); }
 .event-selector-panel a:hover { background: var(--hub-header, #edf3fa); }
 .event-choice span { min-width: 0; }
+.event-choice-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .event-choice small { display: block; color: var(--hub-muted, #536478); font-size: .8rem; }
 .event-selector-panel button:hover, .event-selector-panel .selected-league { background: var(--hub-header, #edf3fa); }
 .event-selector-panel .selected-league { font-weight: 650; color: var(--hub-link, #23466d); }
