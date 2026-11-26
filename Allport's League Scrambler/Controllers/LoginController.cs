@@ -500,33 +500,9 @@ namespace Allport_s_League_Scrambler.Controllers
                     return BadRequest(new { message = "Invalid email or password." });
                 }
 
-                var roleName = LeagueAccess.AccountRole(userInfo.UserRoleId);
-
-
                 userInfo.LastLogin = DateTime.Now;
                 await _context.SaveChangesAsync();
-
-                var claims = new List<Claim>
-                 {
-                     new Claim(ClaimTypes.NameIdentifier, userInfo.UserId.ToString()), // Unique user identifier
-                     new Claim("SessionVersion", userInfo.SessionVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-                     new Claim(ClaimTypes.Email, userInfo.Email), // User's email address
-                     new Claim("FirstName", userInfo.FirstName), // User's first name
-                     new Claim("LastName", userInfo.LastName), // User's last name
-                     new Claim(ClaimTypes.Role, roleName), // User's role based on UserRoleId
-                     new Claim("CreatedAt", userInfo.CreatedAt.ToString()), // User account creation date
-                     new Claim("LastLogin", userInfo.LastLogin.ToString()) // Date of the user's last login
-                 };
-
-                var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-                var principal = new ClaimsPrincipal(identity);
-                var authProperties = new AuthenticationProperties
-                {
-                    IsPersistent = loginModel.RememberMe // Set IsPersistent based on whether "Remember Me" is checked
-                };
-
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+                await LeagueAccountCookie.SignIn(HttpContext, userInfo, loginModel.RememberMe);
 
                 // Return only this successful request's reserved slot. Do not
                 // erase failed guesses from other requests sharing the IP.

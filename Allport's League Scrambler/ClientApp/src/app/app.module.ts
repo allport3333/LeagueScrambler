@@ -23,6 +23,7 @@ import { RouteReuseStrategy, RouterModule, Router } from '@angular/router';
 import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
 import { EventHomeComponent } from './home/event-home.component';
+import { GoogleSignInComponent } from './google-auth/google-sign-in.component';
 import { HomeComponent } from './home/home.component';
 import { AccountRecoveryComponent } from './account-recovery.component';
 import { ScramblerComponent } from './scrambler/scrambler.component';
@@ -125,6 +126,7 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         EventHomeComponent,
+        GoogleSignInComponent,
         AccountRecoveryComponent,
         FormsModule,
         MatInputModule,
@@ -176,6 +178,7 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
             { path: 'tournament/:leagueId', data: { tournamentContext: true }, canDeactivate: [(component: { canLeave(): Promise<boolean> }) => component.canLeave()], canActivate: [requireSignedInTournament], loadComponent: () => import('./tournament-center.component').then(m => m.TournamentCenterComponent) },
             { path: 'tournament/:leagueId/rounds', data: { tournamentContext: true }, loadComponent: () => import('./tournament-matchups.component').then(m => m.TournamentMatchupsComponent) },
             { path: 'tournament/:leagueId/check-in', redirectTo: ({ params }) => inject(Router).createUrlTree(['/'], { queryParams: { leagueId: params['leagueId'] }, fragment: 'attendance' }), pathMatch: 'full' },
+            { path: 'connected-accounts', title: 'Connected Accounts', loadComponent: () => import('./google-auth/connected-accounts.component').then(m => m.ConnectedAccountsComponent) },
             { path: 'privacy', title: "Privacy Policy | Allport's League Hub", data: { document: 'privacy' }, loadComponent: () => import('./legal/legal.component').then(m => m.LegalComponent) },
             { path: 'terms', title: "Terms of Service | Allport's League Hub", loadComponent: () => import('./legal/legal.component').then(m => m.LegalComponent) },
             { path: '', component: HomeComponent, pathMatch: 'full' },

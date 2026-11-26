@@ -119,6 +119,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             { label: 'F.A.Q.', icon: 'help_outline', route: '/faq' }
         );
         if (this.loggedIn) {
+            children.push({ label: 'Connected Accounts', icon: 'link', route: '/connected-accounts' });
             children.push({ label: 'Change Email', icon: 'alternate_email', route: '/change-email' });
             children.push({ label: 'Logout', icon: 'exit_to_app', action: 'logout' });
         }

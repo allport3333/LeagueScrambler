@@ -575,3 +575,22 @@ html { @include mat.form-field-overrides((
     outline-offset: 3px;
 }
 @media print { .legal-footer { display: none; } }
+
+.google-auth-options, .connected-accounts { text-align: center; }
+.google-auth-action {
+    min-height: 44px;
+    padding: .5rem 1rem;
+    border: 1px solid var(--hub-border, #8096b0);
+    border-radius: .4rem;
+    color: var(--hub-text, #172534);
+    background: var(--hub-section, #edf3fa);
+}
+.google-auth-action:focus-visible { outline: 2px solid var(--hub-focus, #315a97); outline-offset: 2px; }
+.connected-accounts {
+    max-width: 42rem;
+    margin: 1.5rem auto;
+    padding: 1rem;
+    border: 1px solid var(--hub-border, #cbd5df);
+    border-radius: .5rem;
+    background: var(--hub-surface, #fff);
+}

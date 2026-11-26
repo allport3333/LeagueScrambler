@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <UserSecretsId>LeagueHub-Google-Local-Development</UserSecretsId>
     <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
     <IsPackable>false</IsPackable>
     <SpaRoot>ClientApp\</SpaRoot>
@@ -25,6 +26,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.15" />
     <PackageReference Include="dotenv.net" Version="3.2.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.15" />
     <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="10.0.15" />

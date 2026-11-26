@@ -29,6 +29,7 @@ namespace Allport_s_League_Scrambler.Data
         public virtual DbSet<KingQueenPlayer> KingQueenPlayer { get; set; }
         public DbSet<AccountRecoveryRequest> AccountRecoveryRequests { get; set; }
         public virtual DbSet<User> Users { get; set; }
+        public DbSet<GoogleAccount> GoogleAccounts { get; set; }
         public virtual DbSet<UserLeague> UserLeagues { get; set; }
         public virtual DbSet<ByeRounds> ByeRounds { get; set; }
         public virtual DbSet<ByePlayer> ByePlayer { get; set; }
@@ -134,6 +135,7 @@ namespace Allport_s_League_Scrambler.Data
             modelBuilder.Entity<LeagueSettings>().ToTable("LeagueSettings", "dbo");
             modelBuilder.Entity<PlayerSignIn>().ToTable("PlayerSignIn", "dbo");
             modelBuilder.Entity<UserRoles>().ToTable("UserRoles", "dbo");
+            modelBuilder.Entity<GoogleAccount>().HasOne<User>().WithMany().HasForeignKey(link => link.UserId).OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<UsersPlayer>().ToTable("UsersPlayer", "dbo");
             modelBuilder.Entity<LeagueSignInLocked>().ToTable("LeagueSignInLocked", "dbo"); 
             modelBuilder.Entity<KingQueenTopPlayer>().ToTable("KingQueenTopPlayer", "dbo");

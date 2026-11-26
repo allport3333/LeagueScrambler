@@ -1,3 +1,4 @@
+import { googleStatus } from '../google-auth/google-status';
 import { signal } from '@angular/core';
 import { ProfileMatch } from '../data-models/profile-match';
 import { Component, OnInit, DestroyRef, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
@@ -29,6 +30,7 @@ export class HomeComponent implements OnInit {
     loginEmail: string = '';
     loginPassword: string = '';
     loginError = '';
+    googleMessage = '';
     loginPending = false;
     registerEmail: string = '';
     registerPassword: string = '';
@@ -86,7 +88,8 @@ export class HomeComponent implements OnInit {
             if (Number.isSafeInteger(leagueId) && leagueId > 0) {
                 this.leagues.selectNavigationLeague(leagueId).pipe(takeUntilDestroyed(destroyRef)).subscribe();
             }
-            if (queryParams.toggleLoginForm === 'true') {
+            this.googleMessage = googleStatus(queryParams.google ?? null);
+            if (queryParams.toggleLoginForm === 'true' || this.googleMessage) {
                 this.toggleLoginForm();
             }
         });

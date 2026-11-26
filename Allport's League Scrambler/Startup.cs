@@ -53,7 +53,7 @@ namespace Allport_s_League_Scrambler
 
             // Configure authentication with cookie settings
             services.AddSingleton<AccountRoleLookup>(LeagueAccess.ReadAccountRole);
-            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            var authentication = services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options =>
                 {
                     options.Events.OnValidatePrincipal = LeagueAccess.RefreshAccountRole;
@@ -75,6 +75,8 @@ namespace Allport_s_League_Scrambler
                         return System.Threading.Tasks.Task.CompletedTask;
                     };
                 });
+
+            GoogleSignIn.Configure(authentication, Configuration);
 
             services.AddMemoryCache();
             services.AddRateLimiter(options =>
@@ -125,7 +127,7 @@ namespace Allport_s_League_Scrambler
             app.UseSpaStaticFiles(PwaStaticFiles());
             app.Use(async (context, next) =>
             {
-                if (context.Request.Path.StartsWithSegments("/api"))
+                if (context.Request.Path.StartsWithSegments("/api") || context.Request.Path == GoogleSignIn.CallbackPath)
                 {
                     context.Response.OnStarting(() =>
                     {
@@ -139,7 +141,8 @@ namespace Allport_s_League_Scrambler
             app.UseRateLimiter();
             // The SPA shell has no identity-dependent content. Controllers and pages
             // still validate the cookie before authorization and endpoint execution.
-            app.UseWhen(context => context.GetEndpoint() != null, branch => branch.UseAuthentication());
+            app.UseWhen(context => context.GetEndpoint() != null || context.Request.Path == GoogleSignIn.CallbackPath,
+                branch => branch.UseAuthentication());
             app.Use(async (context, next) =>
             {
                 if (!context.RequestAborted.IsCancellationRequested)

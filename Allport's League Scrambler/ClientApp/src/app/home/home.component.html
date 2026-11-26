@@ -41,6 +41,8 @@
     </div>
 
     @if (showLoginForm && !isLoggedIn) {
+      @if (googleMessage) { <p class="text-center" role="status">{{ googleMessage }}</p> }
+      <div class="google-auth-options"><app-google-sign-in></app-google-sign-in></div>
       <form class="login-form" (ngSubmit)="login()" novalidate>
         <h2>Login</h2>
         <div>
