@@ -1,4 +1,4 @@
-﻿.pickup { max-width: 70rem; margin: 1rem auto 3rem; padding-inline: 1rem; color: var(--hub-text, #172534); }
+.pickup { max-width: 70rem; margin: 1rem auto 3rem; padding-inline: 1rem; color: var(--hub-text, #172534); }
 header { text-align: center; margin-bottom: 1rem; }
 header nav, .actions, .registration { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
 header nav { justify-content: center; }
@@ -70,6 +70,7 @@ button:not(:disabled):hover { border-color: var(--hub-focus, #30577e); }
 .organizer-subactions > .registration-note { margin: 0; }
 
 .discovery-search { display: grid; gap: .6rem; align-items: end; grid-template-columns: minmax(0, 1fr) auto auto auto; }
+.discovery-search > label { margin-block: 0; }
 .discovery-search input { width: 100%; }
 .discovery .fields { margin-top: .55rem; }
 .discovery-empty { grid-column: 1 / -1; }
