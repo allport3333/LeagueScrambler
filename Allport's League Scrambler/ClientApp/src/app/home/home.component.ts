@@ -1,4 +1,4 @@
-import { googleStatus } from '../google-auth/google-status';
+import { googleStatus, pickupDestination } from '../google-auth/google-status';
 import { signal } from '@angular/core';
 import { ProfileMatch } from '../data-models/profile-match';
 import { Component, OnInit, DestroyRef, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
@@ -31,6 +31,7 @@ export class HomeComponent implements OnInit {
     loginPassword: string = '';
     loginError = '';
     googleMessage = '';
+    googleLinkRequired = false;
     pickupReturn = '';
     loginPending = false;
     registerEmail: string = '';
@@ -89,12 +90,10 @@ export class HomeComponent implements OnInit {
             if (Number.isSafeInteger(leagueId) && leagueId > 0) {
                 this.leagues.selectNavigationLeague(leagueId).pipe(takeUntilDestroyed(destroyRef)).subscribe();
             }
-            const destination = queryParams.returnTo;
-            this.pickupReturn = typeof destination === 'string' &&
-                /^\/pickup\/[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(destination)
-                ? destination : '';
+            this.pickupReturn = pickupDestination(queryParams.returnTo ?? null);
+            this.googleLinkRequired = queryParams.google === 'existing-account';
             this.googleMessage = googleStatus(queryParams.google ?? null);
-            if (queryParams.toggleLoginForm === 'true' || this.googleMessage) {
+            if (queryParams.toggleLoginForm === 'true' || this.googleMessage || this.googleLinkRequired) {
                 this.toggleLoginForm();
             }
         });
@@ -163,10 +162,18 @@ export class HomeComponent implements OnInit {
         this.loginError = '';
         this.loginPending = true;
         const pickupReturn = this.pickupReturn;
+        const googleLinkRequired = this.googleLinkRequired;
         this.loginService.login(this.loginEmail, this.loginPassword).subscribe(
             (response) => {
                 this.loginPending = false;
                 this.authService.setLoggedIn(true);
+                if (googleLinkRequired) {
+                    void this.router.navigate(['/connected-accounts'], {
+                        queryParams: pickupReturn ? {returnTo: pickupReturn} : {},
+                        replaceUrl: true
+                    });
+                    return;
+                }
                 if (pickupReturn) {
                     void this.router.navigateByUrl(pickupReturn, {replaceUrl: true});
                     return;

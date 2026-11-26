@@ -59,7 +59,7 @@ public sealed class GoogleAuthenticationController(
     }
 
     [Authorize, SameOrigin, HttpPost("connect")]
-    public async Task<IActionResult> Connect()
+    public async Task<IActionResult> Connect([FromForm] string returnTo)
     {
         if (!await Enabled()) return NotFound();
         if (!LeagueAccess.TryGetAccountId(User, out var id)) return Unauthorized();
@@ -69,6 +69,8 @@ public sealed class GoogleAuthenticationController(
         var properties = new AuthenticationProperties { RedirectUri = GoogleSignIn.AccountPage };
         properties.Items[GoogleSignIn.LinkAccountKey] = id.ToString();
         properties.Items[GoogleSignIn.LinkVersionKey] = user.SessionVersion.ToString();
+        if (GoogleSignIn.PickupDestination(returnTo) is { } pickup)
+            properties.Items[GoogleSignIn.DestinationKey] = pickup;
         return Challenge(properties, GoogleDefaults.AuthenticationScheme);
     }
 

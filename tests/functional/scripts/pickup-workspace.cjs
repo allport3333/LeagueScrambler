@@ -147,7 +147,7 @@ withPickupTestHost(async origin => {
         await organizer.getByRole('link', {name: 'Home', exact: true}).click();
         await expect(organizer).toHaveURL(origin + '/?context=pickup');
         await expect(organizer.getByRole('heading', {name: 'Pickup Games', exact: true})).toBeVisible();
-        await expect(organizer.locator('.public-game-action').getByRole('link', {name: 'Pickup Games', exact: true})).toHaveAttribute('href', '/pickup/find');
+        await expect(organizer.locator('.body-content').getByRole('link', {name: 'Pickup Games', exact: true})).toHaveCount(0);
         await expect(organizer.locator('app-player-home-dashboard')).toHaveCount(0);
         const session = await create('Workspace');
         await selector.click();
@@ -410,7 +410,7 @@ withPickupTestHost(async origin => {
         assert.equal((await summary.json()).status, null);
         await admin.goto(origin + '/?leagueId=' + tourneyId);
         await expect(admin.getByRole('heading', {name: 'Tournament Home'})).toBeVisible();
-        await expect(admin.locator('.public-game-action').getByRole('link', {name: 'Pickup Games', exact: true})).toHaveAttribute('href', '/pickup/find');
+        await expect(admin.locator('.body-content').getByRole('link', {name: 'Pickup Games', exact: true})).toHaveCount(0);
         await expect(admin.getByRole('heading', {name: tourneyName})).toBeVisible();
         await expect(admin.getByRole('heading', {name: 'No Tournament Results Yet'})).toBeVisible();
         await expect(admin.locator('app-player-home-dashboard')).toHaveCount(0);
@@ -418,7 +418,7 @@ withPickupTestHost(async origin => {
         await expect(admin).toHaveURL(origin + '/tournament/' + tourneyId);
         await organizer.goto(origin + '/?leagueId=900001');
         await expect(organizer.locator('app-player-home-dashboard')).toBeVisible();
-        await expect(organizer.locator('.public-game-action').getByRole('link', {name: 'Pickup Games', exact: true})).toHaveAttribute('href', '/pickup/find');
+        await expect(organizer.locator('.body-content').getByRole('link', {name: 'Pickup Games', exact: true})).toHaveCount(0);
         const unscored = await create('Unscored');
         for (const guestName of ['First unscored guest', 'Second unscored guest']) {
             assert.equal((await api(organizer, unscored.api + '/players', 'POST', {guestName})).status, 204);

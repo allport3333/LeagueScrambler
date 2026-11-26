@@ -76,9 +76,13 @@ internal static class GoogleSignIn
             Guid.TryParseExact(value[prefix.Length..], "D", out var id) ? prefix + id.ToString("D") : null;
     }
 
-    private static string Destination(AuthenticationProperties properties) =>
-        properties?.Items.ContainsKey(LinkAccountKey) == true ? AccountPage :
-        PickupDestination(properties?.GetString(DestinationKey)) ?? "/";
+    private static string Destination(AuthenticationProperties properties)
+    {
+        var pickup = PickupDestination(properties?.GetString(DestinationKey));
+        if (properties?.Items.ContainsKey(LinkAccountKey) == true)
+            return pickup == null ? AccountPage : QueryHelpers.AddQueryString(AccountPage, "returnTo", pickup);
+        return pickup ?? "/";
+    }
 
     private static async Task Complete(TicketReceivedContext context)
     {
@@ -99,6 +103,8 @@ internal static class GoogleSignIn
         {
             status = "unavailable";
         }
+        if (!linking && status == "existing-account")
+            destination = destination == "/" ? "/" : QueryHelpers.AddQueryString("/", "returnTo", destination);
         context.Response.Redirect(status == null ? destination : QueryHelpers.AddQueryString(destination, "google", status));
     }
 

@@ -91,14 +91,20 @@ withPickupTestHost(async origin => {
         await expect(page).toHaveURL(origin + route + '?google=cancelled');
         await provider(existing, 'existing');
         await page.getByRole('button', {name: 'Continue with Google'}).click();
-        await expect(page).toHaveURL(origin + route + '?google=existing-account');
+        await expect(page).toHaveURL(origin + '/?returnTo=' + encodeURIComponent(route) + '&google=existing-account');
+        await expect(page.getByRole('heading', {name: 'Connect Google to Your Existing Account'})).toBeVisible();
+        await expect(page.getByRole('button', {name: 'Continue with Google'})).toHaveCount(0);
         assert.equal(await (await existing.request.get(origin + '/api/login/isauthenticated')).json(), false);
 
-        await page.getByRole('link', {name: 'Sign in with an Existing Account'}).click();
         await expect(page.getByRole('link', {name: 'Back to the Pickup Game'})).toHaveAttribute('href', route);
         await page.locator('#loginEmail').fill(existingEmail);
         await page.locator('#loginPassword').fill(password);
         await page.getByRole('button', {name: 'Sign In', exact: true}).click();
+        await expect(page.getByRole('heading', {name: 'Connected Accounts', exact: true})).toBeVisible();
+        await page.getByRole('button', {name: 'Connect Google'}).click();
+        await expect(page.getByText('Google is connected to your League Hub account.')).toBeVisible();
+        assert.equal(sql("SELECT UserId FROM dbo.GoogleAccount WHERE Subject=N'existing-" + token + "'"), String(userId));
+        await page.getByRole('link', {name: 'Back to the Pickup Game'}).click();
         await expect(page).toHaveURL(origin + route);
         assert.equal(sql("SELECT COUNT(*) FROM dbo.PickupRegistration WHERE SessionId='" + id + "'"), '0');
         await page.getByRole('button', {name: 'Join Game', exact: true}).click();
@@ -107,10 +113,6 @@ withPickupTestHost(async origin => {
         await expect(page.getByRole('button', {name: 'Join Game', exact: true})).toHaveCount(0);
         assert.equal(sql("SELECT PlayerId FROM dbo.PickupRegistration WHERE SessionId='" + id + "' AND AccountId=" + userId), String(playerId));
 
-        await page.goto(origin + '/connected-accounts');
-        await page.getByRole('button', {name: 'Connect Google'}).click();
-        await expect(page).toHaveURL(origin + '/connected-accounts?google=connected');
-        assert.equal(sql("SELECT UserId FROM dbo.GoogleAccount WHERE Subject=N'existing-" + token + "'"), String(userId));
         await post(existing, '/api/login/logout', {});
         await page.goto(origin + route);
         await page.getByRole('button', {name: 'Continue with Google'}).click();

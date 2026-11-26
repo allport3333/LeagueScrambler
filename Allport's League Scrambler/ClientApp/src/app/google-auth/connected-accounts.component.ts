@@ -5,7 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../auth.service';
 import { filter } from 'rxjs';
-import { googleStatus } from './google-status';
+import { googleStatus, pickupDestination } from './google-status';
 import { injectConfirmation } from '../confirmation-dialog';
 
 interface Connection { enabled: boolean; connected: boolean; canDisconnect: boolean; }
@@ -16,12 +16,12 @@ interface Connection { enabled: boolean; connected: boolean; canDisconnect: bool
       <article class="connected-accounts">
         <h1>Connected Accounts</h1>
         @if (message()) { <p role="status">{{ message() }}</p> }
-        @if (authRequired()) { <p><a routerLink="/" [queryParams]="{toggleLoginForm: true}">Sign in</a> to manage your connections.</p> }
+        @if (authRequired()) { <p><a routerLink="/" [queryParams]="{toggleLoginForm: true, returnTo: pickupReturn || null, google: pickupReturn ? 'existing-account' : null}">Sign in</a> to manage your connections.</p> }
         @else if (connection(); as google) {
           <h2>Google</h2>
           @if (!google.enabled) { <p>Google sign-in is unavailable here.</p> }
           @else if (google.connected) {
-            <p>Google is connected.</p>
+            @if (status !== 'connected') { <p>Google is connected.</p> }
             @if (google.canDisconnect) {
               <button class="google-auth-action" type="button" [disabled]="busy()" (click)="disconnect()">Disconnect Google</button>
             } @else {
@@ -29,10 +29,12 @@ interface Connection { enabled: boolean; connected: boolean; canDisconnect: bool
             }
           } @else {
             <form ngNoForm method="post" action="/api/auth/google/connect">
+              @if (pickupReturn) { <input type="hidden" name="returnTo" [value]="pickupReturn"> }
               <button class="google-auth-action" type="submit">Connect Google</button>
             </form>
           }
         } @else if (!message()) { <p role="status">Loading connected accounts...</p> }
+        @if (pickupReturn) { <p><a [routerLink]="pickupReturn">Back to the Pickup Game</a></p> }
         <p><a routerLink="/privacy">Privacy Policy</a></p>
       </article>
     `
@@ -46,7 +48,9 @@ export class ConnectedAccountsComponent implements OnInit {
     readonly connection = signal<Connection | null>(null);
     readonly authRequired = signal(false);
     readonly busy = signal(false);
-    readonly message = signal(googleStatus(this.route.snapshot.queryParamMap.get('google')));
+    readonly status = this.route.snapshot.queryParamMap.get('google');
+    readonly pickupReturn = pickupDestination(this.route.snapshot.queryParamMap.get('returnTo'));
+    readonly message = signal(googleStatus(this.status));
 
     ngOnInit(): void {
         this.auth.authenticationState$.pipe(filter(state => state !== null), takeUntilDestroyed(this.destroy))
