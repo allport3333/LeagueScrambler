@@ -18,7 +18,7 @@ fs.mkdirSync(out, {recursive: true});
         const roster = () => ['Aaron Bennett', 'Zachary Montgomery-Sutherland', 'Beth Nelson'].map((playerName, i) => ({
             playerId: 1 + i, playerName, isMale: i < 2, leagueDivisionId: i < 2 ? 1 : 2, leagueDivisionCode: i < 2 ? 'GM' : 'SM',
             scores: Array.from({length: rounds}, (_, round) => ({
-                roundId: round + 1, scrambleNumber: round + 1, score: 10 + i + round, roundWon: i === 0,
+                roundId: round + 1, scrambleNumber: round + 1, score: [21, 100, 1042][round % 3] + i, roundWon: i === 0,
                 isSubScore: i === 1 && round === 0, hasSavedScore: true
             }))
         }));
@@ -127,6 +127,60 @@ fs.mkdirSync(out, {recursive: true});
                 }
                 await page.screenshot({path: path.join(out, 'team-' + width + '.png')});
             }
+        }
+        if (!baseline) {
+            const widths = [390, 768, 900, 1024, 1100, 1280, 1366, 1440, 1600, 1920, 2560, 3840];
+            const seen = new Set();
+            for (const [count, mode, theme] of [
+                [5, 'round', 'classic'], [11, 'matchup', 'navy'], [12, 'round', 'charcoal'],
+                [14, 'round', 'classic'], [22, 'round', 'navy']
+            ]) {
+                rounds = count;
+                await page.setViewportSize({width: widths[0], height: 900});
+                await page.goto(origin + '/standings?leagueId=102&standingsMode=' + mode);
+                await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+                await page.locator('.mobile-table-toggle:visible').click();
+                const table = page.locator('.compact-table:visible');
+                const fullName = (mode === 'matchup' ? 'Matchup' : 'Round') + ' 1';
+                await expect(table.getByRole('columnheader', {name: fullName, exact: true})).toHaveCount(1);
+                await page.evaluate(() => document.fonts.ready);
+                const sweep = count === 11 ? [...new Set([...widths,
+                    ...Array.from({length: 35}, (_, i) => 768 + 24 * i)])].sort((a, b) => a - b) : widths;
+                for (const width of sweep) {
+                    await page.setViewportSize({width, height: 900});
+                    const result = await table.evaluate(el => {
+                        const header = el.querySelector('.standings-period-label');
+                        const visible = [...header.querySelectorAll('.standings-period-full, .standings-period-short')]
+                            .find(label => getComputedStyle(label).display !== 'none');
+                        const scores = [...el.tBodies[0].rows[0].cells].slice(-3);
+                        return {
+                            label: visible.textContent.trim().replace(/\s+/g, ' '),
+                            column: header.parentElement.getBoundingClientRect().width,
+                            headerFits: header.scrollWidth <= header.clientWidth + 1,
+                            scoresFit: scores.every(cell => {
+                                const range = document.createRange();
+                                range.selectNodeContents(cell);
+                                const lines = new Set([...range.getClientRects()].filter(rect => rect.width).map(rect => Math.round(rect.y)));
+                                return lines.size === 1 && cell.scrollWidth <= cell.clientWidth + 1;
+                            }),
+                            pageFits: document.documentElement.scrollWidth <= innerWidth + 1
+                        };
+                    });
+                    assert(result.headerFits && result.scoresFit && result.pageFits && result.column >= 67,
+                        JSON.stringify({width, count, mode, ...result}));
+                    const short = mode === 'matchup' ? 'M1' : 'R1';
+                    assert([short, fullName].includes(result.label), JSON.stringify(result));
+                    seen.add(result.label);
+                    if ([900, 1100, 1280].includes(width)) {
+                        await page.screenshot({path: path.join(out, width + '-' + mode + '-' + count + '-' + theme + '.png')});
+                    }
+                }
+                const printLabel = await table.locator('.standings-period-short').first().elementHandle();
+                await page.emulateMedia({media: 'print'});
+                assert.equal(await printLabel.evaluate(el => getComputedStyle(el).display), 'none');
+                await page.emulateMedia({media: 'screen'});
+            }
+            for (const label of ['R1', 'Round 1', 'M1', 'Matchup 1']) assert(seen.has(label), label);
         }
         fs.writeFileSync(path.join(out, 'metrics.json'), JSON.stringify(results, null, 2));
         console.log('Standings browser checks completed (' + (baseline ? 'before' : 'after') + ').');

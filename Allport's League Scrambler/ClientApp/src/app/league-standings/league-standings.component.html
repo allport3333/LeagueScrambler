@@ -133,10 +133,14 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngFor="let round of standingsRounds"
-                                            scope="col">
-                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
-                                            <span>{{ round }}</span>
+                                        <th *ngFor="let round of standingsRounds" scope="col"
+                                            [attr.aria-label]="(standingsType === 'matchup' ? 'Matchup ' : 'Round ') + round"
+                                            [title]="(standingsType === 'matchup' ? 'Matchup ' : 'Round ') + round">
+                                            <span class="standings-period-label" aria-hidden="true">
+                                                <span class="standings-period-full"><span>{{ standingsType === 'matchup' ? 'Matchup ' : 'Round ' }}</span><br class="standings-period-break">
+                                                    <span>{{ round }}</span></span>
+                                                <span class="standings-period-short">{{ standingsType === 'matchup' ? 'M' : 'R' }}{{ round }}</span>
+                                            </span>
                                         </th>
                                     </tr>
                                 </thead>
@@ -200,10 +204,14 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngFor="let round of standingsRounds"
-                                            scope="col">
-                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
-                                            <span>{{ round }}</span>
+                                        <th *ngFor="let round of standingsRounds" scope="col"
+                                            [attr.aria-label]="(standingsType === 'matchup' ? 'Matchup ' : 'Round ') + round"
+                                            [title]="(standingsType === 'matchup' ? 'Matchup ' : 'Round ') + round">
+                                            <span class="standings-period-label" aria-hidden="true">
+                                                <span class="standings-period-full"><span>{{ standingsType === 'matchup' ? 'Matchup ' : 'Round ' }}</span><br class="standings-period-break">
+                                                    <span>{{ round }}</span></span>
+                                                <span class="standings-period-short">{{ standingsType === 'matchup' ? 'M' : 'R' }}{{ round }}</span>
+                                            </span>
                                         </th>
                                     </tr>
                                 </thead>
@@ -275,10 +283,14 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngFor="let round of standingsRounds"
-                                            scope="col">
-                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
-                                            <span>{{ round }}</span>
+                                        <th *ngFor="let round of standingsRounds" scope="col"
+                                            [attr.aria-label]="(standingsType === 'matchup' ? 'Matchup ' : 'Round ') + round"
+                                            [title]="(standingsType === 'matchup' ? 'Matchup ' : 'Round ') + round">
+                                            <span class="standings-period-label" aria-hidden="true">
+                                                <span class="standings-period-full"><span>{{ standingsType === 'matchup' ? 'Matchup ' : 'Round ' }}</span><br class="standings-period-break">
+                                                    <span>{{ round }}</span></span>
+                                                <span class="standings-period-short">{{ standingsType === 'matchup' ? 'M' : 'R' }}{{ round }}</span>
+                                            </span>
                                         </th>
                                     </tr>
                                 </thead>
@@ -343,10 +355,14 @@
                                                 {{ sortDirection === 'asc' ? 'arrow_downward' : 'arrow_upward' }}
                                             </mat-icon>
                                         </th>
-                                        <th *ngFor="let round of standingsRounds"
-                                            scope="col">
-                                            <span>{{ standingsType === 'matchup' ? 'Matchup' : 'Round' }}</span><br>
-                                            <span>{{ round }}</span>
+                                        <th *ngFor="let round of standingsRounds" scope="col"
+                                            [attr.aria-label]="(standingsType === 'matchup' ? 'Matchup ' : 'Round ') + round"
+                                            [title]="(standingsType === 'matchup' ? 'Matchup ' : 'Round ') + round">
+                                            <span class="standings-period-label" aria-hidden="true">
+                                                <span class="standings-period-full"><span>{{ standingsType === 'matchup' ? 'Matchup ' : 'Round ' }}</span><br class="standings-period-break">
+                                                    <span>{{ round }}</span></span>
+                                                <span class="standings-period-short">{{ standingsType === 'matchup' ? 'M' : 'R' }}{{ round }}</span>
+                                            </span>
                                         </th>
                                     </tr>
                                 </thead>

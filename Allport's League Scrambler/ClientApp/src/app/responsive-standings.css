@@ -1,3 +1,5 @@
+.standings-period-short { display: none; }
+
 @media screen {
     .standings-table-scroll {
         --standings-rank: 3.5rem;
@@ -16,7 +18,7 @@
     .standings-data-table {
         --name-width: clamp(8.25rem, 23cqi, 19rem);
         --total-width: clamp(5.75rem, 8cqi, 10rem);
-        --round-width: 3.75rem;
+        --round-width: 4.25rem;
         --column-space: calc((100cqi - var(--standings-rank) - var(--name-width)) /
             max(1, var(--standings-totals, 3) + var(--standings-rounds, 0)));
         --score-size: clamp(.875rem, calc(.75rem + var(--column-space) * .035), 1rem);
@@ -39,7 +41,7 @@
         border-block-end: 1px solid var(--hub-table-divider, #cbd5df);
         text-align: center;
         vertical-align: middle;
-        overflow-wrap: anywhere;
+        overflow-wrap: normal;
     }
 
     .standings-data-table tr > :first-child { border-inline-start: 1px solid var(--hub-table-divider, #cbd5df); }
@@ -52,7 +54,25 @@
     .standings-data-table tbody tr { background: var(--hub-table-surface, white); }
     .standings-data-table tbody tr:nth-child(odd) { background: var(--hub-table-alt, #f5f7fa); }
     .standings-data-table thead tr > :first-child { width: var(--standings-rank); }
-    .standings-data-table tr > :nth-child(2) { text-align: start; }
+    .standings-data-table tr > :nth-child(2) {
+        text-align: start;
+        overflow-wrap: anywhere;
+    }
+
+    .standings-data-table tbody td:not(:nth-child(2)) { white-space: nowrap; }
+
+    .standings-period-label {
+        display: block;
+        container: standings-period / inline-size;
+        white-space: nowrap;
+    }
+
+    .standings-period-break { display: none; }
+
+    @container standings-period (inline-size < 6rem) {
+        .standings-period-full { display: none; }
+        .standings-period-short { display: inline; }
+    }
     .standings-data-table tbody tr > :nth-child(2) {
         font-size: clamp(.875rem, calc(var(--score-size) + .0625rem), 1.0625rem);
     }
