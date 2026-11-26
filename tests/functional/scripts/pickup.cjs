@@ -65,7 +65,7 @@ withPickupTestHost(async origin => {
         const details = (await api(organizer, endpoint)).data;
         assert.equal(details.capacity, null);
         assert.equal(Date.parse(details.endsUtc) - Date.parse(details.startsUtc), 120 * 60000);
-        assert.equal(Date.parse(details.deadlineUtc), Date.parse(details.startsUtc));
+        assert.equal(Date.parse(details.deadlineUtc), Date.parse(details.endsUtc));
 
         const mobile = await open(390, 'MobileOrganizer');
         await mobile.getByRole('link', {name: 'Create Pickup Game'}).click();
@@ -97,7 +97,8 @@ withPickupTestHost(async origin => {
         assert.equal(advanced.description, 'Advanced settings fixture');
         const visitor = await open(390);
         await visitor.getByRole('link', {name: 'Find Pickup Games', exact: true}).click();
-        await visitor.getByLabel('City or ZIP code').fill(values.postalCode);
+        await visitor.getByLabel('Where do you want to play?').fill(values.postalCode);
+        await visitor.getByText('More Filters', {exact: true}).click();
         await visitor.locator('select[name=sport]').selectOption('Wallyball');
         await visitor.getByLabel('Date', {exact: true}).fill(date);
         await visitor.getByLabel('Available spots only').check();

@@ -69,3 +69,13 @@ button:not(:disabled):hover { border-color: var(--hub-focus, #30577e); }
 .organizer-subactions > .session-details { border: 0; padding: .15rem 0; margin: 0; }
 .organizer-subactions > .session-details[open] { flex: 0 0 100%; border-top: 1px solid var(--hub-border, #a4b5c8); }
 .organizer-subactions > .registration-note { margin: 0; }
+
+.discovery-search { display: grid; gap: .6rem; align-items: end; grid-template-columns: minmax(0, 1fr) auto auto auto; }
+.discovery-search input { width: 100%; }
+.discovery .fields { margin-top: .55rem; }
+.discovery-empty { grid-column: 1 / -1; }
+.location-note { color: var(--hub-muted, #475569); font-size: .88rem; }
+@media (max-width: 730px) {
+  .discovery-search { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .discovery-search > label:first-child { grid-column: 1 / -1; }
+}

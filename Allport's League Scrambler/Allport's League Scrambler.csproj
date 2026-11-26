@@ -150,4 +150,7 @@
     <WarningLevel>2</WarningLevel>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Pickup/us-postal-localities.tsv.gz" LogicalName="Pickup.us-postal-localities" />
+  </ItemGroup>
 </Project>

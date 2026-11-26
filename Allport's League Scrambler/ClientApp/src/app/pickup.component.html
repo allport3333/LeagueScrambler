@@ -205,42 +205,102 @@
         }
         <div class="landing-links">
           <a class="panel" routerLink="/pickup/find">Find Pickup Games</a>
-          <a class="panel" routerLink="/pickup/mine">My Sessions</a>
-          <a class="panel" routerLink="/pickup/create">Create Pickup Game</a>
+          @if (signedIn | async) {
+            <a class="panel" routerLink="/pickup/mine">My Sessions</a>
+            <a class="panel" routerLink="/pickup/create">Create Pickup Game</a>
+          }
         </div>
       </section>
     } @else {
     @if (view === 'find') {
       <h2>Find Pickup Games</h2>
-      <form class="panel fields" (ngSubmit)="load()">
-        <label>City or ZIP code<input name="location" maxlength="80" [(ngModel)]="filters.location"></label>
-        <label>Sport<select name="sport" [(ngModel)]="filters.sport"><option value="">All sports</option>@for (sport of sports; track sport) { <option>{{ sport }}</option> }</select></label>
-        <label>Date<input name="date" type="date" [(ngModel)]="filters.date"></label>
-        <label>Skill level<select name="skill" [(ngModel)]="filters.skill"><option value="">Any level</option>@for (level of levels; track level) { <option>{{ level }}</option> }</select></label>
-        <label class="choice"><input name="available" type="checkbox" [(ngModel)]="filters.available">Available spots only</label>
-        <button class="primary" [disabled]="loading">Find Games</button>
+      <form class="panel discovery" (ngSubmit)="search()">
+        <div class="discovery-search">
+          <label>Where do you want to play?
+            <input name="location" maxlength="120" [(ngModel)]="filters.location" placeholder="City, state, ZIP code, or facility"
+              [attr.aria-invalid]="locationError ? 'true' : null" [attr.aria-describedby]="locationError ? 'pickup-location-error' : null">
+          </label>
+          <label>Distance<select name="radius" [(ngModel)]="filters.radius">
+            @for (miles of [5, 10, 25, 50]; track miles) { <option [ngValue]="miles">{{ miles }} miles</option> }
+          </select></label>
+          <button class="primary" [disabled]="loading">Find Games</button>
+          <button type="button" [disabled]="locating" (click)="useLocation()">Use My Location</button>
+        </div>
+        @if (deviceLocation) { <small>Searching near your current location.</small> }
+        @if (locationError) { <small class="field-error" id="pickup-location-error" role="alert">{{ locationError }}</small> }
+        @if (locationChoices.length) {
+          <div class="actions">
+            <span>Choose a state to search by distance.</span>
+            @for (choice of locationChoices; track choice) {
+              <button type="button" (click)="search(choice)">{{ choice }}</button>
+            }
+          </div>
+        }
+        <details class="advanced">
+          <summary>More Filters</summary>
+          <div class="fields">
+            <label>Sport<select name="sport" [(ngModel)]="filters.sport"><option value="">All sports</option>@for (sport of sports; track sport) { <option>{{ sport }}</option> }</select></label>
+            <label>Skill level<select name="skill" [(ngModel)]="filters.skill"><option value="">Any level</option>@for (level of levels; track level) { <option>{{ level }}</option> }</select></label>
+            <label>Date<input name="date" type="date" [(ngModel)]="filters.date"></label>
+            <label>Search window<select name="days" [(ngModel)]="filters.days">
+              @for (days of [14, 30, 60]; track days) { <option [ngValue]="days">Next {{ days }} days</option> }
+            </select></label>
+            <label class="choice"><input name="available" type="checkbox" [(ngModel)]="filters.available">Available spots only</label>
+            <label class="choice"><input name="playing" type="checkbox" [(ngModel)]="filters.playing">Playing Now only</label>
+          </div>
+        </details>
       </form>
+      @if (error) { <button type="button" (click)="load()">Retry</button> }
     } @else { <h2>My Sessions</h2> }
-    @if (!loading && !error) {
+    @if (!loading && !error && !locationError) {
       <div class="cards">
         @for (card of sessions; track card.id) {
           <article class="panel">
             <h3><a [routerLink]="['/pickup', card.id]">{{ card.name }}</a></h3>
             <p>{{ card.sport }} · {{ card.skill || 'Any level' }}</p>
-            <p>{{ card.venue }} · {{ card.city }}, {{ card.region }}</p>
-            <p>{{ format(card.startsUtc, card.timeZone) }}</p>
+            <p>{{ card.venue }} @if (card.city || card.region || card.postalCode) {
+              &middot; {{ discoveryLocation(card) }}
+            }</p>
+            <p>{{ discoveryTime(card) }}</p>
+            @if (card.timing != null) {
+              <p><strong>{{ ['Playing Now', 'Starting Soon', 'Upcoming'][card.timing] }}</strong>
+                @if (card.distanceMiles != null) { &middot; {{ card.distanceMiles }} mi }
+              </p>
+              @if (card.locationUnconfirmed) { <p class="location-note">Possible locality match. Confirm the facility's state.</p> }
+              @else if (card.approximateLocation) { <p class="location-note">Locality match. Distance unavailable.</p> }
+            }
             <p>
               @if (card.state === 4) { Cancelled }
               @else {
                 {{ card.confirmed }} confirmed
-                @if (card.capacity == null) { <span> &middot; <strong>Open Registration</strong></span> }
+                @if (card.registrationOpen === false) { <span> &middot; <strong>Registration Closed</strong></span> }
+                @else if (card.capacity != null && card.confirmed >= card.capacity) { <span> &middot; <strong>Full</strong> &middot; Waitlist Available</span> }
+                @else if (card.capacity == null) { <span> &middot; <strong>Open Registration</strong></span> }
                 @else { <span> &middot; {{ card.capacity - card.confirmed }} spots open</span> }
               }
             </p>
             <a [routerLink]="['/pickup', card.id]">View Details<span class="visually-hidden"> for {{ card.name }}</span></a>
           </article>
-        } @empty { <p>No sessions found.</p> }
+        } @empty {
+          @if (view === 'find') {
+            <section class="panel discovery-empty">
+              <h3>{{ filters.location || deviceLocation ? 'No Pickup Games Found Nearby' : 'No Pickup Games Found' }}</h3>
+              <p>We couldn't find any games matching these filters.</p>
+              <div class="actions">
+                @if ((filters.location || deviceLocation) && filters.radius < 50) {
+                  <button type="button" (click)="expandRadius()">Expand Search Radius</button>
+                }
+                <button type="button" (click)="clearFilters()">Clear Filters</button>
+                @if (filters.location || deviceLocation) {
+                  <button type="button" (click)="search('')">Search All Locations</button>
+                }
+                @if (signedIn | async) { <a routerLink="/pickup/create">Create Pickup Game</a> }
+              </div>
+            </section>
+          } @else { <p>No sessions found.</p> }
+        }
       </div>
+      @if (view === 'find') { <p class="location-note">US postal locality data from <a href="https://www.geonames.org/">GeoNames</a>.</p> }
       @if (view === 'find' && (page || hasMore)) {
         <div class="actions"><button type="button" (click)="load(page - 1)" [disabled]="page === 0">Previous</button>
           <button type="button" (click)="load(page + 1)" [disabled]="!hasMore">Next</button></div>

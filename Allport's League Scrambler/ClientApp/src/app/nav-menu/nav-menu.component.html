@@ -2,7 +2,7 @@
   @if (!authenticationChecked) {
     <span class="session-status" role="status">Checking session...</span>
   }
-  @if (authenticationChecked && (loggedIn || pickupEnabled)) {
+  @if (authenticationChecked && loggedIn) {
     <div class="event-controls">
       <button #eventTrigger type="button" mat-button class="league-selector" id="leagueDropdown" cdkOverlayOrigin #eventOrigin="cdkOverlayOrigin"
         aria-haspopup="dialog" [attr.aria-expanded]="eventPopup === 'categories'" [title]="inPickup ? 'Pickup Games' : (selectedLeagueName || 'Select event')" (click)="toggleEventPopup('categories')">
@@ -30,12 +30,26 @@
           @for (group of eventGroups; track group.id) {
             @if (eventPopup === 'categories') {
               <div class="event-selector-group" role="group" [attr.aria-label]="group.title">
+                @if (group.id === 3) {
+                  <h2 class="pickup-category">
+                    <a class="event-choice pickup-category-link" routerLink="/pickup" (click)="closeEventSelector()">
+                      <mat-icon aria-hidden="true">sports_volleyball</mat-icon><span>Pickup Games</span>
+                    </a>
+                    <button type="button" class="event-category pickup-category-toggle"
+                      [attr.aria-label]="expandedEventType === group.id ? 'Collapse Pickup Games' : 'Expand Pickup Games'"
+                      [attr.aria-expanded]="expandedEventType === group.id" [attr.aria-controls]="'event-category-' + group.id"
+                      (click)="toggleEventCategory(group.id)">
+                      <mat-icon aria-hidden="true">{{ expandedEventType === group.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </button>
+                  </h2>
+                } @else {
                 <h2><button type="button" class="event-category" [attr.aria-expanded]="expandedEventType === group.id"
                   [attr.aria-controls]="'event-category-' + group.id" (click)="toggleEventCategory(group.id)">
                   <mat-icon aria-hidden="true">{{ group.icon }}</mat-icon><span>{{ group.title }}</span>
                   @if (group.id !== 3) { <span class="event-count">{{ group.events.length }}</span> }
                   <mat-icon aria-hidden="true">{{ expandedEventType === group.id ? 'expand_less' : 'expand_more' }}</mat-icon>
                 </button></h2>
+                }
                 <div [id]="'event-category-' + group.id" [hidden]="expandedEventType !== group.id">
                   @if (expandedEventType === group.id) {
                     @for (event of group.events; track event.id) {
@@ -43,15 +57,15 @@
                     }
                     @if (group.id === 3) {
                       <div class="tournament-event-actions">
-                        <a class="event-choice" routerLink="/pickup" (click)="closeEventSelector()">
-                          <mat-icon aria-hidden="true">sports_volleyball</mat-icon><span>Pickup Games</span>
+                        <a class="event-choice" routerLink="/pickup/find" (click)="closeEventSelector()">
+                          <mat-icon aria-hidden="true">search</mat-icon><span>Find Pickup Games</span>
                         </a>
                         @if (loggedIn) {
                           <a class="event-choice create-tournament" routerLink="/pickup/create" (click)="closeEventSelector()">
                             <mat-icon aria-hidden="true">add</mat-icon><span>Create Pickup Game</span>
                           </a>
                           <a class="event-choice" routerLink="/pickup/mine" (click)="closeEventSelector()">
-                            <mat-icon aria-hidden="true">event</mat-icon><span>My Pickup Sessions</span>
+                            <mat-icon aria-hidden="true">event</mat-icon><span>My Sessions</span>
                           </a>
                           @if (pickupResumeId) {
                             <a class="event-choice" [routerLink]="['/pickup', pickupResumeId]" (click)="closeEventSelector()">
@@ -148,6 +162,11 @@
       </div>
     }
   } @else {
+    @if (authenticationChecked && !loggedIn && pickupEnabled) {
+      <a class="navigation-link" routerLink="/pickup" [class.active]="inPickup">
+        <mat-icon aria-hidden="true">sports_volleyball</mat-icon><span>Pickup Games</span>
+      </a>
+    }
     <button #drawerToggle type="button" mat-icon-button class="drawer-toggle" aria-label="Open navigation"
       aria-controls="navigation-drawer" [attr.aria-expanded]="isExpanded" (click)="toggle(drawerToggle)"><mat-icon aria-hidden="true">menu</mat-icon></button>
   }
@@ -171,7 +190,7 @@
               }
             </div>
           </details>
-        } @else {
+        } @else if (!(compact && item.route === '/pickup')) {
           <ng-container *ngTemplateOutlet="drawerLink; context: {$implicit: item}"></ng-container>
         }
       }

@@ -51,26 +51,89 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     }
 
     [HttpGet("sessions")]
-    public async Task<IActionResult> Discover(string sport, string location, DateOnly? date, bool available, string skill, int page = 0)
+    public async Task<IActionResult> Discover(string sport, string location, DateOnly? date, bool available, string skill,
+        int page = 0, int radius = 25, int days = 14, bool playing = false, double? latitude = null, double? longitude = null)
     {
         if (!PickupEnvironment.Enabled) return NotFound();
-        if (page is < 0 or > 200 || location?.Length > 80 || skill?.Length > 40 || sport?.Length > 40) return BadRequest();
+        if (page is < 0 or > 200 || radius is not (5 or 10 or 25 or 50) || days is not (14 or 30 or 60) ||
+            location?.Length > 120 || skill?.Length > 40 || sport?.Length > 40 ||
+            ((latitude.HasValue || longitude.HasValue) && !PickupLocations.ValidPoint(latitude, longitude))) return BadRequest();
         await using var db = new DataContext();
         var now = DateTimeOffset.UtcNow;
-        var sessions = db.PickupSessions.AsNoTracking().Include(s => s.Venue)
-            .Where(s => s.Visibility == SessionVisibility.Public && (s.State == SessionState.Published || s.State == SessionState.InProgress) && s.EndsUtc > now && (s.StartsUtc > now || s.DeadlineUtc > now));
-        if (!string.IsNullOrWhiteSpace(location))
-        {
-            var value = location.Trim();
-            sessions = sessions.Where(s => s.Venue.City.Contains(value) || s.Venue.PostalCode.StartsWith(value));
-        }
+        var through = now.AddDays(days);
+        var sessions = db.PickupSessions.AsNoTracking()
+            .Where(s => s.Visibility == SessionVisibility.Public &&
+                (s.State == SessionState.Published || s.State == SessionState.InProgress) && s.EndsUtc > now && s.StartsUtc < through);
+        var publicSessions = sessions;
         if (!string.IsNullOrWhiteSpace(sport)) sessions = sessions.Where(s => s.Sport == sport);
         if (!string.IsNullOrWhiteSpace(skill)) sessions = sessions.Where(s => s.Skill == skill);
-        if (date is { } day) sessions = sessions.Where(s => s.LocalDate == day);
-        if (available) sessions = sessions.Where(s => (s.DeadlineUtc ?? s.StartsUtc) > now &&
-            (s.Capacity == null || db.PickupRegistrations.Count(r => r.SessionId == s.Id && r.State == RegistrationState.Confirmed) < s.Capacity));
-        var result = await Cards(db, sessions.OrderBy(s => s.StartsUtc).ThenBy(s => s.Id).Skip(page * 12).Take(13));
-        return Ok(new { sessions = result.Take(12), hasMore = result.Count > 12 });
+        if (playing) sessions = sessions.Where(s => s.State == SessionState.InProgress || s.StartsUtc <= now);
+        if (date is { } day) sessions = sessions.Where(s => s.LocalDate <= day);
+        var candidates = await sessions.Select(s => new {
+            s.Id, s.Name, s.Sport, s.Skill, s.StartsUtc, s.EndsUtc, s.DeadlineUtc, s.State, s.Capacity,
+            venue = s.Venue.Name, s.Venue.City, s.Venue.Region, s.Venue.PostalCode, s.Venue.Country, s.Venue.TimeZone,
+            s.Venue.Latitude, s.Venue.Longitude,
+            confirmed = db.PickupRegistrations.Count(r => r.SessionId == s.Id && r.State == RegistrationState.Confirmed)
+        }).ToListAsync();
+        var near = PickupLocations.Resolve(location, latitude.HasValue ? new PickupLocations.Point(latitude.Value, longitude.Value) : null);
+        if (!near.Known && near.State.Length == 0 && !string.IsNullOrWhiteSpace(location))
+        {
+            var exact = location.Trim();
+            var points = await publicSessions.Where(s => s.Venue.Name == exact && s.Venue.Latitude != null && s.Venue.Longitude != null)
+                .Select(s => new { s.Venue.Latitude, s.Venue.Longitude, s.Venue.City, s.Venue.Region, s.Venue.PostalCode })
+                .Distinct().Take(2).ToArrayAsync();
+            if (points.Length == 1 && PickupLocations.ValidPoint(points[0].Latitude, points[0].Longitude))
+            {
+                var point = points[0];
+                var place = PickupLocations.Resolve(string.IsNullOrWhiteSpace(point.PostalCode) ? point.City + ", " + point.Region : point.PostalCode, null);
+                near = near with { Centers = [new PickupLocations.Point(point.Latitude.Value, point.Longitude.Value)], Localities = place.Localities };
+            }
+        }
+        var catalogMatch = near.Known || near.Centers.Count != 0 || string.IsNullOrWhiteSpace(location);
+        var matches = candidates.Select(s => new {
+            row = s, match = PickupLocations.Find(near, s.City, s.Region, s.PostalCode, s.Country, s.venue,
+                s.Latitude, s.Longitude, radius)
+        }).Where(entry => entry.match != null).ToArray();
+        if (!catalogMatch && matches.Length == 0)
+        {
+            // Recognize stored public facilities even if today's optional filters excluded their sessions.
+            var publicVenues = await publicSessions
+                .Select(s => new { s.Venue.Name, s.Venue.City, s.Venue.Region, s.Venue.PostalCode, s.Venue.Country })
+                .Distinct().ToListAsync();
+            if (!publicVenues.Any(v => PickupLocations.Find(near, v.City, v.Region, v.PostalCode, v.Country, v.Name,
+                null, null, radius) != null))
+                return BadRequest(new { field = "location", message = "Location not recognized. Try a city and state, ZIP code, or facility name." });
+        }
+        var result = matches.Where(entry => !date.HasValue || IncludesLocalDate(entry.row.StartsUtc, entry.row.EndsUtc, entry.row.TimeZone, date.Value))
+            .Select(entry => new {
+                s = entry.row, entry.match,
+                rank = entry.row.State == SessionState.InProgress || entry.row.StartsUtc <= now ? 0
+                    : entry.row.StartsUtc <= now.AddHours(2) ? 1 : 2,
+                open = (entry.row.DeadlineUtc ?? entry.row.StartsUtc) > now
+            })
+            .Where(entry => !available || (entry.open && (entry.s.Capacity == null || entry.s.confirmed < entry.s.Capacity)))
+            .OrderBy(entry => entry.rank).ThenBy(entry => entry.match.MissingState)
+            .ThenBy(entry => entry.rank == 0 ? entry.match.Miles ?? double.MaxValue : 0)
+            .ThenBy(entry => entry.s.StartsUtc)
+            .ThenBy(entry => entry.match.Miles ?? double.MaxValue).ThenBy(entry => entry.s.Id)
+            .Skip(page * 12).Take(13).ToArray();
+        return Ok(new {
+            sessions = result.Take(12).Select(entry => new {
+                entry.s.Id, entry.s.Name, entry.s.Sport, entry.s.Skill, entry.s.venue, entry.s.City, entry.s.Region,
+                entry.s.PostalCode, entry.s.TimeZone, entry.s.StartsUtc, entry.s.EndsUtc, entry.s.State, entry.s.Capacity,
+                entry.s.confirmed, registrationOpen = entry.open, timing = entry.rank, distanceMiles = entry.match.Miles,
+                approximateLocation = entry.match.Approximate, locationUnconfirmed = entry.match.MissingState
+            }),
+            hasMore = result.Length > 12,
+            locationChoices = near.Choices
+        });
+    }
+
+    private static bool IncludesLocalDate(DateTimeOffset start, DateTimeOffset end, string zoneId, DateOnly date)
+    {
+        if (!TryZone(zoneId, out var zone, out _)) return false;
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(start, zone).DateTime) <= date &&
+            DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(end.AddTicks(-1), zone).DateTime) >= date;
     }
 
     [Authorize, HttpGet("mine")]
@@ -425,7 +488,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
         }
         if (end <= now) return new("duration", "End time must be in the future.");
 
-        var deadline = (input.LateJoinUntilEnd ?? input.StartNow) ? end : start;
+        var deadline = (input.LateJoinUntilEnd ?? (s.StartsUtc == default || input.StartNow)) ? end : start;
         if (!string.IsNullOrWhiteSpace(input.Deadline) &&
             (!TryLocalTime(input.Deadline, zone, out deadline) || deadline > start))
             return new("deadline", "Choose a registration deadline no later than the start, or allow late joining.");

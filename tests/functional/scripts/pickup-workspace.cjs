@@ -129,7 +129,7 @@ withPickupTestHost(async origin => {
         const menu = organizer.getByRole('dialog', {name: 'Select league or event'});
         async function openPickupMenu() {
             await selector.click();
-            const pickup = menu.getByRole('button', {name: 'Pickup Games'});
+            const pickup = menu.getByRole('button', {name: /^(Expand|Collapse) Pickup Games$/});
             if (await pickup.getAttribute('aria-expanded') !== 'true') await pickup.click();
         }
         await selector.click();
@@ -144,12 +144,12 @@ withPickupTestHost(async origin => {
         await expect(organizer).toHaveURL(origin + '/tournament?view=create');
         await expect(organizer.locator('.desktop-navigation').getByText('Pickup Games')).toHaveCount(0);
         await openPickupMenu();
-        await expect(menu.getByRole('link', {name: 'Pickup Games'})).toHaveCount(1);
+        await expect(menu.getByRole('link', {name: 'Pickup Games', exact: true})).toHaveCount(1);
         await expect(menu.getByText('Workspace ' + token)).toHaveCount(0);
         await menu.getByRole('link', {name: 'Create Pickup Game'}).click();
         await expect(organizer.getByRole('heading', {name: 'Create a Pickup Game'})).toBeVisible();
         await openPickupMenu();
-        await menu.getByRole('link', {name: 'My Pickup Sessions'}).click();
+        await menu.getByRole('link', {name: 'My Sessions', exact: true}).click();
         await organizer.getByRole('link', {name: 'Workspace ' + token, exact: true}).click();
         await expect(organizer.getByText('No players have joined yet.')).toBeVisible();
         assert.equal(await savedLeague(), '900001');

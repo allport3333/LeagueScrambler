@@ -9,7 +9,11 @@ import { PickupWorkspaceComponent } from './pickup-workspace.component';
 import { AuthService } from './auth.service';
 import { TournamentNotifications } from './tournament-notifications.service';
 
+const discoveryDefaults = () => ({sport: '', location: '', date: '', available: false, skill: '', radius: 25, days: 14, playing: false});
+
 interface SessionCard {
+    timing?: number; registrationOpen?: boolean; distanceMiles?: number; approximateLocation?: boolean;
+    locationUnconfirmed?: boolean; postalCode?: string;
     id: string; name: string; sport: string; startsUtc: string; endsUtc: string; skill?: string;
     venue: string; city: string; region: string; timeZone: string; capacity: number | null; confirmed: number; state: number;
 }
@@ -26,7 +30,7 @@ const durations = [60, 90, 120, 180];
 const emptyForm = () => ({
     sport: 'Wallyball', name: '', date: '', time: '', startNow: false, duration: 120, customDuration: 120,
     venue: '', location: '', address: '', region: '', country: 'US', timeZone: deviceZone,
-    deadlinePolicy: 'start', deadline: '',
+    deadlinePolicy: 'end', deadline: '',
     description: '', skill: '', organizerNotes: '', limitPlayers: false, capacity: null as number | null, visibility: 0, approvalRequired: false
 });
 
@@ -51,7 +55,11 @@ export class PickupComponent implements OnInit {
     readonly levels = ['Beginner', 'Intermediate', 'Advanced', 'All levels'];
     readonly statuses = ['Pending verification', 'Pending approval', 'Confirmed', 'Cancelled', 'Declined', 'Waitlisted', 'Offered'];
     sports: string[] | null = null;
-    filters = { sport: '', location: '', date: '', available: false, skill: '' };
+    filters = discoveryDefaults();
+    locationError = '';
+    locationChoices: string[] = [];
+    deviceLocation?: {latitude: number; longitude: number};
+    locating = false;
     form = emptyForm();
     venues: Venue[] = [];
     selectedVenue?: Venue;
@@ -94,6 +102,9 @@ export class PickupComponent implements OnInit {
         this.route.url.pipe(takeUntilDestroyed(this.destroy)).subscribe(async () => {
             this.id = this.route.snapshot.paramMap.get('sessionId') ?? undefined;
             this.view = this.route.snapshot.data['view'] ?? '';
+            if (this.view === 'find' && !this.filters.location) {
+                try { this.filters.location = localStorage.getItem('pickup-discovery-location') ?? ''; } catch { /* Optional preference. */ }
+            }
             this.session = undefined;
             this.editing = false;
             this.guestForm = false;
@@ -136,10 +147,19 @@ export class PickupComponent implements OnInit {
         } catch { /* Discovery remains available when signed out or storage is unavailable. */ }
     }
 
-    sessionTime(game: Session): string {
+    sessionTime(game: {startsUtc: string; endsUtc: string; venue: {timeZone: string}}): string {
         const zone = game.venue.timeZone;
         const time = new Intl.DateTimeFormat(undefined, {timeZone: zone, timeStyle: 'short'});
-        return this.format(game.startsUtc, zone) + ' to ' + time.format(new Date(game.endsUtc));
+        const crossesMidnight = this.localInput(game.startsUtc, zone).slice(0, 10) !== this.localInput(game.endsUtc, zone).slice(0, 10);
+        return this.format(game.startsUtc, zone) + ' to ' + (crossesMidnight ? this.format(game.endsUtc, zone) : time.format(new Date(game.endsUtc)));
+    }
+
+    discoveryLocation(card: SessionCard): string {
+        return [card.city, [card.region, card.postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    }
+
+    discoveryTime(card: SessionCard): string {
+        return this.sessionTime({startsUtc: card.startsUtc, endsUtc: card.endsUtc, venue: {timeZone: card.timeZone}});
     }
 
     venueZoneLabel(venue: Venue): string {
@@ -151,11 +171,48 @@ export class PickupComponent implements OnInit {
         return name || this.zoneLabel(zone);
     }
 
+    search(location?: string): void {
+        if (location !== undefined) this.filters.location = location;
+        if (location !== undefined || this.filters.location.trim()) this.deviceLocation = undefined;
+        void this.load();
+    }
+
+    clearFilters(): void {
+        this.filters = discoveryDefaults();
+        this.search('');
+    }
+
+    expandRadius(): void {
+        this.filters.radius = [5, 10, 25, 50].find(miles => miles > this.filters.radius) ?? 50;
+        void this.load();
+    }
+
+    useLocation(): void {
+        if (!navigator.geolocation) {
+            this.notifications.error('Location is unavailable. Enter a city, ZIP code, or facility.');
+            return;
+        }
+        this.locating = true;
+        navigator.geolocation.getCurrentPosition(({coords}) => {
+            this.locating = false;
+            if (this.view !== 'find') return;
+            // Send a rounded search origin only. Do not persist device coordinates.
+            this.deviceLocation = {latitude: Math.round(coords.latitude * 100) / 100,
+                longitude: Math.round(coords.longitude * 100) / 100};
+            this.filters.location = '';
+            void this.load();
+        }, () => {
+            this.locating = false;
+            this.notifications.error('Could not use your location. You can still search by city, ZIP code, or facility.');
+        }, {timeout: 10000, enableHighAccuracy: false});
+    }
+
     async load(page = 0): Promise<void> {
         const request = ++this.request;
         this.loading = true;
         this.error = '';
         this.page = page;
+        this.locationError = '';
         try {
             if (this.id) {
                 const session = await firstValueFrom(this.http.get<Session>(this.sessionUrl()));
@@ -170,16 +227,32 @@ export class PickupComponent implements OnInit {
             } else if (this.view === 'find') {
                 let params = new HttpParams().set('page', page);
                 for (const [key, value] of Object.entries(this.filters)) if (value) params = params.set(key, value);
-                const result = await firstValueFrom(this.http.get<{sessions: SessionCard[]; hasMore: boolean}>('/api/pickup/sessions', {params}));
+                if (this.deviceLocation) params = params.set('latitude', this.deviceLocation.latitude).set('longitude', this.deviceLocation.longitude);
+                const result = await firstValueFrom(this.http.get<{sessions: SessionCard[]; hasMore: boolean; locationChoices: string[]}>('/api/pickup/sessions', {params}));
                 if (request === this.request) {
                     this.sessions = result.sessions;
                     this.hasMore = result.hasMore;
+                    this.locationChoices = result.locationChoices;
+                    if (!this.deviceLocation) {
+                        try {
+                            if (this.filters.location.trim()) localStorage.setItem('pickup-discovery-location', this.filters.location.trim());
+                            else localStorage.removeItem('pickup-discovery-location');
+                        } catch { /* Optional preference. */ }
+                    }
                 }
             } else if (!this.view) {
                 await this.loadResume(request);
             }
         } catch (error) {
-            if (request === this.request) this.error = error.status === 404 ? 'This session is unavailable.' :
+            if (request === this.request && this.view === 'find') {
+                this.sessions = [];
+                this.locationChoices = [];
+                if (error.error?.field === 'location') this.locationError = this.describeError(error);
+                else {
+                    this.error = 'Unable to load games. Try again.';
+                    this.notifications.error(this.error);
+                }
+            } else if (request === this.request) this.error = error.status === 404 ? 'This session is unavailable.' :
                 error.status === 401 ? 'Sign in to view your sessions.' : this.describeError(error);
         } finally { if (request === this.request) this.loading = false; }
     }
@@ -281,7 +354,6 @@ export class PickupComponent implements OnInit {
 
     setStartNow(value: boolean): void {
         this.form.startNow = value;
-        this.form.deadlinePolicy = value ? 'end' : 'start';
         this.clearField('start');
         this.clearField('deadline');
     }
