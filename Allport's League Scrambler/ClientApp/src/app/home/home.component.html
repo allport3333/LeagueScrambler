@@ -65,6 +65,7 @@
               <button type="button" (click)="loginError = ''; loginEmailInput.focus()" aria-label="Dismiss sign-in message">Close</button>
             }
           </div>
+          <p class="legal-form-links"><a routerLink="/privacy">Privacy Policy</a> <span aria-hidden="true">&middot;</span> <a routerLink="/terms">Terms of Service</a></p>
         </form>
       }
 
@@ -116,6 +117,7 @@
           <br />
           <button mat-raised-button color="primary" type="submit" [disabled]="registrationPending || !registerForm.valid || registerForm.hasError('passwordMismatch')" style="margin-right: 10px;">Submit</button>
           <button mat-button type="button" [disabled]="registrationPending" (click)="cancel()">Cancel</button>
+          <p class="legal-form-links"><a routerLink="/privacy">Privacy Policy</a> <span aria-hidden="true">&middot;</span> <a routerLink="/terms">Terms of Service</a></p>
         </form>
       </div>
     }

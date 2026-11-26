@@ -1,0 +1,59 @@
+<article class="legal-document">
+  <header>
+    <p>Allport's League Hub</p>
+    <h1>{{ privacy ? 'Privacy Policy' : 'Terms of Service' }}</h1>
+    @if (privacy) {
+      <p>How Allport's League Hub collects, uses, and protects your information.</p>
+    } @else {
+      <p>Rules and responsibilities for using Allport's League Hub.</p>
+    }
+    <p>Review draft dated November 26, 2026. Effective date and official contact are pending approval.</p>
+  </header>
+  @if (privacy) {
+    <h2>Information we collect</h2>
+    <p>When you register, League Hub collects your name and email address and stores a password hash and account identifier. A linked player profile can have its own name, gender information when provided, and player identifier. League and tournament records can include memberships, divisions, scheduled events, attendance, team assignments, scores, and standings.</p>
+    <p>Pickup organizers supply game details such as the sport, venue, schedule, skill level, and registration rules. Pickup records can include registration, attendance, saved teams, and scores. Guests provide a name and email address for verification. League Hub uses the email to send the link and stores an email fingerprint to identify repeat requests. Account recovery can also involve contact details and verification information you submit.</p>
+    <h2>How we use information</h2>
+    <p>League Hub uses this information to run accounts and sign-in, link player records, organize events, manage attendance and registrations, generate matchups, show scoring history, send verification and recovery messages, and protect the service against abuse.</p>
+    <h2>Google sign-in</h2>
+    <p>Google sign-in is not available in this version of League Hub. The application currently requests no Google account permissions and does not receive or store Google account identifiers, profile information, or tokens through Google sign-in. This section needs to be updated before Google sign-in is made available to describe the data actually requested, its use, storage, sharing, and account linking.</p>
+    <h2>Who can see information</h2>
+    <p>Player names, rosters, team assignments, attendance information, or results may be visible through league and tournament pages according to the event and the viewer's access. Public Pickup listings show game details such as the venue and schedule. The session page can show the organizer's display name and registration counts. An unlisted session is omitted from discovery, but a person with its link may be able to view it. Private sessions require authorization. Guest registration contact information is not displayed in public discovery or on public session pages.</p>
+    <h2>Location information</h2>
+    <p>Pickup discovery uses facility addresses, saved coordinates where available, and postal locality references. An approximate city or ZIP can be used for search and estimated distance. If you choose Use My Location and grant browser permission, League Hub makes a one-time location request and sends rounded coordinates with the search. The feature does not continuously track your location or save those coordinates to your account. A manually entered search location may be remembered in your browser.</p>
+    <h2>Cookies and related technologies</h2>
+    <p>League Hub uses a sign-in cookie for its account session and a session-specific cookie to recognize verified Pickup guests. Browser storage can remember appearance, an event selection, and parts of your workspace. An installed web app can cache site assets. The application uses connection information such as IP addresses to limit abusive requests. Hosting and infrastructure may also record operational request information.</p>
+    <h2>Sharing and service providers</h2>
+    <p>League Hub makes event information available to organizers, participants, and other viewers as described above. The hosting infrastructure processes requests and stores application records. Email delivery providers process the recipient address and message contents needed to deliver verification, account recovery, or other transactional mail. The site references assets from Google Fonts and a Cloudflare content delivery service. If your browser fetches those assets directly, those providers receive the request and its technical connection information.</p>
+    <h2>Security</h2>
+    <p>League Hub uses HTTPS, access controls, password hashing, and expiring verification links. These measures reduce risk, but no online service can guarantee absolute security.</p>
+    <h2>Retention, access, and deletion</h2>
+    <p>You can review information shown on your profile or in your sessions. Where offered, use the account settings to change your email address and ask your organizer to correct a roster or result. Cancelling a Pickup registration or session does not delete its history. Permanent session deletion removes session-specific records while preserving shared user and player records. Game results may involve several players and need review before individual records can be removed. League Hub does not provide a self-service account deletion tool.</p>
+    <h2>Children's privacy</h2>
+    <p>League Hub can display player records supplied by organizers. The current registration form does not verify age or collect parental consent. The operator must confirm the eligibility and parental consent process before these terms take effect.</p>
+    <h2>Contact and changes</h2>
+    <p>A public contact and request process for privacy questions, access, corrections, or deletion still need approval. Updates to this policy will be posted here with a revised date. How the operator will give notice of material changes also needs approval.</p>
+    <p>See the <a routerLink="/terms">Terms of Service</a>.</p>
+  } @else {
+    <h2>Acceptance and updates</h2>
+    <p>Once effective, these terms apply when you use League Hub. Updates will be posted on this page. The operator will confirm how material changes are announced before these terms take effect.</p>
+    <h2>Accounts and eligibility</h2>
+    <p>Give accurate information, protect your sign-in credentials, and use only accounts and player profiles you are authorized to use. If an external sign-in option becomes available, use an account you are authorized to control. Age and consent requirements still need operator approval.</p>
+    <h2>Leagues and tournaments</h2>
+    <p>League Hub helps organizers manage schedules, rosters, attendance, team generation, and results. Organizers should record information accurately and make corrections through the available tools. Participants should follow their event's rules and coordinate schedule or roster issues with their organizer.</p>
+    <h2>Pickup Games</h2>
+    <p>Individual organizers can list sessions, set a venue and schedule, choose visibility, set participant limits or approval requirements, and change or cancel their sessions. Organizers should provide accurate listings, have permission to use the facility, and let participants know about material changes. Participants should check the latest listing and follow the organizer's registration and participation rules. League Hub provides the software used to organize sessions. The people running a listed game are responsible for how it is conducted.</p>
+    <h2>Accuracy and availability</h2>
+    <p>Schedules, locations, attendance, and scores depend on information supplied by organizers and participants. A listing does not guarantee a game will take place. The software may change or experience interruptions.</p>
+    <h2>Sports participation and safety</h2>
+    <p>Recreational sports involve physical risks. Consider your ability and health, use suitable equipment, and follow venue rules and instructions from the organizer. Contact the venue or organizer with questions about physical conditions or supervision.</p>
+    <h2>Acceptable use and submitted content</h2>
+    <p>Do not create fraudulent accounts, harass others, post misleading listings, access information without authorization, manipulate scores or attendance, misuse personal information, or disrupt the service. Submit only content you are authorized to share. Organizers can manage their registrations and cancel their listings. Authorized creators and administrators can permanently delete Pickup sessions.</p>
+    <h2>Cancellation, deletion, and accounts</h2>
+    <p>Leaving a game ends your participation. Cancelling a session closes registration while preserving the session and its history, and an authorized organizer may reopen it. Permanent deletion removes the session and its associated Pickup history. The process for account closure and requests involving shared event history still needs operator approval.</p>
+    <h2>Privacy</h2>
+    <p>See our <a routerLink="/privacy">Privacy Policy</a> for how League Hub handles account and event information.</p>
+    <h2>Legal terms and contact</h2>
+    <p>The operator must approve the applicable law, dispute process, any further service limitations, and the official contact before adopting these terms.</p>
+  }
+</article>

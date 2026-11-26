@@ -1,0 +1,15 @@
+.legal-document {
+    box-sizing: border-box;
+    max-width: 74ch;
+    margin: 1.25rem auto;
+    padding: clamp(1rem, 4vw, 2rem);
+    line-height: 1.65;
+    color: var(--hub-text, #172534);
+    background: var(--hub-surface, #fff);
+    border: 1px solid var(--hub-border, #cbd5df);
+    border-radius: .5rem;
+}
+.legal-document header { text-align: center; }
+.legal-document h2 { font-size: 1.25rem; margin: 1.5rem 0 .4rem; }
+.legal-document p { margin: 0 0 .75rem; }
+.legal-document a { color: var(--hub-link, #315a97); }

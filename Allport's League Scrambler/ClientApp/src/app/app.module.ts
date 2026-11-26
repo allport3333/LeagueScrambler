@@ -176,6 +176,8 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
             { path: 'tournament/:leagueId', data: { tournamentContext: true }, canDeactivate: [(component: { canLeave(): Promise<boolean> }) => component.canLeave()], canActivate: [requireSignedInTournament], loadComponent: () => import('./tournament-center.component').then(m => m.TournamentCenterComponent) },
             { path: 'tournament/:leagueId/rounds', data: { tournamentContext: true }, loadComponent: () => import('./tournament-matchups.component').then(m => m.TournamentMatchupsComponent) },
             { path: 'tournament/:leagueId/check-in', redirectTo: ({ params }) => inject(Router).createUrlTree(['/'], { queryParams: { leagueId: params['leagueId'] }, fragment: 'attendance' }), pathMatch: 'full' },
+            { path: 'privacy', title: "Privacy Policy | Allport's League Hub", data: { document: 'privacy' }, loadComponent: () => import('./legal/legal.component').then(m => m.LegalComponent) },
+            { path: 'terms', title: "Terms of Service | Allport's League Hub", loadComponent: () => import('./legal/legal.component').then(m => m.LegalComponent) },
             { path: '', component: HomeComponent, pathMatch: 'full' },
             { path: '', component: ScramblerWorkspaceComponent, children: [
                     { path: 'scrambler', component: WorkspaceRouteComponent },

@@ -562,3 +562,16 @@ html { @include mat.form-field-overrides((
   --mat-option-selected-state-layer-color: var(--hub-header, #e1e8f2);
   --mat-option-selected-state-label-text-color: var(--hub-text, #263444);
 }
+
+.legal-footer {
+    margin: 1.5rem 15px 0;
+    padding: .75rem;
+    text-align: center;
+    border-top: 1px solid var(--hub-border, #cbd5df);
+}
+.legal-footer a, .legal-form-links a { color: var(--hub-link, #315a97); }
+.legal-footer a:focus-visible, .legal-form-links a:focus-visible, .legal-document a:focus-visible {
+    outline: 2px solid var(--hub-focus, #315a97);
+    outline-offset: 3px;
+}
+@media print { .legal-footer { display: none; } }

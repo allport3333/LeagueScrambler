@@ -181,6 +181,7 @@
             <label>Name<input name="guestName" autocomplete="name" required maxlength="100" [(ngModel)]="join.name"></label>
             <label>Email address<input name="guestEmail" autocomplete="email" type="email" email required maxlength="254" [(ngModel)]="join.email"></label>
             <button class="primary" [disabled]="busy || guest.invalid">{{ joinLabel }}</button>
+            <p class="legal-form-links"><a routerLink="/privacy">Privacy Policy</a> <span aria-hidden="true">&middot;</span> <a routerLink="/terms">Terms of Service</a></p>
           </form>
         }
       } @else if (game.state !== 4) { <p>Registration is closed.</p> }
