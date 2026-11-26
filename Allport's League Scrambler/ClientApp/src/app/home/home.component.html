@@ -1,3 +1,8 @@
+@if (isLoggedIn || (!showLoginForm && !showRegistrationForm)) {
+  <div class="public-game-action">
+    <a mat-raised-button color="primary" routerLink="/pickup/find">Pickup Games</a>
+  </div>
+}
 @if (authenticationChecked && isLoggedIn) {
   @if (eventContext | async; as context) {
     @switch (context.kind) {

@@ -16,9 +16,14 @@ public static class PickupEnvironment
     public static string Database => DisposableTest ? "LeagueScramblerPickupTest" : "LeagueScramblerDev";
     private static string productionOrigin;
     public static bool Enabled => Requested || productionOrigin != null;
-    public static string Origin => Requested ? (DisposableTest ? "https://localhost:5003" : "https://localhost:5002") : productionOrigin;
+    public static string Origin => Requested
+        ? (DisposableTest ? "https://localhost:5003" : MainDevelopment ? "https://localhost:5001" : "https://localhost:5002")
+        : productionOrigin;
     public static string CookieName => DisposableTest ? ".LeagueHub.PickupTest" : ".LeagueHub.PickupSharedDev";
     public static bool Requested => Environment.GetEnvironmentVariable("LEAGUE_HUB_PICKUP_DEV") == "1";
+    public static bool MainDevelopment => Requested && !DisposableTest &&
+        Environment.GetEnvironmentVariable("LEAGUE_HUB_PICKUP_MAIN_DEV") == "1";
+    public static bool IsolatedDevelopment => Requested && !MainDevelopment;
     public static string LocalDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LeagueHub", DisposableTest ? "PickupTest" : "PickupSharedDev");
 

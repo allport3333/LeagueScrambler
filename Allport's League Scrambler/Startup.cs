@@ -29,13 +29,15 @@ namespace Allport_s_League_Scrambler
         public Startup(IConfiguration configuration, IWebHostEnvironment environment)
         {
             var localSettings = System.IO.Path.Combine(environment.ContentRootPath, ".env");
-            if (PickupEnvironment.Requested)
-                PickupEnvironment.Configure(environment);
-            else if (System.IO.File.Exists(localSettings))
-                DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { localSettings }, overwriteExistingVars: false));
-            else
-                DotEnv.Load(options: new DotEnvOptions(probeForEnv: true, probeLevelsToSearch: 6, overwriteExistingVars: false));
+            if (!PickupEnvironment.IsolatedDevelopment)
+            {
+                if (System.IO.File.Exists(localSettings))
+                    DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { localSettings }, overwriteExistingVars: false));
+                else
+                    DotEnv.Load(options: new DotEnvOptions(probeForEnv: true, probeLevelsToSearch: 6, overwriteExistingVars: false));
+            }
 
+            PickupEnvironment.Configure(environment);
             PickupEnvironment.ConfigureProduction(environment);
             Configuration = configuration;
         }
@@ -59,7 +61,7 @@ namespace Allport_s_League_Scrambler
                     options.Events.OnValidatePrincipal = LeagueAccess.RefreshAccountRole;
                     options.LoginPath = "/"; // Set the login page
                     options.AccessDeniedPath = ""; // Set the access denied page
-                    if (PickupEnvironment.Requested) options.Cookie.Name = PickupEnvironment.CookieName;
+                    if (PickupEnvironment.IsolatedDevelopment) options.Cookie.Name = PickupEnvironment.CookieName;
                     options.Cookie.HttpOnly = true; // Ensure cookies are only accessible via HTTP
                     options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Require HTTPS for authentication cookies
                     options.Cookie.SameSite = SameSiteMode.Lax; // Adjust SameSite mode as needed
@@ -86,7 +88,7 @@ namespace Allport_s_League_Scrambler
                     context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                     _ => new FixedWindowRateLimiterOptions { PermitLimit = 12, Window = TimeSpan.FromMinutes(5) }));
             });
-            if (PickupEnvironment.Requested)
+            if (PickupEnvironment.IsolatedDevelopment)
                 services.AddDataProtection().SetApplicationName(PickupEnvironment.Database)
                     .PersistKeysToFileSystem(Directory.CreateDirectory(Path.Combine(PickupEnvironment.LocalDirectory, "keys")));
             services.AddAuthorization(options =>
@@ -169,7 +171,7 @@ namespace Allport_s_League_Scrambler
                 spa.Options.SourcePath = System.IO.Path.Combine(env.ContentRootPath, "ClientApp");
                 spa.Options.DefaultPageStaticFileOptions = PwaStaticFiles();
 
-                if (env.IsDevelopment() && !PickupEnvironment.Requested)
+                if (env.IsDevelopment() && !PickupEnvironment.IsolatedDevelopment)
                 {
                     spa.UseAngularCliServer(npmScript: "start");
                 }

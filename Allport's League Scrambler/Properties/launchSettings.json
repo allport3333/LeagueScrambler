@@ -5,7 +5,9 @@
       "launchBrowser": true,
       "applicationUrl": "https://localhost:5001;http://localhost:5000",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "LEAGUE_HUB_PICKUP_DEV": "1",
+        "LEAGUE_HUB_PICKUP_MAIN_DEV": "1"
       }
     },
     "Pickup Development": {
