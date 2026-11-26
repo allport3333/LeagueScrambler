@@ -28,7 +28,7 @@ public sealed partial class PickupController
             && (s.OrganizerId == account || db.PickupRegistrations.Any(r => r.SessionId == s.Id && r.AccountId == account
                 && (r.State == RegistrationState.Confirmed || r.State == RegistrationState.PendingApproval || r.State == RegistrationState.Waitlisted))))
             .OrderByDescending(s => s.State == SessionState.InProgress).ThenBy(s => s.StartsUtc).ThenBy(s => s.Id)
-            .Take(100).Select(s => new { s.Id, s.Name }).ToListAsync());
+            .Take(100).Select(s => new { s.Id, s.Name, s.State }).ToListAsync());
     }
 
     [HttpGet("sessions/{id:guid}/workspace")]

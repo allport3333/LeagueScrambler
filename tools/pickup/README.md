@@ -17,7 +17,7 @@ Pickup uses Windows integrated authentication for local SQL Server. Its authenti
 ## Architecture
 
 - Existing `LeagueType.EventTypeId` values include Pickup, but joining traditional league flows would add permanent `PlayersLeague` membership. Pickup does not use those flows or allocate `LeagueType` rows. It uses its own session UUID.
-- `PickupVenue` stores a reusable facility address, IANA time zone and optional coordinates. Discovery filters stored city and postal code, sport, local date, skill and availability. Discovery uses an offline US ZIP-to-locality index and computes radius matches for venues with stored coordinates. A city-only match has no mileage.
+- `PickupVenue` stores a reusable facility address, IANA time zone and optional coordinates. Discovery filters stored city and postal code, sport, local date, skill and availability. Discovery uses an offline US ZIP-to-locality index and uses stored venue coordinates first, then ZIP and unambiguous city/state reference points for radius matches. Locality distances are estimates.
 - `PickupSession` references its organizer's existing `User` and a venue. States are Draft, Published, In Progress, Completed and Cancelled. This phase creates Published sessions and supports cancellation. It stores UTC instants plus the venue-local calendar date. Invalid or ambiguous local times are rejected.
 - `PickupRegistration` references a session, and optionally an existing `User` and `Player` through the existing `UsersPlayer` association. A guest is a session-scoped registration with a contact fingerprint, never a new global player. An independently verified account-linking flow can later attach a verified guest row without replacing its registration ID.
 - Unique session/account and session/contact indexes prevent duplicate entries. SQL Server transaction-scoped application locks serialize joins, verification, approval, edits and cancellations for a session. Open registration uses a nullable capacity. For a capped session, only Confirmed rows consume capacity, and a waitlisted registration moves up when a spot opens. A verification link does not reserve a place. Declined, Cancelled and other historical rows are retained.
@@ -80,7 +80,7 @@ node tests/functional/scripts/pickup-workspace.cjs
 
 ## Postal-locality data
 
-The embedded us-postal-localities.tsv.gz derives from the [GeoNames US postal code download](https://download.geonames.org/export/zip/US.zip), retrieved November 25, 2026. GeoNames distributes the data under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The file retains source columns 2, 3, 4, 5, 10, and 11, in that order. Postal points are search origins. Venue mileage requires stored venue coordinates. No external lookup runs during search. The catalog describes postal localities and does not supply venue addresses or municipal boundaries.
+The embedded us-postal-localities.tsv.gz derives from the [GeoNames US postal code download](https://download.geonames.org/export/zip/US.zip), retrieved November 25, 2026. GeoNames distributes the data under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The file retains source columns 2, 3, 4, 5, 10, and 11, in that order. Postal points supply search origins and approximate venue points when facility coordinates are absent. City and state can supply an approximate point when ZIP data is unavailable. No external lookup runs during search. The catalog describes postal localities and does not supply venue addresses or municipal boundaries.
 
 ## Production
 

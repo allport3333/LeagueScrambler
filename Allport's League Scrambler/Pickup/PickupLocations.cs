@@ -57,9 +57,8 @@ internal static class PickupLocations
         var matches = rows.Where(row => state.Length == 0 || row.Locality.State == state).ToArray();
         var locations = matches.Select(row => row.Locality).ToHashSet();
         var ambiguous = postal.Length != 5 && locations.Select(location => location.State).Distinct().Count() > 1;
-        var points = matches.Select(row => row.Point).Distinct().ToArray();
-        Point[] centers = ambiguous || points.Length == 0 ? [] :
-            [new Point(points.Average(point => point.Latitude), points.Average(point => point.Longitude))];
+        var center = ambiguous ? null : ReferencePoint(matches);
+        Point[] centers = center == null ? [] : [center];
         var choices = ambiguous ? locations.Select(location => parts[0] + ", " + location.State).Order().ToArray() : [];
         return new Search(text, locations, centers, choices, locations.Count != 0, state);
     }
@@ -72,7 +71,8 @@ internal static class PickupLocations
         var us = Normalize(country) is "" or "US" or "USA" or "UNITED STATES";
         var venueLocality = new Locality(cityName, state);
         var zip = PostalCode(postalCode);
-        var zipLocalities = us && zip.Length == 5 ? Zip.Value[zip].Select(r => r.Locality).ToArray() : [];
+        var postalRows = us && zip.Length == 5 ? Zip.Value[zip].ToArray() : [];
+        var zipLocalities = postalRows.Select(row => row.Locality).ToArray();
         var exactPostal = us && zip.Length == 5 && zip == PostalCode(search.Text);
         var matchingLocality = us && (search.Localities.Contains(venueLocality) ||
             zipLocalities.Any(place => (state.Length == 0 || place.State == state) && search.Localities.Contains(place)));
@@ -84,15 +84,28 @@ internal static class PickupLocations
         var facilityMatch = search.Text.Length != 0 && !qualifiedCity && !search.Known &&
             Normalize(facility).Contains(search.Text, StringComparison.Ordinal);
         if (search.Text.Length == 0 && search.Centers.Count == 0) return new Match(null, false, false);
-        if (ValidPoint(latitude, longitude) && search.Centers.Count != 0)
+        var facilityPoint = ValidPoint(latitude, longitude);
+        if (search.Centers.Count != 0)
         {
-            var point = new Point(latitude.Value, longitude.Value);
-            var miles = search.Centers.Min(center => Distance(center, point));
-            return miles <= radius ? new Match(Math.Round(miles, 1), false, false) : null;
+            var point = facilityPoint ? new Point(latitude.Value, longitude.Value)
+                : ReferencePoint(postalRows.Where(row => state.Length == 0 || row.Locality.State == state));
+            if (point == null && us && state.Length != 0 && cityName.Length != 0)
+                point = ReferencePoint(Cities.Value[cityName].Where(row => row.Locality == venueLocality));
+            if (point != null)
+            {
+                var miles = search.Centers.Min(center => Distance(center, point));
+                return miles <= radius ? new Match(Math.Round(miles, 1), !facilityPoint, false) : null;
+            }
         }
         if (exactPostal || matchingLocality || possibleLegacy || localTextMatch || facilityMatch)
             return new Match(null, !ValidPoint(latitude, longitude), possibleLegacy);
         return null;
+    }
+
+    private static Point ReferencePoint(IEnumerable<PostalRow> rows)
+    {
+        var points = rows.Select(row => row.Point).Where(point => ValidPoint(point.Latitude, point.Longitude)).Distinct().ToArray();
+        return points.Length == 0 ? null : new Point(points.Average(p => p.Latitude), points.Average(p => p.Longitude));
     }
 
     internal static (string City, string Region) Display(string city, string region, string postalCode, string country)

@@ -262,10 +262,10 @@
             <p>{{ discoveryTime(card) }}</p>
             @if (card.timing != null) {
               <p><strong>{{ ['Playing Now', 'Starting Soon', 'Upcoming'][card.timing] }}</strong>
-                @if (card.distanceMiles != null) { &middot; {{ card.distanceMiles }} mi }
+                @if (card.distanceMiles != null) { &middot; {{ distanceLabel(card.distanceMiles, card.approximateLocation) }} }
               </p>
               @if (card.locationUnconfirmed) { <p class="location-note">Possible locality match. Confirm the facility's state.</p> }
-              @else if (card.approximateLocation) { <p class="location-note">Locality match. Distance unavailable.</p> }
+              @else if (card.approximateLocation && card.distanceMiles == null) { <p class="location-note">Locality match. Distance unavailable.</p> }
             }
             <p>
               @if (card.state === 4) { Cancelled }

@@ -39,6 +39,8 @@ withPickupTestHost(async origin => {
         const closed = await create('Cross-midnight', {region: '', deadline: '2020-01-01T12:00'});
         const zipOnly = await create('ZIP only', {city: '', region: '', postalCode: '48066'});
         const cityOnly = await create('City only');
+        const justInside = await create('Just inside');
+        const justOutside = await create('Just outside');
         const shortly = await create('Soon', {startNow: false, start: localInput(new Date(Date.now() + 3600000))});
         const upcoming = await create('Upcoming', {startNow: false, start: localInput(new Date(Date.now() + 3 * 86400000))});
         const point = await create('Coordinate fixture', {city: 'Detroit'});
@@ -61,14 +63,21 @@ withPickupTestHost(async origin => {
             `IF DB_NAME() <> N'LeagueScramblerPickupTest' THROW 51000,'Wrong test database',1;
              UPDATE dbo.PickupSession SET StartsUtc='${start}', EndsUtc='${end}', LocalDate='${yesterday}', State=2 WHERE Id='${closed}';
              UPDATE v SET Latitude=42.3314,Longitude=-83.0458 FROM dbo.PickupVenue v
-             JOIN dbo.PickupSession s ON s.VenueId=v.Id WHERE s.Id='${point}';`]);
+             JOIN dbo.PickupSession s ON s.VenueId=v.Id WHERE s.Id='${point}';
+             UPDATE v SET Latitude=42.5743,Longitude=-82.9387 FROM dbo.PickupVenue v JOIN dbo.PickupSession s ON s.VenueId=v.Id WHERE s.Id='${justInside}';
+             UPDATE v SET Latitude=42.5772,Longitude=-82.9387 FROM dbo.PickupVenue v JOIN dbo.PickupSession s ON s.VenueId=v.Id WHERE s.Id='${justOutside}';`]);
 
         const guest = await browser.newContext({ignoreHTTPSErrors: true, serviceWorkers: 'block', viewport: {width: 1366, height: 850}});
         const page = await guest.newPage();
         async function search(params) {
-            const response = await guest.request.get(origin + '/api/pickup/sessions', {params});
-            assert.equal(response.status(), 200, await response.text());
-            return (await response.json()).sessions;
+            const rows = [];
+            for (let page = 0; ; page++) {
+                const response = await guest.request.get(origin + '/api/pickup/sessions', {params: {...params, page}});
+                assert.equal(response.status(), 200, await response.text());
+                const result = await response.json();
+                rows.push(...result.sessions);
+                if (!result.hasMore) return rows;
+            }
         }
         for (const location of ['Roseville, MI', '48066']) {
             const rows = await search({location});
@@ -79,13 +88,27 @@ withPickupTestHost(async origin => {
             assert.equal(relevant.find(row => row.id === closed).timing, 0);
             assert.equal(relevant.find(row => row.id === shortly).timing, 1);
             assert.equal(relevant.find(row => row.id === upcoming).timing, 2);
-            assert.equal(relevant.find(row => row.id === cityOnly).distanceMiles, null);
+            assert.equal(relevant.find(row => row.id === cityOnly).distanceMiles, 0);
+            assert.equal(relevant.find(row => row.id === cityOnly).approximateLocation, true);
+            assert.equal(relevant.find(row => row.id === closed).distanceMiles, null);
         }
         const exactRows = await search({location: '00000', radius: 25});
         assert(exactRows.some(row => row.id === exactWithoutLookup && row.distanceMiles === null));
         const zipResult = (await search({location: '48066'})).find(row => row.id === zipOnly);
         assert.equal(zipResult.displayCity, 'Roseville');
         assert.equal(zipResult.displayRegion, 'MI');
+        for (const location of ['48081', 'Saint Clair Shores, MI']) {
+            const nearby = await search({location, radius: 5});
+            for (const id of [zipOnly, cityOnly]) {
+                const row = nearby.find(result => result.id === id);
+                assert(row && row.distanceMiles > 2 && row.distanceMiles < 3 && row.approximateLocation);
+            }
+        }
+        const fiveMiles = await search({location: '48066', radius: 5});
+        assert(fiveMiles.some(row => row.id === justInside && row.distanceMiles === 4.9 && !row.approximateLocation));
+        assert(!fiveMiles.some(row => row.id === justOutside));
+        assert((await search({location: '48066', radius: 10})).some(row => row.id === justOutside && row.distanceMiles === 5.1));
+        assert(!(await search({location: '90210', radius: 50})).some(row => row.id === zipOnly));
         const unqualified = await search({location: 'Roseville'});
         assert(unqualified.some(r => r.id === closed));
         assert((await search({location: '48066', radius: 25})).some(r => r.id === point && r.distanceMiles > 5));
@@ -104,6 +127,8 @@ withPickupTestHost(async origin => {
         await expect(page.getByRole('link', {name: 'Create Pickup Game'})).toHaveCount(0);
         await page.getByRole('link', {name: 'Find Pickup Games', exact: true}).click();
         await expect(page.getByLabel('Where do you want to play?')).toBeVisible();
+        await page.getByText('More Filters', {exact: true}).click();
+        await page.getByLabel('Date', {exact: true}).fill(yesterday);
         for (const [width, theme, location] of [[1366, 'classic', 'Roseville'], [390, 'navy', '48066'], [768, 'charcoal', 'Roseville, MI']]) {
             await page.setViewportSize({width, height: 850});
             await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
@@ -115,8 +140,6 @@ withPickupTestHost(async origin => {
             await expect(card.getByText('Registration Closed', {exact: true})).toBeVisible();
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
         }
-        await page.getByText('More Filters', {exact: true}).click();
-        await page.getByLabel('Date', {exact: true}).fill(yesterday);
         await page.getByRole('button', {name: 'Find Games', exact: true}).click();
         await expect(page.locator('article').filter({hasText: 'Cross-midnight ' + token})).toBeVisible();
         await page.route('**/api/pickup/sessions?*', async route => {

@@ -120,7 +120,6 @@ withPickupTestHost(async origin => {
             await organizer.screenshot({path: path.join(screenshots, [count, width, theme].join('-') + '.png')});
         }
 
-        const session = await create('Workspace');
         await organizer.goto(origin + '/');
         await expect(organizer.locator('#leagueDropdown')).toContainText('Fixture League');
         const savedLeague = () => organizer.evaluate(() => sessionStorage.getItem('league-hub-selected-league'));
@@ -132,6 +131,18 @@ withPickupTestHost(async origin => {
             const pickup = menu.getByRole('button', {name: /^Pickup Games/});
             if (await pickup.getAttribute('aria-expanded') !== 'true') await pickup.click();
         }
+        async function checkPickupActions(active = false) {
+            const actions = menu.locator('#event-category-3 a');
+            await expect(actions).toHaveText(active ?
+                [/My Sessions/, /Find Pickup Games/, /Create Pickup Game/, /Continue Pickup Session/] :
+                [/My Sessions/, /Find Pickup Games/, /Create Pickup Game/]);
+            await expect(menu.getByRole('link', {name: 'Create Pickup Game'})).toHaveCSS('font-weight', active ? '400' : '650');
+            if (active) await expect(menu.getByRole('link', {name: 'Continue Pickup Session'})).toHaveCSS('font-weight', '650');
+        }
+        await openPickupMenu();
+        await checkPickupActions();
+        await organizer.keyboard.press('Escape');
+        const session = await create('Workspace');
         await selector.click();
         await menu.getByRole('button', {name: /^Tournaments/}).click();
         await expect(menu.getByRole('link', {name: 'Manage Tournaments'})).toHaveAttribute('href', '/tournament');
@@ -160,6 +171,7 @@ withPickupTestHost(async origin => {
         await openPickupMenu();
         await expect(menu.getByRole('link', {name: 'Pickup Games', exact: true})).toHaveCount(0);
         await expect(menu.getByText('Workspace ' + token)).toHaveCount(0);
+        await checkPickupActions();
         await menu.getByRole('link', {name: 'Create Pickup Game'}).click();
         await expect(organizer.getByRole('heading', {name: 'Create a Pickup Game'})).toBeVisible();
         await openPickupMenu();
@@ -251,6 +263,7 @@ withPickupTestHost(async origin => {
         await organizer.goto(origin + '/pickup');
         await expect(organizer.getByRole('link', {name: /Continue Pickup Session/})).toBeVisible();
         await openPickupMenu();
+        await checkPickupActions(true);
         await menu.getByRole('link', {name: 'Continue Pickup Session'}).click();
         await expect(organizer.getByRole('tab', {name: 'Teams & Scores'})).toHaveAttribute('aria-selected', 'true');
         const secondSetToggle = organizer.getByRole('button', {name: /Game Set 2/});
@@ -275,6 +288,9 @@ withPickupTestHost(async origin => {
         assert.equal((await api(organizer, session.api)).data.state, 2);
         await cancel.getByRole('button', {name: 'Cancel Session'}).click();
         await expect(organizer.getByText('Session cancelled. Previous registrations are preserved.')).toBeVisible();
+        await openPickupMenu();
+        await checkPickupActions();
+        await organizer.keyboard.press('Escape');
         assert.equal((await api(player, session.api + '/reopen', 'POST', {})).status, 404);
         await organizer.getByRole('button', {name: 'Reopen Session', exact: true}).click();
         await organizer.getByRole('alertdialog').getByRole('button', {name: 'Reopen Session'}).click();
@@ -285,6 +301,9 @@ withPickupTestHost(async origin => {
         await organizer.getByRole('button', {name: 'Complete Session', exact: true}).click();
         await organizer.getByRole('alertdialog').getByRole('button', {name: 'Complete Session'}).click();
         await expect(organizer.getByText('Completed', {exact: true})).toBeVisible();
+        await openPickupMenu();
+        await checkPickupActions();
+        await organizer.keyboard.press('Escape');
         await organizer.reload();
         assert.equal((await api(organizer, session.api + '/workspace')).data.gameSets, 2);
         await selector.click();

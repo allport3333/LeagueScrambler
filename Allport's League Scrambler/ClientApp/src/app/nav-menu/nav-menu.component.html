@@ -43,18 +43,18 @@
                     }
                     @if (group.id === 3) {
                       <div class="tournament-event-actions">
-                        <a class="event-choice" routerLink="/pickup/find" (click)="closeEventSelector()">
-                          <mat-icon aria-hidden="true">search</mat-icon><span>Find Pickup Games</span>
-                        </a>
                         @if (loggedIn) {
-                          <a class="event-choice create-tournament" routerLink="/pickup/create" (click)="closeEventSelector()">
-                            <mat-icon aria-hidden="true">add</mat-icon><span>Create Pickup Game</span>
-                          </a>
                           <a class="event-choice" routerLink="/pickup/mine" (click)="closeEventSelector()">
                             <mat-icon aria-hidden="true">event</mat-icon><span>My Sessions</span>
                           </a>
+                          <a class="event-choice" routerLink="/pickup/find" (click)="closeEventSelector()">
+                            <mat-icon aria-hidden="true">search</mat-icon><span>Find Pickup Games</span>
+                          </a>
+                          <a class="event-choice" [class.create-tournament]="!pickupResumeId" routerLink="/pickup/create" (click)="closeEventSelector()">
+                            <mat-icon aria-hidden="true">add</mat-icon><span>Create Pickup Game</span>
+                          </a>
                           @if (pickupResumeId) {
-                            <a class="event-choice" [routerLink]="['/pickup', pickupResumeId]" (click)="closeEventSelector()">
+                            <a class="event-choice create-tournament" [routerLink]="['/pickup', pickupResumeId]" (click)="closeEventSelector()">
                               <mat-icon aria-hidden="true">play_arrow</mat-icon><span>Continue Pickup Session</span>
                             </a>
                           }

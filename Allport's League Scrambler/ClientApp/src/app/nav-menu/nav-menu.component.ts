@@ -215,13 +215,22 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         const version = ++this.pickupResumeRequest;
         this.pickupResumeId = undefined;
         if (!this.pickupEnabled || !this.loggedIn) return;
-        let id: string | null = null;
-        try { id = sessionStorage.getItem('pickup-current-session'); } catch { /* Session counts do not depend on storage. */ }
-        this.subscriptions.add(this.http.get<{id: string}[]>('/api/pickup/selector').pipe(catchError(() => of([])))
+        const route = this.router.parseUrl(this.router.url).root.children['primary']?.segments;
+        const current = route?.[0]?.path === 'pickup' ? route[1]?.path : undefined;
+        let recent: string[] = [];
+        try {
+            const stored = JSON.parse(sessionStorage.getItem('pickup-recent-sessions') || '[]');
+            if (Array.isArray(stored)) recent = stored.filter(id => typeof id === 'string');
+            const previous = sessionStorage.getItem('pickup-current-session');
+            if (previous) recent.push(previous);
+        } catch { /* Session counts do not depend on storage. */ }
+        this.subscriptions.add(this.http.get<{id: string; state?: number}[]>('/api/pickup/selector').pipe(catchError(() => of([])))
             .subscribe(sessions => {
                 if (version !== this.pickupResumeRequest || !this.loggedIn) return;
                 this.pickupSessionCount = sessions.length;
-                if (sessions.some(session => session.id === id)) this.pickupResumeId = id;
+                const active = sessions.filter(session => session.state === 2);
+                this.pickupResumeId = [current, ...recent].find(id => active.some(session => session.id === id))
+                    ?? (active.length === 1 ? active[0].id : undefined);
             }));
     }
 

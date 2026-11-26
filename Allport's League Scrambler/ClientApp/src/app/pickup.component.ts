@@ -155,6 +155,12 @@ export class PickupComponent implements OnInit {
         return this.format(game.startsUtc, zone) + ' to ' + (crossesMidnight ? this.format(game.endsUtc, zone) : time.format(new Date(game.endsUtc)));
     }
 
+    distanceLabel(miles: number, approximate = false): string {
+        if (approximate && miles < 1) return 'Less than 1 mile away (approximate)';
+        const shown = approximate ? Math.round(miles) : miles;
+        return (approximate ? 'Approximately ' : '') + shown + (shown === 1 ? ' mile away' : ' miles away');
+    }
+
     discoveryLocation(card: SessionCard): string {
         return [card.displayCity || card.city, [card.displayRegion || card.region, card.postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     }
@@ -219,6 +225,13 @@ export class PickupComponent implements OnInit {
                 const session = await firstValueFrom(this.http.get<Session>(this.sessionUrl()));
                 if (request === this.request) {
                     this.session = session;
+                    if ([1, 2].includes(session.state)) {
+                        try {
+                            const stored = JSON.parse(sessionStorage.getItem('pickup-recent-sessions') || '[]');
+                            const recent = Array.isArray(stored) ? stored.filter(id => typeof id === 'string' && id !== session.id) : [];
+                            sessionStorage.setItem('pickup-recent-sessions', JSON.stringify([session.id, ...recent].slice(0, 20)));
+                        } catch { /* Optional resume. */ }
+                    }
                     if (session.owner && [1, 2].includes(session.state)) {
                         try { sessionStorage.setItem('pickup-current-session', session.id); } catch { /* Optional resume. */ }
                     }
