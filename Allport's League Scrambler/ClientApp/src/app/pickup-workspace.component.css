@@ -71,3 +71,5 @@
 .workspace-fields input:not([type=checkbox]), .workspace-fields select { width: 100%; }
 
 .session-counts .session-lifecycle { margin: 0; }
+
+.workspace .danger-action { color: var(--hub-loss-text, #861d2c); border-color: currentColor; }

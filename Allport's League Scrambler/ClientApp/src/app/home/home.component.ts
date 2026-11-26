@@ -14,7 +14,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { ForgotPasswordDialogComponent } from '../forgot-password-dialog/forgot-password-dialog.component';
 import { AbstractControl, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { catchError, combineLatest, map, of, Subscription } from 'rxjs';
 import { Player } from '../data-models/player.model';
 import { PlayerService } from '../services/player.service';
 @Component({
@@ -59,12 +59,32 @@ export class HomeComponent implements OnInit {
     registrationPending = false;
     isEmailValid: boolean = true;
 
-    constructor(private loginService: LoginService, public playerService: PlayerService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: UntypedFormBuilder, destroyRef: DestroyRef, leagues: LeagueService) {
+    readonly attendanceLink = this.route.fragment.pipe(map(fragment => fragment === 'attendance'));
+    readonly attendancePlayer = this.loginService.getUsersPlayer().pipe(
+        map(player => player?.playerId), catchError(() => of(undefined))
+    );
+
+    readonly eventContext = combineLatest([
+        this.route.queryParamMap, this.leagues.authorizedLeagues$, this.leagues.selectedLeague$
+    ]).pipe(map(([params, events, selected]) => {
+        if (params.get('context') === 'pickup')
+            return {kind: 'pickup', sessionId: params.get('pickupSession') ?? undefined};
+        if (events === null || (events.length && !selected.leagueId && !params.has('leagueId'))) return {kind: 'loading'};
+        const requested = Number(params.get('leagueId'));
+        const event = events.find(item => item.id === (requested || selected.leagueId));
+        if (event?.eventTypeId === 2) return {kind: 'tournament', event};
+        if (event?.eventTypeId === 3) return {kind: 'pickup'};
+        if (requested && !event) return {kind: 'unavailable'};
+        if (requested && requested !== selected.leagueId) return {kind: 'loading'};
+        return {kind: 'league'};
+    }));
+
+    constructor(private loginService: LoginService, public playerService: PlayerService, private snackBar: MatSnackBar, private dialog: MatDialog, private router: Router, private authService: AuthService, private route: ActivatedRoute,private fb: UntypedFormBuilder, private destroyRef: DestroyRef, private leagues: LeagueService) {
         destroyRef.onDestroy(() => { this.cancelClaimSearch(); this.claimDialogRef?.close(); });
         this.route.queryParams.pipe(takeUntilDestroyed(destroyRef)).subscribe((queryParams) => {
             const leagueId = Number(queryParams.leagueId);
-            if (this.route.snapshot.fragment === 'attendance' && Number.isSafeInteger(leagueId) && leagueId > 0) {
-                leagues.selectNavigationLeague(leagueId).pipe(takeUntilDestroyed(destroyRef)).subscribe();
+            if (Number.isSafeInteger(leagueId) && leagueId > 0) {
+                this.leagues.selectNavigationLeague(leagueId).pipe(takeUntilDestroyed(destroyRef)).subscribe();
             }
             if (queryParams.toggleLoginForm === 'true') {
                 this.toggleLoginForm();
@@ -87,7 +107,7 @@ export class HomeComponent implements OnInit {
         }, {
             validator: this.passwordMatchValidator // Add custom validation function
         });
-        this.authService.authenticationState$.subscribe((state) => {
+        this.authService.authenticationState$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((state) => {
             this.authenticationChecked = state !== null;
             this.isLoggedIn = state === true;
         });
@@ -143,7 +163,8 @@ export class HomeComponent implements OnInit {
                 // the authorized league list as part of the account session.
                 this.loginService.getUsersRole().subscribe({
                     next: ({ role }) => {
-                        if (role === 'Admin' || role === 'Manager') this.router.navigate(['/scrambler']);
+                        if ((role === 'Admin' || role === 'Manager') && !this.route.snapshot.queryParamMap.has('context') &&
+                            !this.route.snapshot.queryParamMap.has('leagueId')) this.router.navigate(['/scrambler']);
                     },
                     error: () => this.showSnackBar('Unable to load account permissions. Please try again.', true)
                 });

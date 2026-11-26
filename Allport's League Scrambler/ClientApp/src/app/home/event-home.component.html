@@ -1,0 +1,148 @@
+@if (view$ | async; as view) {
+  <section class="event-home" [attr.aria-busy]="view.loading || null">
+    @if (view.loading) {
+      <p role="status">Loading Home&hellip;</p>
+    } @else if (view.error) {
+      <p role="alert">{{ view.error }}</p>
+      <button type="button" (click)="load()">Try Again</button>
+    } @else if (view.tournament; as tournament) {
+      <header>
+        <h1>Tournament Home</h1>
+        <h2>{{ tournament.name }}</h2>
+        @if (tournament.date || tournament.location) {
+          <p>{{ tournament.date ? (tournament.date | date:'longDate') : '' }}{{ tournament.date && tournament.location ? ' \u00b7 ' : '' }}{{ tournament.location }}</p>
+        }
+        @if (tournament.status) { <p>{{ tournament.status }}</p> }
+      </header>
+      <dl class="summary">
+        <div><dt>Registered Participants</dt><dd>{{ tournament.participants }}</dd></div>
+        @if (tournament.checkedIn != null) { <div><dt>Checked In</dt><dd>{{ tournament.checkedIn }}</dd></div> }
+        @if (tournament.generated || tournament.total) {
+          <div><dt>Generated Rounds</dt><dd>{{ tournament.generated }}</dd></div>
+          <div><dt>Completed Rounds</dt><dd>{{ tournament.completed }} of {{ tournament.total || tournament.generated }}</dd></div>
+          @if (tournament.nextRound; as round) {
+            <div><dt>{{ round.status === 'partial' ? 'Current Round' : 'Next Unplayed Round' }}</dt><dd>{{ round.roundNumber }}</dd></div>
+          }
+        }
+      </dl>
+      @if (tournament.total || tournament.generated) {
+        <progress [max]="tournament.total || tournament.generated" [value]="tournament.completed" aria-label="Completed tournament rounds"></progress>
+      }
+      <div class="actions">
+        @if (tournament.status === 'Completed') {
+          <a class="primary" routerLink="/standings" [queryParams]="{leagueId: event.id, tournament: 1}">View Tournament Results</a>
+        } @else if (tournament.canManage) {
+          <a class="primary" [routerLink]="['/tournament', event.id]">{{ tournamentAction(tournament) }}</a>
+        } @else if (tournament.generated) {
+          <a class="primary" [routerLink]="['/tournament', event.id, 'rounds']">View Tournament Matchups</a>
+        }
+      </div>
+      <div class="results">
+        <section>
+          @if (tournament.hasResults) {
+            <h3>{{ tournament.standings.length ? 'Tournament Matchup Wins' : 'Tournament Standings' }}</h3>
+            @if (tournament.standings.length) {
+              <ul class="standings">
+                @for (player of tournament.standings; track $index) {
+                  <li>{{ player.name }} <strong>{{ player.wins }} {{ player.wins === 1 ? 'win' : 'wins' }}</strong></li>
+                }
+              </ul>
+            }
+          } @else {
+            <h3>No Tournament Results Yet</h3>
+            <p>Standings will appear once tournament scores have been recorded.</p>
+          }
+          @if (tournament.status !== 'Completed') {
+            <a routerLink="/standings" [queryParams]="{leagueId: event.id, tournament: 1}">View Tournament Standings</a>
+          }
+        </section>
+        @if (tournament.recent.length) {
+          <section>
+            <h3>Recent Tournament Results</h3>
+            @for (match of tournament.recent; track $index) {
+              <div class="match">
+                <strong>Round {{ match.roundNumber }} &middot; Matchup {{ match.matchup }}</strong>
+                <p>{{ match.teams[0].join(', ') }} vs {{ match.teams[1].join(', ') }}</p>
+                @for (score of match.scores; track score.game) { <span class="score">Game {{ score.game }} &middot; {{ score.first }}&ndash;{{ score.second }}</span> }
+              </div>
+            }
+          </section>
+        }
+      </div>
+    } @else if (view.pickup; as pickup) {
+      @let game = pickup.session;
+      @let workspace = pickup.workspace;
+      @let active = game.state === 1 || game.state === 2;
+      <header>
+        <h1>{{ game.name }}</h1>
+        <p>{{ game.venue.name }}{{ game.venue.city ? ' \u00b7 ' + game.venue.city : '' }} &middot; {{ pickupDate(game.startsUtc, game.venue.timeZone) }}</p>
+        <p>{{ sessionStates[game.state] }}</p>
+      </header>
+      <dl class="summary">
+        <div><dt>Registered Players</dt><dd>{{ game.confirmed }}</dd></div>
+        @if (game.owner) { <div><dt>Playing Today</dt><dd>{{ workspace.playing }}</dd></div> }
+        @if (game.owner || workspace.sets) {
+          <div><dt>Saved Game Sets</dt><dd>{{ workspace.gameSets }}</dd></div>
+          @if (workspace.gamesPlayed) { <div><dt>Recorded Games</dt><dd>{{ workspace.gamesPlayed }}</dd></div> }
+        }
+        @if (!game.owner && game.registration != null) {
+          <div><dt>Your Registration</dt><dd>{{ registrationStates[game.registration] }}</dd></div>
+        }
+      </dl>
+      @if (!game.confirmed && game.owner && active) { <p>No players have joined yet.</p> }
+      @if (!workspace.gameSets && game.owner && active) { <p>No teams have been generated yet.</p> }
+      @if (assignment(workspace); as assigned) {
+        <div class="results">
+          <section>
+            <h3>Game Set {{ assigned.set }}</h3>
+            @if (assigned.team; as number) {
+              <p><strong>Team {{ number }}</strong></p>
+              <p>@for (player of assigned.players; track player.id; let last = $last) { {{ player.name }}{{ last ? '' : ', ' }} }</p>
+              @if (assigned.opponent; as opponent) {
+                <p>vs @for (player of opponent; track player.id; let last = $last) { {{ player.name }}{{ last ? '' : ', ' }} }</p>
+              }
+              @for (score of assigned.scores; track score.game) { <span class="score">Game {{ score.game }} &middot; {{ score.first }}&ndash;{{ score.second }}</span> }
+            } @else { <p>You had a bye.</p> }
+          </section>
+        </div>
+      }
+      <div class="actions">
+        @if (game.owner && active) {
+          <a class="primary" [routerLink]="['/pickup', game.id]">Continue Pickup Session</a>
+          <a [routerLink]="['/pickup', game.id]" [queryParams]="{tab: 'Players'}">{{ game.state === 1 ? 'Add Players' : 'Manage Players' }}</a>
+          @if (game.state === 1) {
+            @if (game.visibility !== 2) { <a [routerLink]="['/pickup', game.id]" [queryParams]="{tab: 'Invite Players'}">Invite Players</a> }
+            <a [routerLink]="['/pickup', game.id]" [queryParams]="{tab: 'Session Settings'}">Start Playing</a>
+          } @else {
+            <a [routerLink]="['/pickup', game.id]" [queryParams]="{tab: 'Scramble Teams'}">Scramble Teams</a>
+          }
+          @if (workspace.gameSets) {
+            <a [routerLink]="['/pickup', game.id]" [queryParams]="{tab: 'Teams & Scores', set: 'latest'}">Teams &amp; Scores</a>
+          }
+        } @else if (game.canReopen) {
+          <a class="primary" [routerLink]="['/pickup', game.id]" [queryParams]="{tab: 'Session Settings'}">Reopen Session</a>
+          @if (game.owner && workspace.gameSets) {
+            <a [routerLink]="['/pickup', game.id]" [queryParams]="{tab: 'Teams & Scores', set: 'latest'}">View Session Results</a>
+          }
+        } @else {
+          <a class="primary" [routerLink]="['/pickup', game.id]"
+            [queryParams]="game.state === 3 && workspace.sets?.length ? {tab: 'Teams & Scores', set: 'latest'} : null">
+            {{ game.state === 3 && workspace.sets?.length ? 'View Session Results' : 'View Pickup Session' }}
+          </a>
+        }
+        <a routerLink="/pickup/mine">My Sessions</a>
+        @if (!game.owner && active) { <a routerLink="/pickup/create">Create Pickup Game</a> }
+      </div>
+    } @else {
+      <header>
+        <h1>Pickup Games</h1>
+        <p>Find somewhere to play or organize your own game.</p>
+      </header>
+      <div class="actions">
+        <a class="primary" routerLink="/pickup/find">Find Pickup Games</a>
+        <a routerLink="/pickup/mine">My Sessions</a>
+        <a routerLink="/pickup/create">Create Pickup Game</a>
+      </div>
+    }
+  </section>
+}

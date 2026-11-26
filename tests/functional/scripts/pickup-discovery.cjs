@@ -19,14 +19,20 @@ withPickupTestHost(async origin => {
         const api = owner.request;
         assert.equal((await api.get(origin + '/api/pickup/catalog')).headers()['x-pickup-test-database'], 'LeagueScramblerPickupTest');
         const headers = {Origin: origin};
-        const signup = await api.post(origin + '/api/login/register', {headers, data: {
-            email: 'discovery-' + token + '@example.invalid', password: randomBytes(20).toString('hex'),
-            firstName: 'Discovery', lastName: 'Fixture'
-        }});
-        assert.equal(signup.status(), 200);
+        const sessionsByOwner = new Map();
+        async function register(api, suffix) {
+            const signup = await api.post(origin + '/api/login/register', {headers, data: {
+                email: 'discovery-' + suffix + '-' + token + '@example.invalid', password: randomBytes(20).toString('hex'),
+                firstName: 'Discovery', lastName: 'Fixture'
+            }});
+            assert.equal(signup.status(), 200);
+        }
+        await register(api, 0);
         const ids = [];
         async function create(label, details = {}) {
-            const response = await api.post(origin + '/api/pickup/sessions', {headers, data: {
+            const account = ids.length ? (await browser.newContext({ignoreHTTPSErrors: true})).request : api;
+            if (ids.length) await register(account, ids.length);
+            const response = await account.post(origin + '/api/pickup/sessions', {headers, data: {
                 name: label + ' ' + token, sport: 'Wallyball', venue: label + ' Facility ' + token,
                 city: 'Roseville', region: 'MI', timeZone: zone, startNow: true, ...details
             }});
@@ -34,6 +40,7 @@ withPickupTestHost(async origin => {
             const {id} = await response.json();
             assert.match(id, /^[0-9a-f-]{36}$/i);
             ids.push(id);
+            sessionsByOwner.set(id, account);
             return id;
         }
         const closed = await create('Cross-midnight', {region: '', deadline: '2020-01-01T12:00'});
@@ -50,8 +57,8 @@ withPickupTestHost(async origin => {
         const exactWithoutLookup = await create('Unindexed ZIP', {city: '', region: '', postalCode: '00000-0123'});
         const completed = await create('Completed');
         const cancelled = await create('Cancelled');
-        assert.equal((await api.post(origin + '/api/pickup/sessions/' + completed + '/lifecycle', {headers, data: {complete: true}})).status(), 204);
-        assert.equal((await api.post(origin + '/api/pickup/sessions/' + cancelled + '/cancel', {headers})).status(), 204);
+        assert.equal((await sessionsByOwner.get(completed).post(origin + '/api/pickup/sessions/' + completed + '/lifecycle', {headers, data: {complete: true}})).status(), 204);
+        assert.equal((await sessionsByOwner.get(cancelled).post(origin + '/api/pickup/sessions/' + cancelled + '/cancel', {headers})).status(), 204);
 
         const today = localInput(new Date()).slice(0, 10);
         const yesterday = new Date(Date.parse(today + 'T12:00Z') - 86400000).toISOString().slice(0, 10);
@@ -171,7 +178,7 @@ withPickupTestHost(async origin => {
         await expect(selector.getByRole('link', {name: 'Find Pickup Games', exact: true})).toBeVisible();
         await expect(ownerPage.getByRole('navigation', {name: 'Main navigation'}).getByRole('link', {name: 'Pickup Games', exact: true})).toHaveCount(0);
         for (const id of ids.filter(id => id !== completed && id !== cancelled))
-            await api.post(origin + '/api/pickup/sessions/' + id + '/cancel', {headers});
+            await sessionsByOwner.get(id).post(origin + '/api/pickup/sessions/' + id + '/cancel', {headers});
         await ownerPage.keyboard.press('Escape');
         await ownerPage.getByRole('button', {name: 'Account', exact: true}).click();
         await ownerPage.getByRole('menuitem', {name: 'Logout'}).click();

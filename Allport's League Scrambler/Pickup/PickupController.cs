@@ -165,7 +165,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
         await using var db = new DataContext();
         var session = await db.PickupSessions.AsNoTracking().Include(s => s.Venue).SingleOrDefaultAsync(s => s.Id == id);
         var mine = await FindRegistration(db, id);
-        if (!CanRead(session, mine)) return NotFound();
+        if (session == null || (!CanRead(session, mine) && !CanDelete(session))) return NotFound();
         var owner = IsOwner(session);
         var registrations = owner ? await db.PickupRegistrations.AsNoTracking().Where(r => r.SessionId == id &&
             (r.State == RegistrationState.Confirmed || r.State == RegistrationState.PendingApproval || r.State == RegistrationState.Waitlisted))
@@ -175,7 +175,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
         return Ok(new {
             session.Id, session.Name, session.Sport, Venue = PresentVenue(session.Venue), session.StartsUtc, session.EndsUtc, session.DeadlineUtc,
             session.LocalDate, session.Description, session.Skill, session.Capacity, session.Visibility, session.State,
-            session.ApprovalRequired, organizer, owner, canReopen = CanReopen(session),
+            session.ApprovalRequired, organizer, owner, canReopen = CanReopen(session), canDelete = CanDelete(session),
             organizerNotes = owner ? session.OrganizerNotes : null,
             confirmed = await Confirmed(db, id),
             registrationOpen = RegistrationOpen(session),
@@ -190,11 +190,15 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
         if (!PickupEnvironment.Enabled) return NotFound();
         if (!LeagueAccess.TryGetAccountId(User, out var account)) return Unauthorized();
         await using var db = new DataContext();
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        var conflict = await CheckActiveSlot(db, account);
+        if (conflict != null) return conflict;
         var session = new PickupSession { Id = Guid.NewGuid(), OrganizerId = account, State = SessionState.Published };
         var error = await Apply(db, session, input);
         if (error != null) return Invalid(error);
         db.PickupSessions.Add(session);
         await db.SaveChangesAsync();
+        await transaction.CommitAsync();
         return CreatedAtAction(nameof(Get), new { id = session.Id }, new { session.Id });
     }
 
@@ -364,7 +368,19 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
         if (!PickupEnvironment.Enabled) return NotFound();
         await using var db = new DataContext();
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
-        var resource = "pickup-session:" + id;
+        if (!await AcquirePickupLock(db, "pickup-session:" + id))
+            return ConflictMessage("The session is busy. Try again.");
+        var session = await db.PickupSessions.SingleOrDefaultAsync(s => s.Id == id);
+        if (session == null) return NotFound();
+        var result = await work(db, session);
+        if (result is StatusCodeResult { StatusCode: >= 400 } or ObjectResult { StatusCode: >= 400 }) return result;
+        await db.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return result;
+    }
+
+    private static async Task<bool> AcquirePickupLock(DataContext db, string resource)
+    {
         try
         {
             await db.Database.ExecuteSqlInterpolatedAsync($"""
@@ -374,14 +390,54 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
             """);
         }
         catch (SqlException error) when (error.Number is 51020 or 1205)
-        { return ConflictMessage("The session is busy. Try again."); }
-        var session = await db.PickupSessions.SingleOrDefaultAsync(s => s.Id == id);
-        if (session == null) return NotFound();
-        var result = await work(db, session);
-        if (result is StatusCodeResult { StatusCode: >= 400 } or ObjectResult { StatusCode: >= 400 }) return result;
-        await db.SaveChangesAsync();
-        await transaction.CommitAsync();
-        return result;
+        { return false; }
+        return true;
+    }
+
+    private async Task<IActionResult> CheckActiveSlot(DataContext db, int organizer)
+    {
+        // Serialize publishing across all sessions owned by this account.
+        if (!await AcquirePickupLock(db, "pickup-organizer:" + organizer))
+            return ConflictMessage("Pickup sessions are busy. Try again.");
+        var activeSessionId = await db.PickupSessions
+            .Where(s => s.OrganizerId == organizer && (s.State == SessionState.Published || s.State == SessionState.InProgress))
+            .OrderByDescending(s => s.State == SessionState.InProgress).ThenBy(s => s.StartsUtc).ThenBy(s => s.Id)
+            .Select(s => (Guid?)s.Id).FirstOrDefaultAsync();
+        return activeSessionId == null ? null : Conflict(new {
+            message = "You already have an active pickup session. Complete, cancel, or delete it before starting another.",
+            activeSessionId
+        });
+    }
+
+    private bool CanDelete(PickupSession session) => IsOwner(session) || User.IsInRole("Admin");
+
+    public sealed record DeleteSessionInput(string Name);
+
+    [Authorize, SameOrigin, HttpDelete("sessions/{id:guid}")]
+    public async Task<IActionResult> DeleteSession(Guid id, [FromBody] DeleteSessionInput input)
+    {
+        try
+        {
+            return await WithSession(id, async (db, session) =>
+            {
+                if (!CanDelete(session)) return NotFound();
+                if (!string.Equals(input.Name, session.Name, StringComparison.Ordinal))
+                    return ConflictMessage("The session name does not match. Reopen the confirmation and try again.");
+
+                await db.PickupGameSets.Where(s => s.SessionId == id).ExecuteDeleteAsync();
+                await db.PickupRegistrations.Where(r => r.SessionId == id).ExecuteDeleteAsync();
+                db.PickupSessions.Remove(session);
+                return NoContent();
+            });
+        }
+        catch (DbUpdateException error) when (error.InnerException is SqlException { Number: 547 })
+        {
+            return ConflictMessage("This pickup session has related records that prevent safe deletion.");
+        }
+        catch (SqlException error) when (error.Number == 547)
+        {
+            return ConflictMessage("This pickup session has related records that prevent safe deletion.");
+        }
     }
 
     private bool IsOwner(PickupSession s) => LeagueAccess.TryGetAccountId(User, out var account) && account == s.OrganizerId;

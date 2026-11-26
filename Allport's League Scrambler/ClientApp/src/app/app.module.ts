@@ -22,6 +22,7 @@ import { RouteReuseStrategy, RouterModule, Router } from '@angular/router';
 
 import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
+import { EventHomeComponent } from './home/event-home.component';
 import { HomeComponent } from './home/home.component';
 import { AccountRecoveryComponent } from './account-recovery.component';
 import { ScramblerComponent } from './scrambler/scrambler.component';
@@ -123,6 +124,7 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
         LeagueManagementDeniedComponent
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
+        EventHomeComponent,
         AccountRecoveryComponent,
         FormsModule,
         MatInputModule,

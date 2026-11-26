@@ -24,11 +24,11 @@ public sealed partial class PickupController
         await using var db = new DataContext();
         var now = DateTimeOffset.UtcNow;
         return Ok(await db.PickupSessions.Where(s => (s.State == SessionState.Published || s.State == SessionState.InProgress)
-            && (s.EndsUtc > now || s.State == SessionState.InProgress)
+            && (s.OrganizerId == account || s.EndsUtc > now || s.State == SessionState.InProgress)
             && (s.OrganizerId == account || db.PickupRegistrations.Any(r => r.SessionId == s.Id && r.AccountId == account
                 && (r.State == RegistrationState.Confirmed || r.State == RegistrationState.PendingApproval || r.State == RegistrationState.Waitlisted))))
-            .OrderByDescending(s => s.State == SessionState.InProgress).ThenBy(s => s.StartsUtc).ThenBy(s => s.Id)
-            .Take(100).Select(s => new { s.Id, s.Name, s.State }).ToListAsync());
+            .OrderByDescending(s => s.OrganizerId == account).ThenByDescending(s => s.State == SessionState.InProgress).ThenBy(s => s.StartsUtc).ThenBy(s => s.Id)
+            .Take(100).Select(s => new { s.Id, s.Name, s.State, owned = s.OrganizerId == account }).ToListAsync());
     }
 
     [HttpGet("sessions/{id:guid}/workspace")]
@@ -38,7 +38,7 @@ public sealed partial class PickupController
         await using var db = new DataContext();
         var session = await db.PickupSessions.AsNoTracking().SingleOrDefaultAsync(s => s.Id == id);
         var mine = await FindRegistration(db, id);
-        if (!CanRead(session, mine)) return NotFound();
+        if (session == null || (!CanRead(session, mine) && !CanDelete(session))) return NotFound();
         var owner = IsOwner(session);
         var players = await Roster(db, id);
         var sets = await db.PickupGameSets.AsNoTracking().Where(s => s.SessionId == id).OrderBy(s => s.Number).ToListAsync();
@@ -98,6 +98,8 @@ public sealed partial class PickupController
         }
         else if (session.EndsUtc <= now || (session.DeadlineUtc ?? session.StartsUtc) <= now)
             return Invalid("Update the start time or choose Start Now before reopening.");
+        var conflict = await CheckActiveSlot(db, session.OrganizerId);
+        if (conflict != null) return conflict;
         session.State = SessionState.Published;
         return NoContent();
     });

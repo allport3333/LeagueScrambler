@@ -4,7 +4,13 @@
   }
   @if (error) { <p class="feedback" role="alert">{{ error }}</p> }
   @if (loading) { <p role="status">Loading pickup games…</p> }
-  @if (sports && (editing || view === 'create')) {
+  @if (view === 'create' && blockedSessionId) {
+    <section class="panel">
+      <h1>Create Pickup Game</h1>
+      <p>You already have an active pickup session. Complete, cancel, or delete it before creating another.</p>
+      <a [routerLink]="['/pickup', blockedSessionId]">Continue Pickup Session</a>
+    </section>
+  } @else if (sports && (editing || (view === 'create' && !loading && !error))) {
     @if (signedIn | async) {
       <section class="panel create-game">
         <h2>{{ editing ? 'Edit Pickup Game' : 'Create a Pickup Game' }}</h2>
@@ -137,7 +143,7 @@
           </div>
         </form>
       </section>
-    } @else { <p>Sign in to create a session. <a routerLink="/">Go to sign in</a></p> }
+    } @else { <p>Sign in to create a session. <a routerLink="/" [queryParams]="{context: 'pickup', toggleLoginForm: 'true'}">Go to sign in</a></p> }
   } @else if (session; as game) {
     <section class="panel details pickup-workspace-shell">
       <div class="session-heading">
@@ -186,12 +192,12 @@
         </details>
       } @else {
         <ng-container [ngTemplateOutlet]="registrationActions"></ng-container>
-        @if (!game.owner && !game.canReopen) { <app-pickup-workspace [session]="game" [statuses]="statuses" (sessionUpdated)="load()"></app-pickup-workspace> }
+        @if (!game.owner && !game.canReopen && !game.canDelete) { <app-pickup-workspace [session]="game" [statuses]="statuses" (sessionUpdated)="load()"></app-pickup-workspace> }
       }
       </div>
-      @if (game.owner || game.canReopen) {
+      @if (game.owner || game.canReopen || game.canDelete) {
         <app-pickup-workspace [session]="game" [statuses]="statuses" [shareUrl]="shareUrl" (sessionUpdated)="load()"
-          (editSettings)="edit(game)" (invite)="copyInvitation()" (viewDetails)="sessionDetails.open = true; sessionDetails.scrollIntoView({block: 'nearest'})"></app-pickup-workspace>
+          (deleted)="sessionDeleted($event)" (editSettings)="edit(game)" (invite)="copyInvitation()" (viewDetails)="sessionDetails.open = true; sessionDetails.scrollIntoView({block: 'nearest'})"></app-pickup-workspace>
       }
     </section>
   } @else if (sports && !id) {

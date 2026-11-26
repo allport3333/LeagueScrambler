@@ -51,6 +51,7 @@ withPickupTestHost(async origin => {
 
         const seed = await api(organizer, '/api/pickup/sessions', 'POST', {...values, visibility: 1});
         assert.equal(seed.status, 201, JSON.stringify(seed));
+        assert.equal((await api(organizer, '/api/pickup/sessions/' + seed.data.id + '/cancel', 'POST', {})).status, 204);
         await organizer.getByRole('link', {name: 'Create Pickup Game'}).click();
         await organizer.getByRole('button', {name: /Fixture Recreation Center/}).first().click();
         await expect(organizer.getByLabel('Maximum players')).toBeHidden();
@@ -79,6 +80,7 @@ withPickupTestHost(async origin => {
         const immediate = '/api/pickup/sessions/' + mobile.url().split('/').at(-1);
         const timing = (await api(mobile, immediate)).data;
         assert.equal(Date.parse(timing.deadlineUtc), Date.parse(timing.endsUtc));
+        assert.equal((await api(mobile, immediate + '/cancel', 'POST', {})).status, 204);
         await mobile.locator('#leagueDropdown').click();
         await mobile.getByRole('dialog', {name: 'Select league or event'}).getByRole('link', {name: 'Create Pickup Game'}).click();
         await mobile.getByRole('button', {name: new RegExp('Mobile Facility ' + token)}).click();
@@ -104,6 +106,8 @@ withPickupTestHost(async origin => {
         await visitor.getByLabel('Available spots only').check();
         await visitor.getByRole('button', {name: 'Find Games'}).click();
         await visitor.getByRole('link', {name: 'View Details for Wallyball Pickup'}).and(visitor.locator('a[href="/pickup/' + id + '"]')).click();
+        await expect(visitor).toHaveURL(origin + '/pickup/' + id);
+        await expect(visitor.getByRole('heading', {name: 'Wallyball Pickup', exact: true})).toBeVisible();
         await expect(visitor.getByText('Open Registration', {exact: true})).toBeVisible();
         const before = new Set(await fs.readdir(inbox));
         const guestEmail = 'guest-' + token + '@example.invalid';
@@ -153,13 +157,17 @@ withPickupTestHost(async origin => {
         assert.equal((await api(player, endpoint, 'PUT', values)).status, 404);
         assert.equal((await api(player, endpoint + '/cancel', 'POST', {})).status, 404);
 
-        async function create(input) {
-            const result = await api(organizer, '/api/pickup/sessions', 'POST', {...values, ...input});
+        async function create(host, input) {
+            const result = await api(host, '/api/pickup/sessions', 'POST', {...values, ...input});
             assert.equal(result.status, 201, JSON.stringify(result));
             return '/api/pickup/sessions/' + result.data.id;
         }
-        const privateSession = await create({visibility: 2, name: 'Private ' + token});
-        const unlisted = await create({visibility: 1, name: 'Unlisted ' + token});
+        const approvalHost = await open(1280, 'ApprovalHost');
+        const capacityHost = await open(1280, 'CapacityHost');
+        const privateHost = await open(1280, 'PrivateHost');
+        const unlistedHost = await open(1280, 'UnlistedHost');
+        const privateSession = await create(privateHost, {visibility: 2, name: 'Private ' + token});
+        const unlisted = await create(unlistedHost, {visibility: 1, name: 'Unlisted ' + token});
         assert.equal((await api(visitor, privateSession)).status, 404);
         assert.equal((await api(second, privateSession)).status, 404);
         assert.equal((await api(visitor, unlisted)).status, 200);
@@ -167,31 +175,31 @@ withPickupTestHost(async origin => {
         assert(found.data.sessions.some(row => row.id === id));
         assert(!found.data.sessions.some(row => row.name === 'Unlisted ' + token || row.name === 'Private ' + token));
 
-        const approval = await create({approvalRequired: true, name: 'Approval ' + token});
+        const approval = await create(approvalHost, {approvalRequired: true, name: 'Approval ' + token});
         const pending = await api(player, approval + '/join', 'POST', {});
         assert.equal(pending.data.registration, 1);
-        const row = (await api(organizer, approval)).data.registrations[0];
+        const row = (await api(approvalHost, approval)).data.registrations[0];
         assert.equal((await api(player, approval + '/registrations/' + row.id, 'POST', {approve: true})).status, 404);
-        assert.equal((await api(organizer, approval + '/registrations/' + row.id, 'POST', {approve: true})).status, 204);
+        assert.equal((await api(approvalHost, approval + '/registrations/' + row.id, 'POST', {approve: true})).status, 204);
         assert.equal((await api(player, approval)).data.registration, 2);
         assert.equal((await api(second, approval + '/join', 'POST', {})).data.registration, 1);
-        const secondRequest = (await api(organizer, approval)).data.registrations.find(row => row.state === 1);
-        assert.equal((await api(organizer, approval + '/registrations/' + secondRequest.id, 'POST', {approve: false})).status, 204);
+        const secondRequest = (await api(approvalHost, approval)).data.registrations.find(row => row.state === 1);
+        assert.equal((await api(approvalHost, approval + '/registrations/' + secondRequest.id, 'POST', {approve: false})).status, 204);
         assert.equal((await api(second, approval)).data.registration, 4);
 
-        const finalSpot = await create({capacity: 2, name: 'Capacity ' + token});
-        assert.equal((await api(organizer, finalSpot + '/join', 'POST', {})).status, 200);
+        const finalSpot = await create(capacityHost, {capacity: 2, name: 'Capacity ' + token});
+        assert.equal((await api(capacityHost, finalSpot + '/join', 'POST', {})).status, 200);
         const results = await Promise.all([player, second].map(page => api(page, finalSpot + '/join', 'POST', {})));
         assert.deepEqual(results.map(result => result.status).sort(), [200, 409]);
-        assert.equal((await api(organizer, finalSpot)).data.confirmed, 2);
+        assert.equal((await api(capacityHost, finalSpot)).data.confirmed, 2);
 
         const rejected = results[0].status === 409 ? player : second;
         assert.equal((await api(rejected, finalSpot + '/join?waitlist=true', 'POST', {})).data.registration, 5);
-        assert.equal((await api(organizer, finalSpot + '/leave', 'POST', {})).status, 204);
+        assert.equal((await api(capacityHost, finalSpot + '/leave', 'POST', {})).status, 204);
         assert.equal((await api(rejected, finalSpot)).data.registration, 2);
-        assert.equal((await api(organizer, finalSpot)).data.confirmed, 2);
-        assert.equal((await api(organizer, finalSpot + '/cancel', 'POST', {})).status, 204);
-        assert.equal((await api(organizer, finalSpot + '/join', 'POST', {})).status, 409);
+        assert.equal((await api(capacityHost, finalSpot)).data.confirmed, 2);
+        assert.equal((await api(capacityHost, finalSpot + '/cancel', 'POST', {})).status, 204);
+        assert.equal((await api(capacityHost, finalSpot + '/join', 'POST', {})).status, 409);
 
         // Provision accounts serially so the concurrency test targets Pickup joins.
         for (let batch = 0; batch < 21; batch++) {
@@ -221,10 +229,9 @@ withPickupTestHost(async origin => {
         assert.equal((await api(organizer, endpoint)).data.description, 'Updated fixture');
         assert.equal(original.data.id, id);
         assert.deepEqual(errors, []);
-        for (const fixture of [endpoint, privateSession, unlisted, approval, '/api/pickup/sessions/' + seed.data.id])
-            assert.equal((await api(organizer, fixture + '/cancel', 'POST', {})).status, 204);
-        for (const fixture of [immediate, advancedEndpoint])
-            assert.equal((await api(mobile, fixture + '/cancel', 'POST', {})).status, 204);
+        for (const [host, fixture] of [[organizer, endpoint], [privateHost, privateSession], [unlistedHost, unlisted],
+            [approvalHost, approval], [mobile, advancedEndpoint]])
+            assert.equal((await api(host, fixture + '/cancel', 'POST', {})).status, 204);
         console.log('Pickup browser and API checks passed at desktop and mobile widths against the isolated database.');
     } finally { await browser.close(); }
 }).catch(error => { console.error(error); process.exitCode = 1; });

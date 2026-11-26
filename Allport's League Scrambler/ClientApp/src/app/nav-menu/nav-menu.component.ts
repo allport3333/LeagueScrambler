@@ -60,7 +60,24 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     ];
 
     pickupEnabled = false;
-    get inPickup(): boolean { return this.pickupEnabled && /^\/pickup(?:[/?#]|$)/.test(this.router.url); }
+    get inPickup(): boolean {
+        const route = this.router.parseUrl(this.router.url);
+        const segments = route.root.children['primary']?.segments ?? [];
+        return segments[0]?.path === 'pickup' ||
+            (!segments.length && this.loggedIn && route.queryParams['context'] === 'pickup');
+    }
+
+    private homeContext() {
+        const route = this.router.parseUrl(this.router.url);
+        const segments = route.root.children['primary']?.segments ?? [];
+        if (this.inPickup) {
+            const session = segments[0]?.path === 'pickup' ? segments[1]?.path : route.queryParams['pickupSession'];
+            return {context: 'pickup', pickupSession: /^[a-f0-9-]{36}$/i.test(session ?? '') ? session : undefined};
+        }
+        if (!this.loggedIn) return undefined;
+        const leagueId = Number(segments[0]?.path === 'tournament' ? segments[1]?.path : route.queryParams['leagueId']);
+        return Number.isSafeInteger(leagueId) && leagueId > 0 ? {leagueId} : undefined;
+    }
 
     get primaryDestinations(): NavItem[] {
         const tournament = this.leagues?.find(event => event.id === this.selectedLeagueId && event.eventTypeId === 2);
@@ -69,7 +86,8 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             (!item.signedInOnly || (this.authenticationChecked && this.loggedIn)) &&
             (!item.roles || item.roles.includes(this.userRole)))
             .filter(item => !item.children || item.children.length)
-            .map(item => item.children?.length === 1 ? item.children[0] : item);
+            .map(item => item.route === '/' ? {...item, queryParams: this.homeContext()} :
+                item.children?.length === 1 ? item.children[0] : item);
         if (this.authenticationChecked && !this.loggedIn && this.pickupEnabled)
             items.push({route: '/pickup', label: 'Pickup Games', icon: 'sports_volleyball'});
         if (this.inPickup) return items.filter(item => item.route === '/' || item.route === '/pickup');
@@ -224,13 +242,13 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             const previous = sessionStorage.getItem('pickup-current-session');
             if (previous) recent.push(previous);
         } catch { /* Session counts do not depend on storage. */ }
-        this.subscriptions.add(this.http.get<{id: string; state?: number}[]>('/api/pickup/selector').pipe(catchError(() => of([])))
+        this.subscriptions.add(this.http.get<{id: string; owned: boolean}[]>('/api/pickup/selector').pipe(catchError(() => of([])))
             .subscribe(sessions => {
                 if (version !== this.pickupResumeRequest || !this.loggedIn) return;
                 this.pickupSessionCount = sessions.length;
-                const active = sessions.filter(session => session.state === 2);
+                const active = sessions.filter(session => session.owned);
                 this.pickupResumeId = [current, ...recent].find(id => active.some(session => session.id === id))
-                    ?? (active.length === 1 ? active[0].id : undefined);
+                    ?? active[0]?.id;
             }));
     }
 

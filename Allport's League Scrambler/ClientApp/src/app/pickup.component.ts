@@ -23,7 +23,7 @@ interface Venue {
 }
 interface Session extends Omit<SessionCard, 'venue' | 'city' | 'region' | 'timeZone'> {
     venue: Venue; organizer: string; description?: string; organizerNotes?: string; deadlineUtc?: string;
-    approvalRequired: boolean; visibility: number; owner: boolean; canReopen: boolean; registration: number | null;
+    approvalRequired: boolean; visibility: number; owner: boolean; canReopen: boolean; canDelete: boolean; registration: number | null;
     registrationOpen: boolean; registrations?: {id: string; name: string; state: number}[];
 }
 const deviceZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -71,6 +71,7 @@ export class PickupComponent implements OnInit {
     scheduleEdited = false;
     fieldErrors: Record<string, string> = {};
     resume?: {id: string; name: string};
+    blockedSessionId?: string;
     shareUrl = '';
     private venueRequest = 0;
     join = { name: '', email: '' };
@@ -110,6 +111,7 @@ export class PickupComponent implements OnInit {
             this.editing = false;
             this.guestForm = false;
             this.verificationPending = false;
+            this.blockedSessionId = undefined;
             this.shareUrl = '';
             this.resetCreation();
             if (this.sports == null && !await this.loadCatalog()) return;
@@ -138,13 +140,19 @@ export class PickupComponent implements OnInit {
         catch { this.error = 'Pickup Games is unavailable here.'; this.loading = false; return false; }
     }
 
+    private async activeOwnedSession(): Promise<{id: string; name: string} | undefined> {
+        const sessions = await firstValueFrom(this.http.get<{id: string; name: string; owned: boolean}[]>('/api/pickup/selector'));
+        const owned = sessions.filter(session => session.owned);
+        let current: string | null = null;
+        try { current = sessionStorage.getItem('pickup-current-session'); } catch { /* Optional resume. */ }
+        return owned.find(session => session.id === current) ?? owned[0];
+    }
+
     private async loadResume(request: number): Promise<void> {
         this.resume = undefined;
         try {
-            const id = sessionStorage.getItem('pickup-current-session');
-            if (!id) return;
-            const sessions = await firstValueFrom(this.http.get<{id: string; name: string}[]>('/api/pickup/selector'));
-            if (request === this.request) this.resume = sessions.find(session => session.id === id);
+            const session = await this.activeOwnedSession();
+            if (request === this.request) this.resume = session;
         } catch { /* Discovery remains available when signed out or storage is unavailable. */ }
     }
 
@@ -257,6 +265,10 @@ export class PickupComponent implements OnInit {
                         } catch { /* Optional preference. */ }
                     }
                 }
+            } else if (this.view === 'create') {
+                const signedIn = await firstValueFrom(this.signedIn);
+                const active = signedIn ? await this.activeOwnedSession() : undefined;
+                if (request === this.request) this.blockedSessionId = active?.id;
             } else if (!this.view) {
                 await this.loadResume(request);
             }
@@ -270,7 +282,7 @@ export class PickupComponent implements OnInit {
                     this.notifications.error(this.error);
                 }
             } else if (request === this.request) this.error = error.status === 404 ? 'This session is unavailable.' :
-                error.status === 401 ? 'Sign in to view your sessions.' : this.describeError(error);
+                error.status === 401 ? 'Sign in to continue.' : this.describeError(error);
         } finally { if (request === this.request) this.loading = false; }
     }
 
@@ -292,6 +304,17 @@ export class PickupComponent implements OnInit {
                 this.notifications.success('Your pickup game is ready!');
             }
         });
+    }
+
+    async sessionDeleted(id: string): Promise<void> {
+        try {
+            if (sessionStorage.getItem('pickup-current-session') === id) sessionStorage.removeItem('pickup-current-session');
+            sessionStorage.removeItem('pickup-tab-' + id);
+            const recent = JSON.parse(sessionStorage.getItem('pickup-recent-sessions') || '[]');
+            if (Array.isArray(recent)) sessionStorage.setItem('pickup-recent-sessions', JSON.stringify(recent.filter(entry => entry !== id)));
+        } catch { /* Optional resume. */ }
+        await this.router.navigate(['/pickup/mine']);
+        this.notifications.success('Pickup session deleted.');
     }
 
     edit(session: Session): void {
@@ -519,7 +542,9 @@ export class PickupComponent implements OnInit {
         try { await action(); }
         catch (error) {
             const field = error.error?.field;
-            if (field && (this.editing || this.view === 'create')) {
+            if (this.view === 'create' && error.status === 409 && error.error?.activeSessionId) {
+                this.blockedSessionId = error.error.activeSessionId;
+            } else if (field && (this.editing || this.view === 'create')) {
                 this.fieldErrors[field] = this.describeError(error);
                 if (['deadline', 'timeZone', 'visibility', 'capacity', 'duration'].includes(field)) this.advancedOpen = true;
             } else this.notifications.error(this.describeError(error));

@@ -28,11 +28,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 .Select(row => row.LeagueName).SingleOrDefaultAsync();
             if (name == null)
                 return NotFound(new { message = "Tournament not found. It may have been deleted." });
-            if (!LeagueAccess.CanManage(User, db, leagueId) &&
-                (!LeagueAccess.TryGetAccountId(User, out var accountId) ||
-                 !await db.UsersPlayer.AnyAsync(link => link.UserId == accountId &&
-                    db.PlayersLeagues.Any(member => member.LeagueID == leagueId && member.PlayerID == link.PlayerId))))
-                return Forbid();
+            if (!await CanViewTournamentRounds(db, leagueId)) return Forbid();
             var details = await db.TournamentConfigurations.AsNoTracking().SingleOrDefaultAsync(row => row.LeagueId == leagueId);
             if (details == null) return NotFound();
             var manage = LeagueAccess.CanManage(User, db, leagueId);

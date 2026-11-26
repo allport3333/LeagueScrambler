@@ -1,5 +1,22 @@
 @if (authenticationChecked && isLoggedIn) {
-  <app-player-home-dashboard (claimPlayer)="openClaimModal()"></app-player-home-dashboard>
+  @if (eventContext | async; as context) {
+    @switch (context.kind) {
+      @case ('tournament') {
+        <app-event-home [event]="context.event"></app-event-home>
+        @if (attendanceLink | async) {
+          @if (attendancePlayer | async; as playerId) {
+            <app-player-attendance [playerId]="playerId" [leagueId]="context.event.id" [tournament]="true"></app-player-attendance>
+          } @else {
+            <button mat-raised-button color="primary" (click)="openClaimModal()">Find or claim my player</button>
+          }
+        }
+      }
+      @case ('pickup') { <app-event-home [pickupSession]="context.sessionId"></app-event-home> }
+      @case ('league') { <app-player-home-dashboard (claimPlayer)="openClaimModal()"></app-player-home-dashboard> }
+      @case ('unavailable') { <p role="status">This event is unavailable to your account.</p> }
+      @default { <p role="status">Loading Home&hellip;</p> }
+    }
+  }
 }
 @if (!isLoggedIn) {
   <div class="entry-logo" [class.entry-logo-compact]="showLoginForm || showRegistrationForm">

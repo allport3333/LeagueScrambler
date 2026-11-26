@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, Input, Output, EventEmitter, OnChanges, OnDestroy } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -22,7 +23,7 @@ interface Workspace {
     players: Registration[] | null; checkedInOnly: boolean; playing: number; gamesPlayed: number; gameSets: number;
     myRegistrationId: string | null; sets: GameSet[] | null;
 }
-interface SessionSummary { id: string; name: string; state: number; owner: boolean; confirmed: number; visibility: number; organizerNotes?: string; canReopen: boolean; startsUtc: string; endsUtc: string; deadlineUtc?: string; }
+interface SessionSummary { id: string; name: string; state: number; owner: boolean; confirmed: number; visibility: number; organizerNotes?: string; canReopen: boolean; canDelete: boolean; venue: {timeZone: string}; startsUtc: string; endsUtc: string; deadlineUtc?: string; }
 
 @Component({
     selector: 'app-pickup-workspace',
@@ -34,12 +35,14 @@ interface SessionSummary { id: string; name: string; state: number; owner: boole
 export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
     @Input({required: true}) session!: SessionSummary;
     @Input({required: true}) statuses: string[] = [];
+    @Output() deleted = new EventEmitter<string>();
     @Output() sessionUpdated = new EventEmitter<void>();
     @Output() editSettings = new EventEmitter<void>();
     @Output() viewDetails = new EventEmitter<void>();
     @Input() shareUrl = '';
     @Output() invite = new EventEmitter<void>();
 
+    private readonly route = inject(ActivatedRoute);
     private readonly http = inject(HttpClient);
     private readonly dialogs = inject(MatDialog);
     private readonly ask = injectConfirmation();
@@ -64,6 +67,7 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
     warnings: string[] = [];
     strictFallback = false;
     open = new Set<string>();
+    private showLatestOnLoad = false;
     scoring?: GameSet;
     scoreEdits: {matchup: number; game: number; first: number | null; second: number | null}[] = [];
     editing?: GameSet;
@@ -76,10 +80,12 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
             this.dialog?.close();
             this.currentId = this.session.id;
             this.data = undefined;
-            this.tab = this.session.owner || this.session.canReopen ? this.savedTab() : 'Teams & Scores';
+            this.tab = this.session.owner || this.session.canReopen || this.session.canDelete ? this.savedTab() : 'Teams & Scores';
+            if (this.route.snapshot.queryParamMap.has('tab') && this.tabs.includes(this.tab)) this.selectTab(this.tab);
             this.busy = false;
             this.error = '';
             this.open.clear();
+            this.showLatestOnLoad = this.tab === 'Teams & Scores' && this.route.snapshot.queryParamMap.get('set') === 'latest';
             this.discardPreview();
             this.scoring = this.editing = undefined;
             this.priority = {};
@@ -99,7 +105,7 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
     }
 
     get tabs(): string[] {
-        if (!this.session.owner) return this.session.canReopen ? ['Session Settings'] : [];
+        if (!this.session.owner) return this.session.canReopen || this.session.canDelete ? ['Session Settings'] : [];
         return ['Players', ...(this.active ? ['Scramble Teams'] : []), 'Teams & Scores',
             ...(this.session.visibility !== 2 ? ['Invite Players'] : []), 'Session Settings'];
     }
@@ -123,11 +129,13 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
     }
 
     private savedTab(): string {
+        const requested = this.route.snapshot.queryParamMap.get('tab');
+        if (requested && this.tabs.includes(requested)) return requested;
         try {
             const tab = sessionStorage.getItem('pickup-tab-' + this.session.id);
             if (tab && this.tabs.includes(tab)) return tab;
         } catch { /* Optional resume. */ }
-        return this.session.state === 4 ? 'Session Settings' : 'Players';
+        return !this.session.owner || this.session.state === 4 ? 'Session Settings' : 'Players';
     }
 
     get active(): boolean { return this.session.owner && (this.session.state === 1 || this.session.state === 2); }
@@ -147,6 +155,11 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
             const result = await firstValueFrom(this.http.get<Workspace>(this.endpoint + '/workspace'));
             if (request === this.request) {
                 this.data = result;
+                if (this.showLatestOnLoad) {
+                    const latest = result.sets?.at(-1);
+                    if (latest) this.open.add(latest.id);
+                    this.showLatestOnLoad = false;
+                }
                 const roster = new Set(this.eligible.map(player => player.id));
                 if (this.preview) {
                     const proposed = [...this.preview.teams.flat(), ...this.preview.byes];
@@ -208,6 +221,34 @@ export class PickupWorkspaceComponent implements OnChanges, OnDestroy {
     get rescheduleRequired(): boolean {
         return Date.parse(this.session.endsUtc) <= Date.now() ||
             Date.parse(this.session.deadlineUtc ?? this.session.startsUtc) <= Date.now();
+    }
+
+    async deleteSession(): Promise<void> {
+        const session = this.session;
+        const summary = this.data;
+        if (this.busy || !session.canDelete || !summary) return;
+        const date = new Intl.DateTimeFormat(undefined, {dateStyle: 'long', timeZone: session.venue.timeZone});
+        if (!await this.ask({
+            title: 'Permanently Delete Pickup Session?',
+            message: 'This permanently removes the session, registrations, saved teams, and scores. The session cannot be reopened.',
+            action: 'Permanently Delete', dismiss: 'Keep Session', tone: 'danger', confirmName: session.name,
+            details: [
+                {label: 'Session', value: session.name},
+                {label: 'Scheduled date', value: date.format(new Date(session.startsUtc))},
+                {label: 'Registered participants', value: session.confirmed},
+                {label: 'Saved Game Sets', value: summary.gameSets},
+                {label: 'Recorded scores', value: summary.gamesPlayed > 0 ? 'Yes' : 'No'}
+            ]
+        }) || this.busy || session.id !== this.currentId) return;
+        this.busy = true;
+        try {
+            await firstValueFrom(this.http.delete('/api/pickup/sessions/' + session.id, {body: {name: session.name}}));
+            this.deleted.emit(session.id);
+        } catch (error) {
+            this.notifications.error(this.message(error));
+        } finally {
+            this.busy = false;
+        }
     }
 
     async reopen(): Promise<void> {

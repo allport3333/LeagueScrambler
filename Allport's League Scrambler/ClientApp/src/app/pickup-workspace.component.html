@@ -1,6 +1,6 @@
 @if (error) { <p class="feedback" role="alert">{{ error }}</p> }
 @if (data; as workspace) {
-  @if (session.owner || session.canReopen || workspace.sets) {
+  @if (session.owner || session.canReopen || session.canDelete || workspace.sets) {
     <section class="workspace">
       @if (session.owner || workspace.sets) { <div class="session-counts" aria-label="Session summary">
         <span><strong>{{ session.confirmed }}</strong> Registered Players</span>
@@ -263,7 +263,7 @@
           <label class="share-link">Invitation Link<input readonly [value]="shareUrl" (focus)="$any($event.target).select()"></label>
         }
       }
-      @if (tab === 'Session Settings' && (session.owner || session.canReopen)) {
+      @if (tab === 'Session Settings' && (session.owner || session.canReopen || session.canDelete)) {
         <h2>Session Settings</h2>
         @if (session.organizerNotes) { <p>{{ session.organizerNotes }}</p> }
         <div class="workspace-actions">
@@ -274,7 +274,7 @@
             <button type="button" (click)="cancelSession()" [disabled]="busy">Cancel Session</button>
           } @else {
             <button type="button" (click)="viewDetails.emit()">View Session Details</button>
-            @if (session.state === 3) { <button type="button" (click)="selectTab('Teams & Scores')">View Saved Results</button> }
+            @if (session.owner && session.state === 3) { <button type="button" (click)="selectTab('Teams & Scores')">View Saved Results</button> }
           }
         </div>
         @if (session.canReopen) {
@@ -287,6 +287,11 @@
             @if (!reopenNow) { <label>New start date and time (venue time)<input type="datetime-local" [(ngModel)]="reopenStart"></label> }
           }
           <button type="button" class="primary" [disabled]="busy" (click)="reopen()">Reopen Session</button>
+        }
+        @if (session.canDelete) {
+          <div class="workspace-actions">
+            <button type="button" class="danger-action" [disabled]="busy" (click)="deleteSession()">Delete Pickup Session</button>
+          </div>
         }
       }
       </div>
