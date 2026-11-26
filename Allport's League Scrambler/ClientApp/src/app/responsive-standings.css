@@ -1,0 +1,81 @@
+@media screen {
+    .standings-table-scroll {
+        --standings-rank: 3.5rem;
+        container-type: inline-size;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .standings-table-scroll:focus-visible {
+        outline: 2px solid var(--hub-focus, #315a97);
+        outline-offset: -2px;
+    }
+
+    .standings-data-table {
+        --name-width: clamp(8.25rem, 23cqi, 19rem);
+        --total-width: clamp(5.75rem, 8cqi, 10rem);
+        --round-width: 3.75rem;
+        --column-space: calc((100cqi - var(--standings-rank) - var(--name-width)) /
+            max(1, var(--standings-totals, 3) + var(--standings-rounds, 0)));
+        --score-size: clamp(.875rem, calc(.75rem + var(--column-space) * .035), 1rem);
+        width: max(100%, calc(var(--standings-rank) + var(--name-width) +
+            var(--total-width) * var(--standings-totals, 3) + var(--primary-extra, 0px) + var(--round-width) * var(--standings-rounds, 0)));
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 0;
+        color: var(--hub-text, #212529);
+        font-size: var(--score-size);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .standings-data-table :is(th, td) {
+        box-sizing: border-box;
+        padding: .45rem clamp(.25rem, calc(var(--column-space) * .055), .7rem);
+        border: 0;
+        border-inline-end: 1px solid var(--hub-table-divider, #cbd5df);
+        border-block-end: 1px solid var(--hub-table-divider, #cbd5df);
+        text-align: center;
+        vertical-align: middle;
+        overflow-wrap: anywhere;
+    }
+
+    .standings-data-table tr > :first-child { border-inline-start: 1px solid var(--hub-table-divider, #cbd5df); }
+    .standings-data-table thead th {
+        border-block-start: 1px solid var(--hub-table-divider, #cbd5df);
+        font-size: clamp(.8125rem, var(--score-size), .9375rem);
+        background: var(--hub-table-header, #edf2f7);
+    }
+
+    .standings-data-table tbody tr { background: var(--hub-table-surface, white); }
+    .standings-data-table tbody tr:nth-child(odd) { background: var(--hub-table-alt, #f5f7fa); }
+    .standings-data-table thead tr > :first-child { width: var(--standings-rank); }
+    .standings-data-table tr > :nth-child(2) { text-align: start; }
+    .standings-data-table tbody tr > :nth-child(2) {
+        font-size: clamp(.875rem, calc(var(--score-size) + .0625rem), 1.0625rem);
+    }
+
+    .standings-data-table .standings-total { width: var(--total-width); }
+    .standings-data-table th.standings-primary { width: calc(var(--total-width) + var(--primary-extra)); }
+    .standings-data-table td.standings-total {
+        font-size: clamp(.9375rem, calc(var(--score-size) + .125rem), 1.125rem);
+        font-weight: 600;
+    }
+
+    .standings-data-table tr > :nth-child(-n+2) {
+        position: sticky;
+        z-index: 1;
+        inset-inline-start: 0;
+    }
+
+    .standings-data-table tr > :nth-child(2) { inset-inline-start: var(--standings-rank); }
+    .standings-data-table tbody tr > :nth-child(-n+2) { background: inherit; }
+    .standings-data-table tbody tr > :nth-child(2) { border-inline-end-width: 2px; }
+
+    @media (max-width: 767px) {
+        .standings-table-scroll { --standings-rank: 3rem; }
+        .standings-data-table { --name-width: 7.25rem; }
+    }
+}

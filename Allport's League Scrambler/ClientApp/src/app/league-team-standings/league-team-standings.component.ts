@@ -6,7 +6,7 @@ import { StatisticsService } from '../services/statistics.service';
 @Component({
     selector: 'app-league-team-standings',
     templateUrl: './league-team-standings.component.html',
-    styleUrls: ['./league-team-standings.component.css'],
+    styleUrls: ['../responsive-standings.css', './league-team-standings.component.css'],
     changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })

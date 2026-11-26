@@ -17,58 +17,30 @@
             <h3 [ngClass]="getDivisionHeaderClass(division.key)" style="text-align: center; padding: 10px; border-radius: 5px;">
               {{ division.key }}
             </h3>
-            <!-- Desktop table and narrow-screen list share the same ranked division rows. -->
-            <div class="standings-table-scroll desktop-league-standings">
-              <mat-table [dataSource]="division.value" class="mat-elevation-z8 responsive-table">
-                <!-- Rank Column -->
-                <ng-container matColumnDef="rank">
-                  <mat-header-cell *matHeaderCellDef class="small-column"> Rank </mat-header-cell>
-                  <mat-cell *matCellDef="let team; let i = index" [ngClass]="{'alt-row': i % 2 !== 0}" class="small-column">
-                    {{ team.rank }}
-                  </mat-cell>
-                </ng-container>
-                <!-- Team Name Column -->
-                <ng-container matColumnDef="teamName">
-                  <mat-header-cell *matHeaderCellDef class="wide-column"> Team Name </mat-header-cell>
-                  <mat-cell *matCellDef="let team; let i = index" [ngClass]="{'alt-row': i % 2 !== 0}" class="wide-column">
-                    {{ team.teamName }}
-                  </mat-cell>
-                </ng-container>
-                <!-- Wins Column -->
-                <ng-container matColumnDef="wins">
-                  <mat-header-cell *matHeaderCellDef class="small-column"> Wins </mat-header-cell>
-                  <mat-cell *matCellDef="let team; let i = index" [ngClass]="{'alt-row': i % 2 !== 0}" class="small-column">
-                    {{ team.wins }}
-                  </mat-cell>
-                </ng-container>
-                <!-- Losses Column -->
-                <ng-container matColumnDef="losses">
-                  <mat-header-cell *matHeaderCellDef class="small-column"> Losses </mat-header-cell>
-                  <mat-cell *matCellDef="let team; let i = index" [ngClass]="{'alt-row': i % 2 !== 0}" class="small-column">
-                    {{ team.losses }}
-                  </mat-cell>
-                </ng-container>
-                <!-- Total Points Column -->
-                <ng-container matColumnDef="totalPoints">
-                  <mat-header-cell *matHeaderCellDef class="total-points-column"> Total Points </mat-header-cell>
-                  <mat-cell *matCellDef="let team; let i = index" [ngClass]="{'alt-row': i % 2 !== 0}" class="total-points-column">
-                    {{ team.totalPoints }}
-                  </mat-cell>
-                </ng-container>
-                <!-- Header Row -->
-                <mat-header-row *matHeaderRowDef="['rank', 'teamName', 'wins', 'losses', 'totalPoints']"></mat-header-row>
-                <!-- Data Row -->
-                <mat-row *matRowDef="let row; columns: ['rank', 'teamName', 'wins', 'losses', 'totalPoints']"></mat-row>
-              </mat-table>
+            <div class="standings-table-scroll" tabindex="0" role="region" [attr.aria-label]="division.key + ' team standings'">
+              <table class="standings-data-table" [attr.aria-label]="division.key + ' team standings'">
+                <thead>
+                  <tr>
+                    <th scope="col">Rank</th>
+                    <th scope="col">Team Name</th>
+                    <th scope="col" class="standings-total">Wins</th>
+                    <th scope="col" class="standings-total">Losses</th>
+                    <th scope="col" class="standings-total">Total Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (team of division.value; track team) {
+                    <tr>
+                      <td>{{ team.rank }}</td>
+                      <td>{{ team.teamName }}</td>
+                      <td class="standings-total">{{ team.wins }}</td>
+                      <td class="standings-total">{{ team.losses }}</td>
+                      <td class="standings-total">{{ team.totalPoints }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
             </div>
-            <ol class="mobile-league-standings" [attr.aria-label]="division.key + ' team standings'">
-              @for (team of division.value; track team) {
-                <li>
-                  <div class="mobile-team-title"><span class="mobile-team-rank" [attr.aria-label]="'Rank '+team.rank">{{ team.rank }}</span><strong>{{ team.teamName }}</strong></div>
-                  <dl class="mobile-team-statistics"><div><dt>Wins</dt><dd>{{ team.wins }}</dd></div><div><dt>Losses</dt><dd>{{ team.losses }}</dd></div><div><dt>Total Points</dt><dd>{{ team.totalPoints }}</dd></div></dl>
-                </li>
-              }
-            </ol>
           </mat-card>
         </div>
       }

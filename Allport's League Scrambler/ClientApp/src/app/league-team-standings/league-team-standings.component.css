@@ -1,57 +1,3 @@
-/* Small columns for Rank, Wins, and Losses */
-.small-column, .mat-column-rank, .mat-column-wins, .mat-column-losses {
-    width: 60px !important;
-    min-width: 60px !important;
-    max-width: 60px !important;
-    text-align: center !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-}
-
-/* Adjusted Total Points column (15px wider) */
-.total-points-column, .mat-column-totalPoints {
-    width: 75px !important;
-    min-width: 75px !important;
-    max-width: 75px !important;
-    text-align: center !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-}
-
-/* Wider Team Name column (Balanced size) */
-.wide-column, .mat-column-teamName {
-    width: 125px !important;
-    min-width: 125px !important;
-    max-width: 175px !important;
-    text-align: left !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-}
-
-/* Responsive table behavior */
-.responsive-table {
-    width: 100% !important;
-    min-width: 450px !important;
-}
-
-/* Ensure the table scrolls horizontally if content overflows */
-/* TODO(mdc-migration): The following rule targets internal classes of tabs that may no longer apply for the MDC version. */
-mat-table {
-    display: block !important;
-    overflow-x: auto !important;
-    white-space: nowrap !important;
-    table-layout: fixed !important;
-}
-
-/* Alternating row colors for better readability */
-mat-row:nth-child(even) {
-    background-color: var(--hub-table-alt, #f5f5f5) !important; /* Light grey */
-}
-
-mat-row:nth-child(odd) {
-    background-color: var(--hub-table-surface, #ffffff) !important; /* White */
-}
-
 /* Division header backgrounds */
 .gold-division-header {
     background-color: var(--hub-gold, gold) !important;
@@ -82,14 +28,10 @@ mat-row:nth-child(odd) {
     color: var(--hub-text, #333);
     font-weight: bold;
 }
-:host{display:block;min-width:0;width:100%}.league-standings-panel{padding:16px;min-width:0}.division-standings-grid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}.division-standings{flex:1 1 420px;min-width:0;max-width:520px;width:100%}.division-standings mat-card{min-width:0}.standings-table-scroll{width:100%;max-width:100%;overflow-x:auto;border:1px solid #d5deea}.standings-table-scroll:focus{outline:2px solid #526e9f}.standings-table-scroll mat-table{overflow:visible!important;min-width:480px!important}.wide-column,.mat-column-teamName{white-space:normal!important;overflow:visible!important;overflow-wrap:break-word;flex:1 0 160px!important;min-width:160px!important;max-width:none!important}.small-column,.total-points-column{display:flex;justify-content:center;overflow:visible!important;flex-shrink:0!important}@media(max-width:767px){.league-standings-panel{padding:8px 0}.division-standings-grid{gap:12px}.division-standings{flex-basis:100%;max-width:100%}}
-
-/* Bootstrap's desktop container can fit the original paired tables at XL widths. */
-.mobile-league-standings{display:none;list-style:none;padding:0;margin:0;min-width:0}
-.mobile-league-standings li{padding:10px 8px;border-bottom:1px solid var(--hub-border, #d7e1ed);min-width:0;text-align:left}
-.mobile-league-standings li:nth-child(even){background: var(--hub-row-alt, #f5f5f5)}.mobile-league-standings li:last-child{border-bottom:0}
-.mobile-team-title{display:flex;gap:8px;align-items:baseline;min-width:0}.mobile-team-title strong{min-width:0;overflow-wrap:anywhere;line-height:1.4}
-.mobile-team-rank{flex:0 0 24px;text-align:center;color:var(--hub-heading, #29446c);font-weight:600}
-.mobile-team-statistics{display:flex;flex-wrap:wrap;gap:6px 16px;margin:6px 0 0 32px;min-width:0}
-.mobile-team-statistics div{display:flex;align-items:baseline;gap:5px}.mobile-team-statistics dt{font-size:12px;font-weight:400;color:var(--hub-muted, #526579)}.mobile-team-statistics dd{font-size:14px;font-weight:600;margin:0;color: var(--hub-text, #172b46)}
-@media(max-width:1199px){.desktop-league-standings{display:none}.mobile-league-standings{display:block}}
+:host { display: block; min-width: 0; width: 100%; }
+.league-standings-panel { width: 98%; margin-inline: auto; }
+.division-standings-grid { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+.division-standings { flex: 1 1 29rem; min-width: 0; }
+@media (max-width: 767px) {
+    .division-standings { flex-basis: 100%; }
+}

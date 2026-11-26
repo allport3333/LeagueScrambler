@@ -24,7 +24,7 @@ import { transformKingQueenStandings } from './king-queen-standings';
 @Component({
     selector: 'app-league-standings',
     templateUrl: './league-standings.component.html',
-    styleUrls: ['./league-standings.component.css'],
+    styleUrls: ['../responsive-standings.css', './league-standings.component.css'],
     changeDetection: ChangeDetectionStrategy.Eager,
     imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, MatFormFieldModule, MatIconModule, MatSelectModule, MatTabsModule, PageLoadingComponent]
 })
