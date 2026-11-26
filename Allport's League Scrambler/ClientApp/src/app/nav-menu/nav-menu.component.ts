@@ -89,8 +89,8 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             .map(item => item.route === '/' ? {...item, queryParams: this.homeContext()} :
                 item.children?.length === 1 ? item.children[0] : item);
         if (this.authenticationChecked && !this.loggedIn && this.pickupEnabled)
-            items.push({route: '/pickup', label: 'Pickup Games', icon: 'sports_volleyball'});
-        if (this.inPickup) return items.filter(item => item.route === '/' || item.route === '/pickup');
+            items.push({route: '/pickup/find', label: 'Pickup Games', icon: 'sports_volleyball'});
+        if (this.inPickup) return items.filter(item => item.route === '/' || item.route === '/pickup/find');
         if (tournament && this.loggedIn) {
             const standings = items.findIndex(item => item.route === '/standings');
             if (standings >= 0) items[standings] = {
@@ -171,7 +171,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     destinationActive(item: NavLink): boolean {
         const path = this.router.url.split(/[?#]/)[0];
         const route = Array.isArray(item.route) ? item.route.join('/') : item.route;
-        if (route === '/pickup') return path === route || path.startsWith('/pickup/');
+        if (route === '/pickup/find') return path === '/pickup' || path.startsWith('/pickup/');
         if (path === '/schedule') return route === '/league-dashboard';
         if (path !== route) return false;
         return true;

@@ -98,7 +98,7 @@
 .login-form {
     width: min(100%, 400px);
     padding: 14px 16px 10px;
-    border: 1px solid #d8e0ed;
+    border: 1px solid var(--hub-border, #d8e0ed);
     border-radius: 4px;
     background: var(--hub-section, #f5f8fc);
 }
@@ -112,12 +112,12 @@
 }
 .login-actions { display: flex; justify-content: center; gap: 8px; margin: 10px 0 6px; }
 .login-actions button { min-height: 40px; padding: 4px 12px; }
+.account-form-links { display: flex; flex-wrap: wrap; justify-content: center; }
 .login-feedback {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    min-height: 54px;
     padding: 4px 8px;
     border: 1px solid transparent;
     border-radius: 4px;
@@ -125,6 +125,7 @@
     font-size: 14px;
     line-height: 1.35;
 }
+.login-feedback:not(.has-error) { display: none; }
 .login-feedback.has-error { background: var(--hub-loss-surface, #fff0f1); border-color: #e2a5ad; color: var(--hub-loss-text, #861d2c); }
 .login-feedback button {
     min-height: 36px;
@@ -137,6 +138,7 @@
 .login-form :focus-visible { outline: 2px solid #374994; outline-offset: 2px; }
 
 .registration-form { margin: 10px 0; }
+.registration-notice { margin: 10px 0 0; line-height: 1.5; }
 .registration-form input { background: var(--hub-surface, #fff); color: var(--hub-text, #212529); }
 .registration-form input::placeholder { color: var(--hub-muted, #687687); }
 .claim-search-label { display: block; margin: 2px 0 4px; font-size: 14px; }

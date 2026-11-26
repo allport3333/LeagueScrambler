@@ -27,11 +27,16 @@ internal static class GoogleSignIn
     internal const string LinkVersionKey = "league-hub-link-version";
     internal const string CallbackPath = "/signin-google";
     internal const string AccountPage = "/connected-accounts";
+    private const string ClientIdKey = "Authentication:Google:ClientId";
+    private const string ClientSecretKey = "Authentication:Google:ClientSecret";
+
+    internal static string[] MissingConfigurationKeys(IConfiguration configuration) =>
+        new[] { ClientIdKey, ClientSecretKey }.Where(key => string.IsNullOrWhiteSpace(configuration[key])).ToArray();
 
     internal static void Configure(AuthenticationBuilder authentication, IConfiguration configuration)
     {
-        var clientId = configuration["Authentication:Google:ClientId"];
-        var secret = configuration["Authentication:Google:ClientSecret"];
+        var clientId = configuration[ClientIdKey];
+        var secret = configuration[ClientSecretKey];
         if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(secret)) return;
 
         authentication.AddGoogle(options =>

@@ -11,7 +11,7 @@ using System.Text.Json;
 using Allport_s_League_Scrambler;
 using Allport_s_League_Scrambler.Pickup;
 
-if (!PickupEnvironment.Requested || !PickupEnvironment.DisposableTest ||
+if (!PickupEnvironment.DisposableTest ||
     Environment.GetEnvironmentVariable("ASPNETCORE_URLS") != "https://localhost:5003")
     throw new InvalidOperationException("Only the disposable Pickup test profile can run the Google fixture.");
 

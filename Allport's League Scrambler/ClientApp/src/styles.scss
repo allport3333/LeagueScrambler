@@ -178,6 +178,34 @@ html:is([data-theme='navy'], [data-theme='charcoal']) {
 .navigation-drawer .drawer-header button:not(:disabled) {
   color: var(--hub-nav-text, #f1f4f8);
 }
+.startup-loader {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 1rem;
+  text-align: center;
+  color: var(--hub-text, #172534);
+  background: var(--hub-page, #fff);
+}
+#startup-loading:not([hidden]) { display: grid; justify-items: center; gap: .75rem; }
+.startup-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: .2rem solid var(--hub-border, #cbd5df);
+  border-top-color: var(--hub-link, #315a97);
+  border-radius: 50%;
+  animation: league-hub-spin 1s linear infinite;
+}
+#startup-retry {
+  min-height: 44px;
+  padding: .4rem 1rem;
+  border: 1px solid var(--hub-border, #718197);
+  border-radius: .25rem;
+  color: var(--hub-text, #172534);
+  background: var(--hub-surface, #fff);
+}
+#startup-retry:focus-visible { outline: 2px solid var(--hub-focus, #315a97); outline-offset: 2px; }
+@keyframes league-hub-spin { to { transform: rotate(1turn); } }
 .page-loader {
   display: grid;
   place-items: center;
@@ -190,6 +218,7 @@ html:is([data-theme='navy'], [data-theme='charcoal']) {
 .theme-preview { display: inline-flex; align-items: center; width: 32px; height: 21px; margin-inline-end: 5px; border: 1px solid var(--hub-border, #718197); border-radius: 3px; vertical-align: middle; }
 .theme-preview i { width: 18px; height: 11px; margin: auto; border: 1px solid; border-radius: 2px; }
 @media (prefers-reduced-motion: reduce) {
+  .startup-spinner { animation: none; }
   .page-loader mat-spinner { animation: none !important; }
   .page-loader mat-spinner * { animation: none !important; }
 }
@@ -570,13 +599,14 @@ html { @include mat.form-field-overrides((
     border-top: 1px solid var(--hub-border, #cbd5df);
 }
 .legal-footer a, .legal-form-links a { color: var(--hub-link, #315a97); }
+.legal-footer nav { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px; }
 .legal-footer a:focus-visible, .legal-form-links a:focus-visible, .legal-document a:focus-visible {
     outline: 2px solid var(--hub-focus, #315a97);
     outline-offset: 3px;
 }
 @media print { .legal-footer { display: none; } }
 
-.google-auth-options, .connected-accounts { text-align: center; }
+.connected-accounts { text-align: center; }
 .google-auth-action {
     min-height: 44px;
     padding: .5rem 1rem;

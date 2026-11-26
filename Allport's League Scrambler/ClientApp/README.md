@@ -4,7 +4,7 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 ## Development server
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+Use the main League Hub checkout on `master`. Start **Allport_s_League_Scrambler** in Visual Studio and open `https://localhost:5001`. ASP.NET starts the Angular development server internally, and frontend changes reload automatically. All features share this application and `LeagueScramblerDev`. See the [Development setup](../../tools/pickup/README.md#shared-development) for the CLI command and smoke check.
 
 ## Code scaffolding
 

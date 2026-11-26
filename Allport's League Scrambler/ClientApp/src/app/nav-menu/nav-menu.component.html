@@ -156,7 +156,7 @@
     }
   } @else {
     @if (authenticationChecked && !loggedIn && pickupEnabled) {
-      <a class="navigation-link" routerLink="/pickup" [class.active]="inPickup">
+      <a class="navigation-link" routerLink="/pickup/find" [class.active]="inPickup">
         <mat-icon aria-hidden="true">sports_volleyball</mat-icon><span>Pickup Games</span>
       </a>
     }

@@ -132,7 +132,8 @@ withPickupTestHost(async origin => {
         await nav.getByRole('link', {name: 'Pickup Games', exact: true}).click();
         await expect(page.locator('#leagueDropdown')).toHaveCount(0);
         await expect(page.getByRole('link', {name: 'Create Pickup Game'})).toHaveCount(0);
-        await page.getByRole('link', {name: 'Find Pickup Games', exact: true}).click();
+        await expect(page).toHaveURL(origin + '/pickup/find');
+        await expect(page.locator('.public-game-action')).toHaveCount(0);
         await expect(page.getByLabel('Where do you want to play?')).toBeVisible();
         await page.getByText('More Filters', {exact: true}).click();
         await page.getByLabel('Date', {exact: true}).fill(yesterday);

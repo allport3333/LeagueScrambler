@@ -1,4 +1,4 @@
-@if (isLoggedIn || (!showLoginForm && !showRegistrationForm)) {
+@if (isLoggedIn) {
   <div class="public-game-action">
     <a mat-raised-button color="primary" routerLink="/pickup/find">Pickup Games</a>
   </div>
@@ -26,8 +26,8 @@
 @if (!isLoggedIn) {
   <div class="entry-logo" [class.entry-logo-compact]="showLoginForm || showRegistrationForm">
     <img src="assets/img/sitelogo1.png" alt="Allport's League Hub">
-    </div>
-  }
+  </div>
+}
 
   <div [hidden]="!authenticationChecked || isLoggedIn" class="account-entry">
 
@@ -47,10 +47,11 @@
 
     @if (showLoginForm && !isLoggedIn) {
       @if (googleMessage) { <p class="text-center" role="status">{{ googleMessage }}</p> }
-      <div class="google-auth-options"><app-google-sign-in [returnTo]="pickupReturn || '/'"></app-google-sign-in></div>
-      <form class="login-form" (ngSubmit)="login()" novalidate>
+      <div class="login-form">
         <h2>Login</h2>
         @if (pickupReturn) { <p><a [routerLink]="pickupReturn">Back to the Pickup Game</a></p> }
+        <app-google-sign-in [returnTo]="pickupReturn || '/'" [showSeparator]="true"></app-google-sign-in>
+        <form (ngSubmit)="login()" novalidate>
         <div>
           <label for="loginEmail">Email:</label>
           <input #loginEmailInput type="email" id="loginEmail" name="email" autocomplete="username" required [(ngModel)]="loginEmail" placeholder="Enter your Email Address"
@@ -64,7 +65,7 @@
             <input type="password" id="loginPassword" name="password" autocomplete="current-password" required [(ngModel)]="loginPassword" placeholder="Enter your password">
           </div>
           <div class="login-actions">
-            <button type="submit" [disabled]="loginPending || !isEmailValid || !loginEmail || !loginPassword">Submit</button>
+            <button type="submit" [disabled]="loginPending || !isEmailValid || !loginEmail || !loginPassword">Sign In</button>
             <button type="button" (click)="cancel()" [disabled]="loginPending">Cancel</button>
           </div>
           <div class="login-feedback" [class.has-error]="loginError">
@@ -73,13 +74,13 @@
               <button type="button" (click)="loginError = ''; loginEmailInput.focus()" aria-label="Dismiss sign-in message">Close</button>
             }
           </div>
-          <p class="legal-form-links"><a routerLink="/privacy">Privacy Policy</a> <span aria-hidden="true">&middot;</span> <a routerLink="/terms">Terms of Service</a></p>
         </form>
+        <div class="account-form-links">
+          <button mat-button type="button" (click)="openForgotPasswordDialog()">Forgot Password</button>
+          <button mat-button type="button" (click)="toggleRegistrationForm()">Register</button>
+        </div>
+      </div>
       }
-
-      <!--<button *ngIf="showLoginForm && !isLoggedIn" (click)="toggleRegistrationForm()" style="font-size: 1.5rem; padding: 0.5rem 2rem; margin-left: 1rem;">
-      Register
-    </button>-->
 
     @if (!isLoggedIn && !showRegistrationForm && !showLoginForm) {
       <button (click)="openForgotPasswordDialog()"
@@ -91,6 +92,7 @@
     @if (showRegistrationForm) {
       <div class="login-form registration-form">
         <h2>Register</h2>
+        <app-google-sign-in label="Sign Up with Google" [returnTo]="pickupReturn || '/'" [showSeparator]="true"></app-google-sign-in>
         <form [formGroup]="registerForm" (ngSubmit)="register()" novalidate>
           <div>
             <label for="registerEmail">Email:</label>
@@ -125,7 +127,7 @@
           <br />
           <button mat-raised-button color="primary" type="submit" [disabled]="registrationPending || !registerForm.valid || registerForm.hasError('passwordMismatch')" style="margin-right: 10px;">Submit</button>
           <button mat-button type="button" [disabled]="registrationPending" (click)="cancel()">Cancel</button>
-          <p class="legal-form-links"><a routerLink="/privacy">Privacy Policy</a> <span aria-hidden="true">&middot;</span> <a routerLink="/terms">Terms of Service</a></p>
+          <p class="legal-form-links registration-notice">Before registering, review the <a routerLink="/privacy">Privacy Policy</a>&nbsp;and <a routerLink="/terms">Terms of Service</a>.</p>
         </form>
       </div>
     }

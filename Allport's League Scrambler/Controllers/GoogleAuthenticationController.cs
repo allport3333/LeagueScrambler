@@ -6,18 +6,30 @@ using Allport_s_League_Scrambler.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
 namespace Allport_s_League_Scrambler.Controllers;
 
 [Route("api/auth/google")]
-public sealed class GoogleAuthenticationController(IAuthenticationSchemeProvider schemes) : ControllerBase
+public sealed class GoogleAuthenticationController(
+    IAuthenticationSchemeProvider schemes, IWebHostEnvironment environment, IConfiguration configuration) : ControllerBase
 {
     private async Task<bool> Enabled() => await schemes.GetSchemeAsync(GoogleDefaults.AuthenticationScheme) != null;
 
     [AllowAnonymous, HttpGet("available")]
-    public async Task<IActionResult> Available() => Ok(new { enabled = await Enabled() });
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Available()
+    {
+        var enabled = await Enabled();
+        if (!enabled && environment.IsDevelopment())
+            return Ok(new { enabled, missingKeys = GoogleSignIn.MissingConfigurationKeys(configuration) });
+
+        return Ok(new { enabled });
+    }
 
     [AllowAnonymous, SameOrigin, HttpPost("start")]
     public async Task<IActionResult> Start([FromForm] string returnTo)

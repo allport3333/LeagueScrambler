@@ -23,6 +23,10 @@ const pickupId = 'd3512b60-7316-4af1-8621-55dec8e48103';
                 else if (endpoint.endsWith('/getusersrole')) data = {role: 'Player'};
                 else if (endpoint.endsWith('/getusersplayer')) data = {playerId: 1};
                 else if (endpoint === '/api/pickup/catalog') data = ['Wallyball'];
+                else if (endpoint === '/api/auth/google/available') data = {
+                    enabled: false,
+                    missingKeys: ['Authentication:Google:ClientId', 'Authentication:Google:ClientSecret']
+                };
                 else if (endpoint === '/api/pickup/sessions/' + pickupId) data = {
                     id: pickupId, name: 'Legal Navigation Fixture', sport: 'Wallyball',
                     startsUtc: '2026-12-12T20:00:00Z', endsUtc: '2026-12-12T22:00:00Z',
@@ -52,9 +56,17 @@ const pickupId = 'd3512b60-7316-4af1-8621-55dec8e48103';
             }
             if (!signedIn) {
                 await page.goto(origin + '/?toggleLoginForm=true');
-                await expect(page.locator('.legal-form-links').getByRole('link', {name: 'Privacy Policy'})).toBeVisible();
+                await expect(page.getByText('Google sign-in is unavailable in Development.')).toBeVisible();
+                await expect(page.getByRole('button', {name: 'Continue with Google'})).toHaveCount(0);
+                await expect(footer.getByRole('link', {name: 'Privacy Policy'})).toBeVisible();
+                await expect(page.locator('.login-form .legal-form-links')).toHaveCount(0);
+                await page.goto(origin + '/');
+                await expect(page.locator('.public-game-action')).toHaveCount(0);
+                await page.getByRole('link', {name: 'Pickup Games', exact: true}).click();
+                await expect(page).toHaveURL(origin + '/pickup/find');
                 await page.goto(origin + '/');
                 await page.getByRole('button', {name: 'Register', exact: true}).click();
+                await expect(page.getByText('Authentication:Google:ClientSecret')).toBeVisible();
                 await expect(page.locator('.registration-form').getByRole('link', {name: 'Terms of Service'})).toBeVisible();
                 await page.goto(origin + '/pickup/' + pickupId);
                 await page.getByRole('button', {name: 'Join as Guest', exact: true}).click();

@@ -2,17 +2,18 @@
 
 ## Shared Development
 
-Use the original worktree on `https://localhost:5001` and the `feature/pickup-sessions` worktree `LeagueScrambler-pickup` on `https://localhost:5002/pickup`. Both use the existing local SQL Server database `LeagueScramblerDev`.
+League Hub develops on `master` in the main checkout, `C:\Users\Allport\source\repos\Allport's League Scrambler`. All features, including Pickup, run together at `https://localhost:5001` against `LeagueScramblerDev`. Keep one normal development server for all features.
 
-In the Pickup worktree, open `Allport's League Scrambler.sln` and select **Pickup Development**. From the web project directory, build that worktree's Angular assets before launching or after frontend edits.
+Open `Allport's League Scrambler.sln` in Visual Studio, select **Allport_s_League_Scrambler**, and press F5. From the web project directory, the equivalent launch is:
 
 ```powershell
 npm.cmd --prefix ClientApp ci
-npm.cmd --prefix ClientApp run build -- --configuration=production
-dotnet run --launch-profile "Pickup Development"
+dotnet run --launch-profile "Allport_s_League_Scrambler"
 ```
 
-Pickup uses Windows integrated authentication for local SQL Server. Its authentication cookie and Data Protection keys remain separate from port 5001, so sign into port 5002 using the same Development account. Pickup mail is written to `%LOCALAPPDATA%\LeagueHub\PickupSharedDev\mail`. The profile bypasses dotenv probing and does not use the original SMTP configuration. Trust the local ASP.NET development certificate if needed.
+Development uses Windows integrated authentication for local SQL Server. Development mail is written to `%LOCALAPPDATA%\LeagueHub\PickupSharedDev\mail`. Trust the local ASP.NET development certificate with `dotnet dev-certs https --trust` if needed. In Visual Studio's **Manage User Secrets**, configure `Authentication:Google:ClientId` and `Authentication:Google:ClientSecret` using the Google OAuth client registered for `https://localhost:5001/signin-google`.
+
+From the repository root, run `node tools/pickup/test-development.cjs` after startup. The disposable Pickup browser tests start and stop their own temporary server and use a separate test database.
 
 ## Architecture
 

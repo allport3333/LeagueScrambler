@@ -1,19 +1,12 @@
-# Running the restored application in Visual Studio
+# League Hub local development
 
-This document explains how the original LeagueScrambler functionality is preserved on the security branch without exposing its administration password to the browser.
+Use `master` in `C:\Users\Allport\source\repos\Allport's League Scrambler`. All features share one normal application at `https://localhost:5001` and one database, `LeagueScramblerDev`. Keep feature-specific development servers out of the workflow.
 
 ## First-time development setup
 
-1. Open the solution in Visual Studio and check out the security branch.
-2. Copy `.env.example` to `.env` in the same directory as `Startup.cs`.
-3. Supply a valid SQL Server connection string in `LEAGUESCRAMBLER_DB_CONNECTION`. Credentials were removed from code and are not committed. If you use Windows authentication, a locally configured connection string such as `Server=localhost;Database=LeagueScrambler;Trusted_Connection=True;` may be suitable. If you use SQL authentication, supply your own new user ID and password.
-4. Supply the SMTP settings if you need password recovery email functionality.
-5. Select an HTTPS launch profile in Visual Studio, trust the local development certificate if prompted, and start the application. The launch settings have been updated to use HTTPS. The authentication cookies deliberately cannot be used over HTTP.
-6. To create leagues using the administration password without an account login, make sure the database has exactly one Admin account, or set `LEAGUESCRAMBLER_LEGACY_ADMIN_EMAIL` to the email of the account that should own those leagues.
-7. Password reset links default to `https://www.allportsleaguehub.com`. Set `LEAGUESCRAMBLER_PUBLIC_BASE_URL=https://localhost:5001` only for local Development testing. Production accepts the public HTTPS origin only; request host headers never determine reset links. Keep credentials in the existing secret configuration, and do not send real reset messages without authorization.
-8. New registrations automatically obtain a Player session so they can create or claim a player profile securely, without allowing anonymous database writes.
-9. Registered Players may remove their own sign-in records; anonymous visitors may not delete other players' sign-ins.
-10. Restore the original SQL database schema and data. The existing `Passwords` table must contain the administration password used for old management screens. It remains server-side, never returned by the API. Do not use the former published password on a public system.
+1. Open the solution in Visual Studio, select **Allport_s_League_Scrambler**, and press F5. If a terminal is already running League Hub, stop it with Ctrl+C before starting Visual Studio. Use Shift+F5 to stop a Visual Studio debugging session.
+2. Trust the localhost certificate if prompted. The application uses Windows integrated authentication to connect to the existing local `LeagueScramblerDev` database. Development mail goes to `%LOCALAPPDATA%\LeagueHub\PickupSharedDev\mail`.
+3. Run `node tools/pickup/test-development.cjs` from the repository root to check Home and public Pickup discovery. See the [Pickup development notes](tools/pickup/README.md#shared-development) for the terminal launch command and Google configuration. The automated Pickup browser scripts start and stop an isolated test host.
 
 ## Existing administration flows
 
@@ -68,7 +61,7 @@ This document explains how the original LeagueScrambler functionality is preserv
 
 ## Highest-priority first-boot regression checks
 
-* Build the entire ASP.NET Core project and Angular frontend from `security/initial-hardening-oct-2026` before merging; do not test by modifying the master branch.
+* Build the ASP.NET Core project and Angular frontend on `master`.
 * Sign in as Admin/Manager and verify editing an assigned league, creating/deleting a test player, and saving a new scramble and scores.
 * In an anonymous browser session, preview a scramble without unlocking administration: team previews should display, but `GenerateScramble` must not write team rows to SQL. Then unlock and verify the generated scramble can be saved.
 * Check ordinary and legacy-password administration login/logout, player registration and claiming, public player sign-in, signed-in player removal, league lock/unlock, and password recovery.

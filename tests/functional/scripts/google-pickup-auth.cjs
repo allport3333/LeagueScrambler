@@ -28,6 +28,20 @@ withPickupTestHost(async origin => {
             return context;
         }
         const loginPath = '/api/login/login';
+        for (const [theme, width] of [['classic', 1366], ['navy', 390], ['charcoal', 390]]) {
+            const context = await open(theme, width);
+            const page = await context.newPage();
+            await page.goto(origin + '/?toggleLoginForm=true');
+            await expect(page.getByRole('button', {name: 'Continue with Google'})).toBeVisible();
+            await expect(page.locator('.login-form').getByText('or', {exact: true})).toBeVisible();
+            assert(await page.locator('.google-provider img').evaluate(img => img.complete && img.naturalWidth > 0));
+            await page.getByRole('button', {name: 'Cancel', exact: true}).click();
+            await page.getByRole('button', {name: 'Register', exact: true}).click();
+            await expect(page.getByRole('button', {name: 'Sign Up with Google'})).toBeVisible();
+            await expect(page.locator('.registration-form').getByText('or', {exact: true})).toBeVisible();
+            assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+            await context.close();
+        }
         async function post(context, endpoint, data) {
             return context.request.post(origin + endpoint, {headers: {Origin: origin}, data, maxRedirects: 0});
         }
@@ -84,7 +98,7 @@ withPickupTestHost(async origin => {
         await expect(page.getByRole('link', {name: 'Back to the Pickup Game'})).toHaveAttribute('href', route);
         await page.locator('#loginEmail').fill(existingEmail);
         await page.locator('#loginPassword').fill(password);
-        await page.locator('form.login-form button[type=submit]').click();
+        await page.getByRole('button', {name: 'Sign In', exact: true}).click();
         await expect(page).toHaveURL(origin + route);
         assert.equal(sql("SELECT COUNT(*) FROM dbo.PickupRegistration WHERE SessionId='" + id + "'"), '0');
         await page.getByRole('button', {name: 'Join Game', exact: true}).click();

@@ -17,4 +17,8 @@ if (environment.production) {
 }
 
 platformBrowserDynamic(providers).bootstrapModule(AppModule, { applicationProviders: [provideZoneChangeDetection()], })
-  .catch(err => console.log(err));
+  .then(() => window.dispatchEvent(new Event('league-hub-started')))
+  .catch(error => {
+    console.error(error);
+    window.dispatchEvent(new Event('league-hub-startup-error'));
+  });

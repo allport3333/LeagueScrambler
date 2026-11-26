@@ -15,22 +15,22 @@ public static class PickupEnvironment
     public static bool DisposableTest => Environment.GetEnvironmentVariable("LEAGUE_HUB_PICKUP_DISPOSABLE_TEST") == "1";
     public static string Database => DisposableTest ? "LeagueScramblerPickupTest" : "LeagueScramblerDev";
     private static string productionOrigin;
-    public static bool Enabled => Requested || productionOrigin != null;
-    public static string Origin => Requested
-        ? (DisposableTest ? "https://localhost:5003" : MainDevelopment ? "https://localhost:5001" : "https://localhost:5002")
+    private static bool development;
+    public static bool Enabled => development || productionOrigin != null;
+    public static string Origin => development
+        ? (DisposableTest ? "https://localhost:5003" : "https://localhost:5001")
         : productionOrigin;
-    public static string CookieName => DisposableTest ? ".LeagueHub.PickupTest" : ".LeagueHub.PickupSharedDev";
-    public static bool Requested => Environment.GetEnvironmentVariable("LEAGUE_HUB_PICKUP_DEV") == "1";
-    public static bool MainDevelopment => Requested && !DisposableTest &&
-        Environment.GetEnvironmentVariable("LEAGUE_HUB_PICKUP_MAIN_DEV") == "1";
-    public static bool IsolatedDevelopment => Requested && !MainDevelopment;
     public static string LocalDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LeagueHub", DisposableTest ? "PickupTest" : "PickupSharedDev");
 
     public static void Configure(IWebHostEnvironment environment)
     {
-        if (!Requested) return;
-        if (!environment.IsDevelopment()) throw new InvalidOperationException("Pickup requires its isolated Development profile.");
+        development = environment.IsDevelopment();
+        if (!development)
+        {
+            if (DisposableTest) throw new InvalidOperationException("Disposable Pickup tests require Development.");
+            return;
+        }
         Environment.SetEnvironmentVariable("LEAGUESCRAMBLER_DB_CONNECTION",
             "Server=lpc:localhost;Database=" + Database + ";Integrated Security=True;TrustServerCertificate=True");
         var mail = Directory.CreateDirectory(Path.Combine(LocalDirectory, "mail"));
@@ -60,7 +60,7 @@ public static class PickupEnvironment
 
     public static void Initialize()
     {
-        if (!Requested || !DisposableTest)
+        if (!development || !DisposableTest)
             throw new InvalidOperationException("Automatic initialization is restricted to the disposable Pickup test profile.");
         using var db = new DataContext();
         if (db.Database.GetDbConnection().Database != "LeagueScramblerPickupTest")

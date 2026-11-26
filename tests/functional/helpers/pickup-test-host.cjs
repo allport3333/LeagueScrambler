@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const {spawn} = require('node:child_process');
-const {existsSync, readFileSync} = require('node:fs');
+const {existsSync} = require('node:fs');
 const https = require('node:https');
 const net = require('node:net');
 const path = require('node:path');
@@ -37,11 +37,6 @@ async function withPickupTestHost(run, testAssembly = assembly) {
     if ((await Promise.all(['127.0.0.1', '::1'].map(isListening))).some(Boolean))
         throw new Error('Port 5003 is already in use. The test did not start or stop any host.');
 
-    const profile = JSON.parse(readFileSync(path.join(project, 'Properties', 'launchSettings.json'), 'utf8'))
-        .profiles['Pickup Disposable Test'];
-    assert.equal(profile.applicationUrl, origin);
-    assert.equal(profile.environmentVariables.LEAGUE_HUB_PICKUP_DEV, '1');
-    assert.equal(profile.environmentVariables.LEAGUE_HUB_PICKUP_DISPOSABLE_TEST, '1');
     assert(existsSync(assembly), 'Build the Pickup web project in Release before running the browser test.');
     assert(existsSync(path.join(project, 'ClientApp', 'dist', 'browser', 'index.html')), 'Build the Pickup Angular frontend before running the browser test.');
 
@@ -50,7 +45,9 @@ async function withPickupTestHost(run, testAssembly = assembly) {
         if (/^(?:ASPNETCORE_|DOTNET_)?(?:URLS|HTTP_PORTS|HTTPS_PORTS|ENVIRONMENT|KESTREL__.*)$/i.test(key) ||
             /^LEAGUE_HUB_PICKUP_/i.test(key)) delete env[key];
     }
-    Object.assign(env, profile.environmentVariables, {
+    Object.assign(env, {
+        ASPNETCORE_ENVIRONMENT: 'Development',
+        LEAGUE_HUB_PICKUP_DISPOSABLE_TEST: '1',
         ASPNETCORE_URLS: origin,
         Logging__LogLevel__Default: 'Warning',
         'Logging__LogLevel__Microsoft.Hosting.Lifetime': 'Information'

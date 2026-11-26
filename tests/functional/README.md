@@ -2,6 +2,8 @@
 
 This harness attaches to the existing Visual Studio application at exactly `https://localhost:5001`. It never launches, builds, or publishes the application. Portable Node 22 and Playwright 1.55.1/Chromium are test-only tools. Playwright is pinned to the first patched release for GHSA-7mvr-c777-76hp; its bundled browser must only be used for these local tests. Angular keeps its separate Node 10 build environment; see the dependency security report for targeted frontend dependency pins.
 
+The dedicated Pickup browser scripts under `scripts/` start and stop an isolated port 5003 test host and use `LeagueScramblerPickupTest`. Use port 5001 and `LeagueScramblerDev` for ordinary development. The [Development smoke check](../../tools/pickup/README.md#shared-development) verifies the normal app without writing to the database.
+
 ## Setup and commands
 
 From the repository root in PowerShell:
