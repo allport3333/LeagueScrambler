@@ -1,8 +1,6 @@
 ﻿<main class="pickup">
   @if (!id) {
     <header><h1>Pickup Games</h1></header>
-  } @else {
-    <a class="pickup-home-link" routerLink="/pickup">Pickup Games</a>
   }
   @if (error) { <p class="feedback" role="alert">{{ error }}</p> }
   @if (loading) { <p role="status">Loading pickup games…</p> }
@@ -144,7 +142,7 @@
     <section class="panel details pickup-workspace-shell">
       <div class="session-heading">
         <h1>{{ game.name }}</h1>
-        <p>{{ game.venue.name }} @if (game.venue.city) { &middot; {{ game.venue.city }} } &middot; {{ sessionTime(game) }}</p>
+        <p>{{ game.venue.name }} @if (game.venue.displayCity || game.venue.city) { &middot; {{ game.venue.displayCity || game.venue.city }} } &middot; {{ sessionTime(game) }}</p>
         <div class="session-meta">
           <span class="session-state">{{ ['Draft', 'Published', 'In Progress', 'Completed', 'Cancelled'][game.state] }}</span>
           <span>Organizer: {{ game.organizer }}</span>
@@ -258,7 +256,7 @@
           <article class="panel">
             <h3><a [routerLink]="['/pickup', card.id]">{{ card.name }}</a></h3>
             <p>{{ card.sport }} · {{ card.skill || 'Any level' }}</p>
-            <p>{{ card.venue }} @if (card.city || card.region || card.postalCode) {
+            <p>{{ card.venue }} @if (discoveryLocation(card)) {
               &middot; {{ discoveryLocation(card) }}
             }</p>
             <p>{{ discoveryTime(card) }}</p>
@@ -274,6 +272,7 @@
               @else {
                 {{ card.confirmed }} confirmed
                 @if (card.registrationOpen === false) { <span> &middot; <strong>Registration Closed</strong></span> }
+                @else if (view === 'find' && card.registrationOpen == null) { <span> &middot; View details for registration</span> }
                 @else if (card.capacity != null && card.confirmed >= card.capacity) { <span> &middot; <strong>Full</strong> &middot; Waitlist Available</span> }
                 @else if (card.capacity == null) { <span> &middot; <strong>Open Registration</strong></span> }
                 @else { <span> &middot; {{ card.capacity - card.confirmed }} spots open</span> }

@@ -171,6 +171,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     private sessionVersion = 0;
     private selectionVersion = 0;
     pickupResumeId?: string;
+    pickupSessionCount = 0;
     private pickupResumeRequest = 0;
     eventPopup: 'categories' | 'search' | null = null;
     expandedEventType: number | null = null;
@@ -214,13 +215,13 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         const version = ++this.pickupResumeRequest;
         this.pickupResumeId = undefined;
         if (!this.pickupEnabled || !this.loggedIn) return;
-        let id: string | null;
-        try { id = sessionStorage.getItem('pickup-current-session'); } catch { return; }
-        if (!id) return;
+        let id: string | null = null;
+        try { id = sessionStorage.getItem('pickup-current-session'); } catch { /* Session counts do not depend on storage. */ }
         this.subscriptions.add(this.http.get<{id: string}[]>('/api/pickup/selector').pipe(catchError(() => of([])))
             .subscribe(sessions => {
-                if (version === this.pickupResumeRequest && this.loggedIn && sessions.some(session => session.id === id))
-                    this.pickupResumeId = id;
+                if (version !== this.pickupResumeRequest || !this.loggedIn) return;
+                this.pickupSessionCount = sessions.length;
+                if (sessions.some(session => session.id === id)) this.pickupResumeId = id;
             }));
     }
 
@@ -321,7 +322,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             this.userRole = '';
             this.playerId = null;
             if (state !== true) {
-                this.selectionVersion++; this.pickupResumeRequest++; this.pickupResumeId = undefined;
+                this.selectionVersion++; this.pickupResumeRequest++; this.pickupResumeId = undefined; this.pickupSessionCount = 0;
                 this.closeEventSelector(false);
             }
             if (state !== true) { return; }

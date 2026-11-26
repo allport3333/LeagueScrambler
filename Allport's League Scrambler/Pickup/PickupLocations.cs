@@ -12,7 +12,7 @@ internal static class PickupLocations
 {
     internal record Point(double Latitude, double Longitude);
     internal record Locality(string City, string State);
-    private record PostalRow(string Zip, Locality Locality, string StateName, Point Point);
+    private record PostalRow(string Zip, Locality Locality, string CityName, string StateName, Point Point);
     internal record Search(string Text, IReadOnlySet<Locality> Localities, IReadOnlyList<Point> Centers, string[] Choices,
         bool Known, string State);
     internal record Match(double? Miles, bool Approximate, bool MissingState);
@@ -33,7 +33,7 @@ internal static class PickupLocations
         while (reader.ReadLine() is { } line)
         {
             var fields = line.Split('\t');
-            rows.Add(new PostalRow(fields[0], new Locality(Normalize(fields[1]), Normalize(fields[3])), fields[2],
+            rows.Add(new PostalRow(fields[0], new Locality(Normalize(fields[1]), Normalize(fields[3])), fields[1], fields[2],
                 new Point(double.Parse(fields[4], CultureInfo.InvariantCulture), double.Parse(fields[5], CultureInfo.InvariantCulture))));
         }
         return rows.ToArray();
@@ -73,6 +73,7 @@ internal static class PickupLocations
         var venueLocality = new Locality(cityName, state);
         var zip = PostalCode(postalCode);
         var zipLocalities = us && zip.Length == 5 ? Zip.Value[zip].Select(r => r.Locality).ToArray() : [];
+        var exactPostal = us && zip.Length == 5 && zip == PostalCode(search.Text);
         var matchingLocality = us && (search.Localities.Contains(venueLocality) ||
             zipLocalities.Any(place => (state.Length == 0 || place.State == state) && search.Localities.Contains(place)));
         var qualifiedCity = search.State.Length != 0;
@@ -89,9 +90,22 @@ internal static class PickupLocations
             var miles = search.Centers.Min(center => Distance(center, point));
             return miles <= radius ? new Match(Math.Round(miles, 1), false, false) : null;
         }
-        if (matchingLocality || possibleLegacy || localTextMatch || facilityMatch)
+        if (exactPostal || matchingLocality || possibleLegacy || localTextMatch || facilityMatch)
             return new Match(null, !ValidPoint(latitude, longitude), possibleLegacy);
         return null;
+    }
+
+    internal static (string City, string Region) Display(string city, string region, string postalCode, string country)
+    {
+        var zip = PostalCode(postalCode);
+        if (zip.Length != 5 || Normalize(country) is not ("" or "US" or "USA" or "UNITED STATES"))
+            return (city, region);
+        var state = StateCode(region);
+        var savedCity = Normalize(city);
+        var matches = Zip.Value[zip].Where(row => (state.Length == 0 || row.Locality.State == state) &&
+            (savedCity.Length == 0 || row.Locality.City == savedCity)).DistinctBy(row => row.Locality).Take(2).ToArray();
+        if (matches.Length != 1) return (city, region);
+        return (savedCity.Length == 0 ? matches[0].CityName : city, state.Length == 0 ? matches[0].Locality.State : region);
     }
 
     internal static bool ValidPoint(double? lat, double? lon) =>

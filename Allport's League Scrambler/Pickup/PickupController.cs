@@ -47,7 +47,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
         var result = await venues.AsNoTracking().OrderByDescending(v => db.PickupSessions
             .Where(s => s.VenueId == v.Id && s.OrganizerId == account).Max(s => (DateTimeOffset?)s.StartsUtc))
             .ThenBy(v => v.Name).ThenBy(v => v.Id).Take(12).ToListAsync();
-        return Ok(result);
+        return Ok(result.Select(PresentVenue));
     }
 
     [HttpGet("sessions")]
@@ -118,15 +118,26 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
             .ThenBy(entry => entry.match.Miles ?? double.MaxValue).ThenBy(entry => entry.s.Id)
             .Skip(page * 12).Take(13).ToArray();
         return Ok(new {
-            sessions = result.Take(12).Select(entry => new {
-                entry.s.Id, entry.s.Name, entry.s.Sport, entry.s.Skill, entry.s.venue, entry.s.City, entry.s.Region,
-                entry.s.PostalCode, entry.s.TimeZone, entry.s.StartsUtc, entry.s.EndsUtc, entry.s.State, entry.s.Capacity,
-                entry.s.confirmed, registrationOpen = entry.open, timing = entry.rank, distanceMiles = entry.match.Miles,
-                approximateLocation = entry.match.Approximate, locationUnconfirmed = entry.match.MissingState
+            sessions = result.Take(12).Select(entry => {
+                var label = PickupLocations.Display(entry.s.City, entry.s.Region, entry.s.PostalCode, entry.s.Country);
+                return new {
+                    entry.s.Id, entry.s.Name, entry.s.Sport, entry.s.Skill, entry.s.venue, entry.s.City, entry.s.Region,
+                    entry.s.PostalCode, entry.s.TimeZone, entry.s.StartsUtc, entry.s.EndsUtc, entry.s.State, entry.s.Capacity,
+                    entry.s.confirmed, registrationOpen = entry.open, timing = entry.rank, distanceMiles = entry.match.Miles,
+                    approximateLocation = entry.match.Approximate, locationUnconfirmed = entry.match.MissingState,
+                    displayCity = label.City, displayRegion = label.Region
+                };
             }),
             hasMore = result.Length > 12,
             locationChoices = near.Choices
         });
+    }
+
+    private static object PresentVenue(PickupVenue venue)
+    {
+        var label = PickupLocations.Display(venue.City, venue.Region, venue.PostalCode, venue.Country);
+        return new { venue.Id, venue.Name, venue.Address, venue.City, venue.Region, venue.PostalCode,
+            venue.Country, venue.TimeZone, venue.Latitude, venue.Longitude, displayCity = label.City, displayRegion = label.Region };
     }
 
     private static bool IncludesLocalDate(DateTimeOffset start, DateTimeOffset end, string zoneId, DateOnly date)
@@ -162,7 +173,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
         var organizer = await db.Users.Where(u => u.UserId == session.OrganizerId)
             .Select(u => u.FirstName + " " + u.LastName).SingleAsync();
         return Ok(new {
-            session.Id, session.Name, session.Sport, session.Venue, session.StartsUtc, session.EndsUtc, session.DeadlineUtc,
+            session.Id, session.Name, session.Sport, Venue = PresentVenue(session.Venue), session.StartsUtc, session.EndsUtc, session.DeadlineUtc,
             session.LocalDate, session.Description, session.Skill, session.Capacity, session.Visibility, session.State,
             session.ApprovalRequired, organizer, owner, canReopen = CanReopen(session),
             organizerNotes = owner ? session.OrganizerNotes : null,

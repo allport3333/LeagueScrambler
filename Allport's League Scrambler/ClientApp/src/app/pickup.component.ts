@@ -13,11 +13,12 @@ const discoveryDefaults = () => ({sport: '', location: '', date: '', available: 
 
 interface SessionCard {
     timing?: number; registrationOpen?: boolean; distanceMiles?: number; approximateLocation?: boolean;
-    locationUnconfirmed?: boolean; postalCode?: string;
+    locationUnconfirmed?: boolean; postalCode?: string; displayCity?: string; displayRegion?: string;
     id: string; name: string; sport: string; startsUtc: string; endsUtc: string; skill?: string;
     venue: string; city: string; region: string; timeZone: string; capacity: number | null; confirmed: number; state: number;
 }
 interface Venue {
+    displayCity?: string; displayRegion?: string;
     id: number; name: string; address: string; city: string; region: string; postalCode: string; country: string; timeZone: string;
 }
 interface Session extends Omit<SessionCard, 'venue' | 'city' | 'region' | 'timeZone'> {
@@ -155,7 +156,7 @@ export class PickupComponent implements OnInit {
     }
 
     discoveryLocation(card: SessionCard): string {
-        return [card.city, [card.region, card.postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+        return [card.displayCity || card.city, [card.displayRegion || card.region, card.postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     }
 
     discoveryTime(card: SessionCard): string {
@@ -228,11 +229,14 @@ export class PickupComponent implements OnInit {
                 let params = new HttpParams().set('page', page);
                 for (const [key, value] of Object.entries(this.filters)) if (value) params = params.set(key, value);
                 if (this.deviceLocation) params = params.set('latitude', this.deviceLocation.latitude).set('longitude', this.deviceLocation.longitude);
-                const result = await firstValueFrom(this.http.get<{sessions: SessionCard[]; hasMore: boolean; locationChoices: string[]}>('/api/pickup/sessions', {params}));
+                const result = await firstValueFrom(this.http.get<{sessions: SessionCard[]; hasMore: boolean; locationChoices?: string[]}>('/api/pickup/sessions', {params}));
                 if (request === this.request) {
-                    this.sessions = result.sessions;
+                    if (!Array.isArray(result?.sessions)) throw new Error('Invalid discovery response');
+                    const now = Date.now();
+                    this.sessions = result.sessions.map(card => ({...card, timing: card.timing ??
+                        (card.state === 2 || Date.parse(card.startsUtc) <= now ? 0 : Date.parse(card.startsUtc) <= now + 7200000 ? 1 : 2)}));
                     this.hasMore = result.hasMore;
-                    this.locationChoices = result.locationChoices;
+                    this.locationChoices = Array.isArray(result.locationChoices) ? result.locationChoices : [];
                     if (!this.deviceLocation) {
                         try {
                             if (this.filters.location.trim()) localStorage.setItem('pickup-discovery-location', this.filters.location.trim());
@@ -372,7 +376,7 @@ export class PickupComponent implements OnInit {
 
     zoneLabel(zone: string): string { return zone.replace(/_/g, ' ').split('/').reverse().join(' ? '); }
     facilityLocation(venue: Venue): string {
-        return [venue.city, [venue.region, venue.postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+        return [venue.displayCity || venue.city, [venue.displayRegion || venue.region, venue.postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     }
 
     get endPreview(): string {

@@ -129,12 +129,26 @@ withPickupTestHost(async origin => {
         const menu = organizer.getByRole('dialog', {name: 'Select league or event'});
         async function openPickupMenu() {
             await selector.click();
-            const pickup = menu.getByRole('button', {name: /^(Expand|Collapse) Pickup Games$/});
+            const pickup = menu.getByRole('button', {name: /^Pickup Games/});
             if (await pickup.getAttribute('aria-expanded') !== 'true') await pickup.click();
         }
         await selector.click();
         await menu.getByRole('button', {name: /^Tournaments/}).click();
         await expect(menu.getByRole('link', {name: 'Manage Tournaments'})).toHaveAttribute('href', '/tournament');
+        for (const [width, theme] of [[1366, 'classic'], [390, 'navy'], [768, 'charcoal']]) {
+            await organizer.setViewportSize({width, height: 850});
+            await organizer.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+            const sections = menu.locator('h2 > button.event-category');
+            await expect(sections).toHaveCount(3);
+            const styles = await sections.evaluateAll(rows => rows.map(row => {
+                const style = getComputedStyle(row);
+                return [style.fontSize, style.fontWeight, style.paddingLeft, style.paddingRight, style.minHeight,
+                    style.borderBottomWidth, row.querySelectorAll('mat-icon').length, Boolean(row.querySelector('.event-count'))];
+            }));
+            for (const style of styles) assert.deepEqual(style, styles[0]);
+            await menu.screenshot({path: path.join(screenshots, 'event-selector-' + theme + '.png')});
+        }
+        await organizer.setViewportSize({width: 1440, height: 850});
         await expect(menu.getByRole('link', {name: 'Create Tournament'})).toHaveAttribute('href', '/tournament?view=create');
         await menu.getByRole('link', {name: 'Manage Tournaments'}).click();
         await expect(organizer).toHaveURL(origin + '/tournament');
@@ -144,7 +158,7 @@ withPickupTestHost(async origin => {
         await expect(organizer).toHaveURL(origin + '/tournament?view=create');
         await expect(organizer.locator('.desktop-navigation').getByText('Pickup Games')).toHaveCount(0);
         await openPickupMenu();
-        await expect(menu.getByRole('link', {name: 'Pickup Games', exact: true})).toHaveCount(1);
+        await expect(menu.getByRole('link', {name: 'Pickup Games', exact: true})).toHaveCount(0);
         await expect(menu.getByText('Workspace ' + token)).toHaveCount(0);
         await menu.getByRole('link', {name: 'Create Pickup Game'}).click();
         await expect(organizer.getByRole('heading', {name: 'Create a Pickup Game'})).toBeVisible();
@@ -233,7 +247,8 @@ withPickupTestHost(async origin => {
         assert.equal(later.sets[1].scores.length, 0);
         assert(await organizer.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
         await openPickupMenu();
-        await menu.getByRole('link', {name: 'Pickup Games', exact: true}).click();
+        await menu.getByRole('link', {name: 'Find Pickup Games', exact: true}).click();
+        await organizer.goto(origin + '/pickup');
         await expect(organizer.getByRole('link', {name: /Continue Pickup Session/})).toBeVisible();
         await openPickupMenu();
         await menu.getByRole('link', {name: 'Continue Pickup Session'}).click();

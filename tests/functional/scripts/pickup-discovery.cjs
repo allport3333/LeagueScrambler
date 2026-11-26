@@ -45,6 +45,7 @@ withPickupTestHost(async origin => {
         const otherState = await create('Other state', {region: 'CA', timeZone: 'America/Los_Angeles'});
         const privateId = await create('Private', {visibility: 2});
         const unlisted = await create('Unlisted', {visibility: 1});
+        const exactWithoutLookup = await create('Unindexed ZIP', {city: '', region: '', postalCode: '00000-0123'});
         const completed = await create('Completed');
         const cancelled = await create('Cancelled');
         assert.equal((await api.post(origin + '/api/pickup/sessions/' + completed + '/lifecycle', {headers, data: {complete: true}})).status(), 204);
@@ -80,6 +81,11 @@ withPickupTestHost(async origin => {
             assert.equal(relevant.find(row => row.id === upcoming).timing, 2);
             assert.equal(relevant.find(row => row.id === cityOnly).distanceMiles, null);
         }
+        const exactRows = await search({location: '00000', radius: 25});
+        assert(exactRows.some(row => row.id === exactWithoutLookup && row.distanceMiles === null));
+        const zipResult = (await search({location: '48066'})).find(row => row.id === zipOnly);
+        assert.equal(zipResult.displayCity, 'Roseville');
+        assert.equal(zipResult.displayRegion, 'MI');
         const unqualified = await search({location: 'Roseville'});
         assert(unqualified.some(r => r.id === closed));
         assert((await search({location: '48066', radius: 25})).some(r => r.id === point && r.distanceMiles > 5));
@@ -113,7 +119,21 @@ withPickupTestHost(async origin => {
         await page.getByLabel('Date', {exact: true}).fill(yesterday);
         await page.getByRole('button', {name: 'Find Games', exact: true}).click();
         await expect(page.locator('article').filter({hasText: 'Cross-midnight ' + token})).toBeVisible();
+        await page.route('**/api/pickup/sessions?*', async route => {
+            const response = await route.fetch();
+            const {sessions, hasMore} = await response.json();
+            await route.fulfill({response, json: {sessions, hasMore}});
+        });
+        await page.getByRole('button', {name: 'Find Games', exact: true}).click();
+        await expect(page.locator('article').filter({hasText: 'Cross-midnight ' + token})).toBeVisible();
+        await page.unroute('**/api/pickup/sessions?*');
+        await page.route('**/api/pickup/sessions?*', route => route.fulfill({status: 503, json: {message: 'Fixture outage'}}), {times: 1});
+        await page.getByRole('button', {name: 'Find Games', exact: true}).click();
+        await expect(page.getByRole('button', {name: 'Retry', exact: true})).toBeVisible();
+        await page.getByRole('button', {name: 'Retry', exact: true}).click();
+        await expect(page.locator('article').filter({hasText: 'Cross-midnight ' + token})).toBeVisible();
         await page.goto(origin + '/pickup/' + zipOnly);
+        await expect(page.locator('.pickup-home-link')).toHaveCount(0);
         await page.getByRole('button', {name: 'Join Session', exact: true}).click();
         await expect(page.getByLabel('Email address')).toBeVisible();
         await page.reload();
@@ -123,7 +143,8 @@ withPickupTestHost(async origin => {
         await expect(ownerPage.getByRole('link', {name: 'Cross-midnight ' + token, exact: true})).toBeVisible();
         await ownerPage.locator('#leagueDropdown').click();
         const selector = ownerPage.getByRole('dialog', {name: 'Select league or event'});
-        await expect(selector.getByRole('link', {name: 'Pickup Games', exact: true})).toHaveCount(1);
+        await expect(selector.getByRole('button', {name: /^Pickup Games/})).toHaveCount(1);
+        await expect(selector.getByRole('link', {name: 'Pickup Games', exact: true})).toHaveCount(0);
         await expect(selector.getByRole('link', {name: 'Find Pickup Games', exact: true})).toBeVisible();
         await expect(ownerPage.getByRole('navigation', {name: 'Main navigation'}).getByRole('link', {name: 'Pickup Games', exact: true})).toHaveCount(0);
         for (const id of ids.filter(id => id !== completed && id !== cancelled))

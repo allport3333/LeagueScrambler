@@ -30,26 +30,12 @@
           @for (group of eventGroups; track group.id) {
             @if (eventPopup === 'categories') {
               <div class="event-selector-group" role="group" [attr.aria-label]="group.title">
-                @if (group.id === 3) {
-                  <h2 class="pickup-category">
-                    <a class="event-choice pickup-category-link" routerLink="/pickup" (click)="closeEventSelector()">
-                      <mat-icon aria-hidden="true">sports_volleyball</mat-icon><span>Pickup Games</span>
-                    </a>
-                    <button type="button" class="event-category pickup-category-toggle"
-                      [attr.aria-label]="expandedEventType === group.id ? 'Collapse Pickup Games' : 'Expand Pickup Games'"
-                      [attr.aria-expanded]="expandedEventType === group.id" [attr.aria-controls]="'event-category-' + group.id"
-                      (click)="toggleEventCategory(group.id)">
-                      <mat-icon aria-hidden="true">{{ expandedEventType === group.id ? 'expand_less' : 'expand_more' }}</mat-icon>
-                    </button>
-                  </h2>
-                } @else {
                 <h2><button type="button" class="event-category" [attr.aria-expanded]="expandedEventType === group.id"
                   [attr.aria-controls]="'event-category-' + group.id" (click)="toggleEventCategory(group.id)">
                   <mat-icon aria-hidden="true">{{ group.icon }}</mat-icon><span>{{ group.title }}</span>
-                  @if (group.id !== 3) { <span class="event-count">{{ group.events.length }}</span> }
+                  <span class="event-count">{{ group.id === 3 ? pickupSessionCount : group.events.length }}</span>
                   <mat-icon aria-hidden="true">{{ expandedEventType === group.id ? 'expand_less' : 'expand_more' }}</mat-icon>
                 </button></h2>
-                }
                 <div [id]="'event-category-' + group.id" [hidden]="expandedEventType !== group.id">
                   @if (expandedEventType === group.id) {
                     @for (event of group.events; track event.id) {

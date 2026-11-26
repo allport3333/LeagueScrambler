@@ -78,6 +78,3 @@
 .event-selector-panel button:hover, .event-selector-panel .selected-league { background: var(--hub-header, #edf3fa); }
 .event-selector-panel .selected-league { font-weight: 650; color: var(--hub-link, #23466d); }
 .event-selector-panel :is(button, input, a):focus-visible { outline: 2px solid var(--hub-focus, #35658f); outline-offset: -2px; }
-.pickup-category { display: flex; align-items: stretch; }
-.pickup-category .pickup-category-link { flex: 1; }
-.pickup-category .pickup-category-toggle { flex: 0 0 44px; width: 44px; justify-content: center; padding-inline: .35rem; }
