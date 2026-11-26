@@ -84,7 +84,7 @@ const league = { id: 37, leagueName: 'Test League Fixture with a Long Name for t
                     label.querySelectorAll('mat-icon').forEach(icon => icon.remove());
                     return label.textContent.trim();
                 })),
-                role ? ['Profile', 'Appearance', 'Install Locally', 'F.A.Q.', 'Change Email', 'Logout'] : ['Appearance', 'Install Locally', 'F.A.Q.']);
+                role ? ['Profile', 'Appearance', 'Install Locally', 'F.A.Q.', 'Connected Accounts', 'Change Email', 'Logout'] : ['Appearance', 'Install Locally', 'F.A.Q.']);
             await expect(nav.getByRole('link', {name: 'Install Locally'})).toHaveCount(0);
             await expect(nav.getByRole('button', {name: 'More', exact: true})).toHaveCount(0);
             await expect(nav.getByRole('link', {name: 'Tournament Center', exact: true})).toHaveCount(0);

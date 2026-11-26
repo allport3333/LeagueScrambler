@@ -31,6 +31,7 @@ export class HomeComponent implements OnInit {
     loginPassword: string = '';
     loginError = '';
     googleMessage = '';
+    pickupReturn = '';
     loginPending = false;
     registerEmail: string = '';
     registerPassword: string = '';
@@ -88,6 +89,10 @@ export class HomeComponent implements OnInit {
             if (Number.isSafeInteger(leagueId) && leagueId > 0) {
                 this.leagues.selectNavigationLeague(leagueId).pipe(takeUntilDestroyed(destroyRef)).subscribe();
             }
+            const destination = queryParams.returnTo;
+            this.pickupReturn = typeof destination === 'string' &&
+                /^\/pickup\/[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(destination)
+                ? destination : '';
             this.googleMessage = googleStatus(queryParams.google ?? null);
             if (queryParams.toggleLoginForm === 'true' || this.googleMessage) {
                 this.toggleLoginForm();
@@ -157,10 +162,15 @@ export class HomeComponent implements OnInit {
         if (this.loginPending || !this.isEmailValid || !this.loginEmail || !this.loginPassword) return;
         this.loginError = '';
         this.loginPending = true;
+        const pickupReturn = this.pickupReturn;
         this.loginService.login(this.loginEmail, this.loginPassword).subscribe(
             (response) => {
                 this.loginPending = false;
                 this.authService.setLoggedIn(true);
+                if (pickupReturn) {
+                    void this.router.navigateByUrl(pickupReturn, {replaceUrl: true});
+                    return;
+                }
 
                 // Home already handles the unlinked Player state. Navigation loads
                 // the authorized league list as part of the account session.

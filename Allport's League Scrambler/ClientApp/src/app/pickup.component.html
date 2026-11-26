@@ -169,20 +169,34 @@
       <ng-template #registrationActions>
       @if (game.state !== 4) {
       @if (game.capacity != null) { <p>{{ game.capacity - game.confirmed }} spots open</p> }
-      @if (verificationPending) { <p role="status">Check your email for a verification link.</p> }
+      @if (verificationPending) { <p role="status">Check your email for a verification link. If you already have a League Hub account, sign in to join.</p> }
       @if (game.registration != null) { <p role="status">Your registration: <strong>{{ statuses[game.registration] }}</strong></p> }
       @if (registered) {
         <button type="button" [disabled]="busy" (click)="change('leave')">Cancel Registration</button>
       } @else if (game.registration !== 4 && game.registrationOpen) {
-        @if (signedIn | async) { <button type="button" class="primary" [disabled]="busy" (click)="change(sessionFull ? 'join?waitlist=true' : 'join')">{{ joinLabel }}</button> }
-        @else if (!guestForm) { <button type="button" class="primary" (click)="guestForm = true">{{ joinLabel }}</button> }
-        @else {
-          <form #guest="ngForm" class="guest-form" (ngSubmit)="sendGuestLink()">
-            <label>Name<input name="guestName" autocomplete="name" required maxlength="100" [(ngModel)]="join.name"></label>
-            <label>Email address<input name="guestEmail" autocomplete="email" type="email" email required maxlength="254" [(ngModel)]="join.email"></label>
-            <button class="primary" [disabled]="busy || guest.invalid">{{ joinLabel }}</button>
-            <p class="legal-form-links"><a routerLink="/privacy">Privacy Policy</a> <span aria-hidden="true">&middot;</span> <a routerLink="/terms">Terms of Service</a></p>
-          </form>
+        @let account = signedIn | async;
+        @if (account === true) {
+          <button type="button" class="primary" [disabled]="busy" (click)="change(sessionFull ? 'join?waitlist=true' : 'join')">{{ sessionFull ? 'Join Waitlist' : 'Join Game' }}</button>
+          @if (game.hasLinkedPlayer === false) {
+            <p class="registration-note">You can join with your account. To use an existing player profile, link it from <a routerLink="/">Home</a> before joining.</p>
+          }
+        } @else if (account === false) {
+          <section class="panel pickup-join-options" aria-label="Join this Pickup Game">
+            @if (googleMessage) { <p role="status">{{ googleMessage }}</p> }
+            <div class="pickup-join-actions">
+              <app-google-sign-in [returnTo]="'/pickup/' + game.id"></app-google-sign-in>
+              <a class="pickup-join-sign-in" routerLink="/" [queryParams]="{toggleLoginForm: true, returnTo: '/pickup/' + game.id}">Sign in with an Existing Account</a>
+              <button type="button" (click)="guestForm = !guestForm" [attr.aria-expanded]="guestForm">Join as Guest</button>
+            </div>
+            @if (guestForm) {
+              <form #guest="ngForm" class="guest-form" (ngSubmit)="sendGuestLink()">
+                <label>Name<input name="guestName" autocomplete="name" required maxlength="100" [(ngModel)]="join.name"></label>
+                <label>Email address<input name="guestEmail" autocomplete="email" type="email" email required maxlength="254" [(ngModel)]="join.email"></label>
+                <button class="primary" [disabled]="busy || guest.invalid">{{ joinLabel }}</button>
+                <p class="legal-form-links"><a routerLink="/privacy">Privacy Policy</a> <span aria-hidden="true">&middot;</span> <a routerLink="/terms">Terms of Service</a></p>
+              </form>
+            }
+          </section>
         }
       } @else if (game.state !== 4) { <p>Registration is closed.</p> }
       }

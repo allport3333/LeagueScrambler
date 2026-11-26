@@ -164,7 +164,7 @@ withPickupTestHost(async origin => {
         await expect(page.locator('article').filter({hasText: 'Cross-midnight ' + token})).toBeVisible();
         await page.goto(origin + '/pickup/' + zipOnly);
         await expect(page.locator('.pickup-home-link')).toHaveCount(0);
-        await page.getByRole('button', {name: 'Join Session', exact: true}).click();
+        await page.getByRole('button', {name: 'Join as Guest', exact: true}).click();
         await expect(page.getByLabel('Email address')).toBeVisible();
         await page.reload();
         await expect(page.locator('#leagueDropdown')).toHaveCount(0);

@@ -179,6 +179,8 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
             organizerNotes = owner ? session.OrganizerNotes : null,
             confirmed = await Confirmed(db, id),
             registrationOpen = RegistrationOpen(session),
+            hasLinkedPlayer = LeagueAccess.TryGetAccountId(User, out var accountId)
+                ? (bool?)await db.UsersPlayer.AnyAsync(link => link.UserId == accountId) : null,
             registration = mine?.State,
             registrations
         });
@@ -277,6 +279,12 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
             var key = EmailKey(address.Address);
             var row = await db.PickupRegistrations.SingleOrDefaultAsync(r => r.SessionId == id && r.EmailKey == key);
             if (row?.AccountId != null) return Accepted();
+            if (row == null)
+            {
+                var normalized = address.Address.ToUpperInvariant();
+                if (await db.Users.AnyAsync(user => user.Email != null && user.Email.Trim().ToUpper() == normalized))
+                    return Accepted();
+            }
             if (row?.VerifiedUtc == null && await CannotJoin(db, session, waitlist) is { } blocked) return blocked;
             var now = DateTimeOffset.UtcNow;
             if (row?.VerificationExpiresUtc > now.AddMinutes(19)) return Accepted();

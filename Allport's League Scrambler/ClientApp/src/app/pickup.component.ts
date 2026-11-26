@@ -1,3 +1,5 @@
+import { GoogleSignInComponent } from './google-auth/google-sign-in.component';
+import { googleStatus } from './google-auth/google-status';
 ﻿import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit } from '@angular/core';
@@ -24,7 +26,7 @@ interface Venue {
 interface Session extends Omit<SessionCard, 'venue' | 'city' | 'region' | 'timeZone'> {
     venue: Venue; organizer: string; description?: string; organizerNotes?: string; deadlineUtc?: string;
     approvalRequired: boolean; visibility: number; owner: boolean; canReopen: boolean; canDelete: boolean; registration: number | null;
-    registrationOpen: boolean; registrations?: {id: string; name: string; state: number}[];
+    registrationOpen: boolean; hasLinkedPlayer?: boolean; registrations?: {id: string; name: string; state: number}[];
 }
 const deviceZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const durations = [60, 90, 120, 180];
@@ -38,7 +40,7 @@ const emptyForm = () => ({
 @Component({
     selector: 'app-pickup',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, RouterLink, AsyncPipe, NgTemplateOutlet, PickupWorkspaceComponent],
+    imports: [FormsModule, RouterLink, AsyncPipe, NgTemplateOutlet, PickupWorkspaceComponent, GoogleSignInComponent],
     templateUrl: './pickup.component.html',
     styleUrl: './pickup.component.css'
 })
@@ -52,7 +54,9 @@ export class PickupComponent implements OnInit {
         {minutes: 120, label: '2 hours'}, {minutes: 180, label: '3 hours'}];
     readonly zones = [...new Set([deviceZone, 'America/Detroit', 'America/New_York', 'America/Chicago', 'America/Denver',
         'America/Los_Angeles', 'UTC', ...(Intl.supportedValuesOf?.('timeZone') ?? [])])];
-    readonly signedIn = inject(AuthService).isLoggedIn$;
+    private readonly auth = inject(AuthService);
+    readonly signedIn = this.auth.authenticationState$;
+    get googleMessage(): string { return googleStatus(this.route.snapshot.queryParamMap.get('google')); }
     readonly levels = ['Beginner', 'Intermediate', 'Advanced', 'All levels'];
     readonly statuses = ['Pending verification', 'Pending approval', 'Confirmed', 'Cancelled', 'Declined', 'Waitlisted', 'Offered'];
     sports: string[] | null = null;
@@ -266,7 +270,7 @@ export class PickupComponent implements OnInit {
                     }
                 }
             } else if (this.view === 'create') {
-                const signedIn = await firstValueFrom(this.signedIn);
+                const signedIn = await firstValueFrom(this.auth.isLoggedIn$);
                 const active = signedIn ? await this.activeOwnedSession() : undefined;
                 if (request === this.request) this.blockedSessionId = active?.id;
             } else if (!this.view) {
@@ -547,6 +551,10 @@ export class PickupComponent implements OnInit {
             } else if (field && (this.editing || this.view === 'create')) {
                 this.fieldErrors[field] = this.describeError(error);
                 if (['deadline', 'timeZone', 'visibility', 'capacity', 'duration'].includes(field)) this.advancedOpen = true;
+            } else if (this.session && error.status === 401) {
+                this.auth.restoreSession();
+                await this.load();
+                this.notifications.error('Your sign-in session ended. Sign in again to continue.');
             } else this.notifications.error(this.describeError(error));
         }
         finally { this.busy = false; }

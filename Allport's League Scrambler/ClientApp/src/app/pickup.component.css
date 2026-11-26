@@ -79,3 +79,11 @@ button:not(:disabled):hover { border-color: var(--hub-focus, #30577e); }
   .discovery-search { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .discovery-search > label:first-child { grid-column: 1 / -1; }
 }
+
+.pickup-join-options { width: min(100%, 36rem); margin: .75rem auto; text-align: center; }
+.pickup-join-actions { display: flex; justify-content: center; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.pickup-join-sign-in {
+  display: inline-grid; place-items: center; min-height: 44px; padding: .4rem .7rem; border-radius: .4rem;
+  background: var(--hub-primary-action, #30577e); color: var(--hub-action-text, white); text-decoration: none;
+}
+.pickup-join-options .guest-form { max-width: 24rem; margin: .75rem auto 0; text-align: start; }

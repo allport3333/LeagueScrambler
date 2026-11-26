@@ -57,7 +57,7 @@ const pickupId = 'd3512b60-7316-4af1-8621-55dec8e48103';
                 await page.getByRole('button', {name: 'Register', exact: true}).click();
                 await expect(page.locator('.registration-form').getByRole('link', {name: 'Terms of Service'})).toBeVisible();
                 await page.goto(origin + '/pickup/' + pickupId);
-                await page.getByRole('button', {name: 'Join Session', exact: true}).click();
+                await page.getByRole('button', {name: 'Join as Guest', exact: true}).click();
                 await expect(page.locator('.guest-form').getByRole('link', {name: 'Privacy Policy'})).toBeVisible();
             }
             await context.close();

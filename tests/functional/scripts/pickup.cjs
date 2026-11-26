@@ -111,7 +111,7 @@ withPickupTestHost(async origin => {
         await expect(visitor.getByText('Open Registration', {exact: true})).toBeVisible();
         const before = new Set(await fs.readdir(inbox));
         const guestEmail = 'guest-' + token + '@example.invalid';
-        await visitor.getByRole('button', {name: 'Join Session'}).click();
+        await visitor.getByRole('button', {name: 'Join as Guest'}).click();
         await visitor.getByLabel('Name', {exact: true}).fill('Guest ' + token);
         await visitor.getByLabel('Email address', {exact: true}).fill(guestEmail);
         await visitor.getByRole('button', {name: 'Join Session'}).click();
@@ -150,7 +150,7 @@ withPickupTestHost(async origin => {
         });
         assert.equal(claim.status, 200, JSON.stringify(claim));
         await player.goto(sessionUrl);
-        await player.getByRole('button', {name: 'Join Session'}).click();
+        await player.getByRole('button', {name: 'Join Game'}).click();
         await expect(player.getByText('Your registration: Confirmed')).toBeVisible();
         assert.equal((await api(player, endpoint + '/join', 'POST', {})).status, 200);
         assert.equal((await api(organizer, endpoint)).data.confirmed, 1);

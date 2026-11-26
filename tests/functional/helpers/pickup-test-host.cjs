@@ -33,7 +33,7 @@ function catalogReady() {
     });
 }
 
-async function withPickupTestHost(run) {
+async function withPickupTestHost(run, testAssembly = assembly) {
     if ((await Promise.all(['127.0.0.1', '::1'].map(isListening))).some(Boolean))
         throw new Error('Port 5003 is already in use. The test did not start or stop any host.');
 
@@ -56,10 +56,11 @@ async function withPickupTestHost(run) {
         'Logging__LogLevel__Microsoft.Hosting.Lifetime': 'Information'
     });
 
+    assert(existsSync(testAssembly), "Build the selected disposable test host first.");
     let owned;
-    function launch(...args) {
+    function launch(entry, ...args) {
         // Run the app directly so the child PID is Kestrel, without a dotnet run wrapper.
-        const child = spawn('dotnet', [assembly, ...args], {cwd: project, env, windowsHide: true});
+        const child = spawn('dotnet', [entry, ...args], {cwd: project, env, windowsHide: true});
         const host = {child, output: '', exit: null, listening: false};
         owned = host;
         host.done = new Promise(resolve => {
@@ -92,12 +93,12 @@ async function withPickupTestHost(run) {
     process.once('SIGINT', interrupt);
     process.once('SIGTERM', terminate);
     try {
-        const initializer = launch('--initialize-pickup');
+        const initializer = launch(assembly, '--initialize-pickup');
         const initialized = await Promise.race([initializer.done, delay(30000, null, {ref: false})]);
         if (initialized?.code !== 0)
             throw new Error('Disposable Pickup database initialization failed.\n' + (initialized?.error ?? initializer.output));
 
-        const host = launch();
+        const host = launch(testAssembly);
         const deadline = Date.now() + 30000;
         while (!host.exit && Date.now() < deadline) {
             if (host.listening && await catalogReady() && !host.exit) return await run(origin);
