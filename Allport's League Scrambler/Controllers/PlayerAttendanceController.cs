@@ -1,3 +1,4 @@
+using Allport_s_League_Scrambler.Hubs;
 using System;
 using System.Data;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace Allport_s_League_Scrambler.Controllers
 {
  [Route("api/PlayerAttendance")]
  [Authorize(AuthenticationSchemes=CookieAuthenticationDefaults.AuthenticationScheme)]
- public class PlayerAttendanceController:Controller
+ public class PlayerAttendanceController(LeagueAttendanceNotifications notifications):Controller
  {
   public class AttendanceState {
    public bool Visible {get;set;} public bool IsOwnProfile {get;set;} public bool SignedIn {get;set;}
@@ -59,15 +60,18 @@ namespace Allport_s_League_Scrambler.Controllers
     if(!state.IsOwnProfile)return Forbid();
     if(state.Reason!=null)return StatusCode(423,new {message=state.Reason});
     var start=now.Date;var end=start.AddDays(1);
+    var changed = !remove;
     if(remove){
      var row=await context.PlayerSignIn.SingleOrDefaultAsync(record=>record.PlayerId==playerId&&record.LeagueId==leagueId&&record.DateTime>=start&&record.DateTime<end);
-     if(row!=null){context.PlayerSignIn.Remove(row);await context.SaveChangesAsync();}
+     if(row!=null){context.PlayerSignIn.Remove(row);await context.SaveChangesAsync();changed=true;}
     }else{
      if(state.SignedIn)return Conflict(new {message="Already signed in for tonight."});
      context.PlayerSignIn.Add(new PlayerSignIn {PlayerId=playerId,LeagueId=leagueId,DateTime=now,LockedSignIn=false});
      await context.SaveChangesAsync();
     }
-    transaction.Commit();return NoContent();
+    transaction.Commit();
+    if(changed)await notifications.Changed(leagueId,now.Date);
+    return NoContent();
    }
   }
  }

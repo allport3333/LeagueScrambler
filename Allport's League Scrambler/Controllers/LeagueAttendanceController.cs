@@ -1,3 +1,4 @@
+using Allport_s_League_Scrambler.Hubs;
 using System;
 using System.Data;
 using System.Linq;
@@ -18,7 +19,7 @@ namespace Allport_s_League_Scrambler.Controllers
     [ApiController]
     [Route("api/LeagueAttendance/{leagueId:int}/bulk")]
     [Authorize(Policy = "LeagueManagement")]
-    public class LeagueAttendanceController(ILogger<LeagueAttendanceController> logger) : ControllerBase
+    public class LeagueAttendanceController(ILogger<LeagueAttendanceController> logger, LeagueAttendanceNotifications notifications) : ControllerBase
     {
         public record Confirmation(string Operation, string Version, string Text);
         public record Preview(string LeagueName, string Date, int SignedIn, int Additional,
@@ -80,6 +81,7 @@ namespace Allport_s_League_Scrambler.Controllers
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
             var affected = removing ? rows.Count : unsigned.Count;
+            if (affected > 0) await notifications.Changed(leagueId, now.Date);
             logger.LogInformation("Attendance bulk operation {Operation} by account {AccountId} for league {LeagueId} on {AttendanceDate} changed {Affected} records",
                 confirmation.Operation, User.FindFirstValue(ClaimTypes.NameIdentifier), leagueId, availability.AttendanceDate, affected);
             return Ok(new { affected });

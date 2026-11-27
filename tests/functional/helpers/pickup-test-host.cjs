@@ -95,13 +95,21 @@ async function withPickupTestHost(run, testAssembly = assembly) {
         if (initialized?.code !== 0)
             throw new Error('Disposable Pickup database initialization failed.\n' + (initialized?.error ?? initializer.output));
 
-        const host = launch(testAssembly);
-        const deadline = Date.now() + 30000;
-        while (!host.exit && Date.now() < deadline) {
-            if (host.listening && await catalogReady() && !host.exit) return await run(origin);
-            await delay(150);
+        async function startHost() {
+            const host = launch(testAssembly);
+            const deadline = Date.now() + 30000;
+            while (!host.exit && Date.now() < deadline) {
+                if (host.listening && await catalogReady() && !host.exit) return;
+                await delay(150);
+            }
+            throw new Error('The owned Pickup test host did not start on port 5003.\n' + (host.exit?.error ?? host.output));
         }
-        throw new Error('The owned Pickup test host did not start on port 5003.\n' + (host.exit?.error ?? host.output));
+
+        await startHost();
+        return await run(origin, async () => {
+            await stopAndWait();
+            await startHost();
+        });
     } finally {
         try { await stopAndWait(); }
         finally {

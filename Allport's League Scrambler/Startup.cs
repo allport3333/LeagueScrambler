@@ -1,3 +1,4 @@
+using Allport_s_League_Scrambler.Hubs;
 using dotenv.net;
 using Allport_s_League_Scrambler.Pickup;
 using Microsoft.AspNetCore.DataProtection;
@@ -46,6 +47,8 @@ namespace Allport_s_League_Scrambler
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSignalR();
+            services.AddSingleton<LeagueAttendanceNotifications>();
             services.AddMvc(options => options.SuppressAsyncSuffixInActionNames = false)
                 .AddNewtonsoftJson();
             services.AddSpaStaticFiles(configuration =>
@@ -168,6 +171,7 @@ namespace Allport_s_League_Scrambler
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<LeagueAttendanceHub>("/api/league-attendance-live");
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");

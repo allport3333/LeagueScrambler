@@ -1,3 +1,4 @@
+using Allport_s_League_Scrambler.Hubs;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -1166,7 +1167,7 @@ namespace Allport_s_League_Scrambler.Controllers
 
         [HttpPost("SignInPlayer")]
         [SameOrigin]
-        public async Task<IActionResult> SignInPlayer([FromBody] PlayerSignIn playerSignIn)
+        public async Task<IActionResult> SignInPlayer([FromBody] PlayerSignIn playerSignIn, [FromServices] LeagueAttendanceNotifications notifications)
         {
             // This endpoint stays public so leagues can use the existing
             // kiosk/player sign-in workflow without creating an account.
@@ -1220,6 +1221,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 await context.SaveChangesAsync();
                 transaction.Commit();
 
+                await notifications.Changed(playerSignIn.LeagueId, now.Date);
                 return Ok(new PlayerSignInResult
                 {
                     PlayerSignInId = playerSignIn.PlayerSignInId,
@@ -1561,7 +1563,7 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpDelete("SignInPlayer/{playerSignInId}")]
         [Authorize]
         [SameOrigin]
-        public async Task<IActionResult> DeleteSignInPlayer(int playerSignInId)
+        public async Task<IActionResult> DeleteSignInPlayer(int playerSignInId, [FromServices] LeagueAttendanceNotifications notifications)
         {
             var context = new DataContext();
 
@@ -1603,6 +1605,7 @@ namespace Allport_s_League_Scrambler.Controllers
             context.PlayerSignIn.Remove(signInRecord);
             await context.SaveChangesAsync();
             transaction.Commit();
+            await notifications.Changed(signInRecord.LeagueId, signInRecord.DateTime.Date);
             return NoContent();
         }
 

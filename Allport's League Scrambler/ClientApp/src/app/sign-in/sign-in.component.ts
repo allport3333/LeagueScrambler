@@ -1,6 +1,7 @@
-import { Component, DestroyRef, OnInit, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DestroyRef, OnInit, ViewChild, ElementRef, NgZone, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { BehaviorSubject, combineLatest, forkJoin, interval, of, Subscription, switchMap } from 'rxjs';
+import { BehaviorSubject, combineLatest, forkJoin, fromEvent, interval, of, Subscription, switchMap } from 'rxjs';
+import { AttendanceLive } from './attendance-live.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarRef, SimpleSnackBar } from '@angular/material/snack-bar';
@@ -32,6 +33,7 @@ interface BulkAttendancePreview {
     templateUrl: './sign-in.component.html',
     styleUrls: ['./sign-in.component.css'],
     changeDetection: ChangeDetectionStrategy.Eager,
+    providers: [AttendanceLive],
     standalone: false
 })
 export class SignInComponent implements OnInit {
@@ -78,6 +80,16 @@ export class SignInComponent implements OnInit {
     attendanceLoading = false;
     attendanceError = '';
     private attendanceRequest: Subscription;
+    private refreshTimer?: ReturnType<typeof setTimeout>;
+    private refreshPending = false;
+    private resizeObserver?: ResizeObserver;
+    private rosterSize?: HTMLElement;
+    private canvas = document.createElement('canvas').getContext('2d');
+    rosterPage = 1;
+    rosterPageSize = 1;
+    rosterColumns = 1;
+    rosterTileHeight = 48;
+    rosterFont = 16;
     private loadedLeague: number | null = null;
     PlayerForm = new UntypedFormGroup({
         firstName: new UntypedFormControl(),
@@ -89,8 +101,13 @@ export class SignInComponent implements OnInit {
 
     constructor(private playerService: PlayerService, private loginService: LoginService, private authService: AuthService,
         private leagueService: LeagueService, private http: HttpClient, private snackBar: MatSnackBar, private dialog: MatDialog,
-        private destroyRef: DestroyRef, private notifications: TournamentNotifications, private route: ActivatedRoute, private router: Router) {
-        this.destroyRef.onDestroy(() => this.signInNotice?.dismiss());
+        private destroyRef: DestroyRef, private notifications: TournamentNotifications, private route: ActivatedRoute, private router: Router, public live: AttendanceLive, private zone: NgZone) {
+        this.destroyRef.onDestroy(() => {
+            this.signInNotice?.dismiss();
+            this.live.stop();
+            this.resizeObserver?.disconnect();
+            clearTimeout(this.refreshTimer);
+        });
     }
 
     ngOnInit() {
@@ -109,14 +126,24 @@ export class SignInComponent implements OnInit {
             this.userRole = access.role;
             this.playerIdentityReady = !this.isLoggedIn || !!access.role;
             this.canManageAttendance = access.canManage;
+            this.connectAttendance();
             if (!access.canManage) this.showAddPlayerForm = false;
             if (shouldLoadProfile) this.loadPlayerIdForUser();
         });
-        if (this.playerMode) {
-            interval(10000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-                if (!this.signingIn && (!this.attendanceRequest || this.attendanceRequest.closed)) this.loadAttendance();
-            });
-        }
+        interval(15000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            if (document.hidden) return;
+            this.connectAttendance();
+            const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/New_York' }).format(new Date());
+            if (this.live.status !== 'Live' || this.availability?.attendanceDate !== today || this.attendanceError)
+                this.queueRefresh();
+        });
+        fromEvent(document, 'visibilitychange').pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            if (document.hidden) this.live.stop();
+            else {
+                this.connectAttendance();
+                this.queueRefresh();
+            }
+        });
         this.leagueService.selectedLeague$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(selectedLeague => {
             if (selectedLeague.leagueId && !this.routeLeagueId) {
                 this.selectedLeague = {
@@ -172,11 +199,13 @@ export class SignInComponent implements OnInit {
         const league = this.selectedLeague;
         if (!this.canManageAttendance || !league || this.savingSignInMode) return;
         this.savingSignInMode = true;
+        this.attendanceRequest?.unsubscribe();
         this.playerService.setSignInMode(mode, league.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: state => {
                 this.savingSignInMode = false;
                 if (this.selectedLeague?.id !== league.id) return;
                 this.applyAvailability(state);
+                this.queueRefresh();
                 this.notifications.success(mode === 'automatic' ? 'Using the automatic sign-in schedule.'
                     : state.locked ? 'Sign in locked.' : 'Sign in unlocked.');
             },
@@ -253,7 +282,7 @@ export class SignInComponent implements OnInit {
     private removePlayerFromSignIn(player: PlayerSignInResult): void {
         if (this.signingIn || this.bulkBusy || this.selectedLeague?.id !== player.leagueId) return;
         this.signingIn = true;
-        if (this.playerMode) this.attendanceRequest?.unsubscribe();
+        this.attendanceRequest?.unsubscribe();
         this.playerService.deleteSignInPlayer(player.playerSignInId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.signingIn = false;
@@ -285,9 +314,37 @@ export class SignInComponent implements OnInit {
     }
 
     onLeagueSelect(league: Leagues): void {
+        this.live.stop();
         this.selectedLeague = league;
         this.attendanceLeague.next(league.id);
+        this.connectAttendance();
         this.loadAttendance();
+    }
+
+    private connectAttendance(): void {
+        const league = this.selectedLeague;
+        if (!document.hidden && league && (this.playerMode || this.canManageAttendance))
+            this.live.follow(league.id, () => this.queueRefresh());
+    }
+
+    get connectionStatus(): string {
+        return this.attendanceError ? 'Connection Lost' : this.live.status;
+    }
+
+    queueRefresh(): void {
+        this.refreshPending = true;
+        if (this.refreshTimer || document.hidden) return;
+        this.refreshTimer = setTimeout(() => {
+            this.refreshTimer = undefined;
+            if (document.hidden || !this.refreshPending) return;
+            if (this.signingIn || this.bulkBusy || this.savingSignInMode ||
+                (this.attendanceRequest && !this.attendanceRequest.closed)) {
+                this.queueRefresh();
+                return;
+            }
+            this.refreshPending = false;
+            this.loadAttendance();
+        }, 250);
     }
 
     loadAttendance(): void {
@@ -306,6 +363,7 @@ export class SignInComponent implements OnInit {
         ).subscribe({
             next: ([state, players, signedIn]) => {
                 this.applyAvailability(state);
+                this.live.updateDate(league.id, state.attendanceDate);
                 this.roster = players.slice().sort((a, b) => a.firstName.localeCompare(b.firstName)
                     || a.lastName.localeCompare(b.lastName));
                 this.updateAttendance(signedIn ?? []);
@@ -378,7 +436,7 @@ export class SignInComponent implements OnInit {
     private executePlayerSignIn(playerSignIn: PlayerSignIn, player: any): void {
         if (this.signingIn || this.bulkBusy || this.isSignInLocked) return;
         this.signingIn = true;
-        if (this.playerMode) this.attendanceRequest?.unsubscribe();
+        this.attendanceRequest?.unsubscribe();
         this.playerService.signInPlayer(playerSignIn).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(
             (result: PlayerSignInResult) => {
                 this.signingIn = false;
@@ -470,12 +528,83 @@ export class SignInComponent implements OnInit {
     }
 
     searchRoster(value: string): void {
+        if (value !== this.search) this.rosterPage = 1;
         this.search = value;
         const terms = value.trim().toLocaleLowerCase().split(/\s+/);
         this.visibleRoster = this.players.filter(player => {
             const name = `${player.firstName} ${player.lastName}`.toLocaleLowerCase();
             return terms.every(term => name.includes(term));
         });
+        this.fitRoster();
+    }
+
+    @ViewChild('rosterSpace') set rosterSpace(ref: ElementRef<HTMLElement> | undefined) {
+        this.resizeObserver?.disconnect();
+        this.rosterSize = ref?.nativeElement;
+        if (!this.rosterSize) return;
+        this.resizeObserver = new ResizeObserver(() => this.zone.run(() => this.fitRoster()));
+        this.resizeObserver.observe(this.rosterSize);
+    }
+
+    get rosterPages(): number { return Math.max(1, Math.ceil(this.visibleRoster.length / this.rosterPageSize)); }
+    get pageRoster(): Player[] {
+        const start = (this.rosterPage - 1) * this.rosterPageSize;
+        return this.visibleRoster.slice(start, start + this.rosterPageSize);
+    }
+
+    private fitRoster(): void {
+        const area = this.rosterSize;
+        if (!area || !area.clientWidth || !area.clientHeight) return;
+        const width = area.clientWidth;
+        const height = area.clientHeight;
+        const count = this.visibleRoster.length;
+        const gap = 6;
+        const minWidth = 106;
+        const maxColumns = Math.max(1, Math.min(count, Math.floor((width + gap) / (minWidth + gap))));
+        const ideal = Math.max(1, Math.ceil(Math.sqrt(Math.ceil(count / 10) * 10 * width / (2.4 * height))));
+        let best = { columns: 1, count: 0, height: 48, font: 16 };
+        for (let columns = 1; columns <= maxColumns; columns++) {
+            const tileWidth = Math.min(230, (width - gap * (columns - 1)) / columns);
+            let font = Math.max(16, Math.min(22, Math.floor(tileWidth / 8)));
+            let row = this.nameHeight(tileWidth, font);
+            if (row > 52 && font > 16) {
+                font = 16;
+                row = this.nameHeight(tileWidth, font);
+            }
+            const fit = (room: number) => Math.max(1, Math.floor((room + gap) / (row + gap)));
+            const allFit = count <= columns * fit(height);
+            const room = allFit ? height : height - 42;
+            const capacity = Math.min(count, columns * fit(room));
+            if (capacity < best.count || (capacity === best.count &&
+                Math.abs(columns - ideal) >= Math.abs(best.columns - ideal))) continue;
+            const rows = Math.max(1, Math.ceil(capacity / columns));
+            best = { columns, count: capacity, font,
+                height: Math.max(row, Math.min(96, Math.floor((room - gap * (rows - 1)) / rows))) };
+        }
+        this.rosterColumns = best.columns;
+        this.rosterPageSize = Math.max(1, best.count);
+        this.rosterTileHeight = best.height;
+        this.rosterFont = best.font;
+        this.rosterPage = Math.min(this.rosterPage, this.rosterPages);
+    }
+
+    private nameHeight(width: number, font: number): number {
+        if (!this.canvas) return 48;
+        this.canvas.font = `650 ${font}px ${getComputedStyle(this.rosterSize).fontFamily}`;
+        const usable = width - 14;
+        let lines = 1;
+        for (const player of this.visibleRoster) {
+            let used = 0;
+            let nameLines = 1;
+            for (const word of (player.firstName + ' ' + player.lastName).split(/\s+/)) {
+                const size = this.canvas.measureText(word + ' ').width;
+                if (used && used + size > usable) { nameLines++; used = 0; }
+                nameLines += Math.max(0, Math.ceil(size / usable) - 1);
+                used += size > usable ? size % usable : size;
+            }
+            lines = Math.max(lines, nameLines);
+        }
+        return Math.max(48, Math.ceil(lines * font * 1.15 + 14));
     }
 
     canSignInFromTile(player: Player): boolean {

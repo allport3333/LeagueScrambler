@@ -10,6 +10,7 @@
               {{ isSignInLocked ? 'Sign In Locked' : 'Sign In Open' }}
             </strong>
           </p>
+          <ng-container [ngTemplateOutlet]="attendanceStatus"></ng-container>
         }
       </div>
       <div class="sign-in-toolbar">
@@ -44,9 +45,9 @@
               @if (search) { <button mat-button type="button" (click)="searchRoster(''); rosterSearch.focus()">Clear</button> }
             </div>
           </div>
-          <div class="roster-scroll" tabindex="0" aria-label="Players">
-            <div class="roster-grid" [style.--visible-count]="visibleRoster.length || 1">
-              @for (player of visibleRoster; track player.id) {
+          <div class="roster-space" #rosterSpace aria-label="Players">
+            <div class="roster-grid" [style.--columns]="rosterColumns" [style.--tile-height.px]="rosterTileHeight" [style.--tile-font.px]="rosterFont">
+              @for (player of pageRoster; track player.id) {
                 <button type="button" class="roster-tile" [class.male]="player.gender === 'Male'"
                   [class.female]="player.gender === 'Female'"
                   [disabled]="!canSignInFromTile(player)" (click)="selectPlayer(player)">
@@ -56,6 +57,13 @@
                 <p>{{ search ? 'No names match your search.' : 'No players are available to sign in.' }}</p>
               }
             </div>
+            @if (rosterPages > 1) {
+              <nav class="roster-pagination" aria-label="Available player pages">
+                <button mat-button type="button" [disabled]="rosterPage === 1" (click)="rosterPage = rosterPage - 1">Previous</button>
+                <span>Page {{ rosterPage }} of {{ rosterPages }}</span>
+                <button mat-button type="button" [disabled]="rosterPage === rosterPages" (click)="rosterPage = rosterPage + 1">Next</button>
+              </nav>
+            }
           </div>
         </section>
         <section class="signed-in-panel" aria-labelledby="signed-in-heading">
@@ -98,7 +106,6 @@
         <button mat-raised-button color="primary" (click)="toggleAddPlayerForm()">
           {{ showAddPlayerForm ? 'Hide Add Player' : 'Add New Player' }}
         </button>
-        <button mat-stroked-button (click)="loadAttendance()">Fetch Signed-In Players</button>
       }
       <a mat-flat-button color="primary" routerLink="/sign-in/player" [queryParams]="{ leagueId: selectedLeague.id }">
         Open Player Sign In Mode
@@ -106,6 +113,8 @@
     </div>
 
   <!-- Add Player Form -->
+  <div class="text-center"><ng-container [ngTemplateOutlet]="attendanceStatus"></ng-container></div>
+
   @if (canManageAttendance && showAddPlayerForm) {
     <div class="mt-4">
       <h4>Add New Player</h4>
@@ -212,6 +221,11 @@
   }
 </div>
 }
+
+<ng-template #attendanceStatus>
+  <span class="attendance-sync" role="status">{{ connectionStatus }}</span>
+  <button mat-button type="button" (click)="queueRefresh()" [disabled]="signingIn || bulkBusy">Refresh Now</button>
+</ng-template>
 
 <ng-template #signedInList>
   <div class="attendance-search signed-in-search">

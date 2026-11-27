@@ -1,3 +1,4 @@
+using Allport_s_League_Scrambler.Hubs;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -212,7 +213,7 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost("SetLockSignInStatus")]
         [Authorize(Policy = "LeagueManagement")]
         [SameOrigin]
-        public async Task<IActionResult> SetLockSignInStatus([FromBody] LockSignInRequest request)
+        public async Task<IActionResult> SetLockSignInStatus([FromBody] LockSignInRequest request, [FromServices] LeagueAttendanceNotifications notifications)
         {
             if (request == null || request.LeagueId <= 0)
                 return BadRequest("Invalid league.");
@@ -242,6 +243,7 @@ namespace Allport_s_League_Scrambler.Controllers
             await context.SaveChangesAsync();
             var updated = await LeagueAttendanceAvailability.Read(context, request.LeagueId, now);
             transaction.Commit();
+            await notifications.Changed(request.LeagueId, now.Date);
             return request.Mode == null ? Ok(updated.Mode == "locked") : Ok(updated);
         }
 

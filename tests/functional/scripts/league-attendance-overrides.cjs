@@ -4,7 +4,7 @@ const { randomUUID } = require('node:crypto');
 const { withPickupTestHost } = require('../helpers/pickup-test-host.cjs');
 
 let persistedLeague;
-withPickupTestHost(async origin => {
+withPickupTestHost(async (origin, restartHost) => {
     const browser = await chromium.launch({ channel: 'msedge' });
     try {
         const admin = await browser.newContext({ ignoreHTTPSErrors: true, serviceWorkers: 'block' });
@@ -122,13 +122,23 @@ withPickupTestHost(async origin => {
         await expect(page.locator('.signed-in-panel')).toContainText('Female 0');
 
         const secondId = (await nextPlayer.json()).id;
+        const dashboard = await admin.newPage();
+        await dashboard.addInitScript(id => sessionStorage.setItem('league-hub-selected-league', id), String(leagueId));
+        await dashboard.goto(origin + '/sign-in');
+        await expect(dashboard.getByText('Live', { exact: true })).toBeVisible();
+        await expect(page.getByText('Live', { exact: true })).toBeVisible();
+        await dashboard.getByRole('searchbox', { name: 'Search signed-in players' }).fill('long');
         const external = await post(visitor, '/api/ScrambleData/SignInPlayer', { leagueId, playerId: secondId });
         await expect(external).toBeOK();
         const externalRecord = await external.json();
-        await expect(tile).toHaveCount(0, { timeout: 15000 });
+        await expect(tile).toHaveCount(0);
+        await expect(dashboard.getByRole('heading', { name: 'Signed-In Players 2' })).toBeVisible();
         await expect(page.getByRole('heading', { name: 'Signed-In Players 2' })).toBeVisible();
         await expect(await admin.request.delete(origin + '/api/ScrambleData/SignInPlayer/' + externalRecord.playerSignInId, { headers })).toBeOK();
         await expect(tile).toBeEnabled({ timeout: 15000 });
+        await expect(dashboard.getByRole('heading', { name: 'Signed-In Players 1' })).toBeVisible();
+        await expect(dashboard.getByRole('searchbox', { name: 'Search signed-in players' })).toHaveValue('long');
+        await page.bringToFront();
         const fullscreen = page.getByRole('button', { name: 'Fullscreen', exact: true });
         if (await fullscreen.isVisible()) {
             await fullscreen.click();
@@ -151,26 +161,50 @@ withPickupTestHost(async origin => {
             ]
         }));
         for (const [width, count, theme] of [
-            [2560, 100, 'classic'], [1920, 80, 'soft-light'], [1366, 60, 'navy'],
+            [2560, 100, 'classic'], [1920, 100, 'soft-light'], [1920, 80, 'soft-light'], [1366, 60, 'navy'],
             [768, 40, 'charcoal'], [390, 20, 'soft-light'], [1920, 5, 'navy']
         ]) {
             size = count;
-            await kiosk.setViewportSize({ width, height: 860 });
+            await kiosk.setViewportSize({ width, height: width >= 1920 ? 1080 : 860 });
             await kiosk.goto(origin + '/sign-in/player?leagueId=' + leagueId);
             await kiosk.evaluate(value => localStorage.setItem('league-hub-appearance', value), theme);
             await kiosk.reload();
             await expect(kiosk.locator('html')).toHaveAttribute('data-theme', theme);
-            await expect(kiosk.locator('.roster-tile')).toHaveCount(count);
+            await expect(kiosk.locator('.roster-tile').first()).toBeVisible();
+            const pager = kiosk.getByRole('navigation', { name: 'Available player pages' });
+            if (width >= 1366 || !await pager.isVisible()) await expect(kiosk.locator('.roster-tile')).toHaveCount(count);
             await expect(kiosk.getByRole('button', { name: 'Fixture ' + token, exact: true })).toHaveCount(1);
             await expect(kiosk.getByRole('heading', { name: 'Signed-In Players 1' })).toBeInViewport();
             await expect(kiosk.getByRole('button', { name: /^Remove .* from sign-in$/ })).toHaveCount(0);
             const tile = await kiosk.locator('.roster-tile').first().boundingBox();
-            expect(tile.height).toBeGreaterThanOrEqual(59);
+            expect(tile.height).toBeGreaterThanOrEqual(47);
             expect(tile.height).toBeLessThanOrEqual(97);
             if (count === 5) expect(tile.height).toBeGreaterThan(90);
-            if (count === 100) expect(tile.height).toBeLessThan(90);
+            if (width >= 1366) await expect(pager).toHaveCount(0);
+            const arena = await kiosk.locator('.roster-space').boundingBox();
+            const last = await kiosk.locator('.roster-tile').last().boundingBox();
+            expect(last.y + last.height).toBeLessThanOrEqual(arena.y + arena.height + 1);
+            expect(await kiosk.locator('.roster-tile').evaluateAll(tiles => tiles.some(tile => tile.scrollHeight > tile.clientHeight + 1))).toBe(false);
             expect(await kiosk.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
         }
+        size = 100;
+        await kiosk.setViewportSize({width: 390, height: 650});
+        await kiosk.reload();
+        const pagination = kiosk.getByRole('navigation', { name: 'Available player pages' });
+        await expect(pagination).toBeVisible();
+        const visited = [];
+        for (;;) {
+            visited.push(...await kiosk.locator('.roster-tile').allTextContents());
+            const next = pagination.getByRole('button', { name: 'Next' });
+            if (await next.isDisabled()) break;
+            await next.click();
+        }
+        expect(visited).toHaveLength(100);
+        expect(new Set(visited).size).toBe(100);
+        await kiosk.getByRole('searchbox', {name:'Find your name'}).fill('player 99');
+        await expect(kiosk.locator('.roster-tile')).toHaveCount(1);
+        await expect(pagination).toHaveCount(0);
+        await kiosk.close();
         console.log('Centered sheet, fullscreen and exit, live unlock, search, kiosk attendance and 5-100-player layouts passed.');
         const bulk = '/api/LeagueAttendance/' + leagueId + '/bulk';
         const preview = async () => (await admin.request.get(origin + bulk)).json();
@@ -194,6 +228,7 @@ withPickupTestHost(async origin => {
         await page.getByRole('button', { name: 'Sign In Everyone', exact: true }).click();
         await dialog.getByRole('button', { name: 'Confirm Sign In Everyone' }).click();
         await expect(page.getByRole('heading', { name: 'Signed-In Players 2' })).toBeVisible();
+        await expect(dashboard.getByRole('heading', { name: 'Signed-In Players 2' })).toBeVisible();
 
         // Insert an earlier attendance record and a current record in another league in the disposable database.
         execFileSync('sqlcmd.exe', ['-S', 'lpc:localhost', '-d', 'LeagueScramblerPickupTest', '-E', '-C', '-b', '-Q',
@@ -210,6 +245,7 @@ withPickupTestHost(async origin => {
         await expect(removeAll).toBeEnabled();
         await removeAll.click();
         await expect(page.getByRole('heading', { name: 'Signed-In Players 0' })).toBeVisible();
+        await expect(dashboard.getByRole('heading', { name: 'Signed-In Players 0' })).toBeVisible();
         await expect(page.getByText('Available Players (2)', { exact: true })).toBeVisible();
 
         const getRows = async (id, date) => (await visitor.request.get(origin + '/api/ScrambleData/GetSignedInPlayers', {
@@ -220,11 +256,51 @@ withPickupTestHost(async origin => {
         expect((await getRows(leagueId, earlier.toISOString().slice(0, 10))).map(row => row.playerId)).toEqual([playerId]);
         expect((await getRows(otherId, snapshot.date)).map(row => row.playerId)).toEqual([playerId]);
 
+        const fallback = await visitor.newPage();
+        await fallback.route('**/api/league-attendance-live/**', route => route.abort());
+        await fallback.goto(origin + '/sign-in/player?leagueId=' + leagueId);
+        await expect(fallback.getByText('Refreshing Automatically', { exact: true })).toBeVisible();
+        await expect(fallback.getByRole('heading', { name: 'Signed-In Players 0' })).toBeVisible();
         const empty = await preview();
         const confirm = { operation: 'sign-in', version: empty.version };
         const concurrent = await Promise.all([post(admin, bulk, confirm), post(admin, bulk, confirm)]);
         expect(concurrent.map(response => response.status()).sort()).toEqual([200, 409]);
         expect((await getRows(leagueId, snapshot.date)).map(row => row.playerId).sort()).toEqual([playerId, secondId].sort());
+        await expect(fallback.getByRole('heading', { name: 'Signed-In Players 2' })).toBeVisible({timeout: 20000});
+        await fallback.unroute('**/api/league-attendance-live/**');
+        await expect(fallback.getByText('Live', { exact: true })).toBeVisible({timeout: 20000});
+        const recovered = fallback.waitForResponse(response =>
+            response.url().includes('/api/Login/LeagueAttendanceAvailability/' + leagueId) && response.ok(),
+        { timeout: 45000 });
+        await restartHost();
+        await recovered;
+        await expect(fallback.getByText('Live', { exact: true })).toBeVisible({timeout: 20000});
+        await expect(fallback.getByRole('heading', { name: 'Signed-In Players 2' })).toBeVisible();
+        const longPoll = await visitor.newPage();
+        await longPoll.route('**/api/league-attendance-live/negotiate?*', async route => {
+            const response = await route.fetch();
+            const json = await response.json();
+            json.availableTransports = json.availableTransports.filter(t => t.transport === 'LongPolling');
+            await route.fulfill({ response, json });
+        });
+        let otherRefreshes = 0;
+        longPoll.on('response', response => {
+            if (response.url().includes('/api/Login/LeagueAttendanceAvailability/' + otherId) && response.ok()) otherRefreshes++;
+        });
+        await longPoll.goto(origin + '/sign-in/player?leagueId=' + otherId);
+        await expect(longPoll.getByText('Live', { exact: true })).toBeVisible();
+        await expect(longPoll.getByRole('heading', { name: 'Signed-In Players 1' })).toBeVisible();
+        // Establish the initial snapshot and the post-subscription reconciliation first.
+        await expect.poll(() => otherRefreshes).toBeGreaterThanOrEqual(2);
+        const baseline = otherRefreshes;
+        const filled = await preview();
+        await expect(await post(admin, bulk, { operation: 'remove', version: filled.version, text: 'REMOVE ALL' })).toBeOK();
+        await expect(fallback.getByRole('heading', { name: 'Signed-In Players 0' })).toBeVisible();
+        expect(otherRefreshes).toBe(baseline);
+        await longPoll.close();
+        await fallback.close();
+        await dashboard.close();
+        console.log('Live dashboards, automatic fallback, restored connectivity, Long Polling and league isolation passed.');
         const density = await admin.newPage();
         await density.addInitScript(id => sessionStorage.setItem('league-hub-selected-league', id), String(leagueId));
         let attendanceCount = 5;
