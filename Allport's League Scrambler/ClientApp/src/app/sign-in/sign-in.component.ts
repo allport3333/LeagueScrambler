@@ -90,6 +90,7 @@ export class SignInComponent implements OnInit {
     rosterColumns = 1;
     rosterTileHeight = 48;
     rosterFont = 16;
+    rosterNameFonts = new Map<number, number>();
     private loadedLeague: number | null = null;
     PlayerForm = new UntypedFormGroup({
         firstName: new UntypedFormControl(),
@@ -562,15 +563,13 @@ export class SignInComponent implements OnInit {
         const minWidth = 106;
         const maxColumns = Math.max(1, Math.min(count, Math.floor((width + gap) / (minWidth + gap))));
         const ideal = Math.max(1, Math.ceil(Math.sqrt(Math.ceil(count / 10) * 10 * width / (2.4 * height))));
-        let best = { columns: 1, count: 0, height: 48, font: 16 };
+        const fontFamily = getComputedStyle(area).fontFamily;
+        const names = this.visibleRoster.map(player => (player.firstName + ' ' + player.lastName).trim().split(/\s+/));
+        let best = { columns: 1, count: 0, height: 48, width: Math.min(230, width) };
         for (let columns = 1; columns <= maxColumns; columns++) {
             const tileWidth = Math.min(230, (width - gap * (columns - 1)) / columns);
-            let font = Math.max(16, Math.min(22, Math.floor(tileWidth / 8)));
-            let row = this.nameHeight(tileWidth, font);
-            if (row > 52 && font > 16) {
-                font = 16;
-                row = this.nameHeight(tileWidth, font);
-            }
+            // Size the grid at a readable baseline before growing the text in each tile.
+            const row = Math.max(48, ...names.map(name => this.nameHeight(name, tileWidth, 16, fontFamily)));
             const fit = (room: number) => Math.max(1, Math.floor((room + gap) / (row + gap)));
             const allFit = count <= columns * fit(height);
             const room = allFit ? height : height - 42;
@@ -578,33 +577,38 @@ export class SignInComponent implements OnInit {
             if (capacity < best.count || (capacity === best.count &&
                 Math.abs(columns - ideal) >= Math.abs(best.columns - ideal))) continue;
             const rows = Math.max(1, Math.ceil(capacity / columns));
-            best = { columns, count: capacity, font,
+            best = { columns, count: capacity, width: tileWidth,
                 height: Math.max(row, Math.min(96, Math.floor((room - gap * (rows - 1)) / rows))) };
         }
         this.rosterColumns = best.columns;
         this.rosterPageSize = Math.max(1, best.count);
         this.rosterTileHeight = best.height;
-        this.rosterFont = best.font;
+        this.rosterFont = Math.max(14, Math.min(26, Math.round(Math.min(best.width * .112, best.height * .27))));
+        const overrides = new Map<number, number>();
+        names.forEach((name, index) => {
+            let font = this.rosterFont;
+            while (font > 16 && this.nameHeight(name, best.width, font, fontFamily) > best.height) font--;
+            if (font !== this.rosterFont) overrides.set(this.visibleRoster[index].id, font);
+        });
+        this.rosterNameFonts = overrides;
         this.rosterPage = Math.min(this.rosterPage, this.rosterPages);
     }
 
-    private nameHeight(width: number, font: number): number {
+    private nameHeight(words: string[], width: number, font: number, fontFamily: string): number {
         if (!this.canvas) return 48;
-        this.canvas.font = `650 ${font}px ${getComputedStyle(this.rosterSize).fontFamily}`;
-        const usable = width - 14;
+        this.canvas.font = `650 ${font}px ${fontFamily}`;
+        const usable = Math.max(1, width - 14);
+        const space = this.canvas.measureText(' ').width;
         let lines = 1;
-        for (const player of this.visibleRoster) {
-            let used = 0;
-            let nameLines = 1;
-            for (const word of (player.firstName + ' ' + player.lastName).split(/\s+/)) {
-                const size = this.canvas.measureText(word + ' ').width;
-                if (used && used + size > usable) { nameLines++; used = 0; }
-                nameLines += Math.max(0, Math.ceil(size / usable) - 1);
-                used += size > usable ? size % usable : size;
-            }
-            lines = Math.max(lines, nameLines);
+        let used = 0;
+        for (const word of words) {
+            const size = this.canvas.measureText(word).width;
+            if (used && used + space + size > usable) { lines++; used = 0; }
+            if (used) used += space;
+            lines += Math.max(0, Math.ceil(size / usable) - 1);
+            used += size > usable ? size % usable || usable : size;
         }
-        return Math.max(48, Math.ceil(lines * font * 1.15 + 14));
+        return Math.ceil(lines * font * 1.15 + 14);
     }
 
     canSignInFromTile(player: Player): boolean {

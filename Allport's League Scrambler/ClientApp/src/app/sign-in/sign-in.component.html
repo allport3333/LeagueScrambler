@@ -49,7 +49,7 @@
             <div class="roster-grid" [style.--columns]="rosterColumns" [style.--tile-height.px]="rosterTileHeight" [style.--tile-font.px]="rosterFont">
               @for (player of pageRoster; track player.id) {
                 <button type="button" class="roster-tile" [class.male]="player.gender === 'Male'"
-                  [class.female]="player.gender === 'Female'"
+                  [class.female]="player.gender === 'Female'" [style.--tile-font.px]="rosterNameFonts.get(player.id)"
                   [disabled]="!canSignInFromTile(player)" (click)="selectPlayer(player)">
                   <span>{{ player.firstName }} {{ player.lastName }}</span>
                 </button>

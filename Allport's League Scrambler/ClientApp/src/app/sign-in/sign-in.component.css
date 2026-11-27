@@ -74,6 +74,9 @@
 .roster-pagination { display: flex; justify-content: center; align-items: center; gap: .5rem; height: 42px; }
 .attendance-sync { font-size: .85rem; color: var(--hub-muted, #52677c); }
 .roster-tile {
+    display: grid;
+    place-items: center;
+    text-align: center;
     min-height: 0;
     padding: .35rem;
     border: 1px solid var(--hub-border, #9aafc2);

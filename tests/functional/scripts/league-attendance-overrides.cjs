@@ -150,12 +150,14 @@ withPickupTestHost(async (origin, restartHost) => {
 
         const kiosk = await visitor.newPage();
         let size = 20;
+        const sampleNames = [['Alan', 'Camargo'], ['April','Schoenemann'], ['Uwe','Schoenemann'],
+            ['WW Test','Participant'], ['Alexandra Winifred','Schoenemann Camargo Montgomery Wellington']];
         await kiosk.route('**/api/ScrambleData/GetPlayers/' + leagueId, route => route.fulfill({
             json: [
                 { id: playerId, firstName: 'Fixture', lastName: token, gender: 'Male' },
                 ...Array.from({ length: size }, (_, index) => ({
-                    id: 100000 + index, firstName: index ? 'Player ' + (index + 1) : 'Fixture',
-                    lastName: index ? 'Long Family Name' : token,
+                    id: 100000 + index, firstName: size === 5 ? sampleNames[index][0] : index ? 'Player ' + (index + 1) : 'Fixture',
+                    lastName: size === 5 ? sampleNames[index][1] : index ? 'Long Family Name' : token,
                     gender: index % 2 ? 'Male' : 'Female'
                 }))
             ]
@@ -173,13 +175,23 @@ withPickupTestHost(async (origin, restartHost) => {
             await expect(kiosk.locator('.roster-tile').first()).toBeVisible();
             const pager = kiosk.getByRole('navigation', { name: 'Available player pages' });
             if (width >= 1366 || !await pager.isVisible()) await expect(kiosk.locator('.roster-tile')).toHaveCount(count);
-            await expect(kiosk.getByRole('button', { name: 'Fixture ' + token, exact: true })).toHaveCount(1);
+            if (count !== 5) await expect(kiosk.getByRole('button', { name: 'Fixture ' + token, exact: true })).toHaveCount(1);
             await expect(kiosk.getByRole('heading', { name: 'Signed-In Players 1' })).toBeInViewport();
             await expect(kiosk.getByRole('button', { name: /^Remove .* from sign-in$/ })).toHaveCount(0);
             const tile = await kiosk.locator('.roster-tile').first().boundingBox();
             expect(tile.height).toBeGreaterThanOrEqual(47);
             expect(tile.height).toBeLessThanOrEqual(97);
-            if (count === 5) expect(tile.height).toBeGreaterThan(90);
+            if (count === 5) {
+                expect(tile.height).toBeGreaterThan(90);
+                const alan = kiosk.getByRole('button', { name: 'Alan Camargo' });
+                const alexandra = kiosk.getByRole('button', { name: /Alexandra Winifred/ });
+                await expect(alan).toHaveCSS('font-size', '26px');
+                expect(await alexandra.evaluate(button => parseFloat(getComputedStyle(button).fontSize))).toBeLessThan(26);
+                await kiosk.setViewportSize({ width: 390, height: 650 });
+                await expect.poll(() => alan.evaluate(button => parseFloat(getComputedStyle(button).fontSize))).toBeLessThan(23);
+                await kiosk.setViewportSize({ width, height: 1080 });
+                await expect(alan).toHaveCSS('font-size', '26px');
+            }
             if (width >= 1366) await expect(pager).toHaveCount(0);
             const arena = await kiosk.locator('.roster-space').boundingBox();
             const last = await kiosk.locator('.roster-tile').last().boundingBox();
