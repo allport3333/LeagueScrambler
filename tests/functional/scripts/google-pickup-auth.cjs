@@ -20,8 +20,8 @@ withPickupTestHost(async origin => {
     sql(readFileSync(path.resolve(__dirname, '../../../tools/security/GoogleAccount.sql'), 'utf8'));
     const browser = await chromium.launch({channel: 'chrome'});
     try {
-        async function open(theme = 'classic', width = 1366) {
-            const context = await browser.newContext({ignoreHTTPSErrors: true, serviceWorkers: 'block', viewport: {width, height: 850}});
+        async function open(theme = 'classic', width = 1366, serviceWorkers = 'block') {
+            const context = await browser.newContext({ignoreHTTPSErrors: true, serviceWorkers, viewport: {width, height: 850}});
             await context.addInitScript(theme => localStorage.setItem('league-hub-appearance', theme), theme);
             const catalog = await context.request.get(origin + '/api/pickup/catalog');
             assert.equal(catalog.headers()['x-pickup-test-database'], 'LeagueScramblerPickupTest');
@@ -121,11 +121,20 @@ withPickupTestHost(async origin => {
         const linkedPlayer = await (await existing.request.get(origin + '/api/login/getusersplayer')).json();
         assert.equal(linkedPlayer.playerId, playerId);
 
-        const newcomer = await open('charcoal', 768);
+        const newcomer = await open('charcoal', 768, 'allow');
         const newcomerPage = await newcomer.newPage();
         await provider(newcomer, 'new');
         await newcomerPage.goto(origin + route);
+        await newcomerPage.evaluate(async () => {
+            await navigator.serviceWorker.register('/ngsw-worker.js');
+            await navigator.serviceWorker.ready;
+        });
+        await newcomerPage.reload();
+        await newcomerPage.waitForFunction(() => navigator.serviceWorker.controller !== null);
+        const callback = newcomerPage.waitForResponse(response =>
+            new URL(response.url()).pathname === '/signin-google' && response.status() === 302);
         await newcomerPage.getByRole('button', {name: 'Continue with Google'}).click();
+        assert.match((await callback).headers()['cache-control'] ?? '', /no-store/);
         await expect(newcomerPage).toHaveURL(origin + route);
         await expect(newcomerPage.getByRole('button', {name: 'Join Game', exact: true})).toBeVisible();
         const newId = Number(sql("SELECT UserId FROM dbo.[User] WHERE Email=N'" + newEmail + "' AND PasswordHash IS NULL"));

@@ -10,5 +10,5 @@
     }
   ],
   "dataGroups": [],
-  "navigationUrls": ["/**", "!/api/**", "!/**/*.*", "!/**/*__*", "!/**/*__*/**", "!/Error", "!/error"]
+  "navigationUrls": ["/**", "!/api/**", "!/signin-google", "!/**/*.*", "!/**/*__*", "!/**/*__*/**", "!/Error", "!/error"]
 }
