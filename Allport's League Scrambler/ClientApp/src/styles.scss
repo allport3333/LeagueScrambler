@@ -696,3 +696,9 @@ html { @include mat.form-field-overrides((
     border-radius: .5rem;
     background: var(--hub-surface, #fff);
 }
+
+/* Dedicated player sign-in keeps the router outlet and shared overlays. */
+app-root:has(.player-mode) {
+  .site-navigation-row, .legal-footer { display: none; }
+  .body-content { padding: 0; }
+}

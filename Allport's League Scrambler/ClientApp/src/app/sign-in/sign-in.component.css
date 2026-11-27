@@ -131,3 +131,104 @@ table.signed-in-players-table th {
     }
 }
 
+
+.sign-in-sheet {
+    width: min(100% - 2rem, 70rem);
+    margin: 1rem auto;
+}
+.sign-in-sheet p { margin-block-end: .5rem; }
+.sign-in-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .5rem;
+    margin-block: .5rem;
+}
+
+.player-mode {
+    width: min(100% - 2rem, 144rem);
+    margin-inline: auto;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding-block: .75rem;
+    gap: .65rem;
+}
+.player-mode-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .5rem 1rem;
+}
+.player-mode-header h1 { font-size: clamp(1.35rem, 2.5vw, 2rem); margin: 0; }
+.player-mode-header p, .sign-in-reason, .signed-in-panel p { margin: 0; }
+.availability-badge {
+    display: inline-block;
+    margin-inline-start: .4rem;
+    padding: .2rem .5rem;
+    border-radius: .3rem;
+    color: var(--hub-win-text, #275841);
+    background: var(--hub-win-surface, #deeee6);
+}
+.availability-badge.locked {
+    color: var(--hub-loss-text, #812c3b);
+    background: var(--hub-loss-surface, #f4e2e6);
+}
+.player-mode-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(13rem, 1fr);
+    gap: .75rem;
+}
+.roster-panel, .signed-in-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--hub-surface, #fff);
+    border: 1px solid var(--hub-border, #b8c6d4);
+    border-radius: .45rem;
+    padding: .65rem;
+}
+.roster-search { margin-block-end: .6rem; }
+.roster-search label { margin-bottom: .2rem; font-weight: 600; }
+.roster-search > div { display: flex; align-items: center; gap: .4rem; }
+.roster-search input { min-width: 0; min-height: 44px; max-width: 30rem; }
+.roster-scroll, .signed-in-scroll { overflow: auto; min-height: 0; overscroll-behavior: contain; }
+.roster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+    gap: .4rem;
+    padding: .2rem;
+}
+.roster-tile {
+    min-height: 3.3rem;
+    padding: .35rem;
+    border: 1px solid var(--hub-border, #9aafc2);
+    border-radius: .35rem;
+    background: var(--hub-section, #edf3fa);
+    color: var(--hub-text, #263849);
+    font: inherit;
+    font-weight: 650;
+    font-size: clamp(.98rem, 1vw, 1.15rem);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+.roster-tile.male { background: var(--hub-male, #e6f7ff); color: var(--hub-male-foreground, #234c75); }
+.roster-tile.female { background: var(--hub-female, #ffe6f2); color: var(--hub-female-foreground, #733c66); }
+.roster-tile:not(:disabled):is(:hover, :focus-visible) {
+    outline: 2px solid var(--hub-focus, #315e8a);
+    outline-offset: -2px;
+}
+.roster-tile.checked-in { border-color: var(--hub-win-text, #275841); }
+.roster-tile small { display: block; margin-block-start: .15rem; font-weight: 600; }
+.signed-in-panel h2 { font-size: 1.15rem; margin: 0 0 .25rem; }
+.signed-in-panel h2 span { font-variant-numeric: tabular-nums; margin-inline-start: .4rem; }
+.signed-in-scroll { list-style: none; padding: 0; margin: .5rem 0 0; }
+.signed-in-scroll li { border-block-start: 1px solid var(--hub-border, #ccd7e0); padding: .3rem; overflow-wrap: anywhere; }
+@media (max-width: 650px) {
+    .player-mode { width: calc(100% - 1rem); height: max(100dvh, 30rem); }
+    .player-mode-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 3fr) minmax(7rem, 1fr); }
+
+}

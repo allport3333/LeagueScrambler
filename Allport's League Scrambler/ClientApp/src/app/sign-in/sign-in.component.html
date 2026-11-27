@@ -1,5 +1,79 @@
-<div class="container mt-4">
-  <h2 class="text-center">Sign In</h2>
+@if (playerMode) {
+  <main class="player-mode">
+    <header class="player-mode-header">
+      <div>
+        <h1>{{ selectedLeague?.leagueName || 'Player Sign In' }}</h1>
+        @if (hasCurrentAttendance && !attendanceError) {
+          <p aria-live="polite">
+            {{ availability.attendanceDate | date:'fullDate' }}
+            <strong class="availability-badge" [class.locked]="isSignInLocked">
+              {{ isSignInLocked ? 'Sign In Locked' : 'Sign In Open' }}
+            </strong>
+          </p>
+        }
+      </div>
+      <div class="sign-in-toolbar">
+        @if (fullscreenAvailable) {
+          <button mat-stroked-button type="button" (click)="enterFullscreen()">Fullscreen</button>
+        }
+        <button mat-flat-button color="primary" type="button" (click)="exitPlayerMode()">Exit Sign In Mode</button>
+      </div>
+    </header>
+    @if (!selectedLeague) {
+      <label for="player-mode-league">Select League</label>
+      <select id="player-mode-league" class="form-control" [ngModel]="selectedLeague" (ngModelChange)="onLeagueSelect($event)">
+        <option [ngValue]="null" disabled>Choose a league</option>
+        @for (league of leaguesAvailable; track league.id) {
+          <option [ngValue]="league">{{ league.leagueName }}</option>
+        }
+      </select>
+    }
+    @if (attendanceLoading) { <app-page-loading label="Loading sign-in sheet"></app-page-loading> }
+    @if (attendanceError) {
+      <p role="alert">{{ attendanceError }} <button mat-button (click)="loadAttendance()">Retry</button></p>
+    }
+    @if (hasCurrentAttendance) {
+      @if (availability.reason && !attendanceError) { <p class="sign-in-reason">{{ availability.reason }}</p> }
+      <div class="player-mode-body">
+        <section class="roster-panel" aria-label="Player roster">
+          <div class="roster-search">
+            <label for="roster-search">Find your name</label>
+            <div>
+              <input id="roster-search" #rosterSearch type="search" class="form-control" [value]="search"
+                (input)="searchRoster($any($event.target).value)" autocomplete="off">
+              @if (search) { <button mat-button type="button" (click)="searchRoster(''); rosterSearch.focus()">Clear</button> }
+            </div>
+          </div>
+          <div class="roster-scroll" tabindex="0" aria-label="Players">
+            <div class="roster-grid">
+              @for (player of visibleRoster; track player.id) {
+                <button type="button" class="roster-tile" [class.male]="player.gender === 'Male'"
+                  [class.female]="player.gender === 'Female'" [class.checked-in]="signedIn(player)"
+                  [disabled]="!canSignInFromTile(player)" (click)="selectPlayer(player)">
+                  <span>{{ player.firstName }} {{ player.lastName }}</span>
+                  @if (signedIn(player)) { <small>? Signed in</small> }
+                </button>
+              } @empty {
+                <p>{{ search ? 'No names match your search.' : 'No players are on this roster.' }}</p>
+              }
+            </div>
+          </div>
+        </section>
+        <section class="signed-in-panel" aria-labelledby="signed-in-heading">
+          <h2 id="signed-in-heading">Signed-In Players <span>{{ playerSignIn.length }}</span></h2>
+          <p>Male {{ maleCount }} &middot; Female {{ femaleCount }}</p>
+          <ul class="signed-in-scroll" tabindex="0" aria-label="Signed-in names">
+            @for (player of playerSignIn; track player.playerSignInId) {
+              <li>{{ player.firstName }} {{ player.lastName }}</li>
+            } @empty { <li>No players signed in yet.</li> }
+          </ul>
+        </section>
+      </div>
+    }
+  </main>
+} @else {
+<div class="sign-in-sheet">
+  <h2 class="text-center">Sign In Sheet</h2>
 
   <!-- League Selection -->
   @if (!isLoggedIn) {
@@ -20,21 +94,17 @@
     <p role="alert" class="text-center">{{ attendanceError }} <button mat-button (click)="loadAttendance()">Retry</button></p>
   }
   @if (hasCurrentAttendance) {
-  @if (canManageAttendance) {
-    <div class="text-center mt-3">
-      <button mat-raised-button color="primary" (click)="toggleAddPlayerForm()">
-        {{ showAddPlayerForm ? 'Hide Add Player' : 'Add New Player' }}
-      </button>
+    <div class="sign-in-toolbar">
+      @if (canManageAttendance) {
+        <button mat-raised-button color="primary" (click)="toggleAddPlayerForm()">
+          {{ showAddPlayerForm ? 'Hide Add Player' : 'Add New Player' }}
+        </button>
+        <button mat-stroked-button (click)="fetchSignedInPlayers()">Fetch Signed-In Players</button>
+      }
+      <a mat-flat-button color="primary" routerLink="/sign-in/player" [queryParams]="{ leagueId: selectedLeague.id }">
+        Open Player Sign In Mode
+      </a>
     </div>
-  }
-
-  @if (canManageAttendance) {
-    <div class="text-center mt-3">
-      <button mat-raised-button color="primary" (click)="fetchSignedInPlayers()">
-        {{ 'Fetch Signed-In Players' }}
-      </button>
-    </div>
-  }
 
   <!-- Add Player Form -->
   @if (canManageAttendance && showAddPlayerForm) {
@@ -68,7 +138,7 @@
           : availability.mode === 'open' ? 'Manually Opened' : 'Manually Locked' }}
       </p>
       <p>Manual changes apply through the league day for the current period ({{ availability.period | date:'mediumDate' }}).</p>
-      <div class="d-flex flex-wrap justify-content-center">
+      <div class="sign-in-toolbar">
         @if (availability.mode !== 'open') {
           <button mat-stroked-button type="button" [disabled]="savingSignInMode" (click)="setSignInMode('open')">Unlock Sign In</button>
         }
@@ -95,7 +165,7 @@
   }
 
   <!-- Tables Side by Side -->
-  <div class="row mt-4">
+  <div class="row mt-3">
     <!-- Players in League Grid for Admin/Manager -->
     @if (canManageAttendance) {
       <div class="col-lg-9 col-md-8 col-sm-12">
@@ -179,6 +249,8 @@
 
     }
 </div>
+
+}
 
   <!-- Confirmation/Notification Dialog Template -->
   <ng-template #confirmationDialog let-data>

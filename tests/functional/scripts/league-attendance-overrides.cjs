@@ -68,6 +68,64 @@ withPickupTestHost(async origin => {
             params: { leagueId, date: attendanceDate }
         })).json();
         expect(rows.map(row => row.playerId)).toEqual([playerId]);
+        const nextPlayer = await post(admin, '/api/ScrambleData/AddPlayer/' + name, {
+            firstName: 'Player', lastName: 'With Long Last Name', isMale: false, gender: 'Female'
+        });
+        await expect(nextPlayer).toBeOK();
+        await page.setViewportSize({ width: 1920, height: 1000 });
+        const sheet = await page.locator('.sign-in-sheet').boundingBox();
+        expect(sheet.width).toBeLessThan(1200);
+        expect(Math.abs(sheet.x * 2 + sheet.width - 1920)).toBeLessThan(3);
+        await page.getByRole('link', { name: 'Open Player Sign In Mode' }).click();
+        await expect(page).toHaveURL(/\/sign-in\/player/);
+        await expect(page.locator('app-nav-menu')).toBeHidden();
+        await expect(page.locator('.legal-footer')).toBeHidden();
+        await expect(page.getByRole('button', { name: 'Add New Player' })).toHaveCount(0);
+        const tile = page.getByRole('button', { name: 'Player With Long Last Name', exact: true });
+        await expect(tile).toBeDisabled();
+        await expect(await post(admin, '/api/Login/SetLockSignInStatus', { leagueId, mode: 'open' })).toBeOK();
+        await expect(tile).toBeEnabled({ timeout: 15000 });
+        const search = page.getByRole('searchbox', { name: 'Find your name' });
+        await search.fill('long name');
+        await expect(page.locator('.roster-tile')).toHaveCount(1);
+        await page.getByRole('button', { name: 'Clear', exact: true }).click();
+        await expect(page.locator('.roster-tile')).toHaveCount(2);
+        await tile.click();
+        await expect(page.getByRole('heading', { name: 'Signed-In Players 2' })).toBeVisible();
+        await expect(page.getByRole('list', { name: 'Signed-in names' })).toContainText('Player With Long Last Name');
+        await expect(page.getByRole('button', { name: /Player With Long Last Name.*Signed in/ })).toBeDisabled();
+        const fullscreen = page.getByRole('button', { name: 'Fullscreen', exact: true });
+        if (await fullscreen.isVisible()) {
+            await fullscreen.click();
+            await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true);
+        }
+        await page.getByRole('button', { name: 'Exit Sign In Mode' }).click();
+        await expect(page.locator('.sign-in-sheet')).toBeVisible();
+        expect(await page.evaluate(() => !!document.fullscreenElement)).toBe(false);
+
+        const kiosk = await visitor.newPage();
+        let size = 20;
+        await kiosk.route('**/api/ScrambleData/GetPlayers/' + leagueId, route => route.fulfill({
+            json: Array.from({ length: size }, (_, index) => ({
+                id: 100000 + index, firstName: 'Player ' + (index + 1), lastName: 'Long Family Name',
+                gender: index % 2 ? 'Male' : 'Female'
+            }))
+        }));
+        for (const [width, count, theme] of [
+            [2560, 100, 'classic'], [1920, 80, 'soft-light'], [1366, 60, 'navy'],
+            [768, 40, 'charcoal'], [390, 20, 'soft-light']
+        ]) {
+            size = count;
+            await kiosk.setViewportSize({ width, height: 860 });
+            await kiosk.goto(origin + '/sign-in/player?leagueId=' + leagueId);
+            await kiosk.evaluate(value => localStorage.setItem('league-hub-appearance', value), theme);
+            await kiosk.reload();
+            await expect(kiosk.locator('html')).toHaveAttribute('data-theme', theme);
+            await expect(kiosk.locator('.roster-tile')).toHaveCount(count);
+            await expect(kiosk.getByRole('heading', { name: 'Signed-In Players 2' })).toBeInViewport();
+            expect(await kiosk.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+        }
+        console.log('Centered sheet, fullscreen and exit, live unlock, search, kiosk attendance and 20-100-player layouts passed.');
         await expect(await post(admin, '/api/Login/SetLockSignInStatus', { leagueId, mode: 'locked' })).toBeOK();
         persistedLeague = leagueId;
         console.log('Four themes, off-day attendance, lock enforcement, authorization, refresh, and league isolation passed.');

@@ -200,6 +200,7 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
             { path: 'resetpassword', component: ResetPasswordComponent },
             { path: 'player-stats/:playerId', redirectTo: 'player-stats-tabs/:playerId', pathMatch: 'full' },
             { path: 'sign-in', component: SignInComponent },
+            { path: 'sign-in/player', component: SignInComponent, data: { playerMode: true } },
             { path: 'player-stats-tabs/:playerId', component: PlayerStatsTabsComponent },
             { path: 'league-dashboard', component: LeagueDashboardComponent },
             { path: 'faq', component: FaqComponent },

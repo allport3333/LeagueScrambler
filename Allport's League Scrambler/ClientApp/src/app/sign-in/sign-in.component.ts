@@ -1,6 +1,7 @@
 import { Component, DestroyRef, OnInit, ViewChild, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { combineLatest, forkJoin, of, Subscription, switchMap } from 'rxjs';
+import { combineLatest, forkJoin, interval, of, Subscription, switchMap } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarRef, SimpleSnackBar } from '@angular/material/snack-bar';
 import { MatSort } from '@angular/material/sort';
@@ -40,6 +41,15 @@ export class SignInComponent implements OnInit {
     isSignInLocked = true;
     availability: LeagueAttendanceAvailability;
     savingSignInMode = false;
+    readonly playerMode = this.route.snapshot.data['playerMode'] === true;
+    private readonly routeLeagueId = Number(this.route.snapshot.queryParamMap.get('leagueId'));
+    private roster: Player[] = [];
+    private signedInIds = new Set<number>();
+    search = '';
+    visibleRoster: Player[] = [];
+    signingIn = false;
+    private playerIdentityReady = false;
+    fullscreenAvailable = document.fullscreenEnabled;
     displayedColumns: string[] = ['firstName', 'lastName'];
     signedInColumns: string[] = ['firstName', 'lastName'];
     userRole: string; // To store the role of the user
@@ -66,7 +76,7 @@ export class SignInComponent implements OnInit {
 
     constructor(private playerService: PlayerService, private loginService: LoginService, private authService: AuthService,
         private leagueService: LeagueService, private http: HttpClient, private snackBar: MatSnackBar, private dialog: MatDialog,
-        private destroyRef: DestroyRef, private notifications: TournamentNotifications) {
+        private destroyRef: DestroyRef, private notifications: TournamentNotifications, private route: ActivatedRoute, private router: Router) {
         this.destroyRef.onDestroy(() => this.signInNotice?.dismiss());
     }
 
@@ -75,6 +85,7 @@ export class SignInComponent implements OnInit {
         combineLatest([this.authService.isLoggedIn$, this.leagueService.selectedLeague$]).pipe(
             switchMap(([loggedIn, league]) => {
                 this.isLoggedIn = loggedIn;
+                this.playerIdentityReady = false;
                 this.canManageAttendance = false;
                 return loggedIn ? this.loginService.getManagementAccess(league.leagueId)
                     : of({ role: '', canManage: false });
@@ -83,12 +94,18 @@ export class SignInComponent implements OnInit {
         ).subscribe(access => {
             const shouldLoadProfile = access.role === 'Player' && this.userRole !== 'Player';
             this.userRole = access.role;
+            this.playerIdentityReady = true;
             this.canManageAttendance = access.canManage;
             if (!access.canManage) this.showAddPlayerForm = false;
             if (shouldLoadProfile) this.loadPlayerIdForUser();
         });
+        if (this.playerMode) {
+            interval(10000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+                if (!this.signingIn && (!this.attendanceRequest || this.attendanceRequest.closed)) this.loadAttendance();
+            });
+        }
         this.leagueService.selectedLeague$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(selectedLeague => {
-            if (selectedLeague.leagueId) {
+            if (selectedLeague.leagueId && !this.routeLeagueId) {
                 this.selectedLeague = {
                     id: selectedLeague.leagueId,
                     leagueName: selectedLeague.leagueName
@@ -194,7 +211,9 @@ export class SignInComponent implements OnInit {
     loadLeagues() {
         this.playerService.GetLeagues().subscribe(
             (result: Leagues[]) => {
-                this.leaguesAvailable = result;
+                this.leaguesAvailable = result.filter(league => league.eventTypeId !== 2);
+                const requested = this.leaguesAvailable.find(league => league.id === this.routeLeagueId);
+                if (requested) this.onLeagueSelect(requested);
             },
             (error) => console.error('Error fetching leagues:', error)
         );
@@ -222,8 +241,7 @@ export class SignInComponent implements OnInit {
             return;
         }
 
-        // Proceed to sign in the player
-        this.signInPlayer(player);
+        this.signInPlayer(player, this.playerMode);
 
     }
 
@@ -312,9 +330,11 @@ export class SignInComponent implements OnInit {
                 this.applyAvailability(state);
                 this.playerSignIn = (signedIn || []).slice().sort((a, b) => a.firstName.localeCompare(b.firstName));
                 this.signedInDataSource.data = [...this.playerSignIn];
-                const signedInIds = new Set(this.playerSignIn.map(player => player.playerId));
-                this.players = players.filter(player => !signedInIds.has(player.id)).sort((a, b) =>
-                    a.firstName.localeCompare(b.firstName) || a.lastName.localeCompare(b.lastName));
+                this.signedInIds = new Set(this.playerSignIn.map(player => player.playerId));
+                this.roster = players.slice().sort((a, b) => a.firstName.localeCompare(b.firstName)
+                    || a.lastName.localeCompare(b.lastName));
+                this.players = this.roster.filter(player => !this.signedInIds.has(player.id));
+                this.searchRoster(this.search);
                 this.dataSource.data = [...this.players];
                 this.filteredPlayers = [...this.players];
                 this.updatePlayerSignInStatus();
@@ -353,7 +373,6 @@ export class SignInComponent implements OnInit {
         }
 
         const now = new Date(); // Current local time
-        console.log('now', now);
         const playerSignIn: PlayerSignIn = {
             playerSignInId: 0,
             dateTime: now, // Extract the local date part
@@ -372,19 +391,31 @@ export class SignInComponent implements OnInit {
     }
 
     private executePlayerSignIn(playerSignIn: PlayerSignIn, player: any): void {
+        if (this.signingIn || this.isSignInLocked) return;
+        this.signingIn = true;
+        if (this.playerMode) this.attendanceRequest?.unsubscribe();
         this.playerService.signInPlayer(playerSignIn).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(
             (result: PlayerSignInResult) => {
+                this.signingIn = false;
+                if (this.selectedLeague?.id !== result.leagueId) return;
+                this.signedInIds.add(result.playerId);
                 this.playerSignIn.push(result);
                 this.signedInDataSource.data = [...this.playerSignIn];
-                this.signInNotice?.dismiss();
-                this.signInNotice = this.snackBar.open(`${player.firstName} ${player.lastName} has been signed in.`, 'OK', {
-                    duration: 3000, panelClass: ['custom-snackbar'], horizontalPosition: 'center'
-                });
+                if (this.playerMode) {
+                    this.searchRoster('');
+                    this.notifications.success(`${player.firstName} ${player.lastName} has been signed in.`);
+                } else {
+                    this.signInNotice?.dismiss();
+                    this.signInNotice = this.snackBar.open(`${player.firstName} ${player.lastName} has been signed in.`, 'OK', {
+                        duration: 3000, panelClass: ['custom-snackbar'], horizontalPosition: 'center'
+                    });
+                }
                 this.players = this.players.filter(p => p.id !== player.id);
                 this.filteredPlayers = this.filteredPlayers.filter(p => p.id !== player.id);
                 this.updateGenderCounts();
             },
             (error) => {
+                this.signingIn = false;
                 console.error('Error signing in player:', error);
                 if (error.status === 423) {
                     this.isSignInLocked = true;
@@ -400,6 +431,32 @@ export class SignInComponent implements OnInit {
                 }
             }
         );
+    }
+
+    searchRoster(value: string): void {
+        this.search = value;
+        const terms = value.trim().toLocaleLowerCase().split(/\s+/);
+        this.visibleRoster = this.roster.filter(player => {
+            const name = `${player.firstName} ${player.lastName}`.toLocaleLowerCase();
+            return terms.every(term => name.includes(term));
+        });
+    }
+
+    signedIn(player: Player): boolean { return this.signedInIds.has(player.id); }
+
+    canSignInFromTile(player: Player): boolean {
+        return this.playerIdentityReady && !this.isSignInLocked && !this.attendanceError && !this.signingIn && !this.signedIn(player)
+            && (this.userRole !== 'Player' || player.id === this.playerId);
+    }
+
+    async enterFullscreen(): Promise<void> {
+        try { await document.documentElement.requestFullscreen(); }
+        catch { this.notifications.error('Fullscreen is unavailable in this browser.'); }
+    }
+
+    async exitPlayerMode(): Promise<void> {
+        if (document.fullscreenElement === document.documentElement) await document.exitFullscreen();
+        await this.router.navigate(['/sign-in'], { queryParams: this.isLoggedIn ? {} : { leagueId: this.selectedLeague?.id } });
     }
 
     openDialog(message: string): void {
