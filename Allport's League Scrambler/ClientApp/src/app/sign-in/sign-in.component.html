@@ -61,20 +61,8 @@
         <section class="signed-in-panel" aria-labelledby="signed-in-heading">
           <h2 id="signed-in-heading">Signed-In Players <span>{{ signedInPlayers.length }}</span></h2>
           <p>Male {{ maleCount }} &middot; Female {{ femaleCount }}</p>
-          <ul class="signed-in-scroll" tabindex="0" aria-label="Signed-in names">
-            @for (player of signedInPlayers; track player.playerSignInId) {
-              <li>
-                <span>{{ player.firstName }} {{ player.lastName }}</span>
-                @if (canRemoveFromTilePanel(player)) {
-                  <button mat-icon-button type="button"
-                    [attr.aria-label]="'Remove ' + player.firstName + ' ' + player.lastName + ' from sign-in'"
-                    [disabled]="isSignInLocked || signingIn" (click)="unselectPlayer(player)">
-                    <mat-icon aria-hidden="true">close</mat-icon>
-                  </button>
-                }
-              </li>
-            } @empty { <li>No players signed in yet.</li> }
-          </ul>
+          <ng-container [ngTemplateOutlet]="signedInList"></ng-container>
+
         </section>
       </div>
     }
@@ -82,6 +70,9 @@
 } @else {
 <div class="sign-in-sheet">
   <h2 class="text-center">Sign In Sheet</h2>
+  @if (hasCurrentAttendance && availability) {
+    <p class="text-center">{{ selectedLeague.leagueName }} &middot; {{ availability.attendanceDate | date:'longDate' }}</p>
+  }
 
   <!-- League Selection -->
   @if (!isLoggedIn) {
@@ -172,93 +163,109 @@
     </div>
   }
 
-  <!-- Tables Side by Side -->
-  <div class="row mt-3">
-    <!-- Players in League Grid for Admin/Manager -->
-    @if (canManageAttendance) {
-      <div class="col-lg-9 col-md-8 col-sm-12">
-        <h4 class="mb-3">Players in League</h4>
-        <div class="mb-3">
-          <input matInput placeholder="Search Players"
-            (keyup)="applyFilter($event.target.value)"
-            class="form-control"
-            [disabled]="isSignInLocked">
-          </div>
-          <div class="row">
-            @for (player of filteredPlayers; track player) {
-              <div
-                class="col-lg-2 col-md-3 col-sm-4 col-6 player-card">
-                <div class="card text-center clickable"
-                  [ngStyle]="{'background-color': player.gender === 'Female' ? 'var(--hub-female, #ffe6f2)' : player.gender === 'Male' ? 'var(--hub-male, #e6f7ff)' : 'var(--hub-surface, white)'}"
-                  [class.disabled]="isSignInLocked"
-                  (click)="!isSignInLocked && selectPlayer(player)">
-                  <div class="card-body" style="padding: 3px; text-align: center;">
-                    <h6 class="card-title" style="font-size: 14px; margin: 0; line-height: 1;">
-                      {{ player.firstName }}
-                    </h6>
-                    <h6 class="card-title" style="font-size: 14px; margin: 0; line-height: 1;">
-                      {{ player.lastName }}
-                    </h6>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-      }
+  @if (canManageAttendance) {
+    <dl class="attendance-summary">
+      <div><dt>League Players</dt><dd>{{ rosterCount }}</dd></div>
+      <div><dt>Signed In</dt><dd>{{ eligibleSignedInCount }}</dd></div>
+      <div><dt>Not Signed In</dt><dd>{{ players.length }}</dd></div>
+      <div><dt>Male Signed In</dt><dd>{{ maleCount }}</dd></div>
+      <div><dt>Female Signed In</dt><dd>{{ femaleCount }}</dd></div>
+    </dl>
+  }
 
-      <!-- Sign In Button for Player Role -->
-      @if (userRole === 'Player') {
-        <div class="col-lg-9 col-md-8 col-sm-12 d-flex justify-content-center align-items-center">
-          <button mat-raised-button
-            [color]="isPlayerSignedIn ? 'warn' : 'primary'"
-            class="btn-sign-in"
-            (click)="togglePlayerSignIn()"
-            [disabled]="isSignInLocked">
-            {{ isPlayerSignedIn ? 'Remove from Sign In' : 'Sign In' }} - {{ player?.firstName }} {{ player?.lastName }}
-          </button>
-        </div>
-      }
-
-
-      <!-- Signed-In Players Table (Visible to All Roles) -->
-      <div class="col-lg-3 col-md-4 col-sm-12">
-        <h4 class="mb-3 text-center">Signed-In Players</h4>
-
-        <!-- Male and Female Count -->
-        <div class="d-flex justify-content-between mb-3">
-          <div><strong>Males:</strong> {{ maleCount }}</div>
-          <div><strong>Females:</strong> {{ femaleCount }}</div>
-        </div>
-
-        <table mat-table [dataSource]="signedInDataSource" class="table table-hover mat-elevation-z8 signed-in-players-table">
-          <!-- First Name Column -->
-          <ng-container matColumnDef="firstName">
-            <th mat-header-cell *matHeaderCellDef>First Name</th>
-            <td mat-cell *matCellDef="let player">{{ player.firstName }}</td>
-          </ng-container>
-
-          <!-- Last Name Column -->
-          <ng-container matColumnDef="lastName">
-            <th mat-header-cell *matHeaderCellDef>Last Name</th>
-            <td mat-cell *matCellDef="let player">{{ player.lastName }}</td>
-          </ng-container>
-
-          <!-- Rows -->
-          <tr mat-header-row *matHeaderRowDef="signedInColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: signedInColumns;"
-            (click)="handlePlayerRemoval(row)"
-            [class.disabled]="isSignInLocked || userRole === 'Player' && row.playerId !== currentPlayerId">
-          </tr>
-        </table>
-      </div>
+  @if (userRole === 'Player') {
+    <div class="text-center mb-3">
+      <button mat-raised-button [color]="isPlayerSignedIn ? 'warn' : 'primary'"
+        (click)="togglePlayerSignIn()" [disabled]="isSignInLocked || !player || signingIn">
+        {{ isPlayerSignedIn ? 'Remove from Sign In' : 'Sign In' }} &middot; {{ player?.firstName }} {{ player?.lastName }}
+      </button>
     </div>
+  }
 
+  <section class="attendance-card" aria-labelledby="signed-in-heading">
+    <header class="attendance-card-header">
+      <h3 id="signed-in-heading">Signed-In Players <span>{{ signedInPlayers.length }}</span></h3>
+      @if (canManageAttendance) {
+        <div class="sign-in-toolbar">
+          <button mat-stroked-button type="button" [disabled]="bulkBusy || signingIn" (click)="reviewBulk('sign-in')">Sign In Everyone</button>
+          <button mat-stroked-button type="button" color="warn" [disabled]="bulkBusy || signingIn" (click)="reviewBulk('remove')">Remove All Sign Ins</button>
+        </div>
+      }
+    </header>
+    <ng-container [ngTemplateOutlet]="signedInList"></ng-container>
+  </section>
 
-    }
+  @if (canManageAttendance) {
+    <details class="attendance-card">
+      <summary>Available Players ({{ players.length }})</summary>
+      <input class="form-control attendance-search" type="search" aria-label="Search available players"
+        placeholder="Search available players" (input)="applyFilter($any($event.target).value)">
+      <div class="available-admin-grid">
+        @for (player of filteredPlayers; track player.id) {
+          <button mat-stroked-button type="button" [disabled]="isSignInLocked || signingIn" (click)="selectPlayer(player)">
+            {{ player.firstName }} {{ player.lastName }}
+          </button>
+        } @empty { <p>No available players match.</p> }
+      </div>
+    </details>
+  }
+  }
 </div>
-
 }
+
+<ng-template #signedInList>
+  <div class="attendance-search signed-in-search">
+    <input #signedSearch type="search" class="form-control" aria-label="Search signed-in players"
+      placeholder="Search signed-in players" [value]="signedInSearch" (input)="signedInSearch = signedSearch.value">
+    @if (signedInSearch) {
+      <button mat-button type="button" (click)="signedInSearch = ''; signedSearch.focus()">Clear</button>
+    }
+  </div>
+  <ul class="signed-in-scroll" tabindex="0" aria-label="Signed-in names">
+    @for (player of filteredSignedIn; track player.playerSignInId) {
+      <li>
+        <span>{{ player.firstName }} {{ player.lastName }}</span>
+        @if (canRemoveFromTilePanel(player)) {
+          <button mat-icon-button type="button" [attr.aria-label]="'Remove ' + player.firstName + ' ' + player.lastName + ' from sign-in'"
+            [disabled]="isSignInLocked || signingIn || bulkBusy" (click)="unselectPlayer(player)">
+            <mat-icon aria-hidden="true">close</mat-icon>
+          </button>
+        }
+      </li>
+    } @empty {
+      <li>{{ signedInSearch ? 'No names match your search.' : 'No players signed in yet.' }}</li>
+    }
+  </ul>
+</ng-template>
+
+<ng-template #bulkDialog let-leagueId>
+  <h2 mat-dialog-title>{{ bulkOperation === 'remove' ? 'Remove All Sign Ins?' : 'Sign In Everyone?' }}</h2>
+  <mat-dialog-content>
+    <p>{{ bulkPreview.leagueName }} &middot; {{ bulkPreview.date | date:'longDate' }}</p>
+    @if (bulkOperation === 'remove') {
+      <p>This will remove {{ bulkPreview.records }} current sign-ins for {{ bulkPreview.signedIn }} players. League memberships and earlier attendance stay intact.</p>
+      <label for="bulk-remove-text">Type REMOVE ALL to confirm</label>
+      <input id="bulk-remove-text" class="form-control" [(ngModel)]="bulkText" autocomplete="off" [disabled]="bulkBusy">
+    } @else if (bulkPreview.lockedReason) {
+      <p>{{ bulkPreview.lockedReason }} Unlock sign-in to continue.</p>
+    } @else {
+      <p>{{ bulkPreview.signedIn }} players are already signed in. This will add {{ bulkPreview.additional }} players for a total of {{ bulkPreview.signedIn + bulkPreview.additional }}.</p>
+    }
+    @if (bulkError) { <p role="alert">{{ bulkError }}</p> }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button" [disabled]="bulkBusy">Cancel</button>
+    @if (bulkOperation === 'remove') {
+      <button mat-flat-button color="warn" type="button" (click)="confirmBulk(leagueId)"
+        [disabled]="bulkBusy || !!bulkError || bulkText !== 'REMOVE ALL' || !bulkPreview.records">
+        Remove All {{ bulkPreview.records }} Sign Ins
+      </button>
+    } @else {
+      <button mat-flat-button color="primary" type="button" (click)="confirmBulk(leagueId)"
+        [disabled]="bulkBusy || !!bulkError || !!bulkPreview.lockedReason || !bulkPreview.additional">Confirm Sign In Everyone</button>
+    }
+  </mat-dialog-actions>
+</ng-template>
 
   <!-- Confirmation/Notification Dialog Template -->
   <ng-template #confirmationDialog let-data>

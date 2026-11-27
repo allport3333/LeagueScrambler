@@ -4,8 +4,6 @@ import { BehaviorSubject, combineLatest, forkJoin, interval, of, Subscription, s
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarRef, SimpleSnackBar } from '@angular/material/snack-bar';
-import { MatSort } from '@angular/material/sort';
-import { MatTableDataSource } from '@angular/material/table';
 import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { LeagueAttendanceAvailability, LeagueAttendanceMode, PlayerService } from '../services/player.service';
@@ -19,6 +17,16 @@ import { LoginService } from '../services/login.service';
 import { LeagueService } from '../services/league.service';
 import { AuthService } from '../auth.service';
 
+interface BulkAttendancePreview {
+    leagueName: string;
+    date: string;
+    signedIn: number;
+    additional: number;
+    records: number;
+    lockedReason: string | null;
+    version: string;
+}
+
 @Component({
     selector: 'app-sign-in',
     templateUrl: './sign-in.component.html',
@@ -27,6 +35,7 @@ import { AuthService } from '../auth.service';
     standalone: false
 })
 export class SignInComponent implements OnInit {
+    @ViewChild('bulkDialog', { static: true }) bulkDialog!: TemplateRef<unknown>;
     @ViewChild('confirmationDialog', { static: true }) confirmationDialog!: TemplateRef<any>;
     dialogRef!: MatDialogRef<any>;
     playerId: number | null = null;
@@ -36,8 +45,6 @@ export class SignInComponent implements OnInit {
     showAddPlayerForm: boolean = false;
     playerSignIn: any[] = []; 
     filteredPlayers: any[] = [];
-    dataSource = new MatTableDataSource();
-    signedInDataSource = new MatTableDataSource<Player>();
     isSignInLocked = true;
     availability: LeagueAttendanceAvailability;
     savingSignInMode = false;
@@ -46,13 +53,19 @@ export class SignInComponent implements OnInit {
     private roster: Player[] = [];
     private readonly attendanceLeague = new BehaviorSubject<number | null>(null);
     search = '';
+    signedInSearch = '';
+    private availableSearch = '';
+    bulkBusy = false;
+    bulkError = '';
+    bulkText = '';
+    bulkOperation: 'sign-in' | 'remove';
+    bulkPreview: BulkAttendancePreview;
+    private bulkDialogRef: MatDialogRef<unknown>;
     visibleRoster: Player[] = [];
     signedInPlayers: PlayerSignInResult[] = [];
     signingIn = false;
     private playerIdentityReady = false;
     fullscreenAvailable = document.fullscreenEnabled;
-    displayedColumns: string[] = ['firstName', 'lastName'];
-    signedInColumns: string[] = ['firstName', 'lastName'];
     userRole: string; // To store the role of the user
     canManageAttendance = false;
     isLoggedIn: boolean = false;
@@ -73,7 +86,6 @@ export class SignInComponent implements OnInit {
         leagueName: new UntypedFormControl()
     });
 
-    @ViewChild(MatSort) sort: MatSort;
 
     constructor(private playerService: PlayerService, private loginService: LoginService, private authService: AuthService,
         private leagueService: LeagueService, private http: HttpClient, private snackBar: MatSnackBar, private dialog: MatDialog,
@@ -117,12 +129,6 @@ export class SignInComponent implements OnInit {
 
     }
 
-    checkIfPlayerSignedIn(): void {
-        this.isPlayerSignedIn = this.playerSignIn.some(
-            (signedInPlayer) => signedInPlayer.playerId === this.currentPlayerId
-        );
-    }
-
     togglePlayerSignIn(): void {
         if (this.isPlayerSignedIn) {
             const signedInPlayer = this.playerSignIn.find(
@@ -160,29 +166,6 @@ export class SignInComponent implements OnInit {
                 console.error('Error fetching player ID:', error);
             }
         );
-    }
-
-    handlePlayerRemoval(player: any): void {
-        if (this.isSignInLocked) {
-            return;
-        }
-
-        // Allow only Admin/Manager or the Player themselves to unselect
-        if (this.canManageAttendance || (this.isLoggedIn && this.player && player.playerId === this.player.id)) {
-            this.unselectPlayer(player);
-
-            // If the removed player is the logged-in player, update the button state
-            if (this.player && player.playerId === this.player.id) {
-                this.isPlayerSignedIn = false; // Reset the button to "Sign In"
-            }
-        } else {
-            this.snackBar.open('You can only remove yourself from the sign-in list.', 'Close', {
-                duration: 3000,
-                horizontalPosition: 'center',
-                verticalPosition: 'top',
-                panelClass: ['red-snackbar']
-            });
-        }
     }
 
     setSignInMode(mode: LeagueAttendanceMode): void {
@@ -268,7 +251,7 @@ export class SignInComponent implements OnInit {
     }
 
     private removePlayerFromSignIn(player: PlayerSignInResult): void {
-        if (this.signingIn || this.selectedLeague?.id !== player.leagueId) return;
+        if (this.signingIn || this.bulkBusy || this.selectedLeague?.id !== player.leagueId) return;
         this.signingIn = true;
         if (this.playerMode) this.attendanceRequest?.unsubscribe();
         this.playerService.deleteSignInPlayer(player.playerSignInId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -293,6 +276,7 @@ export class SignInComponent implements OnInit {
     }
 
     applyFilter(filterValue: string) {
+        this.availableSearch = filterValue;
         const trimmedValue = filterValue.trim().toLowerCase();
         this.filteredPlayers = this.players.filter(player =>
             player.firstName.toLowerCase().includes(trimmedValue) ||
@@ -343,19 +327,19 @@ export class SignInComponent implements OnInit {
         this.playerSignIn = records.slice().sort((a, b) => a.firstName.localeCompare(b.firstName)
             || a.lastName.localeCompare(b.lastName));
         this.signedInPlayers = this.playerSignIn.filter(record => signedIn.get(record.playerId) === record);
-        this.signedInDataSource.data = this.playerSignIn;
         this.players = this.roster.filter(player => !signedIn.has(player.id));
-        this.dataSource.data = [...this.players];
-        this.filteredPlayers = [...this.players];
+        this.applyFilter(this.availableSearch);
         this.searchRoster(this.search);
         this.updatePlayerSignInStatus();
         this.updateGenderCounts();
     }
 
     updateGenderCounts(): void {
-        const signedInPlayers = this.playerMode ? this.signedInPlayers : this.signedInDataSource.data;
-        this.maleCount = signedInPlayers.filter((player: Player) => player.gender === 'Male').length;
-        this.femaleCount = signedInPlayers.filter((player: Player) => player.gender === 'Female').length;
+        const rosterIds = new Set(this.roster.map(player => player.id));
+        const signedInPlayers = this.playerMode ? this.signedInPlayers
+            : this.signedInPlayers.filter(record => rosterIds.has(record.playerId));
+        this.maleCount = signedInPlayers.filter(player => player.gender === 'Male').length;
+        this.femaleCount = signedInPlayers.filter(player => player.gender === 'Female').length;
     }
 
     private updatePlayerSignInStatus(): void {
@@ -392,7 +376,7 @@ export class SignInComponent implements OnInit {
     }
 
     private executePlayerSignIn(playerSignIn: PlayerSignIn, player: any): void {
-        if (this.signingIn || this.isSignInLocked) return;
+        if (this.signingIn || this.bulkBusy || this.isSignInLocked) return;
         this.signingIn = true;
         if (this.playerMode) this.attendanceRequest?.unsubscribe();
         this.playerService.signInPlayer(playerSignIn).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(
@@ -426,6 +410,63 @@ export class SignInComponent implements OnInit {
                 }
             }
         );
+    }
+
+    get rosterCount(): number { return this.roster.length; }
+    get eligibleSignedInCount(): number { return this.roster.length - this.players.length; }
+
+    get filteredSignedIn(): PlayerSignInResult[] {
+        const terms = this.signedInSearch.trim().toLocaleLowerCase().split(/\s+/);
+        return this.signedInSearch ? this.signedInPlayers.filter(player => {
+            const name = `${player.firstName} ${player.lastName}`.toLocaleLowerCase();
+            return terms.every(term => name.includes(term));
+        }) : this.signedInPlayers;
+    }
+
+    reviewBulk(operation: 'sign-in' | 'remove'): void {
+        const leagueId = this.selectedLeague?.id;
+        if (!leagueId || !this.canManageAttendance || this.bulkBusy || this.signingIn) return;
+        this.bulkBusy = true;
+        this.http.get<BulkAttendancePreview>(`/api/LeagueAttendance/${leagueId}/bulk`)
+            .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                next: preview => {
+                    this.bulkBusy = false;
+                    if (this.selectedLeague?.id !== leagueId) return;
+                    this.bulkOperation = operation;
+                    this.bulkPreview = preview;
+                    this.bulkText = '';
+                    this.bulkError = '';
+                    this.bulkDialogRef = this.dialog.open(this.bulkDialog, {
+                        data: leagueId, width: '32rem', autoFocus: 'first-header', disableClose: true
+                    });
+                },
+                error: () => {
+                    this.bulkBusy = false;
+                    this.notifications.error('Could not load current attendance. Try again.');
+                }
+            });
+    }
+
+    confirmBulk(leagueId: number): void {
+        if (this.bulkBusy || leagueId !== this.selectedLeague?.id || this.bulkError) return;
+        this.bulkBusy = true;
+        this.attendanceRequest?.unsubscribe();
+        this.http.post<{ affected: number }>(`/api/LeagueAttendance/${leagueId}/bulk`, {
+            operation: this.bulkOperation, version: this.bulkPreview.version, text: this.bulkText
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: result => {
+                this.bulkBusy = false;
+                this.bulkDialogRef.close();
+                this.loadAttendance();
+                this.notifications.success(this.bulkOperation === 'remove'
+                    ? `Removed ${result.affected} sign-ins.` : `Signed in ${result.affected} players.`);
+            },
+            error: error => {
+                this.bulkBusy = false;
+                this.bulkError = error.error?.message || 'Could not update attendance. Try again.';
+                this.loadAttendance();
+            }
+        });
     }
 
     searchRoster(value: string): void {
@@ -504,18 +545,7 @@ export class SignInComponent implements OnInit {
         
         // API call to add player
         this.playerService.AddPlayer(newPlayer, this.selectedLeague.leagueName).subscribe(
-            (result) => {
-                this.players.push(result);
-                this.players.sort((a, b) => {
-                    if (a.firstName.toLowerCase() < b.firstName.toLowerCase()) return -1;
-                    if (a.firstName.toLowerCase() > b.firstName.toLowerCase()) return 1;
-                    if (a.lastName.toLowerCase() < b.lastName.toLowerCase()) return -1;
-                    if (a.lastName.toLowerCase() > b.lastName.toLowerCase()) return 1;
-                    return 0;
-                });
-                this.dataSource.data = [...this.players];
-                this.filteredPlayers = [...this.players];
-            },
+            () => this.loadAttendance(),
             (error) => console.error(error)
         );
     }

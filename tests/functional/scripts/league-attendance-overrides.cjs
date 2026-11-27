@@ -172,7 +172,89 @@ withPickupTestHost(async origin => {
             expect(await kiosk.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
         }
         console.log('Centered sheet, fullscreen and exit, live unlock, search, kiosk attendance and 5-100-player layouts passed.');
+        const bulk = '/api/LeagueAttendance/' + leagueId + '/bulk';
+        const preview = async () => (await admin.request.get(origin + bulk)).json();
+        const snapshot = await preview();
+        expect(snapshot).toMatchObject({ signedIn: 1, additional: 1, records: 1 });
+        expect((await visitor.request.get(origin + bulk)).status()).toBe(401);
+        expect((await post(visitor, bulk, { operation: 'sign-in', version: snapshot.version })).status()).toBe(401);
+        expect((await post(admin, bulk, { operation: 'remove', version: snapshot.version, text: 'REMOVE' })).status()).toBe(400);
+        await expect(page.getByText('Available Players (1)', { exact: true })).toBeVisible();
+        const signedSearch = page.getByRole('searchbox', { name: 'Search signed-in players' });
+        await signedSearch.fill(token);
+        await expect(page.getByRole('list', { name: 'Signed-in names' })).toContainText('Fixture ' + token);
+        await page.getByRole('button', { name: 'Clear', exact: true }).click();
+
+        await page.getByRole('button', { name: 'Sign In Everyone', exact: true }).click();
+        const dialog = page.getByRole('dialog');
+        await expect(dialog).toContainText('This will add 1 players');
+        await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+        expect(await preview()).toEqual(snapshot);
+
+        await page.getByRole('button', { name: 'Sign In Everyone', exact: true }).click();
+        await dialog.getByRole('button', { name: 'Confirm Sign In Everyone' }).click();
+        await expect(page.getByRole('heading', { name: 'Signed-In Players 2' })).toBeVisible();
+
+        // Insert an earlier attendance record and a current record in another league in the disposable database.
+        execFileSync('sqlcmd.exe', ['-S', 'lpc:localhost', '-d', 'LeagueScramblerPickupTest', '-E', '-C', '-b', '-Q',
+            "IF DB_NAME() <> 'LeagueScramblerPickupTest' THROW 51000,'Wrong database',1; " +
+            "INSERT dbo.PlayerSignIn (LeagueId, PlayerId, DateTime, LockedSignIn) VALUES " +
+            "(" + leagueId + ", " + playerId + ", DATEADD(day,-3,'" + snapshot.date + "'),0)," +
+            "(" + otherId + ", " + playerId + ",'" + snapshot.date + "',0);"]);
+        await page.getByRole('button', { name: 'Remove All Sign Ins', exact: true }).click();
+        const typed = dialog.getByRole('textbox', { name: 'Type REMOVE ALL to confirm' });
+        const removeAll = dialog.getByRole('button', { name: 'Remove All 2 Sign Ins' });
+        await typed.fill('remove all');
+        await expect(removeAll).toBeDisabled();
+        await typed.fill('REMOVE ALL');
+        await expect(removeAll).toBeEnabled();
+        await removeAll.click();
+        await expect(page.getByRole('heading', { name: 'Signed-In Players 0' })).toBeVisible();
+        await expect(page.getByText('Available Players (2)', { exact: true })).toBeVisible();
+
+        const getRows = async (id, date) => (await visitor.request.get(origin + '/api/ScrambleData/GetSignedInPlayers', {
+            params: { leagueId: id, date }
+        })).json();
+        const earlier = new Date(snapshot.date + 'T00:00:00Z');
+        earlier.setUTCDate(earlier.getUTCDate() - 3);
+        expect((await getRows(leagueId, earlier.toISOString().slice(0, 10))).map(row => row.playerId)).toEqual([playerId]);
+        expect((await getRows(otherId, snapshot.date)).map(row => row.playerId)).toEqual([playerId]);
+
+        const empty = await preview();
+        const confirm = { operation: 'sign-in', version: empty.version };
+        const concurrent = await Promise.all([post(admin, bulk, confirm), post(admin, bulk, confirm)]);
+        expect(concurrent.map(response => response.status()).sort()).toEqual([200, 409]);
+        expect((await getRows(leagueId, snapshot.date)).map(row => row.playerId).sort()).toEqual([playerId, secondId].sort());
+        const density = await admin.newPage();
+        await density.addInitScript(id => sessionStorage.setItem('league-hub-selected-league', id), String(leagueId));
+        let attendanceCount = 5;
+        await density.route('**/api/ScrambleData/GetSignedInPlayers?*', route => route.fulfill({
+            json: Array.from({ length: attendanceCount }, (_, i) => ({
+                playerSignInId: i + 1, playerId: i + 100000, leagueId,
+                firstName: 'Player ' + (i + 1), lastName: 'Long Family Name', gender: 'Female'
+            }))
+        }));
+        for (const [width, count, theme, columns] of [
+            [390, 5, 'classic', 1], [600, 20, 'soft-light', 2], [768, 40, 'navy', 2],
+            [1366, 60, 'charcoal', 4], [1920, 80, 'classic', 4], [2560, 100, 'soft-light', 4]
+        ]) {
+            attendanceCount = count;
+            await density.setViewportSize({ width, height: 860 });
+            await density.goto(origin + '/sign-in');
+            await density.evaluate(value => localStorage.setItem('league-hub-appearance', value), theme);
+            await density.reload();
+            await expect(density.locator('html')).toHaveAttribute('data-theme', theme);
+            const grid = density.getByRole('list', { name: 'Signed-in names' });
+            await expect(grid.locator('li')).toHaveCount(count);
+            expect(await grid.evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(columns);
+            expect(await density.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+        }
+        await density.close();
+        console.log('Bulk preview, cancellation, confirmation, permission, concurrent requests and scope passed. Admin layouts passed with 5-100 signed in.');
         await expect(await post(admin, '/api/Login/SetLockSignInStatus', { leagueId, mode: 'locked' })).toBeOK();
+        const lockedPreview = await preview();
+        expect(lockedPreview.lockedReason).toBeTruthy();
+        expect((await post(admin, bulk, { operation: 'sign-in', version: lockedPreview.version })).status()).toBe(423);
         persistedLeague = leagueId;
         console.log('Four themes, off-day attendance, lock enforcement, authorization, refresh, and league isolation passed.');
     } finally {

@@ -1589,26 +1589,20 @@ namespace Allport_s_League_Scrambler.Controllers
                 return Forbid();
             }
 
-            // Preserve league administrator removal behavior. Ordinary owners
-            // must not bypass the profile's league-day/lock rules through this older route.
+            using var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
+            var now = AttendanceRules.EasternNow(DateTime.UtcNow);
+            await AttendanceSerialization.Acquire(context, signInRecord.LeagueId, signInRecord.DateTime.Date);
+            await context.Entry(signInRecord).ReloadAsync();
+            if (context.Entry(signInRecord).State == EntityState.Detached) return NoContent();
             if (!isLeagueManager)
             {
-                using (var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
-                {
-                    var now = AttendanceRules.EasternNow(DateTime.UtcNow);
-                    await AttendanceSerialization.Acquire(context, signInRecord.LeagueId, now.Date);
-                    var availability = await LeagueAttendanceAvailability.Read(context, signInRecord.LeagueId, now);
-                    if (availability.Locked) return StatusCode(423, availability.Reason);
-                    context.PlayerSignIn.Remove(signInRecord);
-                    await context.SaveChangesAsync();
-                    transaction.Commit();
-                    return NoContent();
-                }
+                var availability = await LeagueAttendanceAvailability.Read(context, signInRecord.LeagueId, now);
+                if (availability.Locked) return StatusCode(423, availability.Reason);
             }
 
             context.PlayerSignIn.Remove(signInRecord);
             await context.SaveChangesAsync();
-
+            transaction.Commit();
             return NoContent();
         }
 

@@ -1,137 +1,3 @@
-.player-card {
-    margin-bottom: 10px;
-}
-
-    .player-card .card {
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-        .player-card .card:hover {
-            transform: scale(1.05);
-            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-.clickable-row {
-    cursor: pointer;
-}
-
-    .clickable-row:hover {
-        background-color: var(--hub-section, #f8f9fa);
-    }
-
-table.mat-mdc-table {
-    border-spacing: 0;
-    border-collapse: collapse;
-}
-
-    table.mat-mdc-table th,
-    table.mat-table td {
-        padding: 2px !important; /* Force smaller padding */
-        line-height: 0.8 !important; /* Reduce line height */
-        font-size: 13px !important; /* Smaller font size */
-    }
-
-    table.mat-mdc-table th {
-        font-weight: bold;
-        text-align: left;
-        vertical-align: middle;
-    }
-
-    table.mat-mdc-table tr {
-        height: auto !important; /* Allow rows to shrink */
-    }
-
-/* Styles specific to the Signed-In Players table */
-table.signed-in-players-table tr {
-    height: 25px !important; /* Set a consistent row height */
-    cursor: pointer; /* Keep rows clickable */
-    transition: background-color 0.2s; /* Add hover transition */
-}
-
-table.signed-in-players-table th,
-table.signed-in-players-table td {
-    padding: 5px !important; /* Increase padding for larger click area */
-    line-height: 1.2 !important; /* Adjust line height for better spacing */
-    font-size: 15px !important; /* Slightly larger font size for readability */
-}
-
-/* Hover effect for rows */
-table.signed-in-players-table tr:hover {
-    background-color: var(--hub-section, #f8f9fa); /* Light gray hover effect */
-}
-
-/* Ensure header rows maintain consistent size */
-table.signed-in-players-table th {
-    height: 30px !important; /* Slightly taller header row */
-    vertical-align: middle; /* Vertically center header text */
-}
-/* Styling for the locked message card */
-.locked-message-card {
-    background-color: var(--hub-loss-surface, #ffe6e6); /* Light red background */
-    border: 1px solid #f44336; /* Red border */
-    padding: 15px;
-    border-radius: 8px;
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-/* Sign-In Button for Players */
-.btn-sign-in {
-    width: 90%;
-    height: 150px;
-    font-size: 28px;
-    font-weight: bold;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-    .btn-sign-in:hover {
-        transform: scale(1.05);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
-    }
-
-    .btn-sign-in:disabled {
-        background-color: #ccc;
-        color: #666;
-        cursor: not-allowed;
-    }
-
-/* Signed-In Players Table */
-.signed-in-players-table {
-    width: 100%;
-    text-align: center;
-    font-size: 14px;
-}
-
-    .signed-in-players-table th {
-        background-color: var(--hub-header, #f0f0f0);
-        font-weight: bold;
-        padding: 8px;
-    }
-
-    .signed-in-players-table td {
-        padding: 6px;
-        font-size: 13px;
-    }
-
-/* Disabled Player Card */
-.player-card .disabled {
-    opacity: 0.5;
-    pointer-events: none;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .btn-sign-in {
-        width: 100%;
-        height: 120px;
-        font-size: 22px;
-    }
-}
-
-
 .sign-in-sheet {
     width: min(100% - 2rem, 70rem);
     margin: 1rem auto;
@@ -237,4 +103,47 @@ table.signed-in-players-table th {
     .player-mode { width: calc(100% - 1rem); height: max(100dvh, 30rem); }
     .player-mode-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 3fr) minmax(7rem, 1fr); }
 
+}
+
+.locked-message-card {
+    background: var(--hub-loss-surface, #ffe6e6);
+    border: 1px solid var(--hub-loss-text, #812c3b);
+    max-width: 25rem;
+    margin: 0 auto 1rem;
+}
+.attendance-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
+    gap: .45rem;
+    margin: .75rem 0;
+    text-align: center;
+}
+.attendance-summary div, .attendance-card {
+    border: 1px solid var(--hub-border, #b8c6d4);
+    border-radius: .4rem;
+    background: var(--hub-surface, #fff);
+    padding: .55rem .75rem;
+}
+.attendance-summary dt { font-size: .85rem; color: var(--hub-muted, #52677c); }
+.attendance-summary dd { font-size: 1.3rem; font-weight: 700; margin: 0; }
+.attendance-card { margin-block: .65rem; }
+.attendance-card summary { cursor: pointer; font-weight: 650; }
+.attendance-card-header { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.attendance-card h3 { margin: .35rem 0; font-size: 1.2rem; }
+.attendance-search { max-width: 24rem; margin-block: .5rem; }
+.signed-in-search { display: flex; align-items: center; gap: .25rem; flex-shrink: 0; }
+.signed-in-search input { min-width: 0; }
+.attendance-card .signed-in-scroll, .available-admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: .3rem .55rem;
+}
+.attendance-card .signed-in-scroll { grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr)); }
+.available-admin-grid button { height: auto; padding-block: .3rem; overflow-wrap: anywhere; }
+.signed-in-panel { container-type: inline-size; }
+.signed-in-panel .signed-in-scroll { display: grid; align-content: start; }
+.signed-in-scroll li { min-height: 1.9rem; padding-block: .05rem; }
+.signed-in-scroll button { width: 36px; height: 36px; padding: 6px; }
+@container (min-width: 28rem) {
+    .signed-in-panel .signed-in-scroll { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: .55rem; }
 }
