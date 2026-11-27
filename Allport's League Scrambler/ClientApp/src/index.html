@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="soft-light">
 <head>
     <meta charset="utf-8">
 
@@ -8,7 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="manifest" href="manifest.webmanifest">
-    <meta name="theme-color" content="#343a40">
+    <meta name="theme-color" content="#edf2f7">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="League Hub">
@@ -48,10 +48,11 @@
   <script>
     try {
       const theme = localStorage.getItem('league-hub-appearance');
-      if (theme === 'navy' || theme === 'charcoal' || theme === 'soft-light') {
+      const themeColors = new Map([['classic', '#343a40'], ['navy', '#111b2d'], ['charcoal', '#1b1d20'], ['soft-light', '#edf2f7']]);
+      if (themeColors.has(theme)) {
         document.documentElement.dataset.theme = theme;
-        document.documentElement.style.colorScheme = theme === 'soft-light' ? 'light' : 'dark';
-        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'navy' ? '#111b2d' : theme === 'charcoal' ? '#1b1d20' : '#edf2f7');
+        document.documentElement.style.colorScheme = theme === 'navy' || theme === 'charcoal' ? 'dark' : 'light';
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColors.get(theme));
       }
     } catch {}
   </script>

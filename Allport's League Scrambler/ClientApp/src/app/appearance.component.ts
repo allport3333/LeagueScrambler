@@ -1,5 +1,7 @@
 import { Component, Injectable } from '@angular/core';
 
+const softLight = { id: 'soft-light', label: 'Soft Light', page: '#edf2f7', surface: '#f8fafc', accent: '#315e8a' } as const;
+
 const themes = [
     { id: 'classic', label: 'Classic Light', page: '#ffffff', surface: '#edf3fa', accent: '#293d69' },
     { id: 'navy', label: 'Dark Navy', page: '#111b2d', surface: '#1d2c45', accent: '#adc8ff' },
@@ -10,7 +12,7 @@ const themes = [
 @Injectable({ providedIn: 'root' })
 export class AppearanceService {
     readonly themes = themes;
-    selected = themes.find(theme => theme.id === document.documentElement.dataset.theme) ?? themes[0];
+    selected = themes.find(theme => theme.id === document.documentElement.dataset.theme) ?? softLight;
 
     select(theme: typeof themes[number]): void {
         this.selected = theme;
