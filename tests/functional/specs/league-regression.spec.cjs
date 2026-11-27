@@ -83,9 +83,21 @@ test('public sign-ins enforce membership, duplicate prevention and lock/unlock',
   const other=await league(api,records,'other');
   const outsider=await roster(api,records,other,'outsider');
   const request=player=>({playerId:player.id,leagueId:target.id,dateTime:new Date().toISOString(),lockedSignIn:true,playerSignInId:99999999});
+  const availability = async id => (await api.get('/api/Login/LeagueAttendanceAvailability/'+id)).json();
+  const setMode = mode => api.post('/api/Login/SetLockSignInStatus',{leagueId:target.id,mode});
+  const otherState = await availability(other.id);
+  const today = new Intl.DateTimeFormat('en-US',{weekday:'long',timeZone:'America/New_York'}).format(new Date());
+  const leagueDay = today === 'Sunday' ? 'Monday' : 'Sunday';
+  expect((await api.post('/api/Login/updatesetting',{leagueId:target.id,settingName:'dayOfLeague',settingValue:leagueDay})).status()).toBe(200);
+  expect(await availability(target.id)).toMatchObject({mode:'automatic',locked:true});
   const beforeLockRead=leagueSnapshot(target.name);
-  expect(await(await api.get('/api/Login/GetLockSignInStatus/'+target.id)).json()).toBe(false);
+  expect(await(await api.get('/api/Login/GetLockSignInStatus/'+target.id)).json()).toBe(true);
   expect(leagueSnapshot(target.name)).toEqual(beforeLockRead);
+  await api.post('/api/Login/logout',{});
+  expect((await setMode('open')).status()).toBe(401);
+  await deniedUnchanged(api,target,'/api/ScrambleData/SignInPlayer',request(one),423);
+  await login(api,admin);
+  expect(await (await setMode('open')).json()).toMatchObject({mode:'open',locked:false});
   await api.post('/api/Login/logout',{});
   const signIn=await api.post('/api/ScrambleData/SignInPlayer',request(one));
   expect(signIn.status()).toBe(200);
@@ -113,6 +125,10 @@ test('public sign-ins enforce membership, duplicate prevention and lock/unlock',
   expect(afterOwnRemoval.signIns).toHaveLength(1);
   expect((await api.delete('/api/ScrambleData/SignInPlayer/'+otherEntry.PlayerSignInId)).status()).toBe(403);
   expect(leagueSnapshot(target.name)).toEqual(afterOwnRemoval);
+  await login(api,admin);
+  expect(await (await setMode('automatic')).json()).toMatchObject({mode:'automatic',locked:true});
+  expect(await availability(other.id)).toEqual(otherState);
+  expect(leagueSnapshot(target.name).signIns).toEqual(afterOwnRemoval.signIns);
   capture(records,target,other);
 });
 
@@ -217,7 +233,7 @@ test('Manager assignment controls settings, divisions, locks, teams and scramble
   for(const [path,body] of forbidden) await deniedUnchanged(api,foreign,path,body,403);
   expect((await api.post('/api/LeagueDivision/Add',{leagueId:assigned.id,code:'YES',name:'Assigned',sortOrder:1})).status()).toBe(200);
   expect((await api.post('/api/Login/SetLockSignInStatus',{leagueId:assigned.id,locked:true})).status()).toBe(200);
-  expect(leagueSnapshot(assigned.name).locks[0].SignInLocked).toBe(true);
+  expect(await (await api.get('/api/Login/LeagueAttendanceAvailability/'+assigned.id)).json()).toMatchObject({mode:'locked',locked:true});
   expect((await api.post('/api/Statistics/AddTeam',{leagueId:assigned.id,teamName:'Assigned synthetic'})).status()).toBe(200);
   expect((await api.post('/api/ScrambleData/GenerateScramble/'+assigned.name,{kingQueenTeams:[{kingQueenTeam:{},players:[]}],byePlayers:[]})).status()).toBe(200);
   expect(leagueSnapshot(assigned.name).kqTeams).toHaveLength(1);

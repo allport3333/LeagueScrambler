@@ -7,7 +7,8 @@ import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { PlayerService } from '../services/player.service';
+import { LeagueAttendanceAvailability, LeagueAttendanceMode, PlayerService } from '../services/player.service';
+import { TournamentNotifications } from '../tournament-notifications.service';
 import { PlayerSignIn } from '../data-models/playerSignIn.model';
 import { Leagues } from '../data-models/leagues.model';
 import { PlayerSignInResult } from '../data-models/playerSignInResult.model';
@@ -36,7 +37,9 @@ export class SignInComponent implements OnInit {
     filteredPlayers: any[] = [];
     dataSource = new MatTableDataSource();
     signedInDataSource = new MatTableDataSource<Player>();
-    isSignInLocked: boolean = false; // Bind to the checkbox
+    isSignInLocked = true;
+    availability: LeagueAttendanceAvailability;
+    savingSignInMode = false;
     displayedColumns: string[] = ['firstName', 'lastName'];
     signedInColumns: string[] = ['firstName', 'lastName'];
     userRole: string; // To store the role of the user
@@ -47,7 +50,6 @@ export class SignInComponent implements OnInit {
     player: Player | null = null;
     isPlayerSignedIn: boolean = false;  // Track if the player is signed in
     currentPlayerId: number;  
-    dayOfWeekSetting: string = 'Sunday';
     private signInNotice: MatSnackBarRef<SimpleSnackBar>;
     attendanceLoading = false;
     attendanceError = '';
@@ -64,7 +66,7 @@ export class SignInComponent implements OnInit {
 
     constructor(private playerService: PlayerService, private loginService: LoginService, private authService: AuthService,
         private leagueService: LeagueService, private http: HttpClient, private snackBar: MatSnackBar, private dialog: MatDialog,
-        private destroyRef: DestroyRef) {
+        private destroyRef: DestroyRef, private notifications: TournamentNotifications) {
         this.destroyRef.onDestroy(() => this.signInNotice?.dismiss());
     }
 
@@ -165,80 +167,29 @@ export class SignInComponent implements OnInit {
         }
     }
 
-    // Load initial lock status
-    private loadSignInLockStatus(): void {
-        if (!this.selectedLeague) {
-            console.error('No league selected. Cannot load sign-in lock status.');
-            return;
-        }
-
-        this.playerService.getSignInLockStatus(this.selectedLeague.id).subscribe(
-            (status) => {
-                const currentDayInEST = this.getCurrentDayInEST();
-
-
-                if (status === true) {
-                    this.isSignInLocked = true;
-                } else {
-                    // Backend says unlocked; check the day of the week
-                    this.isSignInLocked = currentDayInEST !== this.dayOfWeekSetting;
-                }
+    setSignInMode(mode: LeagueAttendanceMode): void {
+        const league = this.selectedLeague;
+        if (!this.canManageAttendance || !league || this.savingSignInMode) return;
+        this.savingSignInMode = true;
+        this.playerService.setSignInMode(mode, league.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: state => {
+                this.savingSignInMode = false;
+                if (this.selectedLeague?.id !== league.id) return;
+                this.applyAvailability(state);
+                this.notifications.success(mode === 'automatic' ? 'Using the automatic sign-in schedule.'
+                    : state.locked ? 'Sign in locked.' : 'Sign in unlocked.');
             },
-            (error) => {
-                console.error('Error loading sign-in lock status:', error);
+            error: () => {
+                this.savingSignInMode = false;
+                this.notifications.error('Unable to update sign-in availability.');
             }
-        );
+        });
     }
 
-
-    // Helper function to get the current day of the week in EST
-    private getCurrentDayInEST(): string {
-        const nowUTC = new Date();
-
-        // Get timezone offset for EST (UTC-5 or UTC-4 during DST)
-        const estTime = new Date(nowUTC.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-
-        // Return the day name (e.g., 'Monday')
-        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        return daysOfWeek[estTime.getDay()];
+    private applyAvailability(state: LeagueAttendanceAvailability): void {
+        this.availability = state;
+        this.isSignInLocked = state.locked;
     }
-
-
-    onLockSignInChange(locked: boolean): void {
-        if (!this.canManageAttendance || !this.selectedLeague) {
-            console.error('No league selected. Cannot update sign-in lock status.');
-            return;
-        }
-
-        this.playerService.setSignInLockStatus(locked, this.selectedLeague.id).subscribe(
-            (updatedStatus: boolean) => {
-                this.isSignInLocked = updatedStatus;
-
-                // Snackbar Notification
-                const message = updatedStatus
-                    ? 'Sign-in list has been locked.'
-                    : 'Sign-in list has been unlocked.';
-                this.snackBar.open(message, 'Close', {
-                    duration: 3000,
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: ['custom-snackbar']
-                });
-            },
-            (error) => {
-                console.error('Error updating sign-in lock status:', error);
-
-                // Error Snackbar
-                this.snackBar.open('Error updating lock status.', 'Close', {
-                    duration: 3000,
-                    horizontalPosition: 'center',
-                    verticalPosition: 'top',
-                    panelClass: ['red-snackbar']
-                });
-            }
-        );
-    }
-
 
     loadLeagues() {
         this.playerService.GetLeagues().subscribe(
@@ -349,15 +300,16 @@ export class SignInComponent implements OnInit {
         this.attendanceError = '';
         if (!league) return;
         this.attendanceLoading = this.loadedLeague !== league.id;
-        this.attendanceRequest = forkJoin([
-            this.loginService.getSettingValue('dayOfLeague', league.id),
-            this.playerService.getSignInLockStatus(league.id),
-            this.playerService.GetPlayersByLeague(league.id),
-            this.playerService.getSignedInPlayers(league.id, new Date())
-        ]).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: ([day, locked, players, signedIn]) => {
-                this.dayOfWeekSetting = day;
-                this.isSignInLocked = locked === true || this.getCurrentDayInEST() !== day;
+        this.attendanceRequest = this.playerService.getLeagueAttendanceAvailability(league.id).pipe(
+            switchMap(state => forkJoin([
+                of(state),
+                this.playerService.GetPlayersByLeague(league.id),
+                this.playerService.getSignedInPlayers(league.id, state.attendanceDate)
+            ])),
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe({
+            next: ([state, players, signedIn]) => {
+                this.applyAvailability(state);
                 this.playerSignIn = (signedIn || []).slice().sort((a, b) => a.firstName.localeCompare(b.firstName));
                 this.signedInDataSource.data = [...this.playerSignIn];
                 const signedInIds = new Set(this.playerSignIn.map(player => player.playerId));
@@ -383,9 +335,6 @@ export class SignInComponent implements OnInit {
         const signedInPlayers = this.signedInDataSource.data;
         this.maleCount = signedInPlayers.filter((player: Player) => player.gender === 'Male').length;
         this.femaleCount = signedInPlayers.filter((player: Player) => player.gender === 'Female').length;
-        if (this.userRole == 'player') {
-            this.loadSignInLockStatus();
-        }
     }
 
     private updatePlayerSignInStatus(): void {
@@ -439,6 +388,7 @@ export class SignInComponent implements OnInit {
                 console.error('Error signing in player:', error);
                 if (error.status === 423) {
                     this.isSignInLocked = true;
+                    this.loadAttendance();
                     this.openDialog('Sign-in is currently locked for this league.');
                 } else if (error.status === 409) {
                     this.openDialog('This player is already signed in for today.');

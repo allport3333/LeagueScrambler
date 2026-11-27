@@ -186,94 +186,64 @@ namespace Allport_s_League_Scrambler.Controllers
         }
 
         [HttpGet("GetLockSignInStatus/{leagueId}")]
-        public IActionResult GetLockSignInStatus(int leagueId)
+        public async Task<IActionResult> GetLockSignInStatus(int leagueId)
         {
-            var _context = new DataContext();
+            using var context = new DataContext();
+            var state = await LeagueAttendanceAvailability.Read(context, leagueId, AttendanceRules.EasternNow(DateTime.UtcNow));
+            return Ok(state.Locked);
+        }
 
-            // Try to find an existing LeagueSignInLocked record
-            var leagueSignInLocked = _context.LeagueSignInLocked
-                .FirstOrDefault(s => s.LeagueId == leagueId);
-
-            // A status read must not create a database record. A league with
-            // no lock record has historically been treated as unlocked; the
-            // authenticated SetLockSignInStatus endpoint creates it as needed.
-            return Ok(leagueSignInLocked?.SignInLocked ?? false);
+        [HttpGet("LeagueAttendanceAvailability/{leagueId:int}")]
+        public async Task<IActionResult> GetLeagueAttendanceAvailability(int leagueId)
+        {
+            using var context = new DataContext();
+            if (!await context.Leagues.AnyAsync(league => league.ID == leagueId && league.EventTypeId != 2))
+                return NotFound();
+            return Ok(await LeagueAttendanceAvailability.Read(context, leagueId, AttendanceRules.EasternNow(DateTime.UtcNow)));
         }
 
         public class LockSignInRequest
         {
             public int LeagueId { get; set; }
-            public bool Locked { get; set; }
+            public bool? Locked { get; set; }
+            public string Mode { get; set; }
         }
 
         [HttpPost("SetLockSignInStatus")]
         [Authorize(Policy = "LeagueManagement")]
         [SameOrigin]
-        public IActionResult SetLockSignInStatus([FromBody] LockSignInRequest request)
+        public async Task<IActionResult> SetLockSignInStatus([FromBody] LockSignInRequest request)
         {
             if (request == null || request.LeagueId <= 0)
                 return BadRequest("Invalid league.");
 
-            using var _context = new DataContext();
-            using var transaction = _context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
-            if (!LeagueAccess.CanManage(User, _context, request.LeagueId))
+            var mode = request.Mode ?? (request.Locked switch { true => "locked", false => "open", _ => null });
+            if (mode is not ("automatic" or "open" or "locked"))
+                return BadRequest("Invalid sign-in mode.");
+
+            using var context = new DataContext();
+            if (!LeagueAccess.CanManage(User, context, request.LeagueId))
                 return Forbid();
-            if (!_context.Leagues.Any(league => league.ID == request.LeagueId))
+            if (!await context.Leagues.AnyAsync(league => league.ID == request.LeagueId && league.EventTypeId != 2))
                 return NotFound("League not found.");
 
-            // Get the latest sign-in date for the specified league
-            var latestDate = _context.PlayerSignIn
-                .Where(s => s.LeagueId == request.LeagueId)
-                .OrderByDescending(s => s.DateTime)
-                .Select(s => s.DateTime)
-                .FirstOrDefault();
-
-            //if (latestDate != default)
-            //{
-            //    // Get all sign-in records for that date and league
-            //    var signInsToUpdate = _context.PlayerSignIn
-            //        .Where(s => s.LeagueId == request.LeagueId && s.DateTime == latestDate)
-            //        .ToList();
-
-            //    if (signInsToUpdate.Any())
-            //    {
-            //        // Update LockedSignIn for all relevant records
-            //        foreach (var signIn in signInsToUpdate)
-            //        {
-            //            signIn.LockedSignIn = request.Locked;
-            //        }
-
-            //        _context.SaveChanges();                    
-            //    }
-            //}
-            //else
-            //{
-            var leagueSignInLocked = _context.LeagueSignInLocked
-                     .Where(s => s.LeagueId == request.LeagueId)
-                     .FirstOrDefault();
-
-            if (leagueSignInLocked != null)
+            using var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);
+            var now = AttendanceRules.EasternNow(DateTime.UtcNow);
+            await AttendanceSerialization.Acquire(context, request.LeagueId, now.Date);
+            var current = await LeagueAttendanceAvailability.Read(context, request.LeagueId, now);
+            var setting = await context.LeagueSettings.FirstOrDefaultAsync(s =>
+                s.LeagueId == request.LeagueId && s.SettingName == LeagueAttendanceAvailability.SettingName);
+            if (setting == null)
             {
-                leagueSignInLocked.SignInLocked = request.Locked;
+                setting = new LeagueSettings { LeagueId = request.LeagueId, SettingName = LeagueAttendanceAvailability.SettingName };
+                context.LeagueSettings.Add(setting);
             }
-            else
-            {
-                var newLeagueSignInLocked = new LeagueSignInLocked
-                {
-                    LeagueId = request.LeagueId,
-                    SignInLocked = request.Locked
-                };
-                _context.LeagueSignInLocked.Add(newLeagueSignInLocked);
-            }
-            _context.SaveChanges();
-
-            //}
+            setting.SettingValue = mode == "automatic" ? mode : current.Period + ":" + mode;
+            await context.SaveChangesAsync();
+            var updated = await LeagueAttendanceAvailability.Read(context, request.LeagueId, now);
             transaction.Commit();
-            return Ok(request.Locked);
-
+            return request.Mode == null ? Ok(updated.Mode == "locked") : Ok(updated);
         }
-
-
 
         [HttpGet("isauthenticated")]
         public IActionResult IsAuthenticated()
@@ -736,6 +706,9 @@ namespace Allport_s_League_Scrambler.Controllers
 
             if (!LeagueAccess.CanManage(User, context, request.LeagueId))
                 return Forbid();
+
+            if (string.Equals(request.SettingName.Trim(), LeagueAttendanceAvailability.SettingName, StringComparison.OrdinalIgnoreCase))
+                return BadRequest("Use the league sign-in controls to change attendance availability.");
 
             // Check if the setting exists
             var setting = await context.LeagueSettings

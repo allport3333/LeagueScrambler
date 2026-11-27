@@ -1178,7 +1178,8 @@ namespace Allport_s_League_Scrambler.Controllers
             using (var context = new DataContext())
             using (var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
             {
-                await AttendanceSerialization.Acquire(context, playerSignIn.LeagueId, playerSignIn.DateTime.ToLocalTime().Date);
+                var now = AttendanceRules.EasternNow(DateTime.UtcNow);
+                await AttendanceSerialization.Acquire(context, playerSignIn.LeagueId, now.Date);
                 if (!await context.Leagues.AnyAsync(l => l.ID == playerSignIn.LeagueId))
                 {
                     return NotFound("League not found.");
@@ -1193,15 +1194,11 @@ namespace Allport_s_League_Scrambler.Controllers
                     return BadRequest("Player does not belong to the selected league.");
                 }
 
-                if (await context.LeagueSignInLocked.AnyAsync(l =>
-                    l.LeagueId == playerSignIn.LeagueId && l.SignInLocked))
-                {
-                    return StatusCode(423, "Sign-in is currently locked for this league.");
-                }
+                var availability = await LeagueAttendanceAvailability.Read(context, playerSignIn.LeagueId, now);
+                if (availability.Locked)
+                    return StatusCode(423, availability.Reason);
 
-                // Keep the existing frontend's local-date behavior. Do not
-                // allow a browser to choose the database identity or lock flag.
-                playerSignIn.DateTime = playerSignIn.DateTime.ToLocalTime();
+                playerSignIn.DateTime = now;
                 playerSignIn.PlayerSignInId = 0;
                 playerSignIn.LockedSignIn = false;
 
@@ -1598,11 +1595,10 @@ namespace Allport_s_League_Scrambler.Controllers
             {
                 using (var transaction = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
                 {
-                    await AttendanceSerialization.Acquire(context, signInRecord.LeagueId, signInRecord.DateTime.Date);
-                    var locked = await context.LeagueSignInLocked.AnyAsync(value => value.LeagueId == signInRecord.LeagueId && value.SignInLocked);
-                    var day = await context.LeagueSettings.Where(value => value.LeagueId == signInRecord.LeagueId && value.SettingName == "dayOfLeague").Select(value => value.SettingValue).FirstOrDefaultAsync();
-                    var reason = AttendanceRules.UnavailableReason(true, locked, day, AttendanceRules.EasternNow(DateTime.UtcNow));
-                    if (reason != null) return StatusCode(423, reason);
+                    var now = AttendanceRules.EasternNow(DateTime.UtcNow);
+                    await AttendanceSerialization.Acquire(context, signInRecord.LeagueId, now.Date);
+                    var availability = await LeagueAttendanceAvailability.Read(context, signInRecord.LeagueId, now);
+                    if (availability.Locked) return StatusCode(423, availability.Reason);
                     context.PlayerSignIn.Remove(signInRecord);
                     await context.SaveChangesAsync();
                     transaction.Commit();

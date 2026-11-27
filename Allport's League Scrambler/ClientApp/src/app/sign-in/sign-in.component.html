@@ -60,21 +60,35 @@
     </div>
   }
 
-  @if (canManageAttendance) {
-    <div class="text-center mt-3">
-      <mat-checkbox [(ngModel)]="isSignInLocked" (change)="onLockSignInChange($event.checked)">
-        Lock Sign In
-      </mat-checkbox>
-    </div>
+  @if (canManageAttendance && hasCurrentAttendance && availability) {
+    <section class="text-center mt-3" aria-label="Sign-in availability">
+      <p aria-live="polite">
+        <strong>{{ isSignInLocked ? 'Sign In Locked' : 'Sign In Open' }}</strong>
+        &middot; {{ availability.mode === 'automatic' ? 'Using Automatic Schedule'
+          : availability.mode === 'open' ? 'Manually Opened' : 'Manually Locked' }}
+      </p>
+      <p>Manual changes apply through the league day for the current period ({{ availability.period | date:'mediumDate' }}).</p>
+      <div class="d-flex flex-wrap justify-content-center">
+        @if (availability.mode !== 'open') {
+          <button mat-stroked-button type="button" [disabled]="savingSignInMode" (click)="setSignInMode('open')">Unlock Sign In</button>
+        }
+        @if (availability.mode !== 'locked') {
+          <button mat-stroked-button type="button" [disabled]="savingSignInMode" (click)="setSignInMode('locked')">Lock Sign In</button>
+        }
+        @if (availability.mode !== 'automatic') {
+          <button mat-button type="button" [disabled]="savingSignInMode" (click)="setSignInMode('automatic')">Return to Automatic Schedule</button>
+        }
+      </div>
+    </section>
   }
 
 
-  @if (userRole === 'Player' && isSignInLocked) {
+  @if (userRole === 'Player' && hasCurrentAttendance && isSignInLocked) {
     <div class="text-center mt-3">
       <mat-card appearance="outlined" class="locked-message-card">
         <mat-card-content>
           <h3 style="color: var(--hub-loss-text, red); font-weight: bold;">Sign In is Currently Locked</h3>
-          <p>Either your league is on a different day than today, or your league admin locked sign in.</p>
+          <p>{{ availability?.reason }}</p>
         </mat-card-content>
       </mat-card>
     </div>

@@ -30,11 +30,10 @@ namespace Allport_s_League_Scrambler.Controllers
     state.Reason="Use Tournament Check In for this event.";return state;
    }
    var member=await context.PlayersLeagues.AnyAsync(link=>link.PlayerID==playerId&&link.LeagueID==leagueId);
-   var locked=await context.LeagueSignInLocked.AnyAsync(value=>value.LeagueId==leagueId&&value.SignInLocked);
-   var day=await context.LeagueSettings.Where(value=>value.LeagueId==leagueId&&value.SettingName=="dayOfLeague").Select(value=>value.SettingValue).FirstOrDefaultAsync();
+   var availability=await LeagueAttendanceAvailability.Read(context,leagueId,now);
    var start=now.Date;var end=start.AddDays(1);
    var count=await context.PlayerSignIn.CountAsync(record=>record.PlayerId==playerId&&record.LeagueId==leagueId&&record.DateTime>=start&&record.DateTime<end);
-   state.SignedIn=count>0;state.Reason=AttendanceRules.UnavailableReason(member,locked,day,now);
+   state.SignedIn=count>0;state.Reason=member ? availability.Reason : "This player does not belong to the selected league.";
    if(count>1&&state.Reason==null)state.Reason="Multiple attendance records require administrator review.";
    state.CanSignIn=state.Reason==null&&count==0;state.CanRemove=state.Reason==null&&count==1;
    return state;

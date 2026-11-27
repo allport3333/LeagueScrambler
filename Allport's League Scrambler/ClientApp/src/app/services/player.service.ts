@@ -17,6 +17,16 @@ import { PlayerSignInResult } from '../data-models/playerSignInResult.model';
 import { Team } from '../data-models/teams.model';
 import { map, catchError, finalize, shareReplay, timeout } from 'rxjs/operators';
 
+export type LeagueAttendanceMode = 'automatic' | 'open' | 'locked';
+
+export interface LeagueAttendanceAvailability {
+    mode: LeagueAttendanceMode;
+    locked: boolean;
+    reason: string | null;
+    period: string;
+    attendanceDate: string;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -70,8 +80,8 @@ export class PlayerService {
         return this.httpClient.get<Player[]>(`${this.baseUrl}api/ScrambleData/GetPlayerByFirstLastName`, { params });
     }
 
-    public getSignInLockStatus(leagueId: number): Observable<boolean> {
-        return this.httpClient.get<boolean>(`${this.baseUrl}api/Login/GetLockSignInStatus/${leagueId}`);
+    public getLeagueAttendanceAvailability(leagueId: number): Observable<LeagueAttendanceAvailability> {
+        return this.httpClient.get<LeagueAttendanceAvailability>(`${this.baseUrl}api/Login/LeagueAttendanceAvailability/${leagueId}`);
     }
 
     public getPlayerByPlayerId(): Observable<Player> {
@@ -82,11 +92,8 @@ export class PlayerService {
         return this.httpClient.get<Player>(`${this.baseUrl}api/Login/GetPlayerByPlayerIdVariable/${playerId}`);
     }
 
-    public setSignInLockStatus(locked: boolean, leagueId: number): Observable<boolean> {
-        return this.httpClient.post<boolean>(`${this.baseUrl}api/Login/SetLockSignInStatus`, {
-            locked: locked,
-            leagueId: leagueId
-        });
+    public setSignInMode(mode: LeagueAttendanceMode, leagueId: number): Observable<LeagueAttendanceAvailability> {
+        return this.httpClient.post<LeagueAttendanceAvailability>(`${this.baseUrl}api/Login/SetLockSignInStatus`, { mode, leagueId });
     }
 
 
@@ -200,9 +207,9 @@ export class PlayerService {
         );
     }
 
-    public getSignedInPlayers(leagueId: number, date: Date): Observable<PlayerSignInResult[]> {
+    public getSignedInPlayers(leagueId: number, date: Date | string): Observable<PlayerSignInResult[]> {
         // Format the date in local time zone as 'YYYY-MM-DD'
-        const formattedDateTime = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ` +
+        const formattedDateTime = typeof date === "string" ? date : `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ` +
             `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
         const params = new HttpParams()
             .set('leagueId', leagueId.toString())
