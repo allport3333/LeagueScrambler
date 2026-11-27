@@ -191,7 +191,7 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
             { path: '', component: HomeComponent, pathMatch: 'full' },
             { path: '', component: ScramblerWorkspaceComponent, children: [
                     { path: 'scrambler', component: WorkspaceRouteComponent },
-                    { path: 'league-management', component: WorkspaceRouteComponent, canActivate: [LeagueManagementGuard] }
+                    { path: 'league-management', component: WorkspaceRouteComponent, canActivate: [LeagueManagementGuard], canDeactivate: [(component: WorkspaceRouteComponent) => component.canLeave()] }
                 ] },
             { path: 'fetch-data', component: FetchDataComponent },
             { path: 'team-scores', component: TeamScoresComponent },

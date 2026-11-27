@@ -1030,7 +1030,6 @@ Apply Top Players (Male Standings)
 </div></mat-tab>
 <mat-tab label="Manage Schedule"><app-manage-schedule [leagueId]="leagueId" [leagueName]="selectedLeague" [canManage]="isActionAllowed" [draftStore]="scheduleDrafts"></app-manage-schedule></mat-tab>
 <mat-tab label="League Settings">
-  <app-event-facility [eventId]="leagueId" [manage]="isActionAllowed"></app-event-facility>
   <div class="container-fluid">
     <mat-card appearance="outlined" class="management-form-card management-settings-card" style="margin-top: 20px; margin-bottom: 20px; background-color: var(--hub-surface, #eeeeee)">
       <div style="margin: 20px;" class="tab-content d-flex flex-column align-items-center management-settings-grid">
@@ -1104,13 +1103,9 @@ Apply Top Players (Male Standings)
 </mat-tab>}<mat-tab label="League Setup"><div class="management-setup-grid">
     @if (!isActionAllowed) { <p class="text-center">Select a league to configure it, or choose Create League from the event selector.</p> }
   @if (isActionAllowed) {
+    <app-event-facility class="setup-facility" [eventId]="leagueId" [manage]="true" [leagueName]="selectedLeague" />
     <mat-card appearance="outlined" class="setup-card">
       <h3>Add Division</h3>
-      @if (selectedLeagueDto) {
-        <p>Selected league: {{ selectedLeagueDto.leagueName }}</p>
-      } @else {
-        <p>Select a league first to add a division.</p>
-      }
       <form class="setup-form division-setup-form" [formGroup]="LeagueDivisionForm" (ngSubmit)="addLeagueDivision()">
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Division Abbreviation</mat-label>

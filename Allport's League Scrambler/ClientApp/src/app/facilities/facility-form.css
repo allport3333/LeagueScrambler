@@ -1,0 +1,29 @@
+.facility-field {
+  display: grid;
+  gap: .3rem;
+  margin: 0;
+  min-width: 0;
+  font-weight: 550;
+}
+.facility-field .form-control {
+  min-width: 0;
+  width: 100%;
+  min-height: 2.65rem;
+  padding: .45rem .65rem;
+  font-size: .95rem;
+  font-weight: 400;
+  color: var(--hub-text, #263849);
+  background: var(--hub-surface, #fff);
+  border: 1px solid var(--hub-control-border, var(--hub-border, #718197));
+  border-radius: .35rem;
+}
+.facility-field .form-control:focus {
+  border-color: var(--hub-focus, #315e8a);
+  outline: 2px solid var(--hub-focus, #315e8a);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+.facility-field .form-control:disabled {
+  color: var(--hub-muted, #52677c);
+  background: var(--hub-section, #e7eef6);
+}

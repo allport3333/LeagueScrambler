@@ -18,7 +18,7 @@ const sql = query => execFileSync('sqlcmd.exe', ['-S', 'lpc:localhost', '-d', 'L
 withPickupTestHost(async origin => {
     const browser = await chromium.launch({channel: 'chrome'});
     try {
-        const organizer = await browser.newContext({ignoreHTTPSErrors: true});
+        const organizer = await browser.newContext({ignoreHTTPSErrors: true, serviceWorkers: 'block'});
         const visitor = await browser.newContext({ignoreHTTPSErrors: true, viewport: {width: 390, height: 840}});
         const probe = await organizer.request.get(origin + '/api/pickup/catalog');
         assert.equal(probe.headers()['x-pickup-test-database'], 'LeagueScramblerPickupTest');
@@ -36,7 +36,7 @@ withPickupTestHost(async origin => {
         sql(`UPDATE dbo.[User] SET UserRoleId=1 WHERE Email IN (N'${loginEmail}',N'${administrator}',N'${lead}');
             UPDATE dbo.[User] SET UserRoleId=2 WHERE Email=N'${manager}';`);
         const profile = {
-            name: 'Roseville Facility ' + token, alternateName: 'Hub Fixture ' + token,
+            name: 'Roseville Community Sports and Recreation Facility ' + token, alternateName: 'Hub Fixture ' + token,
             address: token + ' Fixture Avenue', city: 'Roseville', region: 'MI', postalCode: '48066',
             country: 'United States', timeZone: 'America/Detroit', website: 'https://example.invalid/',
             activities: 'Wallyball|Racquetball', source: 'Disposable test fixture', sourceKey: 'fixture:' + token,
@@ -63,7 +63,7 @@ withPickupTestHost(async origin => {
             await organizerPage.getByLabel('Find an existing facility').fill(profile.name);
             await organizerPage.getByRole('button', {name: 'Search Facilities'}).click();
             const selector = organizerPage.getByLabel('Primary facility');
-            await selector.selectOption({label: profile.name + ' \u00b7 Roseville'});
+            await selector.selectOption({label: profile.name + ' \u00b7 Roseville, MI 48066'});
             const result = organizerPage.waitForResponse(response =>
                 response.request().method() === 'POST' && response.url().includes('/api/ScrambleData/AddNewLeague/'));
             await organizerPage.getByRole('button', {name: tournamentForm ? 'Create Tournament' : 'Create League', exact: true}).click();
@@ -127,14 +127,60 @@ withPickupTestHost(async origin => {
         expect(await assignment(tournamentEndpoint)).toMatchObject({isActive: true, venueId, publicListing: true});
         await organizerView.goto(origin + '/league-management?leagueId=' + league);
         await organizerView.getByRole('tab', {name: 'Manage Schedule'}).click();
-        await expect(organizerView.getByText('Facility and Public Listing', {exact:true})).not.toBeVisible();
+        await expect(organizerView.getByRole('region', {name:'Facility and Public Listing', exact:true})).not.toBeVisible();
         await organizerView.getByRole('tab', {name: 'League Settings'}).click();
+        await expect(organizerView.getByRole('region', {name:'Facility and Public Listing', exact:true})).not.toBeVisible();
+        await organizerView.getByRole('tab', {name: 'League Setup'}).click();
         const activeLeague = organizerView.getByRole('checkbox', {name: 'Active League'});
         await expect(activeLeague).toBeChecked();
+        const setup = organizerView.getByRole('region', {name:'Facility and Public Listing', exact:true});
+        await expect(setup.getByRole('heading', {name:'League Details'})).toBeVisible();
+        await expect(setup.getByText('Selected:', {exact:false})).toContainText(profile.name);
+        for (const [theme, width] of [['classic',1920], ['soft-light',1366], ['navy',768], ['charcoal',390]]) {
+            await organizerView.setViewportSize({width,height:850});
+            await organizerView.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+            const panels = setup.locator('.setup-fields');
+            expect((await panels.evaluate(e => getComputedStyle(e).gridTemplateColumns)).split(' ').length).toBe(width >= 800 ? 2 : 1);
+            await expect.poll(() => organizerView.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+        }
+        await organizerView.setViewportSize({width:1366,height:850});
+        const searchBox = setup.getByRole('searchbox', {name:'Find an existing facility'});
+        await searchBox.fill('No fixture facility matches ' + token);
+        await searchBox.press('Enter');
+        await expect(setup.getByText(/No matching facilities/)).toBeVisible();
+        await expect(setup.getByText('Selected:', {exact:false})).toContainText(profile.name);
+        await searchBox.fill('48066');
+        await setup.getByRole('button',{name:'Search Facilities'}).click();
+        await expect.poll(() => setup.locator('select option').allTextContents()).toEqual(expect.arrayContaining([expect.stringContaining('Roseville, MI 48066')]));
+        await searchBox.fill(profile.name);
+        await searchBox.press('Enter');
+        const primary = setup.getByRole('combobox', {name:/^Primary facility/});
+        const option = profile.name + ' \u00b7 Roseville, MI 48066';
+        await primary.selectOption({label:'No facility'});
+        await expect(setup.getByText('Selected:', {exact:false})).toHaveCount(0);
+        await primary.selectOption({label:option});
+        await expect(setup.getByText('Selected:', {exact:false})).toContainText(profile.name);
+        await setup.getByLabel('Public description', {exact:true}).fill('Public details ' + token);
+        await expect(setup.getByText('Unsaved changes', {exact:true})).toBeVisible();
+        await organizerView.locator('#leagueDropdown').click();
+        await organizerView.getByRole('link', {name:'View Past Leagues'}).click();
+        const discard = organizerView.getByRole('alertdialog');
+        await expect(discard.getByRole('heading', {name:'Discard unsaved setup changes?'})).toBeVisible();
+        await discard.getByRole('button', {name:'Cancel'}).click();
+        await expect(setup.getByLabel('Public description', {exact:true})).toHaveValue('Public details ' + token);
+
+        const requestPattern = '**/api/facilities/event/' + league;
+        const failSave = route => route.request().method() === 'PUT'
+            ? route.fulfill({status:400, json:{message:'Fixture validation error.'}}) : route.continue();
+        await organizerView.route(requestPattern, failSave);
+        await organizerView.getByRole('button', {name:'Save Changes', exact:true}).click();
+        await expect(setup.getByRole('alert')).toHaveText('Fixture validation error.');
+        await expect(setup.getByLabel('Public description', {exact:true})).toHaveValue('Public details ' + token);
+        await organizerView.unroute(requestPattern, failSave);
         await activeLeague.uncheck();
-        await organizerView.getByRole('button', {name: 'Save Facility'}).click();
+        await organizerView.getByRole('button', {name: 'Save Changes', exact:true}).click();
         await expect(organizerView.getByText('Facility and listing settings saved.')).toBeVisible();
-        expect(await assignment(leagueEndpoint)).toMatchObject({isActive: false, venueId, publicListing: true, season: 'Winter'});
+        expect(await assignment(leagueEndpoint)).toMatchObject({isActive: false, venueId, publicListing: true, season: 'Winter', sport:'Wallyball', description:'Public details ' + token, leadAdminId:leadId});
         expect((await eventsAtVenue()).map(e => e.leagueId)).toEqual([tournament]);
         expect((await visitor.request.get(origin + leagueEndpoint)).status()).toBe(404);
         const outsider = await browser.newContext({ignoreHTTPSErrors:true});
@@ -164,7 +210,7 @@ withPickupTestHost(async origin => {
         await expect(activeTournament).toBeChecked();
         await expect(organizerView.getByRole('textbox', {name:'Location', exact:true})).toHaveCount(0);
         await activeTournament.uncheck();
-        await organizerView.getByRole('button', {name:'Save Facility'}).click();
+        await organizerView.getByRole('button', {name:'Save Facility Settings'}).click();
         await expect(organizerView.getByText('Facility and listing settings saved.')).toBeVisible();
         expect((await eventsAtVenue()).map(e=>e.leagueId)).toEqual([league]);
         assert.equal((await put(organizer, tournamentEndpoint, {isActive:true})).status(), 204);

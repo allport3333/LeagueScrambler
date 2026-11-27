@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { of } from 'rxjs';
 import { catchError, filter, map, switchMap, take } from 'rxjs/operators';
 import { AuthService } from '../auth.service';
+import { LeagueFacilityDraft } from '../facilities/event-facility.component';
 import { LoginService } from '../services/login.service';
 
 export function requireSignedInTournament() {
@@ -29,6 +30,7 @@ export class LeagueManagementGuard  {
 // No algorithm/form/team state is copied into a second management controller.
 @Component({
     selector: 'app-scrambler-workspace',
+    providers: [LeagueFacilityDraft],
     template: '<app-scrambler-component [workspaceSection]="section"></app-scrambler-component><router-outlet></router-outlet>',
     changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
@@ -45,7 +47,10 @@ export class ScramblerWorkspaceComponent {
     changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
-export class WorkspaceRouteComponent { }
+export class WorkspaceRouteComponent {
+    private readonly draft = inject(LeagueFacilityDraft);
+    canLeave(): boolean | Promise<boolean> { return this.draft.canLeave(); }
+}
 
 @Component({
     template: '<section class="text-center my-4"><h1>Access denied</h1><p>League Management requires an administrator or league manager account.</p><a routerLink="/">Return home</a></section>',
