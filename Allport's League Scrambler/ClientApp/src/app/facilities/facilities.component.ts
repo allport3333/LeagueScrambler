@@ -81,14 +81,20 @@ export class FacilitiesComponent {
             this.contactLeague = undefined;
             if (!this.facilityId) { this.search(); return; }
             this.beginRequest();
-            let query = new HttpParams().set('location', this.route.snapshot.queryParamMap.get('location') ?? '');
-            if (this.eventId) query = query.set('eventId', this.eventId);
-            this.request = this.http.get<FacilityDetails>('/api/facilities/' + this.facilityId, {params: query})
-                .pipe(takeUntilDestroyed(this.destroy)).subscribe({
-                    next: details => { this.details = details; this.loading = false; },
-                    error: error => this.showError(error, 'This facility could not be loaded.')
-                });
+            this.refreshDetails();
         });
+    }
+
+    refreshDetails(): void {
+        const id = this.facilityId;
+        this.request?.unsubscribe();
+        let query = new HttpParams().set('location', this.route.snapshot.queryParamMap.get('location') ?? '');
+        if (this.eventId) query = query.set('eventId', this.eventId);
+        this.request = this.http.get<FacilityDetails>('/api/facilities/' + id, {params: query})
+            .pipe(takeUntilDestroyed(this.destroy)).subscribe({
+                next: details => { this.details = details; this.loading = false; },
+                error: error => this.showError(error, 'This facility could not be loaded.')
+            });
     }
 
     search(next = false): void {

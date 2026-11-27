@@ -1,7 +1,9 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, Input, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Input, inject, output } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { injectConfirmation } from '../confirmation-dialog';
 import { Router } from '@angular/router';
 import type { Facility } from './facilities.component';
 import { FacilityConflict, FacilityMatch, FacilityMatchDraft, FacilityMatchReviewComponent } from './facility-match-review.component';
@@ -18,89 +20,45 @@ const blank = () => ({name: '', alternateName: '', address: '', city: '', region
 @Component({
     changeDetection: ChangeDetectionStrategy.Eager,
     selector: 'app-facility-review',
-    imports: [FormsModule, FacilityMatchReviewComponent],
-    styleUrl: './facility-checkbox.css',
-    template: `
-      <details [open]="expanded" (toggle)="initialize($event)">
-        <summary>{{ facility ? 'Edit Facility' : 'Review or Import a Facility' }}</summary>
-        @if (!facility) {
-          <form (ngSubmit)="lookup()">
-            <h2>Search an approved public source</h2>
-            <label>Name <input name="lookupName" [(ngModel)]="filters.q" maxlength="100"></label>
-            <label>City and state or ZIP <input name="lookupCity" [(ngModel)]="filters.location" maxlength="100"></label>
-            <label>Sport <input name="lookupSport" [(ngModel)]="filters.sport" maxlength="40"></label>
-            <label>Distance <select name="radius" [(ngModel)]="filters.radius"><option>5</option><option>10</option><option>25</option></select> miles</label>
-            <div><button type="submit" [disabled]="busy">Search Public Source</button>
-              <button type="button" [disabled]="busy" (click)="locate()">Use My Location</button></div>
-            <p><a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · ODbL</p>
-            @for (candidate of candidates; track candidate.sourceKey) {
-              <article>
-                <strong>{{ candidate.name }}</strong>
-                <p>{{ candidate.address }} {{ candidate.city }} {{ candidate.region }} {{ candidate.postalCode }}</p>
-                @if (candidate.activities.length) { <p>{{ candidate.activities.join(', ') }}</p> }
-                <button type="button" (click)="select(candidate)">Review {{ candidate.name }}</button>
-              </article>
-            }
-          </form>
-        }
-        <form #review="ngForm" (ngSubmit)="save()">
-          <h2>Reviewed Facility Details</h2>
-          @for (field of fields; track field.key) {
-            <label>{{ field.label }} <input [name]="field.key" [(ngModel)]="draft[field.key]" [maxlength]="field.length" [required]="field.required"></label>
-          }
-          <label>Latitude <input type="number" name="lat" [(ngModel)]="draft.latitude"></label>
-          <label>Longitude <input type="number" name="lon" [(ngModel)]="draft.longitude"></label>
-          <label class="facility-checkbox">
-            <input type="checkbox" name="approximate" [(ngModel)]="draft.approximateCoordinates">
-            <span>Location is approximate</span>
-          </label>
-          <label class="facility-checkbox">
-            <input type="checkbox" name="reviewed" [(ngModel)]="draft.reviewed" required>
-            <span>I reviewed these details and confirmed the activities listed.</span>
-          </label>
-          <app-facility-match-review [draft]="duplicateDraft" [conflict]="conflict" [allowReconcile]="!facility" [canConfirmDistinct]="true"
-            [busy]="busy" (useExisting)="openExisting($event)" (reconcile)="save($event.id)"
-            (allowDistinct)="confirmDistinct()" />
-          <button type="submit" [disabled]="review.invalid || busy">Save Reviewed Facility</button>
-        </form>
-        @if (status) { <p role="status">{{ status }}</p> }
-      </details>
-    `,
-    styles: `
-      details { margin: 1rem auto; max-width: 48rem; padding: .8rem; border: 1px solid var(--hub-border, #718197); border-radius: .4rem; }
-      form { display: grid; gap: .55rem; margin-top: .75rem; }
-      h2 { font-size: 1.15rem; }
-      label { display: grid; }
-      input:not([type=checkbox]), select { min-height: 42px; background: var(--hub-surface, #fff); color: var(--hub-text, #172534); border: 1px solid var(--hub-border, #718197); }
-      article { padding: .6rem; border: 1px solid var(--hub-border, #718197); }
-      button { min-height: 42px; }
-    `
+    imports: [FormsModule, MatButtonModule, FacilityMatchReviewComponent],
+    templateUrl: './facility-review.component.html',
+    styleUrls: ['./facility-checkbox.css', './facility-form.css', './facility-review.component.css']
 })
 export class FacilityReviewComponent {
     @Input() facility?: Facility;
     @Input() expanded = false;
+    readonly saved = output<void>();
     private readonly http = inject(HttpClient);
     private readonly router = inject(Router);
     private readonly destroy = inject(DestroyRef);
     private editingId?: number;
-    readonly fields = [
-        {key: 'name', label: 'Facility name', length: 100, required: true},
-        {key: 'alternateName', label: 'Alternate name', length: 150, required: false},
-        {key: 'address', label: 'Street address', length: 140, required: false},
-        {key: 'city', label: 'City', length: 80, required: true},
-        {key: 'region', label: 'State', length: 50, required: true},
-        {key: 'postalCode', label: 'Postal code', length: 16, required: false},
-        {key: 'country', label: 'Country', length: 50, required: true},
-        {key: 'timeZone', label: 'Time zone', length: 80, required: true},
-        {key: 'website', label: 'Website', length: 500, required: false},
-        {key: 'activities', label: 'Verified activities (separate with |)', length: 250, required: false},
-        {key: 'source', label: 'Verification source', length: 500, required: true}
+    private readonly confirm = injectConfirmation();
+    readonly groups = [
+        {title: 'Facility Identity', fields: [
+            {key: 'name', label: 'Facility name', length: 100, required: true, span: 3},
+            {key: 'alternateName', label: 'Alternate name', length: 150, required: false, span: 3}
+        ]},
+        {title: 'Location', fields: [
+            {key: 'address', label: 'Street address', length: 140, required: false, span: 6},
+            {key: 'city', label: 'City', length: 80, required: true, span: 2},
+            {key: 'region', label: 'State', length: 50, required: true, span: 2},
+            {key: 'postalCode', label: 'Postal code', length: 16, required: false, span: 2},
+            {key: 'country', label: 'Country', length: 50, required: true, span: 3},
+            {key: 'timeZone', label: 'Time zone', length: 80, required: true, span: 3}
+        ]},
+        {title: 'Additional Information', fields: [
+            {key: 'website', label: 'Website', length: 500, required: false, span: 6},
+            {key: 'activities', label: 'Verified activities (separate with |)', length: 250, required: false, span: 6}
+        ]}
     ] as const;
     filters = {q: '', location: '', sport: '', radius: '10'};
     candidates: Candidate[] = [];
     draft = blank();
     busy = false;
     status = '';
+    failed = false;
+    advancedOpen = false;
+    private savedDraft = blank();
     conflict?: FacilityConflict;
     private distinctIdentity = '';
 
@@ -123,18 +81,20 @@ export class FacilityReviewComponent {
         const facility = this.facility;
         if (!(event.target as HTMLDetailsElement).open || !facility || this.editingId === facility.id) return;
         this.editingId = facility.id;
-        this.draft = {...blank(), ...facility, activities: facility.activities.join('|')};
+        this.savedDraft = {...blank(), ...facility, activities: facility.activities.join('|')};
+        this.draft = {...this.savedDraft};
     }
 
     lookup(point?: GeolocationCoordinates): void {
         if (this.busy) return;
         this.busy = true;
         this.status = '';
+        this.failed = false;
         let params = new HttpParams({fromObject: this.filters});
         if (point) params = params.set('latitude', point.latitude.toFixed(4)).set('longitude', point.longitude.toFixed(4));
         this.http.get<Candidate[]>('/api/facilities/lookup', {params}).pipe(takeUntilDestroyed(this.destroy)).subscribe({
             next: candidates => { this.busy = false; this.candidates = candidates; if (!candidates.length) this.status = 'No candidates found.'; },
-            error: error => { this.busy = false; this.status = error.error?.message || 'Facility lookup is unavailable.'; }
+            error: error => { this.busy = false; this.failed = true; this.status = error.error?.message || 'Facility lookup is unavailable.'; }
         });
     }
 
@@ -148,14 +108,42 @@ export class FacilityReviewComponent {
         this.conflict = undefined;
         this.distinctIdentity = '';
         this.draft = {...blank(), ...candidate, activities: '', website: candidate.website || ''};
+        this.failed = false;
         this.status = 'Review the candidate and enter only activities you have verified.';
     }
 
-    save(existingId?: number): void {
+    async cancel(form: NgForm, editor: HTMLDetailsElement): Promise<void> {
         if (this.busy) return;
-        if (!this.draft.reviewed) { this.status = 'Confirm the reviewed details before saving.'; return; }
+        if (JSON.stringify(this.draft) !== JSON.stringify(this.savedDraft) &&
+            !await this.confirm({title: 'Discard facility changes?', message: 'Unsaved facility details will be lost.',
+                action: 'Discard Changes', tone: 'danger'})) return;
+        this.draft = {...this.savedDraft};
+        form.resetForm({...this.draft, lat: this.draft.latitude, lon: this.draft.longitude,
+            approximate: this.draft.approximateCoordinates});
+        this.conflict = undefined;
+        this.distinctIdentity = '';
+        this.status = '';
+        this.failed = false;
+        this.advancedOpen = false;
+        editor.open = false;
+    }
+
+    save(existingId: number | undefined, form: NgForm): void {
+        if (this.busy) return;
+        const pointIncomplete = (this.draft.latitude == null) !== (this.draft.longitude == null);
+        const advancedInvalid = !this.draft.reviewed || !this.draft.source?.trim() ||
+            form.controls['lat']?.invalid || form.controls['lon']?.invalid || pointIncomplete;
+        if (form.invalid || advancedInvalid) {
+            form.form.markAllAsTouched();
+            this.advancedOpen ||= advancedInvalid;
+            this.failed = true;
+            this.status = pointIncomplete ? 'Enter both latitude and longitude, or leave both blank.'
+                : 'Review the required details and any highlighted fields before saving.';
+            return;
+        }
         this.busy = true;
         this.status = '';
+        this.failed = false;
         this.conflict = undefined;
         const base = '/api/facilities/reviewed';
         const data = {...this.draft, distinctReviewed: this.distinctIdentity === JSON.stringify(this.duplicateDraft)};
@@ -167,10 +155,14 @@ export class FacilityReviewComponent {
                 this.busy = false;
                 this.status = 'Facility saved.';
                 this.draft.reviewed = false;
-                if (!this.facility) void this.router.navigate(['/facilities', result.id]);
+                this.savedDraft = {...this.draft};
+                if (this.facility) this.saved.emit();
+                else void this.router.navigate(['/facilities', result.id]);
             },
             error: error => {
                 this.busy = false;
+                this.failed = true;
+                if (error.status === 400) this.advancedOpen = true;
                 if (error.error?.code === 'facility-match') this.conflict = error.error;
                 this.status = error.error?.message || 'Facility could not be saved.';
             }

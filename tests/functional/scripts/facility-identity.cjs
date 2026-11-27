@@ -152,6 +152,76 @@ withPickupTestHost(async origin => {
         await expect(record.getByText('Existing record', {exact: true})).toBeVisible();
         await record.getByRole('button', {name: 'Use Existing Facility'}).click();
         await expect(page).toHaveURL(origin + '/facilities/' + target);
+        const read = async id => (await (await admin.request.get(origin + '/api/facilities/' + id)).json()).facility;
+        const saved = await read(target);
+        const editor = page.locator('.facility-editor');
+        await editor.getByText('Edit Facility', {exact:true}).click();
+        const editorForm = editor.getByRole('heading', {name:'Reviewed Facility Details'}).locator('..');
+        const name = editorForm.getByLabel('Facility name', {exact:true});
+        await expect(name).toHaveValue(saved.name);
+        for (const [theme, width, height] of [['classic',1920,1080], ['soft-light',2560,1440],
+            ['navy',1366,768], ['charcoal',768,1024], ['soft-light',390,844]]) {
+            await page.setViewportSize({width,height});
+            await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+            expect(await editor.locator('.editor-grid').first().evaluate(e => getComputedStyle(e).gridTemplateColumns.split(' ').length))
+                .toBe(width >= 720 ? 6 : 1);
+            expect((await editor.boundingBox()).width).toBeLessThanOrEqual(Math.min(width,1057));
+            if (width >= 1366) expect((await editor.boundingBox()).width).toBeGreaterThanOrEqual(1000);
+            await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+        }
+        await name.fill('Discarded Facility Name ' + token);
+        await editorForm.getByRole('button',{name:'Cancel',exact:true}).click();
+        const discard = page.getByRole('alertdialog');
+        await expect(discard.getByRole('heading',{name:'Discard facility changes?'})).toBeVisible();
+        await discard.getByRole('button',{name:'Discard Changes'}).click();
+        await expect(editor).not.toHaveAttribute('open','');
+        assert.deepEqual(await read(target), saved);
+        await editor.getByText('Edit Facility',{exact:true}).click();
+        await expect(name).toHaveValue(saved.name);
+
+        const advanced = editor.locator('details.advanced');
+        await expect(advanced).not.toHaveAttribute('open','');
+        await editorForm.getByRole('button',{name:'Save Facility',exact:true}).click();
+        await expect(advanced).toHaveAttribute('open','');
+        await expect(advanced.getByText('Confirm that you reviewed the details.',{exact:true})).toBeVisible();
+        await advanced.getByLabel('Latitude', {exact:true}).fill('42.541');
+        await advanced.getByLabel('Longitude', {exact:true}).fill('-82.907');
+        await advanced.getByLabel('Verification source', {exact:true}).fill('Updated fixture source');
+        await advanced.getByLabel('Location is approximate').check();
+        await advanced.getByLabel(/I reviewed these details/).check();
+        const updatedName = 'Updated Fixture Sports Center ' + token;
+        await name.fill(updatedName);
+        await editorForm.getByRole('button',{name:'Save Facility',exact:true}).click();
+        await expect(editor.getByText('Facility saved.',{exact:true})).toBeVisible();
+        await expect(page.getByRole('heading',{level:1,name:updatedName})).toBeVisible();
+        const updated = await read(target);
+        assert.equal(updated.name, updatedName);
+        assert.equal(updated.id, target);
+        assert.equal(updated.latitude, 42.541);
+        assert.equal(updated.longitude, -82.907);
+        assert.equal(updated.approximateCoordinates, true);
+        assert.equal(updated.source, 'Updated fixture source');
+        assert.equal(sql(`SELECT COUNT(*) FROM dbo.EventFacility WHERE VenueId=${target} AND LeagueId IN (${eventIds.join(',')});`), '2');
+        assert.equal(sql(`SELECT VenueId FROM dbo.PickupSession WHERE Id='${session}';`), String(target));
+        const unauthorized = await guest.newPage();
+        await unauthorized.goto(origin + '/facilities/' + target);
+        await expect(unauthorized.getByRole('heading',{level:1,name:updatedName})).toBeVisible();
+        await expect(unauthorized.getByText('Edit Facility',{exact:true})).toHaveCount(0);
+        await unauthorized.close();
+
+        await page.goto(origin + '/facilities?view=manage');
+        const candidate = {...base, name:'Reviewed Import ' + token, address:'64 New Fixture Court ' + token,
+            source:'Fixture public lookup', sourceKey:'fixture:import:' + token, activities:[]};
+        await page.route('**/api/facilities/lookup?*', route => route.fulfill({json:[candidate]}));
+        await page.getByRole('button',{name:'Search Public Source'}).click();
+        await page.getByRole('button',{name:'Review ' + candidate.name}).click();
+        const importForm = page.getByRole('heading', {name:'Reviewed Facility Details'}).locator('..');
+        await expect(importForm.getByLabel('Facility name',{exact:true})).toHaveValue(candidate.name);
+        await page.getByText('Advanced Location and Verification',{exact:true}).click();
+        await page.getByLabel(/I reviewed these details/).check();
+        await page.getByRole('button',{name:'Save Reviewed Facility'}).click();
+        await expect(page.getByRole('heading',{level:1,name:candidate.name})).toBeVisible();
+        console.log('Responsive facility editor, cancellation, advanced validation, association safety and reviewed import passed.');
         console.log('Facility duplicate audit, canonical identifiers, shared addresses, concurrent writes, review UI and transactional merges passed.');
     } finally { await browser.close(); }
 }).catch(error => { console.error(error); process.exitCode = 1; });

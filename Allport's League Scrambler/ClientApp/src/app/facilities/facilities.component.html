@@ -48,7 +48,7 @@
         <a routerLink="/facilities">Find Facilities</a>
       </div>
     </header>
-    @if (administrator && !eventId) { <app-facility-review [facility]="data.facility"></app-facility-review> }
+    @if (administrator && !eventId) { <app-facility-review [facility]="data.facility" (saved)="refreshDetails()"></app-facility-review> }
     <div class="facility-grid">
       @for (group of [{id: 1, label: 'Leagues'}, {id: 2, label: 'Tournaments'}]; track group.id) {
         <section>

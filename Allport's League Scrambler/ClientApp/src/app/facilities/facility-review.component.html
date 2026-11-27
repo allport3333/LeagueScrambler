@@ -1,0 +1,84 @@
+<details #editor class="facility-editor" [open]="expanded" (toggle)="initialize($event)">
+  <summary>{{ facility ? 'Edit Facility' : 'Review or Import a Facility' }}</summary>
+  @if (!facility) {
+    <form (ngSubmit)="lookup()" class="editor-section">
+      <h2>Search an approved public source</h2>
+      <div class="editor-grid">
+        <label class="facility-field">Name <input class="form-control" name="lookupName" [(ngModel)]="filters.q" maxlength="100"></label>
+        <label class="facility-field">City and state or ZIP <input class="form-control" name="lookupCity" [(ngModel)]="filters.location" maxlength="100"></label>
+        <label class="facility-field">Sport <input class="form-control" name="lookupSport" [(ngModel)]="filters.sport" maxlength="40"></label>
+        <label class="facility-field">Distance (miles) <select class="form-control" name="radius" [(ngModel)]="filters.radius"><option>5</option><option>10</option><option>25</option></select></label>
+      </div>
+      <div class="editor-actions">
+        <button mat-flat-button color="primary" type="submit" [disabled]="busy">Search Public Source</button>
+        <button mat-stroked-button type="button" [disabled]="busy" (click)="locate()">Use My Location</button>
+      </div>
+      <p class="editor-help"><a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> &middot; ODbL</p>
+      @for (candidate of candidates; track candidate.sourceKey) {
+        <article class="candidate">
+          <strong>{{ candidate.name }}</strong>
+          <p>{{ candidate.address }} {{ candidate.city }} {{ candidate.region }} {{ candidate.postalCode }}</p>
+          @if (candidate.activities.length) { <p>{{ candidate.activities.join(', ') }}</p> }
+          <button mat-stroked-button type="button" [disabled]="busy" (click)="select(candidate)">Review {{ candidate.name }}</button>
+        </article>
+      }
+    </form>
+  }
+
+  <form #review="ngForm" (ngSubmit)="save(undefined, review)">
+    <h2>Reviewed Facility Details</h2>
+    <fieldset class="editor-fields" [disabled]="busy">
+      @for (group of groups; track group.title) {
+        <section class="editor-section">
+          <h3>{{ group.title }}</h3>
+          <div class="editor-grid">
+            @for (field of group.fields; track field.key) {
+              <label class="facility-field" [class.full]="field.span === 6" [class.third]="field.span === 2">
+                {{ field.label }}
+                <input class="form-control" [name]="field.key" [(ngModel)]="draft[field.key]"
+                  [maxlength]="field.length" [required]="field.required" #control="ngModel"
+                  [attr.aria-invalid]="control.touched && control.invalid || null">
+                @if (control.touched && control.invalid) { <span class="field-error">Enter {{ field.label.toLowerCase() }}.</span> }
+              </label>
+            }
+          </div>
+        </section>
+      }
+      <details class="editor-section advanced" #advanced [open]="advancedOpen" (toggle)="advancedOpen = advanced.open">
+        <summary>Advanced Location and Verification</summary>
+        <div class="editor-grid">
+          <label class="facility-field">Latitude <input class="form-control" type="number" name="lat" min="-90" max="90" [(ngModel)]="draft.latitude" #latitude="ngModel">
+            @if (latitude.touched && latitude.invalid) { <span class="field-error">Enter a latitude from -90 to 90.</span> }
+          </label>
+          <label class="facility-field">Longitude <input class="form-control" type="number" name="lon" min="-180" max="180" [(ngModel)]="draft.longitude" #longitude="ngModel">
+            @if (longitude.touched && longitude.invalid) { <span class="field-error">Enter a longitude from -180 to 180.</span> }
+          </label>
+          <label class="facility-checkbox full">
+            <input type="checkbox" name="approximate" [(ngModel)]="draft.approximateCoordinates">
+            <span>Location is approximate</span>
+          </label>
+          <label class="facility-field full">Verification source
+            <input class="form-control" name="source" [(ngModel)]="draft.source" maxlength="500" required #source="ngModel">
+            @if (source.touched && (source.invalid || !draft.source?.trim())) { <span class="field-error">Enter the verification source.</span> }
+          </label>
+          <label class="facility-checkbox full">
+            <input type="checkbox" name="reviewed" [(ngModel)]="draft.reviewed" required #reviewed="ngModel">
+            <span>I reviewed these details and confirmed the activities listed.</span>
+          </label>
+          @if (reviewed.touched && reviewed.invalid) { <p class="field-error full">Confirm that you reviewed the details.</p> }
+          @if (draft.sourceKey) { <p class="editor-help full">Source reference: {{ draft.sourceKey }}</p> }
+        </div>
+      </details>
+    </fieldset>
+    <app-facility-match-review [draft]="duplicateDraft" [conflict]="conflict" [allowReconcile]="!facility" [canConfirmDistinct]="true"
+      [busy]="busy" (useExisting)="openExisting($event)" (reconcile)="save($event.id, review)"
+      (allowDistinct)="confirmDistinct()" />
+    <div class="editor-actions">
+      <button mat-flat-button color="primary" type="submit" [disabled]="busy">
+        {{ busy ? 'Working' : facility ? 'Save Facility' : 'Save Reviewed Facility' }}
+      </button>
+      <button mat-stroked-button type="button" [disabled]="busy" (click)="cancel(review, editor)">Cancel</button>
+    </div>
+  </form>
+  @if (status) { <p class="editor-feedback" [attr.role]="failed ? 'alert' : 'status'">{{ status }}</p> }
+</details>
