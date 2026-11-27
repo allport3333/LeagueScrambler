@@ -9,6 +9,7 @@
       <header>
         <h1>Tournament Home</h1>
         <h2>{{ tournament.name }}</h2>
+        <app-event-facility [eventId]="event?.id"></app-event-facility>
         @if (tournament.date || tournament.location) {
           <p>{{ tournament.date ? (tournament.date | date:'longDate') : '' }}{{ tournament.date && tournament.location ? ' \u00b7 ' : '' }}{{ tournament.location }}</p>
         }

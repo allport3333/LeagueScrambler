@@ -1,0 +1,100 @@
+<main class="facility-directory">
+  @if (!facilityId) {
+    <h1>Find Facilities</h1>
+    @if (administrator) { <app-facility-review></app-facility-review> }
+    <form class="facility-filters" (ngSubmit)="search()">
+      <label>Facility name<input name="name" [(ngModel)]="filters.q" maxlength="150"></label>
+      <label>City or ZIP<input name="location" [(ngModel)]="filters.location" maxlength="100"></label>
+      <label>Distance<select name="radius" [(ngModel)]="filters.radius">
+        @for (miles of [5, 10, 25, 50]; track miles) { <option [value]="miles">{{ miles }} miles</option> }
+      </select></label>
+      <label>Sport<input name="sport" [(ngModel)]="filters.sport" maxlength="40"></label>
+      <label>Activity<select name="activity" [(ngModel)]="filters.eventType">
+        <option value="">All activities</option><option value="1">Leagues</option><option value="2">Tournaments</option><option value="3">Pickup Games</option>
+      </select></label>
+      <label>From<input name="from" type="date" [(ngModel)]="filters.from"></label>
+      <label>To<input name="to" type="date" [(ngModel)]="filters.to"></label>
+      <button type="submit">Find Facilities</button>
+    </form>
+    @if (listing; as result) {
+      @if (result.locationChoices.length) {
+        <p>Choose a location to search by radius.</p>
+        @for (choice of result.locationChoices; track choice) {
+          <button type="button" (click)="filters.location = choice; search()">{{ choice }}</button>
+        }
+      }
+      <div class="facility-grid">
+        @for (facility of result.facilities; track facility.id) {
+          <article>
+            <h2><a [routerLink]="['/facilities', facility.id]" [queryParams]="filters.location ? {location: filters.location} : {}">{{ facility.name }}</a></h2>
+            <p>{{ address(facility) }}</p>
+            @if (facility.activities.length) { <p>{{ facility.activities.join(' · ') }}</p> }
+            @if (facility.distanceMiles != null) { <p>{{ facility.approximate ? 'Approximately ' : '' }}{{ facility.distanceMiles }} miles away</p> }
+          </article>
+        } @empty { <p>No facilities match these filters.</p> }
+      </div>
+      @if (result.hasMore) { <button type="button" [disabled]="loading" (click)="search(true)">Show More</button> }
+    }
+  } @else if (details; as data) {
+    <header>
+      <h1>{{ eventId ? data.events[0].name : data.facility.name }}</h1>
+      @if (eventId) { <p><a [routerLink]="['/facilities', data.facility.id]">{{ data.facility.name }}</a></p> }
+      <p>{{ address(data.facility) }}</p>
+      @if (data.facility.distanceMiles != null) { <p>{{ data.facility.approximate ? 'Approximately ' : '' }}{{ data.facility.distanceMiles }} miles away</p> }
+      @if (data.facility.activities.length) { <p>{{ data.facility.activities.join(' · ') }}</p> }
+      <div class="facility-actions">
+        @if (data.facility.website) { <a [href]="data.facility.website">Facility Website</a> }
+        @if (address(data.facility)) { <a [href]="directions(data.facility)">Directions</a> }
+        <a routerLink="/facilities">Find Facilities</a>
+      </div>
+    </header>
+    @if (administrator && !eventId) { <app-facility-review [facility]="data.facility"></app-facility-review> }
+    <div class="facility-grid">
+      @for (group of [{id: 1, label: 'Leagues'}, {id: 2, label: 'Tournaments'}]; track group.id) {
+        <section>
+          <h2>{{ group.label }}</h2>
+          @for (event of data.events; track event.leagueId) {
+            @if (event.eventType === group.id) {
+              <article>
+                @if (!eventId) {
+                  <h3><a [routerLink]="['/facilities', data.facility.id, 'events', event.leagueId]">{{ event.name }}</a></h3>
+                }
+                @if (event.sport) { <p>{{ event.sport }}</p> }
+                @if (event.season) { <p>{{ event.season }}</p> }
+                @if (event.date) { <p>{{ event.date | date:'mediumDate':'UTC' }}</p> }
+                @if (event.description) { <p>{{ event.description }}</p> }
+                @if (event.contactAvailable) { <button type="button" (click)="startContact(event)">Contact League Organizer</button> }
+                @else if (event.eventType === 1) { <p>Organizer contact is unavailable for this league.</p> }
+              </article>
+            }
+          }
+        </section>
+      }
+      <section>
+        <h2>Upcoming Pickup Games</h2>
+        @for (game of data.pickup; track game.id) {
+          <article><h3><a [routerLink]="['/pickup', game.id]">{{ game.name }}</a></h3><p>{{ game.sport }} · {{ pickupTime(game.startsUtc, data.facility.timeZone) }}</p></article>
+        } @empty { <p>No public Pickup Games are scheduled here.</p> }
+      </section>
+    </div>
+    @if (contactLeague; as event) {
+      <form #inquiryForm="ngForm" class="inquiry" (ngSubmit)="send()">
+        <h2>Contact {{ event.name }}</h2>
+        <label>Name<input name="sender" [(ngModel)]="inquiry.name" autocomplete="name" maxlength="80" required></label>
+        <label>Reply email<input name="email" type="email" [(ngModel)]="inquiry.email" autocomplete="email" maxlength="254" required email></label>
+        <label>Subject<input name="subject" [(ngModel)]="inquiry.subject" maxlength="100" required></label>
+        <label>Message<textarea name="message" [(ngModel)]="inquiry.message" maxlength="2000" required></textarea></label>
+        @if (contactError) { <p role="alert">{{ contactError }}</p> }
+        <div class="facility-actions"><button type="submit" [disabled]="inquiryForm.invalid || contactPending">Send Inquiry</button>
+          <button type="button" [disabled]="contactPending" (click)="contactLeague = undefined">Cancel</button></div>
+      </form>
+    }
+    @if (data.facility.source) {
+      <p class="source">Source {{ data.facility.source }}
+        @if (data.facility.openStreetMap || data.facility.source.includes('OpenStreetMap')) { · <a href="https://www.openstreetmap.org/copyright">OpenStreetMap attribution and license</a> }
+      </p>
+    }
+  }
+  @if (loading) { <p role="status">Loading facilities&hellip;</p> }
+  @if (error) { <p role="alert">{{ error }}</p> }
+</main>

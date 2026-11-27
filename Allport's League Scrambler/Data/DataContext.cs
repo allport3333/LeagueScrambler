@@ -14,6 +14,8 @@ namespace Allport_s_League_Scrambler.Data
 
         public DbSet<PickupGameSet> PickupGameSets { get; set; }
         public DbSet<PickupVenue> PickupVenues { get; set; }
+        public DbSet<FacilityProfile> FacilityProfiles { get; set; }
+        public DbSet<EventFacility> EventFacilities { get; set; }
         public DbSet<PickupSession> PickupSessions { get; set; }
         public DbSet<PickupRegistration> PickupRegistrations { get; set; }
         public virtual DbSet<Player> Players { get; set; }
@@ -65,6 +67,14 @@ namespace Allport_s_League_Scrambler.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<PickupVenue>().ToTable("PickupVenue", "dbo");
+            var facility = modelBuilder.Entity<FacilityProfile>().ToTable("FacilityProfile", "dbo");
+            facility.HasOne(row => row.Venue).WithOne().HasForeignKey<FacilityProfile>(row => row.VenueId)
+                .OnDelete(DeleteBehavior.Cascade);
+            var eventFacility = modelBuilder.Entity<EventFacility>().ToTable("EventFacility", "dbo");
+            eventFacility.HasOne(row => row.League).WithOne().HasForeignKey<EventFacility>(row => row.LeagueId)
+                .OnDelete(DeleteBehavior.Cascade);
+            eventFacility.HasOne(row => row.Venue).WithMany().HasForeignKey(row => row.VenueId).OnDelete(DeleteBehavior.Restrict);
+            eventFacility.HasOne<User>().WithMany().HasForeignKey(row => row.LeadAdminId).OnDelete(DeleteBehavior.SetNull);
             var pickup = modelBuilder.Entity<PickupSession>().ToTable("PickupSession", "dbo");
             pickup.HasOne<User>().WithMany().HasForeignKey(session => session.OrganizerId).OnDelete(DeleteBehavior.Restrict);
             pickup.HasOne(session => session.Venue).WithMany().HasForeignKey(session => session.VenueId).OnDelete(DeleteBehavior.Restrict);

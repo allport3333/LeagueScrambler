@@ -34,16 +34,17 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     }
 
     [Authorize, HttpGet("venues")]
-    public async Task<IActionResult> Venues(string q)
+    public async Task<IActionResult> Venues(string q, bool directory)
     {
         if (!PickupEnvironment.Enabled) return NotFound();
         if (!LeagueAccess.TryGetAccountId(User, out var account)) return Unauthorized();
         if (q?.Length > 140) return BadRequest();
         await using var db = new DataContext();
-        var venues = AvailableVenues(db, account);
+        var venues = directory ? Controllers.FacilitiesController.Directory(db) : AvailableVenues(db, account);
         var term = q?.Trim();
         if (!string.IsNullOrEmpty(term))
-            venues = venues.Where(v => v.Name.Contains(term) || v.City.Contains(term) || v.PostalCode.StartsWith(term));
+            venues = venues.Where(v => v.Name.Contains(term) || v.City.Contains(term) || v.PostalCode.StartsWith(term) ||
+                db.FacilityProfiles.Any(p => p.VenueId == v.Id && p.AlternateName.Contains(term)));
         var result = await venues.AsNoTracking().OrderByDescending(v => db.PickupSessions
             .Where(s => s.VenueId == v.Id && s.OrganizerId == account).Max(s => (DateTimeOffset?)s.StartsUtc))
             .ThenBy(v => v.Name).ThenBy(v => v.Id).Take(12).ToListAsync();
@@ -70,9 +71,10 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
         if (playing) sessions = sessions.Where(s => s.State == SessionState.InProgress || s.StartsUtc <= now);
         if (date is { } day) sessions = sessions.Where(s => s.LocalDate <= day);
         var candidates = await sessions.Select(s => new {
-            s.Id, s.Name, s.Sport, s.Skill, s.StartsUtc, s.EndsUtc, s.DeadlineUtc, s.State, s.Capacity,
+            s.Id, s.Name, s.Sport, s.Skill, s.StartsUtc, s.EndsUtc, s.DeadlineUtc, s.State, s.Capacity, s.VenueId,
             venue = s.Venue.Name, s.Venue.City, s.Venue.Region, s.Venue.PostalCode, s.Venue.Country, s.Venue.TimeZone,
             s.Venue.Latitude, s.Venue.Longitude,
+            approximateCoordinates = db.FacilityProfiles.Any(p => p.VenueId == s.VenueId && p.ApproximateCoordinates),
             confirmed = db.PickupRegistrations.Count(r => r.SessionId == s.Id && r.State == RegistrationState.Confirmed)
         }).ToListAsync();
         var near = PickupLocations.Resolve(location, latitude.HasValue ? new PickupLocations.Point(latitude.Value, longitude.Value) : null);
@@ -121,10 +123,10 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
             sessions = result.Take(12).Select(entry => {
                 var label = PickupLocations.Display(entry.s.City, entry.s.Region, entry.s.PostalCode, entry.s.Country);
                 return new {
-                    entry.s.Id, entry.s.Name, entry.s.Sport, entry.s.Skill, entry.s.venue, entry.s.City, entry.s.Region,
+                    entry.s.Id, entry.s.Name, entry.s.Sport, entry.s.Skill, entry.s.venue, entry.s.VenueId, entry.s.City, entry.s.Region,
                     entry.s.PostalCode, entry.s.TimeZone, entry.s.StartsUtc, entry.s.EndsUtc, entry.s.State, entry.s.Capacity,
                     entry.s.confirmed, registrationOpen = entry.open, timing = entry.rank, distanceMiles = entry.match.Miles,
-                    approximateLocation = entry.match.Approximate, locationUnconfirmed = entry.match.MissingState,
+                    approximateLocation = entry.match.Approximate || entry.s.approximateCoordinates, locationUnconfirmed = entry.match.MissingState,
                     displayCity = label.City, displayRegion = label.Region
                 };
             }),
@@ -174,6 +176,9 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
             .Select(u => u.FirstName + " " + u.LastName).SingleAsync();
         return Ok(new {
             session.Id, session.Name, session.Sport, Venue = PresentVenue(session.Venue), session.StartsUtc, session.EndsUtc, session.DeadlineUtc,
+            directoryVisible = await db.FacilityProfiles.AnyAsync(p => p.VenueId == session.VenueId) ||
+                await db.PickupSessions.AnyAsync(s => s.VenueId == session.VenueId && s.Visibility == SessionVisibility.Public &&
+                    (s.State == SessionState.Published || s.State == SessionState.InProgress) && s.EndsUtc > DateTimeOffset.UtcNow),
             session.LocalDate, session.Description, session.Skill, session.Capacity, session.Visibility, session.State,
             session.ApprovalRequired, organizer, owner, canReopen = CanReopen(session), canDelete = CanDelete(session),
             organizerNotes = owner ? session.OrganizerNotes : null,
@@ -585,7 +590,7 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     }
 
     private static IQueryable<PickupVenue> AvailableVenues(DataContext db, int account) =>
-        db.PickupVenues.Where(v => db.PickupSessions.Any(s => s.VenueId == v.Id &&
+        db.PickupVenues.Where(v => db.FacilityProfiles.Any(p => p.VenueId == v.Id) || db.PickupSessions.Any(s => s.VenueId == v.Id &&
             (s.OrganizerId == account || (s.Visibility == SessionVisibility.Public &&
                 s.State != SessionState.Draft && s.State != SessionState.Cancelled))));
 

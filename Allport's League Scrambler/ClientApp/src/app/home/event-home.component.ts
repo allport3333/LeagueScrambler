@@ -4,6 +4,7 @@ import { Component, Input, inject, OnChanges, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { catchError, forkJoin, map, Observable, of, startWith, switchMap, throwError } from 'rxjs';
 import { Leagues } from '../data-models/leagues.model';
+import { EventFacilityComponent } from '../facilities/event-facility.component';
 
 interface TournamentHome {
     name: string; date?: string; location?: string; status?: string; participants: number; checkedIn?: number;
@@ -35,7 +36,7 @@ interface View {
 
 @Component({
     selector: 'app-event-home',
-    imports: [AsyncPipe, DatePipe, RouterLink],
+    imports: [AsyncPipe, DatePipe, RouterLink, EventFacilityComponent],
     templateUrl: './event-home.component.html',
     styleUrl: './event-home.component.css'
 })

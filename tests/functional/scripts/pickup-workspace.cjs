@@ -135,8 +135,8 @@ withPickupTestHost(async origin => {
         async function checkPickupActions(active = false) {
             const actions = menu.locator('#event-category-3 a');
             await expect(actions).toHaveText(active ?
-                [/My Sessions/, /Find Pickup Games/, /Create Pickup Game/, /Continue Pickup Session/] :
-                [/My Sessions/, /Find Pickup Games/, /Create Pickup Game/]);
+                [/My Sessions/, /Find Pickup Games/, /Create Pickup Game/, /Continue Pickup Session/, /Find Facilities/] :
+                [/My Sessions/, /Find Pickup Games/, /Create Pickup Game/, /Find Facilities/]);
             await expect(menu.getByRole('link', {name: 'Create Pickup Game'})).toHaveCSS('font-weight', active ? '400' : '650');
             if (active) await expect(menu.getByRole('link', {name: 'Continue Pickup Session'})).toHaveCSS('font-weight', '650');
         }

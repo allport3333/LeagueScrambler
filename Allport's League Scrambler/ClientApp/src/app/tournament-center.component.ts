@@ -1,4 +1,5 @@
 import { TournamentDatePipe } from './tournament-date.pipe';
+import { EventFacilityComponent } from './facilities/event-facility.component';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -23,7 +24,7 @@ interface TournamentDetails {
 @Component({
     selector: 'app-tournament-center',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, RouterLink, TournamentParticipantsComponent, TournamentCheckInComponent, TournamentRoundsComponent, TournamentDatePipe],
+    imports: [FormsModule, RouterLink, TournamentParticipantsComponent, TournamentCheckInComponent, TournamentRoundsComponent, TournamentDatePipe, EventFacilityComponent],
     styles: [`
         main { padding: 0 clamp(.5rem, 1.5vw, 1.5rem); max-width: 110rem; margin: .75rem auto; }
         .workspace { --workspace-padding: clamp(.75rem, 1.4vw, 1.5rem); border: 1px solid var(--hub-border, #bcc6d2);
@@ -130,6 +131,7 @@ interface TournamentDetails {
                                 <label>Description <textarea class="form-control" name="description" maxlength="500" [(ngModel)]="details.description"></textarea></label>
 
                             </form>
+                            <app-event-facility [eventId]="leagueId" [manage]="true" />
                         }
                         @if (step === 2) {
                             <app-tournament-participants [leagueId]="leagueId" [tournamentName]="name" />

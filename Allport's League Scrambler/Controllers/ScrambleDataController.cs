@@ -2221,7 +2221,8 @@ namespace Allport_s_League_Scrambler.Controllers
         [HttpPost("[action]/{leagueName}")]
         [SameOrigin]
         [Authorize]
-        public async Task<IActionResult> AddNewLeague(string leagueName, [FromQuery] int eventTypeId = 1, [FromQuery] DateOnly? eventDate = null)
+        public async Task<IActionResult> AddNewLeague(string leagueName, [FromQuery] int eventTypeId = 1,
+            [FromQuery] DateOnly? eventDate = null, [FromQuery] int? venueId = null)
         {
             if (!LeagueAccess.TryGetAccountId(User, out var ownerId))
                 return Forbid();
@@ -2246,6 +2247,9 @@ namespace Allport_s_League_Scrambler.Controllers
                 return BadRequest(new { message = "Choose a valid event type." });
             if (eventTypeId == 2 && !eventDate.HasValue)
                 return BadRequest(new { message = "Choose a tournament date." });
+            if (venueId.HasValue && (eventTypeId is not (1 or 2) ||
+                !await FacilitiesController.Directory(context).AnyAsync(venue => venue.Id == venueId)))
+                return BadRequest(new { message = "Choose an available facility." });
             var existing = await context.Leagues.FirstOrDefaultAsync(league => league.LeagueName == leagueName);
             if (existing != null)
                 return LeagueAccess.CanManage(User, context, existing.ID)
@@ -2262,6 +2266,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 new LeagueSettings { LeagueId = league.ID, SettingName = "dropLowest", SettingValue = "0" },
                 new LeagueSettings { LeagueId = league.ID, SettingName = "dayOfLeague", SettingValue = "Monday" });
             context.UserLeagues.Add(new UserLeague { LeagueTypeId = league.ID, UserId = ownerId });
+            if (venueId.HasValue) context.EventFacilities.Add(new EventFacility { LeagueId = league.ID, VenueId = venueId.Value });
             if (eventTypeId == 2)
                 context.TournamentConfigurations.Add(new TournamentConfiguration
                     { LeagueId = league.ID, EventDate = eventDate.Value, OwnerUserId = ownerId, WorkflowStep = 1, Version = Guid.NewGuid() });

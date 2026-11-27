@@ -2473,6 +2473,8 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
         this.strictFailureSignature = null;
     }
 
+    creationVenueId: number | null = null;
+
     addLeague(eventTypeId = 1, eventDate?: string): void {
         const name = this.LeagueForm.controls['newLeagueName'].value?.trim();
         if (!this.canCreateLeague || !name || this.leagueCreationPending) return;
@@ -2483,10 +2485,11 @@ export class ScramblerComponent implements OnInit, OnChanges, OnDestroy {
 
         this.creationError = '';
         this.leagueCreationPending = true;
-        this.playerService.AddNewLeague(name, eventTypeId, eventDate).subscribe({
+        this.playerService.AddNewLeague(name, eventTypeId, eventDate, eventTypeId === 3 ? null : this.creationVenueId).subscribe({
             next: created => {
                 this.showSnackBar('League created.');
                 this.LeagueForm.reset();
+                this.creationVenueId = null;
                 this.leagueService.getLeagues().subscribe({
                     next: leagues => {
                         if (!leagues.some(league => league.id === created.id)) {

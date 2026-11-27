@@ -22,6 +22,8 @@ import { RouteReuseStrategy, RouterModule, Router } from '@angular/router';
 
 import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
+import { EventFacilityComponent } from './facilities/event-facility.component';
+import { FacilityPickerComponent } from './facilities/facility-picker.component';
 import { EventHomeComponent } from './home/event-home.component';
 import { GoogleSignInComponent } from './google-auth/google-sign-in.component';
 import { HomeComponent } from './home/home.component';
@@ -126,6 +128,8 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         EventHomeComponent,
+        EventFacilityComponent,
+        FacilityPickerComponent,
         GoogleSignInComponent,
         AccountRecoveryComponent,
         FormsModule,
@@ -169,6 +173,9 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
             { path: 'change-email', data: { mode: 'email-change' }, loadComponent: () => import('./account-recovery.component').then(m => m.AccountRecoveryComponent) },
             { path: 'recovery-review', data: { mode: 'review' }, loadComponent: () => import('./account-recovery.component').then(m => m.AccountRecoveryComponent) },
             { path: 'access-denied', component: LeagueManagementDeniedComponent },
+            { path: 'facilities', loadComponent: () => import('./facilities/facilities.component').then(m => m.FacilitiesComponent) },
+            { path: 'facilities/:id/events/:eventId', loadComponent: () => import('./facilities/facilities.component').then(m => m.FacilitiesComponent) },
+            { path: 'facilities/:id', loadComponent: () => import('./facilities/facilities.component').then(m => m.FacilitiesComponent) },
             { path: 'pickup', loadComponent: () => import('./pickup.component').then(m => m.PickupComponent) },
             { path: 'pickup/find', data: { view: 'find' }, loadComponent: () => import('./pickup.component').then(m => m.PickupComponent) },
             { path: 'pickup/create', data: { view: 'create' }, loadComponent: () => import('./pickup.component').then(m => m.PickupComponent) },

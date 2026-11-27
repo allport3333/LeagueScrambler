@@ -148,7 +148,7 @@
     <section class="panel details pickup-workspace-shell">
       <div class="session-heading">
         <h1>{{ game.name }}</h1>
-        <p>{{ game.venue.name }} @if (game.venue.displayCity || game.venue.city) { &middot; {{ game.venue.displayCity || game.venue.city }} } &middot; {{ sessionTime(game) }}</p>
+        <p>@if (game.directoryVisible) { <a [routerLink]="['/facilities', game.venue.id]">{{ game.venue.name }}</a> } @else { {{ game.venue.name }} } @if (game.venue.displayCity || game.venue.city) { &middot; {{ game.venue.displayCity || game.venue.city }} } &middot; {{ sessionTime(game) }}</p>
         <div class="session-meta">
           <span class="session-state">{{ ['Draft', 'Published', 'In Progress', 'Completed', 'Cancelled'][game.state] }}</span>
           <span>Organizer: {{ game.organizer }}</span>
@@ -277,7 +277,7 @@
           <article class="panel">
             <h3><a [routerLink]="['/pickup', card.id]">{{ card.name }}</a></h3>
             <p>{{ card.sport }} · {{ card.skill || 'Any level' }}</p>
-            <p>{{ card.venue }} @if (discoveryLocation(card)) {
+            <p>@if (card.venueId) { <a [routerLink]="['/facilities', card.venueId]">{{ card.venue }}</a> } @else { {{ card.venue }} } @if (discoveryLocation(card)) {
               &middot; {{ discoveryLocation(card) }}
             }</p>
             <p>{{ discoveryTime(card) }}</p>

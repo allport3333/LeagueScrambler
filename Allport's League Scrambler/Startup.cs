@@ -87,6 +87,14 @@ namespace Allport_s_League_Scrambler
                 options.AddPolicy("pickup-guest", context => RateLimitPartition.GetFixedWindowLimiter(
                     context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                     _ => new FixedWindowRateLimiterOptions { PermitLimit = 12, Window = TimeSpan.FromMinutes(5) }));
+                options.AddPolicy("facility-inquiry", context => RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions { PermitLimit = 3, Window = TimeSpan.FromHours(1) }));
+                options.AddFixedWindowLimiter("facility-lookup", limits =>
+                {
+                    limits.PermitLimit = 1;
+                    limits.Window = TimeSpan.FromSeconds(3);
+                });
             });
             if (PickupEnvironment.DisposableTest)
                 services.AddDataProtection().SetApplicationName(PickupEnvironment.Database)
@@ -102,6 +110,11 @@ namespace Allport_s_League_Scrambler
             });
 
             services.AddHttpContextAccessor();
+            services.AddHttpClient("facility-overpass", client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(15);
+                client.MaxResponseContentBufferSize = 1024 * 1024;
+            });
             services.AddSingleton(sp => Services.TransactionalMail.ConfigureClient(
                 sp.GetRequiredService<IWebHostEnvironment>().EnvironmentName));
             services.AddSingleton<Services.TransactionalMail>();

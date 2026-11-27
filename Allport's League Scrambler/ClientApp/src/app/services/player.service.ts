@@ -304,8 +304,8 @@ export class PlayerService {
     }
 
 
-    public AddNewLeague(leagueName: string, eventTypeId = 1, eventDate?: string) {
-        const params = eventDate ? { eventTypeId, eventDate } : { eventTypeId };
+    public AddNewLeague(leagueName: string, eventTypeId = 1, eventDate?: string, venueId?: number | null) {
+        const params = {eventTypeId, ...(eventDate ? {eventDate} : {}), ...(venueId ? {venueId} : {})};
         return this.httpClient.post<Leagues>(this.baseUrl + 'api/ScrambleData/AddNewLeague/' + encodeURIComponent(leagueName), [], { params });
     }
 

@@ -17,6 +17,7 @@ interface SessionCard {
     timing?: number; registrationOpen?: boolean; distanceMiles?: number; approximateLocation?: boolean;
     locationUnconfirmed?: boolean; postalCode?: string; displayCity?: string; displayRegion?: string;
     id: string; name: string; sport: string; startsUtc: string; endsUtc: string; skill?: string;
+    venueId?: number; directoryVisible?: boolean;
     venue: string; city: string; region: string; timeZone: string; capacity: number | null; confirmed: number; state: number;
 }
 interface Venue {

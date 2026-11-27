@@ -12,6 +12,7 @@ import { Leagues } from './data-models/leagues.model';
 import { LeagueService } from './services/league.service';
 import { PlayerService } from './services/player.service';
 import { LoginService } from './services/login.service';
+import { FacilityPickerComponent } from './facilities/facility-picker.component';
 
 interface ManagedTournament extends Leagues { eventDate?: string; participants: number; total: number; generated: number; completed: number; status: string; workflowStep: number; legacyScrambles?: number; }
 interface DeletionPreview { name: string; eventDate?: string; participants: number; generated: number; hasScores: boolean; revision: string; }
@@ -19,7 +20,7 @@ interface DeletionPreview { name: string; eventDate?: string; participants: numb
 @Component({
     selector: 'app-tournament-landing',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, RouterLink, TournamentNavigationComponent, TournamentDatePipe],
+    imports: [FormsModule, RouterLink, TournamentNavigationComponent, TournamentDatePipe, FacilityPickerComponent],
     providers: [TournamentDatePipe],
     styles: [`
         main { max-width: 76rem; margin: .5rem auto; padding: .75rem 1rem; }
@@ -78,6 +79,7 @@ interface DeletionPreview { name: string; eventDate?: string; participants: numb
                         <label>Tournament Date
                             <input class="form-control" name="date" type="date" required [(ngModel)]="date">
                         </label>
+                        <app-facility-picker [(venueId)]="venueId" />
                         <button type="submit" [disabled]="form.invalid || !name.trim() || !canCreate || creating || !!createdId">Create Tournament</button>
                     </form>
                     @if (createdId && !creating) {
@@ -191,6 +193,7 @@ export class TournamentLandingComponent {
     }
     name = '';
     date = '';
+    venueId: number | null = null;
     createdId?: number;
     creating = false;
     loading = false;
@@ -271,7 +274,7 @@ export class TournamentLandingComponent {
         const name = this.name.trim();
         if (!this.canCreate || !name || !this.date || this.creating || this.createdId) return;
         this.creating = true;
-        this.players.AddNewLeague(name, 2, this.date).pipe(takeUntilDestroyed(this.destroy)).subscribe({
+        this.players.AddNewLeague(name, 2, this.date, this.venueId).pipe(takeUntilDestroyed(this.destroy)).subscribe({
             next: created => {
                 this.createdId = created.id;
                 this.leagues.getLeagues().pipe(takeUntilDestroyed(this.destroy)).subscribe({

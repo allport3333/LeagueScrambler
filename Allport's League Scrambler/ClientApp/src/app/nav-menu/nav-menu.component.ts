@@ -88,9 +88,11 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
             .filter(item => !item.children || item.children.length)
             .map(item => item.route === '/' ? {...item, queryParams: this.homeContext()} :
                 item.children?.length === 1 ? item.children[0] : item);
-        if (this.authenticationChecked && !this.loggedIn && this.pickupEnabled)
+        if (this.authenticationChecked && !this.loggedIn && this.pickupEnabled) {
             items.push({route: '/pickup/find', label: 'Pickup Games', icon: 'sports_volleyball'});
-        if (this.inPickup) return items.filter(item => item.route === '/' || item.route === '/pickup/find');
+            items.push({route: '/facilities', label: 'Find Facilities', icon: 'place'});
+        }
+        if (this.inPickup) return items.filter(item => item.route === '/' || item.route === '/pickup/find' || item.route === '/facilities');
         if (tournament && this.loggedIn) {
             const standings = items.findIndex(item => item.route === '/standings');
             if (standings >= 0) items[standings] = {
