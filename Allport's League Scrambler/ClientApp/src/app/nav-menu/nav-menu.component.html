@@ -33,7 +33,7 @@
                 <h2><button type="button" class="event-category" [attr.aria-expanded]="expandedEventType === group.id"
                   [attr.aria-controls]="'event-category-' + group.id" (click)="toggleEventCategory(group.id)">
                   <mat-icon aria-hidden="true">{{ group.icon }}</mat-icon><span>{{ group.title }}</span>
-                  <span class="event-count">{{ group.id === 3 ? pickupSessionCount : group.events.length }}</span>
+                  <span class="event-count">{{ group.id === 4 ? facilityCount : group.id === 3 ? pickupSessionCount : group.events.length }}</span>
                   <mat-icon aria-hidden="true">{{ expandedEventType === group.id ? 'expand_less' : 'expand_more' }}</mat-icon>
                 </button></h2>
                 <div [id]="'event-category-' + group.id" [hidden]="expandedEventType !== group.id">
@@ -65,8 +65,17 @@
                               <mat-icon aria-hidden="true">play_arrow</mat-icon><span>Continue Pickup Session</span>
                             </a>
                           }
-                          <a class="event-choice" routerLink="/facilities" (click)="closeEventSelector()">
-                            <mat-icon aria-hidden="true">place</mat-icon><span>Find Facilities</span>
+                        }
+                      </div>
+                    }
+                    @if (group.id === 4) {
+                      <div class="tournament-event-actions">
+                        <a class="event-choice" routerLink="/facilities" (click)="closeEventSelector()">
+                          <mat-icon aria-hidden="true">search</mat-icon><span>Find Facilities</span>
+                        </a>
+                        @if (userRole === 'Admin') {
+                          <a class="event-choice" routerLink="/facilities" [queryParams]="{view: 'manage'}" (click)="closeEventSelector()">
+                            <mat-icon aria-hidden="true">settings</mat-icon><span>Manage Facilities</span>
                           </a>
                         }
                       </div>

@@ -16,6 +16,7 @@ const eventTypes = [
     { id: 1, title: 'Leagues', label: 'League', icon: 'groups' },
     { id: 2, title: 'Tournaments', label: 'Tournament', icon: 'emoji_events' },
     { id: 3, title: 'Pickup Games', label: 'Pickup', icon: 'sports_volleyball' },
+    { id: 4, title: 'Facilities', label: 'Facilities', icon: 'place' },
 ];
 const unclassified = { id: 0, title: 'Other events', label: 'Event', icon: 'event' };
 
@@ -206,7 +207,8 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -5 }
     ];
 
-    eventType(event?: {eventTypeId?: number}) { return eventTypes.find(type => type.id !== 3 && type.id === event?.eventTypeId) ?? unclassified; }
+    eventType(event?: {eventTypeId?: number}) { return eventTypes.find(type => type.id <= 2 && type.id === event?.eventTypeId) ?? unclassified; }
+    facilityCount?: number;
     get selectedEvent() { return this.leagues.find(event => event.id === this.selectedLeagueId); }
     get canCreateLeague(): boolean {
         return this.loggedIn && (this.userRole === 'Admin' || this.userRole === 'Manager');
@@ -217,7 +219,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         const matching = this.leagues.filter(event => event.leagueName.toLocaleLowerCase().includes(query));
         return [...eventTypes, unclassified].map(type => ({
             ...type, events: matching.filter(event => this.eventType(event).id === type.id)
-        })).filter(group => group.events.length || (this.eventPopup === 'categories' && (group.id === 1 && this.canCreateLeague || group.id === 2 && this.loggedIn || group.id === 3 && this.pickupEnabled)));
+        })).filter(group => group.events.length || (this.eventPopup === 'categories' && (group.id === 1 && this.canCreateLeague || group.id === 2 && this.loggedIn || group.id === 3 && this.pickupEnabled || group.id === 4 && this.loggedIn)));
     }
 
     toggleEventPopup(popup: 'categories' | 'search'): void {
@@ -225,6 +227,10 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         this.eventSearch = '';
         this.expandedEventType = this.inPickup ? 3 : this.selectedEvent ? this.eventType(this.selectedEvent).id : 2;
         this.eventPopup = popup;
+        if (popup === 'categories') {
+            this.subscriptions.add(this.http.get<{count: number}>('/api/facilities/count').pipe(catchError(() => of(null)))
+                .subscribe(value => { this.facilityCount = value?.count; }));
+        }
         if (popup === 'categories') this.loadPickupResume();
         requestAnimationFrame(() => {
             if (this.eventPopup !== popup) return;

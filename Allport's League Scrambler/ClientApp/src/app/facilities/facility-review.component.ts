@@ -21,7 +21,7 @@ const blank = () => ({name: '', alternateName: '', address: '', city: '', region
     imports: [FormsModule, FacilityMatchReviewComponent],
     styleUrl: './facility-checkbox.css',
     template: `
-      <details (toggle)="initialize($event)">
+      <details [open]="expanded" (toggle)="initialize($event)">
         <summary>{{ facility ? 'Edit Facility' : 'Review or Import a Facility' }}</summary>
         @if (!facility) {
           <form (ngSubmit)="lookup()">
@@ -78,6 +78,7 @@ const blank = () => ({name: '', alternateName: '', address: '', city: '', region
 })
 export class FacilityReviewComponent {
     @Input() facility?: Facility;
+    @Input() expanded = false;
     private readonly http = inject(HttpClient);
     private readonly router = inject(Router);
     private readonly destroy = inject(DestroyRef);

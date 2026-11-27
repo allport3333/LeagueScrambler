@@ -76,6 +76,13 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
         });
     }
 
+    [AllowAnonymous, HttpGet("count")]
+    public async Task<IActionResult> Count()
+    {
+        await using var db = new DataContext();
+        return Ok(new { count = await Directory(db).CountAsync() });
+    }
+
     [AllowAnonymous, HttpGet("{id:int}")]
     public async Task<IActionResult> Details(int id, int? eventId, string location)
     {

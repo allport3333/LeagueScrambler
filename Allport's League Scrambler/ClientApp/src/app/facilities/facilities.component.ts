@@ -55,6 +55,7 @@ export class FacilitiesComponent {
     private page = 0;
     filters = {q: '', location: '', radius: '25', sport: '', eventType: '', from: '', to: ''};
     facilityId = 0;
+    get managing(): boolean { return this.route.snapshot.queryParamMap.get('view') === 'manage'; }
     eventId = 0;
     listing?: FacilityResult;
     details?: FacilityDetails;

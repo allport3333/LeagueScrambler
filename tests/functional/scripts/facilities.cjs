@@ -75,6 +75,21 @@ withPickupTestHost(async origin => {
         const tournament = await createFromForm(2);
         await organizerPage.close();
         const hidden = await create('Private league', 1);
+        const selectorPage = await organizer.newPage();
+        for (const [theme, width] of [['classic', 1366], ['navy', 390], ['charcoal', 768]]) {
+            await selectorPage.setViewportSize({width, height: 850});
+            await selectorPage.goto(origin + '/?leagueId=' + (width === 390 ? tournament : league));
+            await selectorPage.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+            await selectorPage.locator('#leagueDropdown').click();
+            const menu = selectorPage.getByRole('dialog', {name: 'Select league or event'});
+            await expect(menu.locator('.event-category > span:first-of-type')).toHaveText(['Leagues','Tournaments','Pickup Games','Facilities']);
+            await menu.getByRole('button', {name: /^Facilities/}).click();
+            await expect(menu.getByRole('link', {name: 'Find Facilities'})).toHaveAttribute('href', '/facilities');
+            await expect(menu.getByRole('link', {name: 'Manage Facilities'})).toHaveAttribute('href', '/facilities?view=manage');
+            await menu.getByRole('link', {name: 'Find Facilities'}).click();
+            await expect(selectorPage).toHaveURL(origin + '/facilities');
+        }
+        await selectorPage.close();
         const leadId = Number(sql(`SELECT UserId FROM dbo.[User] WHERE Email=N'${lead}';`));
         assert.equal((await put(organizer, '/api/facilities/event/' + league, {
             venueId, publicListing: true, sport: 'Wallyball', season: 'Winter', leadAdminId: leadId
