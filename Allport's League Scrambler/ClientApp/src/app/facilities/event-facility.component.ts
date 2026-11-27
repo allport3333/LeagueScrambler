@@ -1,12 +1,13 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, Input, OnChanges, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, EventEmitter, Input, OnChanges, Output, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { LeagueService } from '../services/league.service';
 import { FacilityPickerComponent } from './facility-picker.component';
 
-interface Assignment { venueId: number | null; name?: string; publicListing: boolean; sport?: string;
+interface Assignment { isActive?: boolean; eventTypeId?: number; venueId: number | null; name?: string; publicListing: boolean; sport?: string;
     season?: string; description?: string; directoryVisible?: boolean; leadAdminId?: number; }
 
 @Component({
@@ -16,9 +17,17 @@ interface Assignment { venueId: number | null; name?: string; publicListing: boo
     styleUrl: './facility-checkbox.css',
     template: `
       @if (manage && eventId) {
-        <details class="event-venue">
+        <details class="event-venue" open>
           <summary>Facility and Public Listing</summary>
-          <app-facility-picker [(venueId)]="draft.venueId" [venueName]="current?.name" />
+          @if (current) {
+          <app-facility-picker [(venueId)]="draft.venueId" [venueName]="current.name" />
+          <label class="facility-checkbox">
+            <input type="checkbox" [(ngModel)]="draft.isActive" [ngModelOptions]="standalone">
+            <span>Active {{ current.eventTypeId === 2 ? 'Tournament' : 'League' }}</span>
+          </label>
+          <p>Inactive events are hidden from public facility listings. Existing records and history are preserved.</p>
+          @if (current.isActive === false) { <p>Inactive &middot; hidden from public facility listings.</p> }
+          @else if (current.venueId && current.publicListing) { <p>Active &middot; publicly listed at {{ current.name }}.</p> }
           <label class="facility-checkbox">
             <input type="checkbox" [(ngModel)]="draft.publicListing" [ngModelOptions]="standalone">
             <span>List this event publicly at the facility</span>
@@ -33,14 +42,16 @@ interface Assignment { venueId: number | null; name?: string; publicListing: boo
             </select></label>
           }
           <button type="button" [disabled]="busy" (click)="save()">Save Facility</button>
+          }
           @if (status) { <p role="status">{{ status }}</p> }
         </details>
-      } @else if (current?.venueId) {
-        <p>Facility @if (current?.directoryVisible) { <a [routerLink]="['/facilities', current!.venueId]">{{ current!.name }}</a> } @else { {{ current!.name }} }</p>
+      } @else if (current) {
+        @if (current.isActive === false) { <small>Inactive</small> }
+        @if (current.venueId) { <p>Facility @if (current?.directoryVisible) { <a [routerLink]="['/facilities', current!.venueId]">{{ current!.name }}</a> } @else { {{ current!.name }} }</p> }
       }
     `,
     styles: `
-      .event-venue { margin: .75rem 0; padding: .75rem; border: 1px solid var(--hub-border, #718197); border-radius: .35rem; }
+      .event-venue { max-width: 60rem; margin: .75rem auto; padding: .75rem; border: 1px solid var(--hub-border, #718197); border-radius: .35rem; }
       label { display: grid; margin: .4rem 0; }
       input:not([type=checkbox]), select, textarea { width: 100%; max-width: 28rem; color: var(--hub-text, #172534); background: var(--hub-surface, #fff); }
     `
@@ -48,6 +59,8 @@ interface Assignment { venueId: number | null; name?: string; publicListing: boo
 export class EventFacilityComponent implements OnChanges {
     @Input() eventId?: number;
     @Input() manage = false;
+    @Output() facilitySelected = new EventEmitter<boolean>();
+    private readonly leagues = inject(LeagueService);
     private readonly http = inject(HttpClient);
     private readonly destroy = inject(DestroyRef);
     private read?: Subscription;
@@ -75,7 +88,8 @@ export class EventFacilityComponent implements OnChanges {
         this.busy = true;
         this.status = '';
         this.http.put('/api/facilities/event/' + id, this.draft).pipe(takeUntilDestroyed(this.destroy)).subscribe({
-            next: () => { this.busy = false; if (id === this.eventId) { this.status = 'Facility saved.'; this.load(); } },
+            next: () => { this.busy = false; if (id === this.eventId) { this.status = 'Facility and listing settings saved.'; this.load();
+                this.leagues.getLeagues().pipe(takeUntilDestroyed(this.destroy)).subscribe({ error: () => {} }); } },
             error: error => { this.busy = false; if (id === this.eventId) this.status = error.error?.message || 'Facility could not be saved.'; }
         });
     }
@@ -85,7 +99,7 @@ export class EventFacilityComponent implements OnChanges {
         if (!this.eventId) return;
         this.read = this.http.get<Assignment>('/api/facilities/event/' + this.eventId)
             .pipe(takeUntilDestroyed(this.destroy)).subscribe({
-                next: response => { this.current = response; this.draft = {...response}; },
+                next: response => { this.current = response; this.draft = {...response}; this.facilitySelected.emit(!!response.venueId); },
                 error: error => {
                     if (error.status === 404) { this.current = undefined; this.draft = {venueId: null, publicListing: false}; }
                     else if (this.manage) this.status = 'The saved facility could not be loaded.';

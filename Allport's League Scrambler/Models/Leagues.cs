@@ -10,6 +10,7 @@ namespace Allport_s_League_Scrambler.Models
         public int ID { get; set; }
         public string LeagueName { get; set; }
         public int EventTypeId { get; set; } = 1;
+        public bool IsActive { get; set; } = true;
 
     }
 

@@ -29,3 +29,5 @@ Open **Review Possible Duplicate Facilities** as an administrator to see matchin
 The Development audit identified possible matches between venue 3 (USC, Roseville, street and ZIP unspecified, two cancelled Pickup sessions) and venue 6 (The Ultimate Sports Center, 31950 Little Mack Avenue, Roseville, MI 48066, one Pickup session marked In Progress). The two USC records 3 and 4 share a short name but have incomplete or conflicting location evidence. Venue 4 has ZIP 48310 and one cancelled Pickup session. None have League or Tournament associations. These are review candidates and were left intact.
 
 Run the duplicate workflow test with `node tests/functional/scripts/facility-identity.cjs`. Creation, fixture data changes and the merge exercise run only in the disposable test database.
+
+Apply `006-EventActiveStatus.sql` after a verified backup. It adds a shared `LeagueType.IsActive` flag with an Active default for existing and new leagues and tournaments. Facility listings require both Active status and the existing Public Listing preference. Apply this migration before deploying application code that reads the flag.

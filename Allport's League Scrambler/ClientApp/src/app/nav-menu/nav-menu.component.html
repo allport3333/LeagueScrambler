@@ -7,7 +7,7 @@
       <button #eventTrigger type="button" mat-button class="league-selector" id="leagueDropdown" cdkOverlayOrigin #eventOrigin="cdkOverlayOrigin"
         aria-haspopup="dialog" [attr.aria-expanded]="eventPopup === 'categories'" [title]="inPickup ? 'Pickup Games' : (selectedLeagueName || 'Select event')" (click)="toggleEventPopup('categories')">
         @if (inPickup) { <mat-icon class="event-kind-icon" aria-hidden="true">sports_volleyball</mat-icon> } @else if (selectedEvent; as selected) { <mat-icon class="event-kind-icon" [attr.aria-label]="eventType(selected).label">{{ eventType(selected).icon }}</mat-icon> }
-        <span class="league-name">{{ inPickup ? 'Pickup Games' : (selectedLeagueName || 'Select event') }}</span><mat-icon iconPositionEnd aria-hidden="true">arrow_drop_down</mat-icon>
+        <span class="league-name">{{ inPickup ? 'Pickup Games' : (selectedLeagueName || 'Select event') }}</span>@if (!inPickup && selectedEventStatus) { <small>{{ selectedEventStatus }}</small> }<mat-icon iconPositionEnd aria-hidden="true">arrow_drop_down</mat-icon>
       </button>
       <button #searchTrigger type="button" mat-icon-button class="event-search-trigger" cdkOverlayOrigin #searchOrigin="cdkOverlayOrigin"
         aria-label="Search events" aria-haspopup="dialog" [attr.aria-expanded]="eventPopup === 'search'" (click)="toggleEventPopup('search')">
@@ -41,10 +41,13 @@
                     @for (event of group.events; track event.id) {
                       <ng-container *ngTemplateOutlet="eventChoice; context: {$implicit: event}"></ng-container>
                     }
-                    @if (group.id === 1 && canCreateLeague) {
+                    @if (group.id === 1) {
                       <div class="tournament-event-actions">
-                        <a class="event-choice create-tournament" routerLink="/league-management" [queryParams]="{view: 'create'}" (click)="closeEventSelector()">
+                        @if (canCreateLeague) { <a class="event-choice create-tournament" routerLink="/league-management" [queryParams]="{view: 'create'}" (click)="closeEventSelector()">
                           <mat-icon aria-hidden="true">add</mat-icon><span>Create League</span>
+                        </a> }
+                        <a class="event-choice" routerLink="/past-leagues" (click)="closeEventSelector()">
+                          <mat-icon aria-hidden="true">history</mat-icon><span>View Past Leagues</span>
                         </a>
                       </div>
                     }
@@ -88,6 +91,9 @@
                         </a>
                         <a class="event-choice" routerLink="/tournament" (click)="closeEventSelector()">
                           <mat-icon aria-hidden="true">settings</mat-icon><span>Manage Tournaments</span>
+                        </a>
+                        <a class="event-choice" routerLink="/past-tournaments" (click)="closeEventSelector()">
+                          <mat-icon aria-hidden="true">history</mat-icon><span>View Past Tournaments</span>
                         </a>
                       </div>
                     }

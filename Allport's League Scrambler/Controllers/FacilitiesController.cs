@@ -25,7 +25,8 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
     {
         var pickup = PublicPickup(db, DateTimeOffset.UtcNow);
         return db.PickupVenues.Where(v => db.FacilityProfiles.Any(p => p.VenueId == v.Id) ||
-            pickup.Any(s => s.VenueId == v.Id) || db.EventFacilities.Any(e => e.VenueId == v.Id && e.PublicListing));
+            pickup.Any(s => s.VenueId == v.Id) || db.EventFacilities.Any(e => e.VenueId == v.Id && e.PublicListing && e.League.IsActive &&
+                (e.League.EventTypeId == 1 || e.League.EventTypeId == 2)));
     }
 
     [AllowAnonymous, HttpGet]
@@ -111,9 +112,11 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
         await using var db = new DataContext();
         var listing = await db.EventFacilities.AsNoTracking().Include(e => e.Venue)
             .SingleOrDefaultAsync(e => e.LeagueId == leagueId);
-        if (listing == null) return NotFound();
+        var league = await db.Leagues.AsNoTracking().SingleOrDefaultAsync(e =>
+            e.ID == leagueId && (e.EventTypeId == 1 || e.EventTypeId == 2));
+        if (league == null) return NotFound();
         var manager = LeagueAccess.CanManage(User, db, leagueId);
-        if (!listing.PublicListing && !manager)
+        if ((listing == null || !listing.PublicListing || !league.IsActive) && !manager)
         {
             if (!LeagueAccess.TryGetAccountId(User, out var account)) return NotFound();
             var member = await (from player in db.UsersPlayer
@@ -122,9 +125,11 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
                                 select player).AnyAsync();
             if (!member) return NotFound();
         }
-        return Ok(new { listing.VenueId, listing.Venue.Name, listing.PublicListing, listing.Sport,
-            listing.Season, listing.Description, leadAdminId = User.IsInRole("Admin") ? listing.LeadAdminId : null,
-            directoryVisible = await Directory(db).AnyAsync(v => v.Id == listing.VenueId) });
+        if (listing == null && league.IsActive && !manager) return NotFound();
+        return Ok(new { league.IsActive, league.EventTypeId, venueId = listing?.VenueId, name = listing?.Venue?.Name,
+            publicListing = listing?.PublicListing ?? false, sport = listing?.Sport, season = listing?.Season,
+            description = listing?.Description, leadAdminId = User.IsInRole("Admin") ? listing?.LeadAdminId : null,
+            directoryVisible = listing != null && await Directory(db).AnyAsync(v => v.Id == listing.VenueId) });
     }
 
     [Authorize(Roles = "Admin"), HttpGet("lead-admins")]
@@ -135,7 +140,18 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
             .Select(u => new { Id = u.UserId, Name = u.FirstName + " " + u.LastName }).ToArrayAsync());
     }
 
-    public record Assignment(int? VenueId, bool PublicListing, string Sport, string Season, string Description, int? LeadAdminId);
+    public sealed class Assignment
+    {
+        private int? venueId;
+        internal bool HasVenueId { get; private set; }
+        public int? VenueId { get => venueId; init { venueId = value; HasVenueId = true; } }
+        public bool PublicListing { get; init; }
+        public string Sport { get; init; }
+        public string Season { get; init; }
+        public string Description { get; init; }
+        public int? LeadAdminId { get; init; }
+        public bool? IsActive { get; init; }
+    }
 
     [Authorize, SameOrigin, HttpPut("event/{leagueId:int}")]
     public async Task<IActionResult> Assign(int leagueId, Assignment input)
@@ -144,18 +160,19 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
         await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted);
         await FacilityIdentity.Lock(db);
         if (!LeagueAccess.CanManage(User, db, leagueId)) return Forbid();
-        if (!await db.Leagues.AnyAsync(e => e.ID == leagueId && (e.EventTypeId == 1 || e.EventTypeId == 2)))
-            return NotFound();
+        var league = await db.Leagues.SingleOrDefaultAsync(e => e.ID == leagueId && (e.EventTypeId == 1 || e.EventTypeId == 2));
+        if (league == null) return NotFound();
+        if (input.IsActive.HasValue) league.IsActive = input.IsActive.Value;
         if (input.Sport?.Length > 40 || input.Season?.Length > 80 || input.Description?.Length > 500)
             return BadRequest(new { message = "The sport, season, or description is too long." });
-        var existing = await db.EventFacilities.FindAsync(leagueId);
-        if (input.VenueId == null)
+        var existing = input.HasVenueId ? await db.EventFacilities.FindAsync(leagueId) : null;
+        if (input.HasVenueId && input.VenueId == null)
         {
             if (existing != null) db.EventFacilities.Remove(existing);
         }
-        else
+        else if (input.HasVenueId)
         {
-            if (!await Directory(db).AnyAsync(v => v.Id == input.VenueId)) return NotFound();
+            if (existing?.VenueId != input.VenueId && !await Directory(db).AnyAsync(v => v.Id == input.VenueId)) return NotFound();
             if (input.LeadAdminId != null && (!User.IsInRole("Admin") ||
                 !await db.Users.AnyAsync(u => u.UserId == input.LeadAdminId && u.UserRoleId == 1)))
                 return BadRequest(new { message = "An administrator must choose an eligible lead administrator." });
@@ -200,7 +217,7 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
             return BadRequest(new { message = "Enter a name, reply email, subject, and message." });
         await using var db = new DataContext();
         var listing = await db.EventFacilities.AsNoTracking().Include(e => e.Venue).Include(e => e.League)
-            .SingleOrDefaultAsync(e => e.LeagueId == leagueId && e.PublicListing && e.League.EventTypeId == 1);
+            .SingleOrDefaultAsync(e => e.LeagueId == leagueId && e.PublicListing && e.League.IsActive && e.League.EventTypeId == 1);
         if (listing == null) return NotFound();
         var assigned = await (from link in db.UserLeagues
                               join user in db.Users on link.UserId equals user.UserId
@@ -239,7 +256,7 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
         from listing in db.EventFacilities.AsNoTracking()
         join tournament in db.TournamentConfigurations on listing.LeagueId equals tournament.LeagueId into tournaments
         from tournament in tournaments.DefaultIfEmpty()
-        where listing.PublicListing && (listing.League.EventTypeId == 1 || listing.League.EventTypeId == 2)
+        where listing.PublicListing && listing.League.IsActive && (listing.League.EventTypeId == 1 || listing.League.EventTypeId == 2)
         select new PublicEvent {
             LeagueId = listing.LeagueId, VenueId = listing.VenueId, EventType = listing.League.EventTypeId,
             Name = listing.League.LeagueName, Sport = listing.Sport, Season = listing.Season,

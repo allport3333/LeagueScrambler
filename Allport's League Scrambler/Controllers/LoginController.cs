@@ -588,14 +588,22 @@ namespace Allport_s_League_Scrambler.Controllers
 
             var userLeagues = await leagues.OrderByDescending(league => league.ID).Select(league => new
             {
-                league.ID, league.LeagueName, league.EventTypeId,
+                league.ID, league.LeagueName, league.EventTypeId, league.IsActive,
+                EventDate = _context.TournamentConfigurations.Where(c => c.LeagueId == league.ID && c.EventDate != default(DateOnly))
+                    .Select(c => (DateOnly?)c.EventDate).FirstOrDefault(),
+                Season = _context.EventFacilities.Where(e => e.LeagueId == league.ID).Select(e => e.Season).FirstOrDefault(),
+                EventTimeZone = _context.EventFacilities.Where(e => e.LeagueId == league.ID).Select(e => e.Venue.TimeZone).FirstOrDefault(),
                 CanViewTournamentRounds = league.EventTypeId == 2 &&
                     _context.UsersPlayer.Any(link => link.UserId == userId && _context.PlayersLeagues.Any(member =>
                         member.LeagueID == league.ID && member.PlayerID == link.PlayerId)),
                 CanManageTournament = league.EventTypeId == 2 && (userData.UserRoleId == 1 ||
                     _context.TournamentConfigurations.Any(config => config.LeagueId == league.ID && config.OwnerUserId == userId))
             }).ToListAsync();
-            return Ok(userLeagues);
+            return Ok(userLeagues.Select(item => item with {
+                EventTimeZone = item.EventTimeZone != null &&
+                    TimeZoneInfo.TryConvertWindowsIdToIanaId(item.EventTimeZone, out var iana)
+                    ? iana : item.EventTimeZone
+            }));
         }
 
         // The existing ResetToken text column stores both the issue time and

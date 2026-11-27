@@ -127,11 +127,11 @@ interface TournamentDetails {
                             <form id="tournament-details" #form="ngForm" (ngSubmit)="advance()">
                                 <label>Tournament Name <input class="form-control" name="name" maxlength="50" required [(ngModel)]="draftName"></label>
                                 <label>Tournament Date <input class="form-control" name="date" type="date" required [(ngModel)]="details.eventDate"></label>
-                                <label>Location <input class="form-control" name="location" maxlength="120" [(ngModel)]="details.location"></label>
+                                @if (!hasAssignedFacility) { <label>Location <input class="form-control" name="location" maxlength="120" [(ngModel)]="details.location"></label> }
                                 <label>Description <textarea class="form-control" name="description" maxlength="500" [(ngModel)]="details.description"></textarea></label>
 
                             </form>
-                            <app-event-facility [eventId]="leagueId" [manage]="true" />
+                            <app-event-facility [eventId]="leagueId" [manage]="true" (facilitySelected)="hasAssignedFacility = $event" />
                         }
                         @if (step === 2) {
                             <app-tournament-participants [leagueId]="leagueId" [tournamentName]="name" />
@@ -173,6 +173,7 @@ export class TournamentCenterComponent {
     private readonly notifications = inject(TournamentNotifications);
     private readonly confirm = injectConfirmation();
     private readonly destroy = inject(DestroyRef);
+    hasAssignedFacility = false;
     private readonly leagueService = inject(LeagueService);
     private readonly router = inject(Router);
     private readonly participants = viewChild(TournamentParticipantsComponent);
@@ -357,11 +358,10 @@ export class TournamentCenterComponent {
             if (this.step === 1 && (this.detailsChanged || !this.details.version)) {
                 const saved = await this.request(this.http.put<{name: string; details: TournamentDetails}>(this.url + '/details',
                     { ...this.details, name: this.draftName }));
-                const renamed = this.name !== saved.name;
                 this.name = this.draftName = saved.name;
                 this.details = saved.details;
                 this.savedDetails = { ...saved.details };
-                if (renamed) this.leagueService.getLeagues().pipe(takeUntilDestroyed(this.destroy))
+                this.leagueService.getLeagues().pipe(takeUntilDestroyed(this.destroy))
                     .subscribe({ next: () => this.leagueService.setSelectedLeague(this.leagueId), error: () => {} });
             }
             if ((this.step === 3 || this.step === 4) && !(await this.rounds()?.saveSettings(false))) return;

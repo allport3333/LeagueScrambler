@@ -8,8 +8,9 @@ import { LoginService } from '../services/login.service';
 import { NavigationStart, Router } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { LeagueService } from '../services/league.service';
+import { eventDestination, isHistoricalEvent } from '../event-selection';
 import { Leagues } from '../data-models/leagues.model';
-import { forkJoin, of, throwError, Subscription } from 'rxjs';
+import { forkJoin, interval, of, throwError, Subscription } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 const eventTypes = [
@@ -198,6 +199,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     eventPopup: 'categories' | 'search' | null = null;
     expandedEventType: number | null = null;
     eventSearch = '';
+    private selectorDate = new Date();
     @ViewChild('eventTrigger', { read: ElementRef }) eventTrigger?: ElementRef<HTMLButtonElement>;
     @ViewChild('searchTrigger', { read: ElementRef }) searchTrigger?: ElementRef<HTMLButtonElement>;
     @ViewChild('eventPanel') eventPanel?: ElementRef<HTMLElement>;
@@ -214,15 +216,21 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         return this.loggedIn && (this.userRole === 'Admin' || this.userRole === 'Manager');
     }
 
+    get selectedEventStatus(): string {
+        const event = this.selectedEvent;
+        return !event ? '' : event.isActive === false ? 'Inactive' : isHistoricalEvent(event, this.selectorDate) ? 'Past' : '';
+    }
+
     get eventGroups() {
         const query = this.eventPopup === 'search' ? this.eventSearch.trim().toLocaleLowerCase() : '';
-        const matching = this.leagues.filter(event => event.leagueName.toLocaleLowerCase().includes(query));
+        const matching = this.leagues.filter(event => !isHistoricalEvent(event, this.selectorDate) && event.leagueName.toLocaleLowerCase().includes(query));
         return [...eventTypes, unclassified].map(type => ({
             ...type, events: matching.filter(event => this.eventType(event).id === type.id)
-        })).filter(group => group.events.length || (this.eventPopup === 'categories' && (group.id === 1 && this.canCreateLeague || group.id === 2 && this.loggedIn || group.id === 3 && this.pickupEnabled || group.id === 4 && this.loggedIn)));
+        })).filter(group => group.events.length || (this.eventPopup === 'categories' && (group.id === 1 && this.loggedIn || group.id === 2 && this.loggedIn || group.id === 3 && this.pickupEnabled || group.id === 4 && this.loggedIn)));
     }
 
     toggleEventPopup(popup: 'categories' | 'search'): void {
+        this.selectorDate = new Date();
         if (this.eventPopup === popup) { this.closeEventSelector(); return; }
         this.eventSearch = '';
         this.expandedEventType = this.inPickup ? 3 : this.selectedEvent ? this.eventType(this.selectedEvent).id : 2;
@@ -343,6 +351,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
     }
 
     ngOnInit() {
+        this.subscriptions.add(interval(60000).subscribe(() => { this.selectorDate = new Date(); }));
         this.subscriptions.add(this.http.get<string[]>('/api/pickup/catalog').pipe(catchError(() => of(null)))
             .subscribe(catalog => { this.pickupEnabled = Array.isArray(catalog) && catalog.length > 0; }));
         this.subscriptions.add(this.router.events.subscribe(event => {
@@ -408,13 +417,7 @@ export class NavMenuComponent implements OnInit, OnDestroy, AfterViewInit, DoChe
         this.closeEventSelector();
         if (!event || (leagueId === this.selectedLeagueId && !this.inPickup)) return;
         const version = ++this.selectionVersion;
-        const isTournament = event.eventTypeId === 2;
-        const canManage = this.userRole === 'Admin' || event.canManageTournament;
-        const destination = !isTournament
-            ? this.router.createUrlTree(['/league-dashboard'], { queryParams: { leagueId } })
-            : canManage ? this.router.createUrlTree(['/tournament', leagueId])
-                : event.canViewTournamentRounds ? this.router.createUrlTree(['/tournament', leagueId, 'rounds'])
-                    : this.router.createUrlTree(['/standings'], { queryParams: { leagueId, tournament: 1 } });
+        const destination = eventDestination(this.router, { ...event, canManageTournament: this.userRole === 'Admin' || event.canManageTournament });
         try {
             if (await this.router.navigateByUrl(destination) && version === this.selectionVersion &&
                 this.router.url === this.router.serializeUrl(destination) && this.leagues.some(league => league.id === leagueId))

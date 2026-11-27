@@ -94,6 +94,7 @@ namespace Allport_s_League_Scrambler.Data
             modelBuilder.Entity<LeagueScheduleEvent>().ToTable("LeagueScheduleEvent", "dbo");
             modelBuilder.Entity<PlayersLeague>().ToTable("PlayersLeague", "dbo");
             modelBuilder.Entity<LeagueType>().ToTable("LeagueType", "dbo");
+            modelBuilder.Entity<LeagueType>().Property(e => e.IsActive).HasDefaultValue(true);
             modelBuilder.Entity<EventType>().ToTable("EventType", "dbo");
             var tournament = modelBuilder.Entity<TournamentConfiguration>().ToTable("TournamentConfiguration", "dbo");
             tournament.HasKey(details => details.LeagueId);

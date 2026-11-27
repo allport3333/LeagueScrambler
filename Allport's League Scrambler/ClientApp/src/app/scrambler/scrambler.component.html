@@ -1028,8 +1028,9 @@ Apply Top Players (Male Standings)
 }</section>
 </mat-card>
 </div></mat-tab>
-<mat-tab label="Manage Schedule"><app-event-facility [eventId]="leagueId" [manage]="isActionAllowed"></app-event-facility><app-manage-schedule [leagueId]="leagueId" [leagueName]="selectedLeague" [canManage]="isActionAllowed" [draftStore]="scheduleDrafts"></app-manage-schedule></mat-tab>
+<mat-tab label="Manage Schedule"><app-manage-schedule [leagueId]="leagueId" [leagueName]="selectedLeague" [canManage]="isActionAllowed" [draftStore]="scheduleDrafts"></app-manage-schedule></mat-tab>
 <mat-tab label="League Settings">
+  <app-event-facility [eventId]="leagueId" [manage]="isActionAllowed"></app-event-facility>
   <div class="container-fluid">
     <mat-card appearance="outlined" class="management-form-card management-settings-card" style="margin-top: 20px; margin-bottom: 20px; background-color: var(--hub-surface, #eeeeee)">
       <div style="margin: 20px;" class="tab-content d-flex flex-column align-items-center management-settings-grid">

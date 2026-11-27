@@ -185,8 +185,9 @@ namespace Allport_s_League_Scrambler.Controllers
         public IEnumerable<LeagueType> GetLeagues()
         {
             List<LeagueType> leagues = new List<LeagueType>();
-            var context = new DataContext();
-            leagues = context.Leagues.ToList();
+            using var context = new DataContext();
+            var authenticated = User.Identity?.IsAuthenticated == true;
+            leagues = context.Leagues.Where(league => authenticated || league.IsActive).ToList();
 
             return leagues;
         }

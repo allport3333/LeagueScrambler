@@ -202,6 +202,8 @@ import { KingQueenNavigationComponent } from './king-queen-navigation.component'
             { path: 'sign-in', component: SignInComponent },
             { path: 'sign-in/player', component: SignInComponent, data: { playerMode: true } },
             { path: 'player-stats-tabs/:playerId', component: PlayerStatsTabsComponent },
+            { path: 'past-leagues', loadComponent: () => import('./event-history.component').then(m => m.EventHistoryComponent) },
+            { path: 'past-tournaments', data: { tournaments: true }, loadComponent: () => import('./event-history.component').then(m => m.EventHistoryComponent) },
             { path: 'league-dashboard', component: LeagueDashboardComponent },
             { path: 'faq', component: FaqComponent },
             { path: 'install-locally', component: InstallLocallyComponent },

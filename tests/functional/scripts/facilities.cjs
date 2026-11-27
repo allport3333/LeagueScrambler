@@ -47,9 +47,9 @@ withPickupTestHost(async origin => {
         assert.equal(reviewed.status(), 200, await reviewed.text());
         const {id: venueId} = await reviewed.json();
         assert.equal((await post(organizer, '/api/facilities/reviewed', profile)).status(), 409);
-        const create = async (label, type) => {
+        const create = async (label, type, date = '2026-12-12') => {
             const response = await post(organizer, '/api/ScrambleData/AddNewLeague/' + encodeURIComponent(label + ' ' + token) +
-                '?eventTypeId=' + type + '&venueId=' + venueId + (type === 2 ? '&eventDate=2026-12-12' : ''), []);
+                '?eventTypeId=' + type + '&venueId=' + venueId + (type === 2 ? '&eventDate=' + date : ''), []);
             assert.equal(response.status(), 200, await response.text());
             return (await response.json()).id;
         };
@@ -76,7 +76,7 @@ withPickupTestHost(async origin => {
         await organizerPage.close();
         const hidden = await create('Private league', 1);
         const selectorPage = await organizer.newPage();
-        for (const [theme, width] of [['classic', 1366], ['navy', 390], ['charcoal', 768]]) {
+        for (const [theme, width] of [['classic', 1366], ['soft-light', 1280], ['navy', 390], ['charcoal', 768]]) {
             await selectorPage.setViewportSize({width, height: 850});
             await selectorPage.goto(origin + '/?leagueId=' + (width === 390 ? tournament : league));
             await selectorPage.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
@@ -118,6 +118,84 @@ withPickupTestHost(async origin => {
         assert.deepEqual(json.events.map(event => event.leagueId).sort(), [league, tournament].sort());
         assert.equal(json.pickup.length, 1);
         assert(!raw.includes(manager) && !raw.includes(lead));
+        const organizerView = await organizer.newPage();
+        const eventsAtVenue = async () => (await (await visitor.request.get(origin + '/api/facilities/' + venueId)).json()).events;
+        const leagueEndpoint = '/api/facilities/event/' + league;
+        const tournamentEndpoint = '/api/facilities/event/' + tournament;
+        const assignment = async endpoint => (await (await organizer.request.get(origin + endpoint)).json());
+        expect(await assignment(leagueEndpoint)).toMatchObject({isActive: true, venueId, publicListing: true});
+        expect(await assignment(tournamentEndpoint)).toMatchObject({isActive: true, venueId, publicListing: true});
+        await organizerView.goto(origin + '/league-management?leagueId=' + league);
+        await organizerView.getByRole('tab', {name: 'Manage Schedule'}).click();
+        await expect(organizerView.getByText('Facility and Public Listing', {exact:true})).not.toBeVisible();
+        await organizerView.getByRole('tab', {name: 'League Settings'}).click();
+        const activeLeague = organizerView.getByRole('checkbox', {name: 'Active League'});
+        await expect(activeLeague).toBeChecked();
+        await activeLeague.uncheck();
+        await organizerView.getByRole('button', {name: 'Save Facility'}).click();
+        await expect(organizerView.getByText('Facility and listing settings saved.')).toBeVisible();
+        expect(await assignment(leagueEndpoint)).toMatchObject({isActive: false, venueId, publicListing: true, season: 'Winter'});
+        expect((await eventsAtVenue()).map(e => e.leagueId)).toEqual([tournament]);
+        expect((await visitor.request.get(origin + leagueEndpoint)).status()).toBe(404);
+        const outsider = await browser.newContext({ignoreHTTPSErrors:true});
+        assert.equal((await post(outsider, '/api/login/register', {email:'outsider-' + token + '@example.invalid',
+            password:randomUUID() + 'Aa1!', firstName:'Outside', lastName:'Fixture'})).status(), 200);
+        expect((await put(outsider, leagueEndpoint, {isActive: true})).status()).toBe(403);
+        await outsider.close();
+
+        await organizerView.locator('#leagueDropdown').click();
+        const leagueMenu = organizerView.getByRole('dialog', {name:'Select league or event'});
+        const leagueSection = leagueMenu.getByRole('group', {name:'Leagues', exact:true});
+        const leagueTitle = 'Public league ' + token;
+        await expect(leagueSection.getByText(leagueTitle, {exact:true})).toHaveCount(0);
+        await leagueSection.getByRole('link', {name:'View Past Leagues'}).click();
+        await expect(organizerView.getByRole('heading', {name:'Past Leagues'})).toBeVisible();
+        await organizerView.getByRole('searchbox', {name:'Search leagues'}).fill(token);
+        await expect(organizerView.getByText('Inactive · Winter')).toBeVisible();
+        await organizerView.getByRole('link', {name:'Open ' + leagueTitle}).click();
+        await expect(organizerView).toHaveURL(origin + '/league-dashboard?leagueId=' + league);
+        await expect(organizerView.locator('#leagueDropdown')).toContainText('Inactive');
+        assert.equal((await put(organizer, leagueEndpoint, {isActive: true})).status(), 204);
+        expect(await assignment(leagueEndpoint)).toMatchObject({isActive:true, venueId, publicListing:true});
+
+        await organizerView.goto(origin + '/tournament/' + tournament);
+        await expect(organizerView.getByRole('heading', {name:'Tournament Details', exact:true})).toBeVisible();
+        const activeTournament = organizerView.getByRole('checkbox', {name:'Active Tournament'});
+        await expect(activeTournament).toBeChecked();
+        await expect(organizerView.getByRole('textbox', {name:'Location', exact:true})).toHaveCount(0);
+        await activeTournament.uncheck();
+        await organizerView.getByRole('button', {name:'Save Facility'}).click();
+        await expect(organizerView.getByText('Facility and listing settings saved.')).toBeVisible();
+        expect((await eventsAtVenue()).map(e=>e.leagueId)).toEqual([league]);
+        assert.equal((await put(organizer, tournamentEndpoint, {isActive:true})).status(), 204);
+        expect(await assignment(tournamentEndpoint)).toMatchObject({isActive:true, venueId, publicListing:true});
+
+        const daysFromToday = offset => {
+            const today = new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Detroit'}).format(new Date());
+            const day = new Date(today + 'T00:00:00Z');
+            day.setUTCDate(day.getUTCDate() + offset);
+            return day.toISOString().slice(0,10);
+        };
+        await create('Boundary tournament', 2, daysFromToday(-30));
+        await create('Old tournament', 2, daysFromToday(-31));
+        await create('Today tournament', 2, daysFromToday(0));
+        const future = await create('Future tournament', 2, daysFromToday(400));
+        await put(organizer, '/api/facilities/event/' + future, {isActive:false});
+        sql("INSERT dbo.LeagueType(LeagueName,EventTypeId) VALUES(N'Undated tournament " + token + "',2);");
+        await organizerView.goto(origin + '/?leagueId=' + tournament);
+        await organizerView.locator('#leagueDropdown').click();
+        const tournamentsMenu = organizerView.getByRole('group',{name:'Tournaments',exact:true});
+        for (const label of ['Boundary', 'Today', 'Future']) await expect(tournamentsMenu.getByText(label+' tournament '+token,{exact:true})).toBeVisible();
+        for (const label of ['Old', 'Undated']) await expect(tournamentsMenu.getByText(label+' tournament '+token,{exact:true})).toHaveCount(0);
+        await tournamentsMenu.getByRole('link',{name:'View Past Tournaments'}).click();
+        await organizerView.getByRole('searchbox',{name:'Search tournaments'}).fill(token);
+        await expect(organizerView.getByRole('link',{name:'Open Undated tournament '+token})).toBeVisible();
+        await expect(organizerView.getByRole('link',{name:'Open Old tournament '+token})).toBeVisible();
+        await organizerView.getByRole('link',{name:'Open Old tournament '+token}).click();
+        await expect(organizerView.locator('#leagueDropdown')).toContainText('Past');
+        await organizerView.close();
+        console.log('Event settings, active visibility, reactivation, authorized history and tournament date boundaries passed.');
+
         assert.equal((await visitor.request.get(origin + '/api/facilities/event/' + hidden)).status(), 404);
         for (const type of [1, 2, 3]) {
             const nearby = await visitor.request.get(origin + '/api/facilities?location=48081&radius=25&eventType=' + type);
