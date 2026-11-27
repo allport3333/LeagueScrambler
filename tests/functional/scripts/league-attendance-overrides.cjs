@@ -7,8 +7,8 @@ let persistedLeague;
 withPickupTestHost(async origin => {
     const browser = await chromium.launch({ channel: 'msedge' });
     try {
-        const admin = await browser.newContext({ ignoreHTTPSErrors: true });
-        const visitor = await browser.newContext({ ignoreHTTPSErrors: true });
+        const admin = await browser.newContext({ ignoreHTTPSErrors: true, serviceWorkers: 'block' });
+        const visitor = await browser.newContext({ ignoreHTTPSErrors: true, serviceWorkers: 'block' });
         const headers = { Origin: origin };
         const post = (context, path, data) => context.request.post(origin + path, { headers, data });
         const token = randomUUID().slice(0, 8);
@@ -89,11 +89,46 @@ withPickupTestHost(async origin => {
         await search.fill('long name');
         await expect(page.locator('.roster-tile')).toHaveCount(1);
         await page.getByRole('button', { name: 'Clear', exact: true }).click();
-        await expect(page.locator('.roster-tile')).toHaveCount(2);
+        await expect(page.locator('.roster-tile')).toHaveCount(1);
+        await search.fill('long name');
+        const writePath = '**/api/ScrambleData/SignInPlayer';
+        const failWrite = route => route.fulfill({ status: 500 });
+        await page.route(writePath, failWrite);
+        await tile.click();
+        await page.getByRole('dialog').getByRole('button', { name: 'OK' }).click();
+        await expect(tile).toBeEnabled();
+        await page.unroute(writePath, failWrite);
         await tile.click();
         await expect(page.getByRole('heading', { name: 'Signed-In Players 2' })).toBeVisible();
         await expect(page.getByRole('list', { name: 'Signed-in names' })).toContainText('Player With Long Last Name');
-        await expect(page.getByRole('button', { name: /Player With Long Last Name.*Signed in/ })).toBeDisabled();
+        await expect(tile).toHaveCount(0);
+        await expect(search).toHaveValue('long name');
+        await expect(page.locator('.signed-in-panel')).toContainText('Male 1');
+        await expect(page.locator('.signed-in-panel')).toContainText('Female 1');
+        const remove = page.getByRole('button', { name: 'Remove Player With Long Last Name from sign-in' });
+        const removePath = '**/api/ScrambleData/SignInPlayer/*';
+        await page.route(removePath, failWrite);
+        await remove.click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Confirm' }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'OK' }).click();
+        await expect(tile).toHaveCount(0);
+        await expect(remove).toBeVisible();
+        await page.unroute(removePath, failWrite);
+        await remove.click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Confirm' }).click();
+        await expect(tile).toBeEnabled();
+        await expect(search).toHaveValue('long name');
+        await expect(page.getByRole('heading', { name: 'Signed-In Players 1' })).toBeVisible();
+        await expect(page.locator('.signed-in-panel')).toContainText('Female 0');
+
+        const secondId = (await nextPlayer.json()).id;
+        const external = await post(visitor, '/api/ScrambleData/SignInPlayer', { leagueId, playerId: secondId });
+        await expect(external).toBeOK();
+        const externalRecord = await external.json();
+        await expect(tile).toHaveCount(0, { timeout: 15000 });
+        await expect(page.getByRole('heading', { name: 'Signed-In Players 2' })).toBeVisible();
+        await expect(await admin.request.delete(origin + '/api/ScrambleData/SignInPlayer/' + externalRecord.playerSignInId, { headers })).toBeOK();
+        await expect(tile).toBeEnabled({ timeout: 15000 });
         const fullscreen = page.getByRole('button', { name: 'Fullscreen', exact: true });
         if (await fullscreen.isVisible()) {
             await fullscreen.click();
@@ -106,14 +141,18 @@ withPickupTestHost(async origin => {
         const kiosk = await visitor.newPage();
         let size = 20;
         await kiosk.route('**/api/ScrambleData/GetPlayers/' + leagueId, route => route.fulfill({
-            json: Array.from({ length: size }, (_, index) => ({
-                id: 100000 + index, firstName: 'Player ' + (index + 1), lastName: 'Long Family Name',
-                gender: index % 2 ? 'Male' : 'Female'
-            }))
+            json: [
+                { id: playerId, firstName: 'Fixture', lastName: token, gender: 'Male' },
+                ...Array.from({ length: size }, (_, index) => ({
+                    id: 100000 + index, firstName: index ? 'Player ' + (index + 1) : 'Fixture',
+                    lastName: index ? 'Long Family Name' : token,
+                    gender: index % 2 ? 'Male' : 'Female'
+                }))
+            ]
         }));
         for (const [width, count, theme] of [
             [2560, 100, 'classic'], [1920, 80, 'soft-light'], [1366, 60, 'navy'],
-            [768, 40, 'charcoal'], [390, 20, 'soft-light']
+            [768, 40, 'charcoal'], [390, 20, 'soft-light'], [1920, 5, 'navy']
         ]) {
             size = count;
             await kiosk.setViewportSize({ width, height: 860 });
@@ -122,10 +161,17 @@ withPickupTestHost(async origin => {
             await kiosk.reload();
             await expect(kiosk.locator('html')).toHaveAttribute('data-theme', theme);
             await expect(kiosk.locator('.roster-tile')).toHaveCount(count);
-            await expect(kiosk.getByRole('heading', { name: 'Signed-In Players 2' })).toBeInViewport();
+            await expect(kiosk.getByRole('button', { name: 'Fixture ' + token, exact: true })).toHaveCount(1);
+            await expect(kiosk.getByRole('heading', { name: 'Signed-In Players 1' })).toBeInViewport();
+            await expect(kiosk.getByRole('button', { name: /^Remove .* from sign-in$/ })).toHaveCount(0);
+            const tile = await kiosk.locator('.roster-tile').first().boundingBox();
+            expect(tile.height).toBeGreaterThanOrEqual(59);
+            expect(tile.height).toBeLessThanOrEqual(97);
+            if (count === 5) expect(tile.height).toBeGreaterThan(90);
+            if (count === 100) expect(tile.height).toBeLessThan(90);
             expect(await kiosk.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
         }
-        console.log('Centered sheet, fullscreen and exit, live unlock, search, kiosk attendance and 20-100-player layouts passed.');
+        console.log('Centered sheet, fullscreen and exit, live unlock, search, kiosk attendance and 5-100-player layouts passed.');
         await expect(await post(admin, '/api/Login/SetLockSignInStatus', { leagueId, mode: 'locked' })).toBeOK();
         persistedLeague = leagueId;
         console.log('Four themes, off-day attendance, lock enforcement, authorization, refresh, and league isolation passed.');

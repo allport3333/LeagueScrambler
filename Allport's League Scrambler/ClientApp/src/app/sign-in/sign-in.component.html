@@ -45,26 +45,34 @@
             </div>
           </div>
           <div class="roster-scroll" tabindex="0" aria-label="Players">
-            <div class="roster-grid">
+            <div class="roster-grid" [style.--visible-count]="visibleRoster.length || 1">
               @for (player of visibleRoster; track player.id) {
                 <button type="button" class="roster-tile" [class.male]="player.gender === 'Male'"
-                  [class.female]="player.gender === 'Female'" [class.checked-in]="signedIn(player)"
+                  [class.female]="player.gender === 'Female'"
                   [disabled]="!canSignInFromTile(player)" (click)="selectPlayer(player)">
                   <span>{{ player.firstName }} {{ player.lastName }}</span>
-                  @if (signedIn(player)) { <small>? Signed in</small> }
                 </button>
               } @empty {
-                <p>{{ search ? 'No names match your search.' : 'No players are on this roster.' }}</p>
+                <p>{{ search ? 'No names match your search.' : 'No players are available to sign in.' }}</p>
               }
             </div>
           </div>
         </section>
         <section class="signed-in-panel" aria-labelledby="signed-in-heading">
-          <h2 id="signed-in-heading">Signed-In Players <span>{{ playerSignIn.length }}</span></h2>
+          <h2 id="signed-in-heading">Signed-In Players <span>{{ signedInPlayers.length }}</span></h2>
           <p>Male {{ maleCount }} &middot; Female {{ femaleCount }}</p>
           <ul class="signed-in-scroll" tabindex="0" aria-label="Signed-in names">
-            @for (player of playerSignIn; track player.playerSignInId) {
-              <li>{{ player.firstName }} {{ player.lastName }}</li>
+            @for (player of signedInPlayers; track player.playerSignInId) {
+              <li>
+                <span>{{ player.firstName }} {{ player.lastName }}</span>
+                @if (canRemoveFromTilePanel(player)) {
+                  <button mat-icon-button type="button"
+                    [attr.aria-label]="'Remove ' + player.firstName + ' ' + player.lastName + ' from sign-in'"
+                    [disabled]="isSignInLocked || signingIn" (click)="unselectPlayer(player)">
+                    <mat-icon aria-hidden="true">close</mat-icon>
+                  </button>
+                }
+              </li>
             } @empty { <li>No players signed in yet.</li> }
           </ul>
         </section>
@@ -99,7 +107,7 @@
         <button mat-raised-button color="primary" (click)="toggleAddPlayerForm()">
           {{ showAddPlayerForm ? 'Hide Add Player' : 'Add New Player' }}
         </button>
-        <button mat-stroked-button (click)="fetchSignedInPlayers()">Fetch Signed-In Players</button>
+        <button mat-stroked-button (click)="loadAttendance()">Fetch Signed-In Players</button>
       }
       <a mat-flat-button color="primary" routerLink="/sign-in/player" [queryParams]="{ leagueId: selectedLeague.id }">
         Open Player Sign In Mode

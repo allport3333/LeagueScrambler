@@ -196,9 +196,16 @@ table.signed-in-players-table th {
 .roster-search > div { display: flex; align-items: center; gap: .4rem; }
 .roster-search input { min-width: 0; min-height: 44px; max-width: 30rem; }
 .roster-scroll, .signed-in-scroll { overflow: auto; min-height: 0; overscroll-behavior: contain; }
+.roster-scroll { flex: 1; container-type: inline-size; }
 .roster-grid {
+    --tile-width: clamp(9rem, 19cqi, 12rem);
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+    width: min(100%, calc(var(--visible-count) * 14rem));
+    height: 100%;
+    margin-inline: auto;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--tile-width)), 1fr));
+    grid-auto-rows: minmax(3.75rem, 6rem);
+    align-content: start;
     gap: .4rem;
     padding: .2rem;
 }
@@ -211,7 +218,7 @@ table.signed-in-players-table th {
     color: var(--hub-text, #263849);
     font: inherit;
     font-weight: 650;
-    font-size: clamp(.98rem, 1vw, 1.15rem);
+    font-size: clamp(1.05rem, 2cqi, 1.5rem);
     line-height: 1.2;
     overflow-wrap: anywhere;
 }
@@ -221,12 +228,11 @@ table.signed-in-players-table th {
     outline: 2px solid var(--hub-focus, #315e8a);
     outline-offset: -2px;
 }
-.roster-tile.checked-in { border-color: var(--hub-win-text, #275841); }
-.roster-tile small { display: block; margin-block-start: .15rem; font-weight: 600; }
 .signed-in-panel h2 { font-size: 1.15rem; margin: 0 0 .25rem; }
 .signed-in-panel h2 span { font-variant-numeric: tabular-nums; margin-inline-start: .4rem; }
 .signed-in-scroll { list-style: none; padding: 0; margin: .5rem 0 0; }
-.signed-in-scroll li { border-block-start: 1px solid var(--hub-border, #ccd7e0); padding: .3rem; overflow-wrap: anywhere; }
+.signed-in-scroll li { border-block-start: 1px solid var(--hub-border, #ccd7e0); padding: .3rem; overflow-wrap: anywhere; display: flex; align-items: center; justify-content: space-between; gap: .25rem; }
+.signed-in-scroll button { flex: none; }
 @media (max-width: 650px) {
     .player-mode { width: calc(100% - 1rem); height: max(100dvh, 30rem); }
     .player-mode-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 3fr) minmax(7rem, 1fr); }
