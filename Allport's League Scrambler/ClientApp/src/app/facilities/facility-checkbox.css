@@ -1,0 +1,16 @@
+.facility-checkbox {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: start;
+  gap: .5rem;
+  margin: 0;
+  text-align: start;
+  cursor: pointer;
+}
+
+.facility-checkbox > input[type="checkbox"] {
+  inline-size: 1em;
+  block-size: 1em;
+  margin: .25em 0 0;
+  accent-color: var(--hub-primary-action, #315a97);
+}

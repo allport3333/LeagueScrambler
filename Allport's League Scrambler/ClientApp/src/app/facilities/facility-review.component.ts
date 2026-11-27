@@ -18,6 +18,7 @@ const blank = () => ({name: '', alternateName: '', address: '', city: '', region
     changeDetection: ChangeDetectionStrategy.Eager,
     selector: 'app-facility-review',
     imports: [FormsModule],
+    styleUrl: './facility-checkbox.css',
     template: `
       <details (toggle)="initialize($event)">
         <summary>{{ facility ? 'Edit Facility' : 'Review or Import a Facility' }}</summary>
@@ -48,8 +49,14 @@ const blank = () => ({name: '', alternateName: '', address: '', city: '', region
           }
           <label>Latitude <input type="number" name="lat" [(ngModel)]="draft.latitude"></label>
           <label>Longitude <input type="number" name="lon" [(ngModel)]="draft.longitude"></label>
-          <label class="checkbox"><input type="checkbox" name="approximate" [(ngModel)]="draft.approximateCoordinates"> Location is approximate</label>
-          <label class="checkbox"><input type="checkbox" name="reviewed" [(ngModel)]="draft.reviewed" required> I reviewed these details and confirmed the activities listed.</label>
+          <label class="facility-checkbox">
+            <input type="checkbox" name="approximate" [(ngModel)]="draft.approximateCoordinates">
+            <span>Location is approximate</span>
+          </label>
+          <label class="facility-checkbox">
+            <input type="checkbox" name="reviewed" [(ngModel)]="draft.reviewed" required>
+            <span>I reviewed these details and confirmed the activities listed.</span>
+          </label>
           <button type="submit" [disabled]="review.invalid || busy">Save Reviewed Facility</button>
         </form>
         @if (status) { <p role="status">{{ status }}</p> }
@@ -60,7 +67,6 @@ const blank = () => ({name: '', alternateName: '', address: '', city: '', region
       form { display: grid; gap: .55rem; margin-top: .75rem; }
       h2 { font-size: 1.15rem; }
       label { display: grid; }
-      .checkbox { display: flex; align-items: center; gap: .45rem; }
       input:not([type=checkbox]), select { min-height: 42px; background: var(--hub-surface, #fff); color: var(--hub-text, #172534); border: 1px solid var(--hub-border, #718197); }
       article { padding: .6rem; border: 1px solid var(--hub-border, #718197); }
       button { min-height: 42px; }

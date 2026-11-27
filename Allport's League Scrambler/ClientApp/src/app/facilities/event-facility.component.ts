@@ -13,12 +13,16 @@ interface Assignment { venueId: number | null; name?: string; publicListing: boo
     changeDetection: ChangeDetectionStrategy.Eager,
     selector: 'app-event-facility',
     imports: [FormsModule, RouterLink, FacilityPickerComponent],
+    styleUrl: './facility-checkbox.css',
     template: `
       @if (manage && eventId) {
         <details class="event-venue">
           <summary>Facility and Public Listing</summary>
           <app-facility-picker [(venueId)]="draft.venueId" [venueName]="current?.name" />
-          <label class="public-listing"><input type="checkbox" [(ngModel)]="draft.publicListing" [ngModelOptions]="standalone"> List this event publicly at the facility</label>
+          <label class="facility-checkbox">
+            <input type="checkbox" [(ngModel)]="draft.publicListing" [ngModelOptions]="standalone">
+            <span>List this event publicly at the facility</span>
+          </label>
           <label>Sport<input [(ngModel)]="draft.sport" [ngModelOptions]="standalone" maxlength="40"></label>
           <label>Season<input [(ngModel)]="draft.season" [ngModelOptions]="standalone" maxlength="80"></label>
           <label>Public description<textarea [(ngModel)]="draft.description" [ngModelOptions]="standalone" maxlength="500"></textarea></label>
@@ -38,7 +42,6 @@ interface Assignment { venueId: number | null; name?: string; publicListing: boo
     styles: `
       .event-venue { margin: .75rem 0; padding: .75rem; border: 1px solid var(--hub-border, #718197); border-radius: .35rem; }
       label { display: grid; margin: .4rem 0; }
-      .public-listing { display: flex; align-items: center; gap: .4rem; }
       input:not([type=checkbox]), select, textarea { width: 100%; max-width: 28rem; color: var(--hub-text, #172534); background: var(--hub-surface, #fff); }
     `
 })
