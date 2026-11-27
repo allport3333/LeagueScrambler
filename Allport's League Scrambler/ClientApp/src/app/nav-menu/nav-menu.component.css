@@ -16,8 +16,8 @@
 .desktop-account { grid-column: 3; justify-self: end; }
 .menu-trigger { min-height: 44px; padding: 0 6px; color: var(--hub-nav-text, #e1e6ec); white-space: nowrap; }
 .menu-trigger mat-icon { width: 20px; height: 20px; font-size: 20px; vertical-align: middle; }
-.navigation-link:hover, .menu-trigger:hover { background: var(--hub-nav-hover, #47525f); color: #fff; }
-.active { background: var(--hub-nav-active, #495c75); color: #fff; box-shadow: inset 0 -3px #98d0a7; }
+.navigation-link:hover, .menu-trigger:hover { background: var(--hub-nav-hover, #47525f); color: var(--hub-nav-interactive-text, #fff); }
+.active { background: var(--hub-nav-active, #495c75); color: var(--hub-nav-interactive-text, #fff); box-shadow: inset 0 -3px var(--hub-nav-indicator, #98d0a7); }
 .selected-league, .selected-destination { background: var(--hub-header, #edf3fa); color: var(--hub-link, #23466d); }
 .session-status { font-size: 14px; }
 .drawer-toggle { margin-inline-start: auto; flex: none; min-width: 44px; min-height: 44px; color: var(--hub-nav-text, #fff); }
@@ -31,11 +31,11 @@
 .drawer-link { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 9px 12px; margin: 0; border: 0; border-radius: 4px; text-align: left; font: inherit; font-size: 15px; line-height: 24px; color: var(--hub-nav-text, #f1f4f8); background: transparent; text-decoration: none; }
 .drawer-link mat-icon { flex: 0 0 20px; width: 20px; height: 20px; font-size: 20px; }
 .drawer-link:hover { background: var(--hub-nav-hover, #47525f); }
-.drawer-link.active { background: var(--hub-nav-active, #495c75); box-shadow: inset 3px 0 #98d0a7; }
+.drawer-link.active { background: var(--hub-nav-active, #495c75); box-shadow: inset 3px 0 var(--hub-nav-indicator, #98d0a7); }
 .drawer-group summary { list-style: none; cursor: pointer; }
 .drawer-group summary::-webkit-details-marker { display: none; }
 .featured-link { font-weight: 600; box-shadow: inset 0 0 0 1px var(--hub-nav-text, #e1e6ec); }
-.featured-link.active { box-shadow: inset 0 -3px #98d0a7, inset 0 0 0 1px var(--hub-nav-text, #e1e6ec); }
+.featured-link.active { box-shadow: inset 0 -3px var(--hub-nav-indicator, #98d0a7), inset 0 0 0 1px var(--hub-nav-text, #e1e6ec); }
 .drawer-disclosure { margin-inline-start: auto; }
 .drawer-group[open] .drawer-disclosure { transform: rotate(180deg); }
 .drawer-child-links { margin-inline-start: 24px; border-inline-start: 1px solid var(--hub-nav-hover, #535e6b); }

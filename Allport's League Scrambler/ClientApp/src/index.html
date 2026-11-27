@@ -48,10 +48,10 @@
   <script>
     try {
       const theme = localStorage.getItem('league-hub-appearance');
-      if (theme === 'navy' || theme === 'charcoal') {
+      if (theme === 'navy' || theme === 'charcoal' || theme === 'soft-light') {
         document.documentElement.dataset.theme = theme;
-        document.documentElement.style.colorScheme = 'dark';
-        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'navy' ? '#111b2d' : '#1b1d20');
+        document.documentElement.style.colorScheme = theme === 'soft-light' ? 'light' : 'dark';
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'navy' ? '#111b2d' : theme === 'charcoal' ? '#1b1d20' : '#edf2f7');
       }
     } catch {}
   </script>
