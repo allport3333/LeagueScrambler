@@ -1,16 +1,15 @@
 using System;
 using System.Data;
-using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Allport_s_League_Scrambler.Data;
 using Allport_s_League_Scrambler.Models;
 using Allport_s_League_Scrambler.Pickup;
 using Allport_s_League_Scrambler.Security;
+using Allport_s_League_Scrambler.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -88,14 +87,20 @@ public sealed partial class FacilitiesController
 
     public record ReviewedFacility(string Name, string AlternateName, string Address, string City, string Region,
         string PostalCode, string Country, string TimeZone, string Website, string Activities, string Source,
-        string SourceKey, double? Latitude, double? Longitude, bool ApproximateCoordinates, bool Reviewed);
+        string SourceKey, double? Latitude, double? Longitude, bool ApproximateCoordinates, bool Reviewed,
+        bool DistinctReviewed = false);
 
     [Authorize(Roles = "Admin"), SameOrigin, HttpPost("reviewed"), HttpPut("reviewed/{id:int}")]
-    public async Task<IActionResult> SaveReviewed(ReviewedFacility input, int? id = null)
+    public Task<IActionResult> SaveReviewed(ReviewedFacility input, int? id = null) => SaveFacility(input, id, false);
+
+    [Authorize(Roles = "Admin"), SameOrigin, HttpPost("reviewed/{id:int}/fill-missing")]
+    public Task<IActionResult> FillMissing(ReviewedFacility input, int id) => SaveFacility(input, id, true);
+
+    private async Task<IActionResult> SaveFacility(ReviewedFacility input, int? id, bool fillMissing)
     {
         bool Invalid(string value, int limit, bool required = false) =>
             (required && string.IsNullOrWhiteSpace(value)) || value?.Length > limit;
-        var sourceKey = input.SourceKey?.Trim();
+        var sourceKey = FacilityIdentity.ProviderKey(input.SourceKey);
         if (!input.Reviewed || Invalid(input.Name, 100, true) || Invalid(input.Address, 140) ||
             Invalid(input.City, 80, true) || Invalid(input.Region, 50, true) || Invalid(input.PostalCode, 16) ||
             Invalid(input.Country, 50, true) || Invalid(input.AlternateName, 150) || Invalid(input.Activities, 250) ||
@@ -106,64 +111,76 @@ public sealed partial class FacilitiesController
             ((input.Latitude != null || input.Longitude != null) && !PickupLocations.ValidPoint(input.Latitude, input.Longitude)))
             return BadRequest(new { message = "Review the source and provide valid facility details, website, and time zone." });
         await using var db = new DataContext();
-        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+        await FacilityIdentity.Lock(db);
         PickupVenue venue = null;
         if (id is int target)
         {
             venue = await db.PickupVenues.FindAsync(target);
-            if (venue == null || !await Directory(db).AnyAsync(v => v.Id == target)) return NotFound();
+            if (venue == null) return NotFound();
         }
-        if (!string.IsNullOrEmpty(sourceKey) && await db.FacilityProfiles.AnyAsync(p => p.SourceKey == sourceKey && p.VenueId != id))
-            return Conflict(new { message = "This provider record already exists. Open its facility page to review or edit it." });
-        var locality = await db.PickupVenues.AsNoTracking().Where(v => v.Id != id &&
-            (v.PostalCode == input.PostalCode || v.City == input.City)).ToListAsync();
-        if (locality.Any(v => SameFacility(v, input)))
-            return Conflict(new { message = "A matching facility already exists. Open that record to review or edit it." });
+        var candidate = new FacilityIdentity.Candidate(input.Name, input.Address, input.City, input.Region, input.PostalCode,
+            input.Country, input.AlternateName, input.Website, sourceKey, input.Latitude, input.Longitude, input.ApproximateCoordinates);
+        if (fillMissing && !(await FacilityIdentity.Find(db, candidate)).Any(match => match.Venue.Id == id))
+            return BadRequest(new { message = "Select a matching facility before adding reviewed details." });
+        var matches = await FacilityIdentity.Find(db, candidate, id);
+        if (matches.Count != 0 && (!input.DistinctReviewed || matches.Any(match => match.Definitive)))
+            return Conflict(await FacilityIdentity.Describe(db, matches, true, null, false));
         if (venue == null)
         {
             venue = new PickupVenue();
             db.PickupVenues.Add(venue);
         }
-        venue.Name = input.Name.Trim();
-        venue.Address = input.Address?.Trim() ?? "";
-        venue.City = input.City.Trim();
-        venue.Region = input.Region.Trim();
-        venue.PostalCode = input.PostalCode?.Trim() ?? "";
-        venue.Country = input.Country.Trim();
-        venue.TimeZone = input.TimeZone;
-        venue.Latitude = input.Latitude;
-        venue.Longitude = input.Longitude;
+        string Update(string existing, string incoming) => fillMissing && !string.IsNullOrWhiteSpace(existing)
+            ? existing : incoming?.Trim();
+        venue.Name = Update(venue.Name, input.Name);
+        venue.Address = Update(venue.Address, input.Address) ?? "";
+        venue.City = Update(venue.City, input.City);
+        venue.Region = Update(venue.Region, input.Region);
+        venue.PostalCode = Update(venue.PostalCode, input.PostalCode) ?? "";
+        venue.Country = Update(venue.Country, input.Country);
+        venue.TimeZone = Update(venue.TimeZone, input.TimeZone);
+        var replacePoint = !fillMissing || !PickupLocations.ValidPoint(venue.Latitude, venue.Longitude);
+        if (replacePoint)
+        {
+            venue.Latitude = input.Latitude;
+            venue.Longitude = input.Longitude;
+        }
+        venue.IdentityKey = FacilityIdentity.Key(FacilityIdentity.Candidate.From(venue));
         var profile = venue.Id > 0 ? await db.FacilityProfiles.FindAsync(venue.Id) : null;
         if (profile == null)
         {
             profile = new FacilityProfile { Venue = venue };
             db.FacilityProfiles.Add(profile);
         }
-        profile.AlternateName = input.AlternateName?.Trim();
-        profile.Website = input.Website?.Trim();
-        profile.Activities = input.Activities?.Trim();
-        profile.Source = input.Source.Trim();
-        profile.SourceKey = string.IsNullOrEmpty(sourceKey) ? profile.SourceKey : sourceKey;
-        profile.ApproximateCoordinates = input.ApproximateCoordinates;
+        profile.AlternateName = Update(profile.AlternateName,
+            input.AlternateName ?? (fillMissing && venue.Name != input.Name.Trim() ? input.Name : null));
+        profile.Website = Update(profile.Website, input.Website);
+        profile.Activities = Update(profile.Activities, input.Activities);
+        profile.Source = Update(profile.Source, input.Source);
+        profile.SourceKey ??= sourceKey;
+        if (replacePoint) profile.ApproximateCoordinates = input.ApproximateCoordinates;
         profile.VerifiedUtc = DateTimeOffset.UtcNow;
         try
         {
             await db.SaveChangesAsync();
+            if (sourceKey != null && !await db.FacilityProviderIdentities.AnyAsync(row => row.SourceKey == sourceKey))
+            {
+                db.FacilityProviderIdentities.Add(new FacilityProviderIdentity { SourceKey = sourceKey, VenueId = venue.Id });
+                await db.SaveChangesAsync();
+            }
             await transaction.CommitAsync();
         }
         catch (DbUpdateException)
-        { return Conflict(new { message = "The facility changed during review. Reload and check for an existing record." }); }
+        {
+            await transaction.RollbackAsync();
+            await using var read = new DataContext();
+            var currentMatches = await FacilityIdentity.Find(read, FacilityIdentity.Candidate.From(venue, profile), id);
+            if (currentMatches.Count > 0)
+                return Conflict(await FacilityIdentity.Describe(read, currentMatches, true, null, false));
+            return Conflict(new { message = "The facility changed during review. Reload and check for an existing record." });
+        }
         return Ok(new { venue.Id });
     }
 
-    private static bool SameFacility(PickupVenue venue, ReviewedFacility input)
-    {
-        static string Normalize(string value) => Regex.Replace((value ?? "").ToUpperInvariant(), @"[^A-Z\d]+", "");
-        static string Address(string value) => Regex.Replace(Normalize(value), "(AVENUE|STREET|ROAD)$",
-            match => match.Value switch { "AVENUE" => "AVE", "STREET" => "ST", _ => "RD" });
-        return (Address(input.Address).Length > 0 && Address(input.Address) == Address(venue.Address) &&
-                Normalize(venue.PostalCode) == Normalize(input.PostalCode)) ||
-            (Normalize(venue.Name) == Normalize(input.Name) && Normalize(venue.City) == Normalize(input.City) &&
-                 Normalize(venue.Region) == Normalize(input.Region));
-    }
 }

@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import type { Facility } from './facilities.component';
+import { FacilityConflict, FacilityMatch, FacilityMatchDraft, FacilityMatchReviewComponent } from './facility-match-review.component';
 
 interface Candidate {
     sourceKey: string; source: string; name: string; address: string; city: string;
@@ -17,7 +18,7 @@ const blank = () => ({name: '', alternateName: '', address: '', city: '', region
 @Component({
     changeDetection: ChangeDetectionStrategy.Eager,
     selector: 'app-facility-review',
-    imports: [FormsModule],
+    imports: [FormsModule, FacilityMatchReviewComponent],
     styleUrl: './facility-checkbox.css',
     template: `
       <details (toggle)="initialize($event)">
@@ -57,6 +58,9 @@ const blank = () => ({name: '', alternateName: '', address: '', city: '', region
             <input type="checkbox" name="reviewed" [(ngModel)]="draft.reviewed" required>
             <span>I reviewed these details and confirmed the activities listed.</span>
           </label>
+          <app-facility-match-review [draft]="duplicateDraft" [conflict]="conflict" [allowReconcile]="!facility" [canConfirmDistinct]="true"
+            [busy]="busy" (useExisting)="openExisting($event)" (reconcile)="save($event.id)"
+            (allowDistinct)="confirmDistinct()" />
           <button type="submit" [disabled]="review.invalid || busy">Save Reviewed Facility</button>
         </form>
         @if (status) { <p role="status">{{ status }}</p> }
@@ -96,6 +100,23 @@ export class FacilityReviewComponent {
     draft = blank();
     busy = false;
     status = '';
+    conflict?: FacilityConflict;
+    private distinctIdentity = '';
+
+    get duplicateDraft(): FacilityMatchDraft {
+        const {name, address, city, region, postalCode, country, alternateName, website, sourceKey,
+            latitude, longitude, approximateCoordinates} = this.draft;
+        return {name, address, city, region, postalCode, country, alternateName, website, sourceKey,
+            latitude, longitude, approximate: approximateCoordinates, excludeId: this.facility?.id};
+    }
+
+    openExisting(match: FacilityMatch): void { void this.router.navigate(['/facilities', match.id]); }
+
+    confirmDistinct(): void {
+        this.distinctIdentity = JSON.stringify(this.duplicateDraft);
+        this.conflict = undefined;
+        this.status = 'Separate facility confirmed. Save to continue.';
+    }
 
     initialize(event: Event): void {
         const facility = this.facility;
@@ -123,17 +144,23 @@ export class FacilityReviewComponent {
     }
 
     select(candidate: Candidate): void {
+        this.conflict = undefined;
+        this.distinctIdentity = '';
         this.draft = {...blank(), ...candidate, activities: '', website: candidate.website || ''};
         this.status = 'Review the candidate and enter only activities you have verified.';
     }
 
-    save(): void {
-        if (this.busy || !this.draft.reviewed) return;
+    save(existingId?: number): void {
+        if (this.busy) return;
+        if (!this.draft.reviewed) { this.status = 'Confirm the reviewed details before saving.'; return; }
         this.busy = true;
         this.status = '';
+        this.conflict = undefined;
         const base = '/api/facilities/reviewed';
-        const request = this.facility ? this.http.put<{id: number}>(base + '/' + this.facility.id, this.draft)
-            : this.http.post<{id: number}>(base, this.draft);
+        const data = {...this.draft, distinctReviewed: this.distinctIdentity === JSON.stringify(this.duplicateDraft)};
+        const request = existingId ? this.http.post<{id: number}>(base + '/' + existingId + '/fill-missing', data)
+            : this.facility ? this.http.put<{id: number}>(base + '/' + this.facility.id, data)
+            : this.http.post<{id: number}>(base, data);
         request.pipe(takeUntilDestroyed(this.destroy)).subscribe({
             next: result => {
                 this.busy = false;
@@ -141,7 +168,11 @@ export class FacilityReviewComponent {
                 this.draft.reviewed = false;
                 if (!this.facility) void this.router.navigate(['/facilities', result.id]);
             },
-            error: error => { this.busy = false; this.status = error.error?.message || 'Facility could not be saved.'; }
+            error: error => {
+                this.busy = false;
+                if (error.error?.code === 'facility-match') this.conflict = error.error;
+                this.status = error.error?.message || 'Facility could not be saved.';
+            }
         });
     }
 }

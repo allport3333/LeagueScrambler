@@ -124,7 +124,7 @@ internal static class PickupLocations
     internal static bool ValidPoint(double? lat, double? lon) =>
         lat is >= -90 and <= 90 && lon is >= -180 and <= 180;
 
-    private static double Distance(Point a, Point b)
+    internal static double Distance(Point a, Point b)
     {
         const double radians = Math.PI / 180;
         var lat = Math.Sin((b.Latitude - a.Latitude) * radians / 2);
@@ -134,7 +134,7 @@ internal static class PickupLocations
     }
 
     private static string Normalize(string value) => Regex.Replace((value ?? "").Trim().ToUpperInvariant(), @"\s+", " ");
-    private static string StateCode(string value)
+    internal static string StateCode(string value)
     {
         var normalized = Normalize(value);
         return normalized.Length > 2 ? States.Value.GetValueOrDefault(normalized, normalized) : normalized;

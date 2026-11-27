@@ -36,6 +36,8 @@
                 <label>City or ZIP code<input name="location" maxlength="80" [(ngModel)]="form.location" (ngModelChange)="clearField('location')"></label>
                 @if (fieldErrors['location']; as message) { <small class="field-error" role="alert">{{ message }}</small> }
                 <small>Approximate location. Add a street address in Advanced Options if you have one.</small>
+                <app-facility-match-review [draft]="facilityMatchDraft" [conflict]="venueConflict"
+                  [busy]="busy" (useExisting)="chooseVenue($event)" />
                 <button type="button" (click)="changeVenue()">Choose a saved facility</button>
               } @else {
                 <label>Where are we playing?

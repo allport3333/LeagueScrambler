@@ -2247,6 +2247,7 @@ namespace Allport_s_League_Scrambler.Controllers
                 return BadRequest(new { message = "Choose a valid event type." });
             if (eventTypeId == 2 && !eventDate.HasValue)
                 return BadRequest(new { message = "Choose a tournament date." });
+            if (venueId.HasValue) await Services.FacilityIdentity.Lock(context);
             if (venueId.HasValue && (eventTypeId is not (1 or 2) ||
                 !await FacilitiesController.Directory(context).AnyAsync(venue => venue.Id == venueId)))
                 return BadRequest(new { message = "Choose an available facility." });

@@ -52,7 +52,7 @@ withPickupTestHost(async origin => {
         assert.equal(claim.status, 200);
         async function create(label, overrides = {}) {
             const result = await api(organizer, '/api/pickup/sessions', 'POST', {
-                name: label + ' ' + token, sport: 'Wallyball', venue: 'Workspace Fixture Venue', city: 'Fixtureville',
+                name: label + ' ' + token, sport: 'Wallyball', venue: label + ' Fixture Venue ' + token, city: 'Fixtureville',
                 timeZone: 'America/New_York', startNow: true, visibility: 0, ...overrides
             });
             assert.equal(result.status, 201, JSON.stringify(result));
@@ -309,7 +309,7 @@ withPickupTestHost(async origin => {
         await organizer.keyboard.press('Escape');
         assert.equal((await api(player, session.api + '/reopen', 'POST', {})).status, 404);
         const attempts = await Promise.all([1, 2].map(i => api(organizer, '/api/pickup/sessions', 'POST', {
-            name: 'Concurrent ' + i + ' ' + token, sport: 'Wallyball', venue: 'Workspace Fixture Venue',
+            name: 'Concurrent ' + i + ' ' + token, sport: 'Wallyball', venue: 'Workspace Fixture Venue ' + token,
             city: 'Fixtureville', timeZone: 'America/New_York', startNow: true
         })));
         assert.deepEqual(attempts.map(result => result.status).sort(), [201, 409]);

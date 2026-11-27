@@ -1,7 +1,7 @@
 <main class="facility-directory">
   @if (!facilityId) {
     <h1>Find Facilities</h1>
-    @if (administrator) { <app-facility-review></app-facility-review> }
+    @if (administrator) { <app-facility-review></app-facility-review><app-facility-duplicate-audit /> }
     <form class="facility-filters" (ngSubmit)="search()">
       <label>Facility name<input name="name" [(ngModel)]="filters.q" maxlength="150"></label>
       <label>City or ZIP<input name="location" [(ngModel)]="filters.location" maxlength="100"></label>

@@ -9,6 +9,7 @@ public enum SessionVisibility { Public, Unlisted, Private }
 public enum RegistrationState { PendingVerification, PendingApproval, Confirmed, Cancelled, Declined, Waitlisted, Offered }
 
 [Index(nameof(Name), nameof(Address), nameof(PostalCode))]
+[Index(nameof(IdentityKey), IsUnique = true)]
 public sealed class PickupVenue
 {
     public int Id { get; set; }
@@ -21,6 +22,7 @@ public sealed class PickupVenue
     [Required, MaxLength(80)] public string TimeZone { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
+    [MaxLength(64)] public string IdentityKey { get; set; }
 }
 
 [Index(nameof(Visibility), nameof(State), nameof(StartsUtc))]

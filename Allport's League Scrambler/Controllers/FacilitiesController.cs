@@ -43,7 +43,9 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
         var query = from venue in Directory(db).AsNoTracking()
                     join profile in db.FacilityProfiles.AsNoTracking() on venue.Id equals profile.VenueId into profiles
                     from profile in profiles.DefaultIfEmpty()
-                    where string.IsNullOrEmpty(q) || venue.Name.Contains(q) || profile.AlternateName.Contains(q)
+                    where string.IsNullOrEmpty(q) || venue.Name.Contains(q) || profile.AlternateName.Contains(q) ||
+                        db.FacilityMerges.Any(m => m.TargetVenueId == venue.Id &&
+                            (m.SourceName.Contains(q) || m.SourceAlternateName.Contains(q)))
                     select new { venue, profile };
         var rows = await query.ToListAsync();
         var activities = PublicEvents(db);
@@ -79,7 +81,8 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
     {
         if (location?.Length > 100) return BadRequest();
         await using var db = new DataContext();
-        var venue = await Directory(db).AsNoTracking().SingleOrDefaultAsync(v => v.Id == id);
+        var venues = User.IsInRole("Admin") ? db.PickupVenues.AsQueryable() : Directory(db);
+        var venue = await venues.AsNoTracking().SingleOrDefaultAsync(v => v.Id == id);
         if (venue == null) return NotFound();
         var profile = await db.FacilityProfiles.AsNoTracking().SingleOrDefaultAsync(p => p.VenueId == id);
         var events = await PublicEvents(db).Where(e => e.VenueId == id && (eventId == null || e.LeagueId == eventId)).OrderBy(e => e.Date)
@@ -91,7 +94,8 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
         var search = PickupLocations.Resolve(location, null);
         var distance = search.Centers.Count == 1 ? PickupLocations.Find(search, venue.City, venue.Region,
             venue.PostalCode, venue.Country, venue.Name, venue.Latitude, venue.Longitude, 50) : null;
-        return Ok(new { facility = Present(venue, profile, distance), events, pickup });
+        var openStreetMap = await db.FacilityProviderIdentities.AnyAsync(row => row.VenueId == id && row.SourceKey.StartsWith("osm:"));
+        return Ok(new { facility = Present(venue, profile, distance, openStreetMap), events, pickup });
     }
 
     [AllowAnonymous, HttpGet("event/{leagueId:int}")]
@@ -130,6 +134,8 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
     public async Task<IActionResult> Assign(int leagueId, Assignment input)
     {
         await using var db = new DataContext();
+        await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted);
+        await FacilityIdentity.Lock(db);
         if (!LeagueAccess.CanManage(User, db, leagueId)) return Forbid();
         if (!await db.Leagues.AnyAsync(e => e.ID == leagueId && (e.EventTypeId == 1 || e.EventTypeId == 2)))
             return NotFound();
@@ -159,6 +165,7 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
             if (User.IsInRole("Admin")) existing.LeadAdminId = input.LeadAdminId;
         }
         await db.SaveChangesAsync();
+        await transaction.CommitAsync();
         return NoContent();
     }
 
@@ -240,11 +247,11 @@ public sealed partial class FacilitiesController(TransactionalMail mail) : Contr
     private static string[] Activities(FacilityProfile profile) =>
         profile?.Activities?.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
 
-    private static object Present(PickupVenue venue, FacilityProfile profile, PickupLocations.Match match = null) =>
+    private static object Present(PickupVenue venue, FacilityProfile profile, PickupLocations.Match match = null, bool openStreetMap = false) =>
         new { venue.Id, venue.Name, venue.Address, venue.City, venue.Region, venue.PostalCode, venue.Country, venue.TimeZone,
             venue.Latitude, venue.Longitude, approximateCoordinates = profile?.ApproximateCoordinates == true,
             profile?.AlternateName, profile?.Website, profile?.Source, profile?.VerifiedUtc,
-            openStreetMap = profile?.SourceKey?.StartsWith("osm:", StringComparison.Ordinal) == true,
+            openStreetMap = openStreetMap || profile?.SourceKey?.StartsWith("osm:", StringComparison.Ordinal) == true,
             activities = Activities(profile), distanceMiles = match?.Miles,
             approximate = profile?.ApproximateCoordinates == true || match?.Approximate == true };
 }

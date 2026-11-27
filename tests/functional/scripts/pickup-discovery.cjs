@@ -67,7 +67,8 @@ withPickupTestHost(async origin => {
         // Give the fixture a previous local start date and verified venue coordinates.
         // All values are controlled fixtures and the SQL batch also verifies its database.
         execFileSync('sqlcmd.exe', ['-S', 'lpc:localhost', '-d', 'LeagueScramblerPickupTest', '-E', '-C', '-b', '-Q',
-            `IF DB_NAME() <> N'LeagueScramblerPickupTest' THROW 51000,'Wrong test database',1;
+            `SET QUOTED_IDENTIFIER ON;
+             IF DB_NAME() <> N'LeagueScramblerPickupTest' THROW 51000,'Wrong test database',1;
              UPDATE dbo.PickupSession SET StartsUtc='${start}', EndsUtc='${end}', LocalDate='${yesterday}', State=2 WHERE Id='${closed}';
              UPDATE v SET Latitude=42.3314,Longitude=-83.0458 FROM dbo.PickupVenue v
              JOIN dbo.PickupSession s ON s.VenueId=v.Id WHERE s.Id='${point}';

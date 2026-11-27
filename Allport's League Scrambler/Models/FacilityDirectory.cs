@@ -32,3 +32,21 @@ public sealed class EventFacility
     [MaxLength(500)] public string Description { get; set; }
     public int? LeadAdminId { get; set; }
 }
+
+public sealed class FacilityProviderIdentity
+{
+    [Key, MaxLength(150)] public string SourceKey { get; set; }
+    public int VenueId { get; set; }
+}
+
+public sealed class FacilityMerge
+{
+    public int Id { get; set; }
+    public int SourceVenueId { get; set; }
+    public int TargetVenueId { get; set; }
+    public int AdminId { get; set; }
+    [MaxLength(100)] public string SourceName { get; set; }
+    [MaxLength(150)] public string SourceAlternateName { get; set; }
+    public string Snapshot { get; set; }
+    public DateTimeOffset MergedUtc { get; set; }
+}

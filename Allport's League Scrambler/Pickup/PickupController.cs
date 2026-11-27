@@ -44,7 +44,9 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
         var term = q?.Trim();
         if (!string.IsNullOrEmpty(term))
             venues = venues.Where(v => v.Name.Contains(term) || v.City.Contains(term) || v.PostalCode.StartsWith(term) ||
-                db.FacilityProfiles.Any(p => p.VenueId == v.Id && p.AlternateName.Contains(term)));
+                db.FacilityProfiles.Any(p => p.VenueId == v.Id && p.AlternateName.Contains(term)) ||
+                db.FacilityMerges.Any(m => m.TargetVenueId == v.Id &&
+                    (m.SourceName.Contains(term) || m.SourceAlternateName.Contains(term))));
         var result = await venues.AsNoTracking().OrderByDescending(v => db.PickupSessions
             .Where(s => s.VenueId == v.Id && s.OrganizerId == account).Max(s => (DateTimeOffset?)s.StartsUtc))
             .ThenBy(v => v.Name).ThenBy(v => v.Id).Take(12).ToListAsync();
@@ -508,17 +510,19 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     private IActionResult Invalid(string message) => BadRequest(new { message });
     private IActionResult ConflictMessage(string message) => Conflict(new { message });
 
-    private sealed record InputError(string Field, string Message);
+    private sealed record InputError(string Field, string Message, FacilityIdentity.Conflict Match = null);
 
-    private IActionResult Invalid(InputError error) => BadRequest(new { error.Field, error.Message });
+    private IActionResult Invalid(InputError error) =>
+        error.Match == null ? BadRequest(new { error.Field, error.Message }) : Conflict(error.Match);
 
-    private static async Task<InputError> Apply(DataContext db, PickupSession s, SessionInput input)
+    private async Task<InputError> Apply(DataContext db, PickupSession s, SessionInput input)
     {
         if (!Sports.Contains(input.Sport)) return new("sport", "Choose a sport.");
         if (input.Capacity is < 2 || (input.Capacity is > 80 && input.Capacity != s.Capacity)) return new("capacity", "Maximum players must be between 2 and 80.");
         if (!Enum.IsDefined(input.Visibility)) return new("visibility", "Choose a visibility option.");
 
         PickupVenue venue;
+        await FacilityIdentity.Lock(db);
         if (input.VenueId is { } venueId)
         {
             venue = await AvailableVenues(db, s.OrganizerId).SingleOrDefaultAsync(v => v.Id == venueId);
@@ -537,11 +541,23 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
             if (zoneId == "America/New_York" && (region.Equals("MI", StringComparison.OrdinalIgnoreCase) ||
                 region.Equals("Michigan", StringComparison.OrdinalIgnoreCase))) zoneId = "America/Detroit";
             var country = string.IsNullOrWhiteSpace(input.Country) ? "US" : input.Country.Trim();
-            venue = await db.PickupVenues.FirstOrDefaultAsync(v => v.Name == name && v.Address == address &&
-                v.City == city && v.Region == region && v.PostalCode == postalCode &&
-                v.Country == country && v.TimeZone == zoneId)
-                ?? new PickupVenue { Name = name, Address = address, City = city, Region = region,
-                    PostalCode = postalCode, Country = country, TimeZone = zoneId };
+            var candidate = new FacilityIdentity.Candidate(name, address, city, region, postalCode, country);
+            var matches = await FacilityIdentity.Find(db, candidate);
+            venue = null;
+            if (matches.Count != 0)
+            {
+                var options = await FacilityIdentity.Describe(db, matches, false, s.OrganizerId, false);
+                // Existing API clients may submit identical facility details again. Only reuse a single visible
+                // record when every supplied field matches. No identifying detail is changed.
+                var exact = matches.Count == 1 ? matches[0].Venue : null;
+                if (exact != null && exact.Name == name && exact.Address == address && exact.City == city &&
+                    exact.Region == region && exact.PostalCode == postalCode && exact.Country == country &&
+                    exact.TimeZone == zoneId && options.Matches.Any(option => option.Id == exact.Id))
+                    venue = await db.PickupVenues.FindAsync(exact.Id);
+                if (venue == null) return new("venue", options.Message, options);
+            }
+            venue ??= new PickupVenue { Name = name, Address = address, City = city, Region = region,
+                PostalCode = postalCode, Country = country, TimeZone = zoneId, IdentityKey = FacilityIdentity.Key(candidate) };
         }
 
         if (!TryZone(venue.TimeZone, out var zone, out _)) return new("timeZone", "This facility needs a valid time zone.");
@@ -590,7 +606,8 @@ public sealed partial class PickupController(TransactionalMail mail) : Controlle
     }
 
     private static IQueryable<PickupVenue> AvailableVenues(DataContext db, int account) =>
-        db.PickupVenues.Where(v => db.FacilityProfiles.Any(p => p.VenueId == v.Id) || db.PickupSessions.Any(s => s.VenueId == v.Id &&
+        db.PickupVenues.Where(v => db.FacilityProfiles.Any(p => p.VenueId == v.Id) ||
+            db.EventFacilities.Any(e => e.VenueId == v.Id && e.PublicListing) || db.PickupSessions.Any(s => s.VenueId == v.Id &&
             (s.OrganizerId == account || (s.Visibility == SessionVisibility.Public &&
                 s.State != SessionState.Draft && s.State != SessionState.Cancelled))));
 

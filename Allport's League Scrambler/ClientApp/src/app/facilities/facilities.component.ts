@@ -9,6 +9,7 @@ import { LoginService } from '../services/login.service';
 import { AuthService } from '../auth.service';
 import { TournamentNotifications } from '../tournament-notifications.service';
 import { FacilityReviewComponent } from './facility-review.component';
+import { FacilityDuplicateAuditComponent } from './facility-duplicate-audit.component';
 
 export interface Facility {
     id: number;
@@ -40,7 +41,7 @@ interface FacilityDetails {
 
 @Component({
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [DatePipe, FormsModule, RouterLink, FacilityReviewComponent],
+    imports: [DatePipe, FormsModule, RouterLink, FacilityReviewComponent, FacilityDuplicateAuditComponent],
     templateUrl: './facilities.component.html',
     styleUrl: './facilities.component.css'
 })

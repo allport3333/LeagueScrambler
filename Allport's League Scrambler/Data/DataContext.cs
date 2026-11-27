@@ -16,6 +16,8 @@ namespace Allport_s_League_Scrambler.Data
         public DbSet<PickupVenue> PickupVenues { get; set; }
         public DbSet<FacilityProfile> FacilityProfiles { get; set; }
         public DbSet<EventFacility> EventFacilities { get; set; }
+        public DbSet<FacilityProviderIdentity> FacilityProviderIdentities { get; set; }
+        public DbSet<FacilityMerge> FacilityMerges { get; set; }
         public DbSet<PickupSession> PickupSessions { get; set; }
         public DbSet<PickupRegistration> PickupRegistrations { get; set; }
         public virtual DbSet<Player> Players { get; set; }
@@ -68,6 +70,9 @@ namespace Allport_s_League_Scrambler.Data
         {
             modelBuilder.Entity<PickupVenue>().ToTable("PickupVenue", "dbo");
             var facility = modelBuilder.Entity<FacilityProfile>().ToTable("FacilityProfile", "dbo");
+            modelBuilder.Entity<FacilityProviderIdentity>().ToTable("FacilityProviderIdentity", "dbo")
+                .HasOne<PickupVenue>().WithMany().HasForeignKey(row => row.VenueId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<FacilityMerge>().ToTable("FacilityMerge", "dbo").HasIndex(row => row.TargetVenueId);
             facility.HasOne(row => row.Venue).WithOne().HasForeignKey<FacilityProfile>(row => row.VenueId)
                 .OnDelete(DeleteBehavior.Cascade);
             var eventFacility = modelBuilder.Entity<EventFacility>().ToTable("EventFacility", "dbo");

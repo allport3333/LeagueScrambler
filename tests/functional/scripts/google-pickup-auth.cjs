@@ -54,7 +54,7 @@ withPickupTestHost(async origin => {
             email: 'host-' + token + '@example.invalid', password, firstName: 'Fixture', lastName: 'Organizer'
         })).status(), 200);
         const created = await post(owner, '/api/pickup/sessions', {
-            name: 'Invitation Fixture ' + token, sport: 'Wallyball', venue: 'Fixture Gym',
+            name: 'Invitation Fixture ' + token, sport: 'Wallyball', venue: 'Fixture Gym ' + token,
             city: 'Roseville', timeZone: 'America/Detroit', startNow: true, visibility: 1
         });
         assert.equal(created.status(), 201, await created.text());

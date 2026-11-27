@@ -1,4 +1,5 @@
 import { GoogleSignInComponent } from './google-auth/google-sign-in.component';
+import { FacilityConflict, FacilityMatchDraft, FacilityMatchReviewComponent } from './facilities/facility-match-review.component';
 import { googleStatus } from './google-auth/google-status';
 ﻿import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -41,7 +42,7 @@ const emptyForm = () => ({
 @Component({
     selector: 'app-pickup',
     changeDetection: ChangeDetectionStrategy.Eager,
-    imports: [FormsModule, RouterLink, AsyncPipe, NgTemplateOutlet, PickupWorkspaceComponent, GoogleSignInComponent],
+    imports: [FormsModule, RouterLink, AsyncPipe, NgTemplateOutlet, PickupWorkspaceComponent, GoogleSignInComponent, FacilityMatchReviewComponent],
     templateUrl: './pickup.component.html',
     styleUrl: './pickup.component.css'
 })
@@ -71,6 +72,12 @@ export class PickupComponent implements OnInit {
     selectedVenue?: Venue;
     venueQuery = '';
     venueSearchFailed = false;
+    venueConflict?: FacilityConflict;
+
+    get facilityMatchDraft(): FacilityMatchDraft {
+        const {venue, address, city, region, postalCode, country} = this.payload();
+        return {name: venue, address, city, region, postalCode, country};
+    }
     newVenue = false;
     advancedOpen = false;
     scheduleEdited = false;
@@ -342,6 +349,7 @@ export class PickupComponent implements OnInit {
 
     private resetCreation(): void {
         this.form = emptyForm();
+        this.venueConflict = undefined;
         this.selectedVenue = undefined;
         this.newVenue = false;
         this.venueQuery = '';
@@ -377,6 +385,7 @@ export class PickupComponent implements OnInit {
 
     chooseVenue(venue: Venue): void {
         this.selectedVenue = venue;
+        this.venueConflict = undefined;
         this.newVenue = false;
         this.clearField('venue');
         if (!this.scheduleEdited) this.setDefaultStart();
@@ -384,6 +393,7 @@ export class PickupComponent implements OnInit {
 
     changeVenue(): void {
         this.selectedVenue = undefined;
+        this.venueConflict = undefined;
         this.newVenue = false;
         this.venueQuery = '';
         void this.searchVenues();
@@ -549,6 +559,9 @@ export class PickupComponent implements OnInit {
             const field = error.error?.field;
             if (this.view === 'create' && error.status === 409 && error.error?.activeSessionId) {
                 this.blockedSessionId = error.error.activeSessionId;
+            } else if (error.status === 409 && error.error?.code === 'facility-match') {
+                this.venueConflict = error.error;
+                this.fieldErrors['venue'] = error.error.message;
             } else if (field && (this.editing || this.view === 'create')) {
                 this.fieldErrors[field] = this.describeError(error);
                 if (['deadline', 'timeZone', 'visibility', 'capacity', 'duration'].includes(field)) this.advancedOpen = true;
